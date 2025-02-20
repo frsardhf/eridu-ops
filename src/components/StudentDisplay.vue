@@ -22,32 +22,61 @@ function hasCommonElement(arr1, arr2) {
   return arr1.some(item => arr2.includes(item));
 }
 
+// Helper function to check if arrays share all elements
+function hasAllElement(arr1, arr2) {
+  return arr1.every(item => arr2.includes(item));
+}
+
+function getUniqueXpValue(item) {
+  if (item.Rarity === 'SSR') {
+    return 240;
+  } else if (item.Tags.includes('BN')) {
+    return 80;
+  } else {
+    return 60;
+  }
+}
+
+function getRareXpValue(item) {
+  return item.Rarity === 'SSR' ? 180 : 40;
+}
+
 function getStudentUniqueGifts(students, items) {
   const result = {};
+
   for (const studentId in students) {
     const uniqueGiftTags = students[studentId].FavorItemUniqueTags;
     const rareGiftTags = students[studentId].FavorItemTags;
-    const matchingGifts = [];
-    let xpValue = 0
+    const matchingGifts = new Map()
     
     for (const itemId in items) {
       const item = items[itemId];
       if (hasCommonElement(item.Tags, uniqueGiftTags)) {
-        if (item.Rarity === 'SSR') {
-          xpValue = 240
-        } else {
-          xpValue = 60
-        }
-        matchingGifts.push({ name: item.Name, xp: xpValue });
+          const xpValue = getUniqueXpValue(item);
+          matchingGifts.set(item.Id, {
+            name: item.Name,
+            rarity: item.Rarity,
+            xp: xpValue
+          });
       } else if (hasCommonElement(item.Tags, rareGiftTags)) {
-        if (item.Rarity === 'SSR') {
-          xpValue = 180
-        } else {
-          xpValue = 40
+          const xpValue = getRareXpValue(item);
+          matchingGifts.set(item.Id, {
+            name: item.Name,
+            rarity: item.Rarity,
+            xp: xpValue
+          });
+      }
+      if (hasAllElement(rareGiftTags, item.Tags)) {
+        if (matchingGifts.has(item.Id)) {
+          matchingGifts.set(item.Id, {
+            name: item.Name,
+            rarity: item.Rarity,
+            xp: item.Rarity === 'SSR' ? 180 : 60
+          });
         }
-        matchingGifts.push({ name: item.Name, xp: xpValue });
       }
     }
+    
     result[studentId] = matchingGifts;
   }
   console.log(result)
