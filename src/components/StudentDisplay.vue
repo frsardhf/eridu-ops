@@ -1,10 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import StudentModal from './StudentModal.vue'
 
 const studentData = ref([])
 const giftData = ref([])
 const filteredGift = ref([])
 const genericGiftTags = ["BC", "Bc", "ew"]
+const selectedStudent = ref(null);
+const isModalVisible = ref(false); 
 
 function filterByCategory(items, category) {
   const filteredItems = {}
@@ -44,6 +47,24 @@ function getGiftsByStudent(students, items) {
   return result
 }
 
+function getFontSizeClass(name) {
+  const length = name.length;
+  if (length <= 10) return 'text-normal';
+  return 'text-small';
+}
+
+function openModal(student) {
+  selectedStudent.value = student;
+  selectedStudent.value.Gifts = filteredGift.value[student.Id];
+  isModalVisible.value = true;
+  console.log(selectedStudent.value.Gifts)
+}
+
+function closeModal() {
+  isModalVisible.value = false;
+  selectedStudent.value = null;
+}
+
 const fetchData = async (type) => {
   try {
     const url = `https://schaledb.com/data/en/${type}.json`
@@ -67,12 +88,6 @@ onMounted(async () => {
   giftData.value = await fetchData('items')
   filteredGift.value = getGiftsByStudent(studentData.value, giftData.value)
 })
-
-function getFontSizeClass(name) {
-  const length = name.length;
-  if (length <= 10) return 'text-normal';
-  return 'text-small';
-}
 </script>
 
 <template>
@@ -81,7 +96,7 @@ function getFontSizeClass(name) {
       <div v-for="(student, index) in studentData"
            :key="index"
            class="student-card">
-        <a class="selection-grid-card">
+        <a class="selection-grid-card" @click.prevent="openModal(student)">
           <div class="card-img">
             <img :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
                  :alt="student.Name">
@@ -94,6 +109,14 @@ function getFontSizeClass(name) {
         </a>
       </div>
     </div>
+
+    <!-- Modal Component -->
+    <StudentModal 
+      v-if="isModalVisible" 
+      :student="selectedStudent" 
+      :isVisible="isModalVisible" 
+      @close="closeModal" 
+    />
   </div>
 </template>
 
