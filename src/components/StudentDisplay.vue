@@ -4,11 +4,10 @@ import { ref, onMounted } from 'vue'
 const studentData = ref([])
 const giftData = ref([])
 const filteredGift = ref([])
+const genericGiftTags = ["BC", "Bc", "ew"]
 
-// The function to filter items by category
 function filterByCategory(items, category) {
   const filteredItems = {}
-
   for (const itemId in items) {
     if (items[itemId].Category === category) {
       filteredItems[itemId] = items[itemId]
@@ -17,73 +16,34 @@ function filterByCategory(items, category) {
   return filteredItems
 }
 
-// Helper function to check if arrays share any elements
-function hasCommonElement(arr1, arr2) {
-  return arr1.some(item => arr2.includes(item));
-}
-
-// Helper function to check if arrays share all elements
-function hasAllElement(arr1, arr2) {
-  return arr1.every(item => arr2.includes(item));
-}
-
-function getUniqueXpValue(item) {
-  if (item.Rarity === 'SSR') {
-    return 240;
-  } else if (item.Tags.includes('BN')) {
-    return 80;
-  } else {
-    return 60;
-  }
-}
-
-function getRareXpValue(item) {
-  return item.Rarity === 'SSR' ? 180 : 40;
-}
-
-function getStudentUniqueGifts(students, items) {
+function getGiftsByStudent(students, items) {
   const result = {};
-
+  
   for (const studentId in students) {
     const uniqueGiftTags = students[studentId].FavorItemUniqueTags;
     const rareGiftTags = students[studentId].FavorItemTags;
-    const matchingGifts = new Map()
+    const studentGifts = [];
     
     for (const itemId in items) {
-      const item = items[itemId];
-      if (hasCommonElement(item.Tags, uniqueGiftTags)) {
-          const xpValue = getUniqueXpValue(item);
-          matchingGifts.set(item.Id, {
-            name: item.Name,
-            rarity: item.Rarity,
-            xp: xpValue
-          });
-      } else if (hasCommonElement(item.Tags, rareGiftTags)) {
-          const xpValue = getRareXpValue(item);
-          matchingGifts.set(item.Id, {
-            name: item.Name,
-            rarity: item.Rarity,
-            xp: xpValue
-          });
-      }
-      if (hasAllElement(rareGiftTags, item.Tags)) {
-        if (matchingGifts.has(item.Id)) {
-          matchingGifts.set(item.Id, {
-            name: item.Name,
-            rarity: item.Rarity,
-            xp: item.Rarity === 'SSR' ? 180 : 60
-          });
-        }
+      const allTags = [...uniqueGiftTags, ...rareGiftTags, ...genericGiftTags];
+      const genericTagCount = items[itemId].Tags.filter(x => genericGiftTags.includes(x)).length;
+      const commonTags = items[itemId].Tags.filter(x => allTags.includes(x));
+      const favorGrade = Math.min(commonTags.length, 3);
+      const expValue = items[itemId].ExpValue * (1 + Math.min(commonTags.length, 3));
+      
+      if (favorGrade - genericTagCount > 0) {
+        studentGifts.push({
+          gift: items[itemId],
+          exp: expValue,
+          grade: favorGrade + 1
+        });
       }
     }
-    
-    result[studentId] = matchingGifts;
+    result[studentId] = studentGifts;
   }
-  console.log(result)
-  return result;
+  return result
 }
 
-// The fetchData function which fetches data based on the type (students or items)
 const fetchData = async (type) => {
   try {
     const url = `https://schaledb.com/data/en/${type}.json`
@@ -103,28 +63,102 @@ const fetchData = async (type) => {
 }
 
 onMounted(async () => {
-  studentData.value = await fetchData('students') 
+  studentData.value = await fetchData('students')
   giftData.value = await fetchData('items')
-  filteredGift.value = getStudentUniqueGifts(studentData.value, giftData.value)
+  filteredGift.value = getGiftsByStudent(studentData.value, giftData.value)
 })
+
+function getFontSizeClass(name) {
+  const length = name.length;
+  if (length <= 10) return 'text-normal';
+  return 'text-small';
+}
 </script>
 
 <template>
-  <div class="card">
-    <h2>Student Data</h2>
-    <ul>
-      <li v-for="(student, index) in studentData" :key="index">
-        {{ student.Name }}
-        {{ student.FavorItemTags }}
-        {{ student.FavorItemUniqueTags }}
-      </li>
-    </ul>
-
-    <h2>Gift Data</h2>
-    <ul>
-      <li v-for="(gift, index) in giftData" :key="index">
-        {{ gift.Name }} (Rarity: {{ gift.Rarity }})
-      </li>
-    </ul>
+  <div class="container-fluid mt-3">
+    <div class="student-grid">
+      <div v-for="(student, index) in studentData"
+           :key="index"
+           class="student-card">
+        <a class="selection-grid-card">
+          <div class="card-img">
+            <img :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
+                 :alt="student.Name">
+          </div>
+          <div class="card-label">
+            <span :class="['label-text', getFontSizeClass(student.Name)]">
+              {{ student.Name }}
+            </span>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.student-card {
+  width: 80px;
+}
+
+.selection-grid-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.selection-grid-card:hover {
+  transform: translateY(-2px);
+}
+
+.card-img {
+  width: 80px;
+  height: 90px;
+  overflow: hidden;
+}
+
+.card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-label {
+  margin-top: 0;
+  padding: 4px;
+  text-align: center;
+  background-color: antiquewhite;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label-text {
+  line-height: 1;
+  width: 100%;
+  padding: 0 2px;
+}
+
+.text-normal {
+  font-size: 0.85rem;
+}
+
+.text-small {
+  font-size: 0.65rem;
+}
+</style>
