@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import StudentModal from './StudentModal.vue'
+import '../styles/studentDisplay.css'
 
 const studentData = ref([])
 const giftData = ref([])
@@ -8,6 +9,17 @@ const filteredGift = ref([])
 const genericGiftTags = ["BC", "Bc", "ew"]
 const selectedStudent = ref(null);
 const isModalVisible = ref(false); 
+const searchQuery = ref('')
+
+// Add computed property for filtered students
+const filteredStudents = computed(() => {
+  if (!searchQuery.value) return studentData.value
+  const query = searchQuery.value.toLowerCase()
+  return Object.values(studentData.value).filter(student => 
+    student.Name.toLowerCase().includes(query)
+  )
+})
+
 
 function filterByCategory(items, category) {
   const filteredItems = {}
@@ -57,7 +69,6 @@ function openModal(student) {
   selectedStudent.value = student;
   selectedStudent.value.Gifts = filteredGift.value[student.Id];
   isModalVisible.value = true;
-  console.log(selectedStudent.value.Gifts)
 }
 
 function closeModal() {
@@ -91,26 +102,53 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="container-fluid mt-3">
-    <div class="student-grid">
-      <div v-for="(student, index) in studentData"
-           :key="index"
-           class="student-card">
-        <a class="selection-grid-card" @click.prevent="openModal(student)">
-          <div class="card-img">
-            <img :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
-                 :alt="student.Name">
+  <div class="student-list-container">
+    <header class="page-header">
+      <div class="header-content">
+        <div class="header-main">
+          <div class="header-title-section">
+            <h1 class="header-title">Students</h1>
+            <div class="header-divider"></div>
           </div>
-          <div class="card-label">
-            <span :class="['label-text', getFontSizeClass(student.Name)]">
-              {{ student.Name }}
-            </span>
+          
+          <div class="search-section">
+            <div class="search-container">
+              <input
+                v-model="searchQuery"
+                type="text"
+                class="search-input"
+                placeholder="Search students..."
+              />
+              <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
           </div>
-        </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="student-grid-wrapper">
+      <div class="student-grid">
+        <div v-for="(student, index) in filteredStudents"
+             :key="index"
+             class="student-card">
+          <a class="selection-grid-card" @click.prevent="openModal(student)">
+            <div class="card-img">
+              <img :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
+                   :alt="student.Name">
+            </div>
+            <div class="card-label">
+              <span :class="['label-text', getFontSizeClass(student.Name)]">
+                {{ student.Name }}
+              </span>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
 
-    <!-- Modal Component -->
     <StudentModal 
       v-if="isModalVisible" 
       :student="selectedStudent" 
@@ -119,69 +157,3 @@ onMounted(async () => {
     />
   </div>
 </template>
-
-<style scoped>
-.student-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 0.5rem;
-  padding: 1rem;
-}
-
-.student-card {
-  width: 80px;
-}
-
-.selection-grid-card {
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  color: inherit;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.selection-grid-card:hover {
-  transform: translateY(-2px);
-}
-
-.card-img {
-  width: 80px;
-  height: 90px;
-  overflow: hidden;
-}
-
-.card-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.card-label {
-  margin-top: 0;
-  padding: 4px;
-  text-align: center;
-  background-color: antiquewhite;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.label-text {
-  line-height: 1;
-  width: 100%;
-  padding: 0 2px;
-}
-
-.text-normal {
-  font-size: 0.85rem;
-}
-
-.text-small {
-  font-size: 0.65rem;
-}
-</style>
