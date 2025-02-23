@@ -80,7 +80,6 @@ function closeModal() {
 function toggleTheme() {
   document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
   localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
-  const savedTheme = localStorage.getItem('theme')
 }
 
 const fetchData = async (type) => {
