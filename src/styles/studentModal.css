@@ -12,7 +12,7 @@
 }
 
 .modal-content {
-  background: #e6fcff;
+  background: var(--background-primary);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -40,10 +40,10 @@
 }
 
 .student-section {
-  background: #fffcf9;
+  background: var(--card-background);
   border-radius: 8px;
   padding: 15px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
 }
 
 .student-image {
@@ -53,10 +53,10 @@
 }
 
 .bond-section {
-  background: #fffcf9;
+  background: var(--card-background);
   border-radius: 8px;
   padding: 15px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
 }
 
 .gifts-grid {
@@ -106,13 +106,13 @@
 
 .bond-arrow {
   font-size: 24px;
-  color: #4a5568;
+  color: var(--text-primary);
 }
 
 .bond-input {
   width: 60px;
   padding: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--text-primary);
   border-radius: 4px;
   text-align: center;
 }
@@ -120,7 +120,7 @@
 .total-exp {
   font-size: 1.2em;
   font-weight: bold;
-  color: #4a5568;
+  color: var(--text-primary);
   margin-top: 10px;
   text-align: center;
 }
@@ -129,7 +129,7 @@
   border: 1px solid #eee;
   border-radius: 8px;
   padding: 10px;
-  background: #fffcf9;
+  background: var(--card-background);
   display: flex;
   flex-direction: column;
 }
@@ -161,7 +161,7 @@
 .exp-value {
   font-size: 0.9em;
   font-weight: bold;
-  color: #666;
+  color: var(--text-primary);
 }
 
 .gift-exp-info {
@@ -174,9 +174,14 @@
 .gift-input {
   width: 80px;
   padding: 6px;
-  border: 1px solid #ddd;
+  background-color: var(--input-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   border-radius: 4px;
   text-align: center;
+}
+.gift-input::placeholder {
+  color: var(--input-placeholder);
 }
 
 .bond-info {
@@ -188,7 +193,7 @@
 
 .exp-info {
   font-size: 0.8em;
-  color: #666;
+  color: var(--text-primary);
   text-align: center;
 }
 

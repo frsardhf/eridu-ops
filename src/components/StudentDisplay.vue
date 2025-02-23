@@ -3,13 +3,14 @@ import { ref, onMounted, computed } from 'vue'
 import StudentModal from './StudentModal.vue'
 import '../styles/studentDisplay.css'
 
-const studentData = ref([])
-const giftData = ref([])
-const filteredGift = ref([])
-const genericGiftTags = ["BC", "Bc", "ew"]
+const studentData = ref([]);
+const giftData = ref([]);
+const filteredGift = ref([]);
+const genericGiftTags = ["BC", "Bc", "ew"];
 const selectedStudent = ref(null);
 const isModalVisible = ref(false); 
-const searchQuery = ref('')
+const searchQuery = ref('');
+const isDarkMode = ref(false);
 
 // Add computed property for filtered students
 const filteredStudents = computed(() => {
@@ -76,6 +77,14 @@ function closeModal() {
   selectedStudent.value = null;
 }
 
+function toggleTheme() {
+  console.log("button clicked", isDarkMode.value)
+  document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
+  const savedTheme = localStorage.getItem('theme')
+  console.log("current theme is", savedTheme)
+}
+
 const fetchData = async (type) => {
   try {
     const url = `https://schaledb.com/data/en/${type}.json`
@@ -98,6 +107,9 @@ onMounted(async () => {
   studentData.value = await fetchData('students')
   giftData.value = await fetchData('items')
   filteredGift.value = getGiftsByStudent(studentData.value, giftData.value)
+
+  const savedTheme = localStorage.getItem('theme')
+  console.log("current theme is", savedTheme)
 })
 </script>
 
@@ -124,6 +136,19 @@ onMounted(async () => {
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
             </div>
+          </div>
+
+          <div class="theme-toggle">
+            <label class="switch" for="theme-toggle">
+              <input 
+                id="theme-toggle"
+                type="checkbox" 
+                v-model="isDarkMode" 
+                @change="toggleTheme"
+                aria-label="Toggle dark mode"
+              >
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
       </div>
