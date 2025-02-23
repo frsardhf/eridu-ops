@@ -78,11 +78,9 @@ function closeModal() {
 }
 
 function toggleTheme() {
-  console.log("button clicked", isDarkMode.value)
   document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
   localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
   const savedTheme = localStorage.getItem('theme')
-  console.log("current theme is", savedTheme)
 }
 
 const fetchData = async (type) => {
@@ -107,9 +105,6 @@ onMounted(async () => {
   studentData.value = await fetchData('students')
   giftData.value = await fetchData('items')
   filteredGift.value = getGiftsByStudent(studentData.value, giftData.value)
-
-  const savedTheme = localStorage.getItem('theme')
-  console.log("current theme is", savedTheme)
 })
 </script>
 
