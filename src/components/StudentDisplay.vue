@@ -169,7 +169,7 @@ async function fetchData(type) {
     }
     
     const data = await response.json();
-    return type === 'items' ? data : data;
+    return data;
   } catch (error) {
     console.error(`Error fetching ${type} data:`, error);
     return {};
@@ -186,6 +186,8 @@ async function initializeData() {
   favoredGift.value = getGiftsByStudent(studentData.value, giftData.value);
   giftBoxData.value = getGiftBoxesByStudent(studentData.value, giftBoxes);
   
+  console.log(favoredGift.value)
+
   // Initialize theme from local storage
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme) {

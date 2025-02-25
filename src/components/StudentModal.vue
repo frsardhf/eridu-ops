@@ -20,6 +20,8 @@ const emit = defineEmits(['close']);
 const giftFormData = ref({});
 const boxFormData = ref({});
 const currentBond = ref(1);
+const convertBox = ref(false);
+const originalBoxQuantity = ref(0);
 const bondXpTable = bondData.bond_xp;
 
 // Reset form data when student changes
@@ -115,6 +117,74 @@ const handleBondInput = (event) => {
   }
 };
 
+const convertBoxes = () => {
+  if (!props.student?.Boxes || props.student.Boxes.length === 0) {
+    return; // Exit early if no boxes
+  }
+  
+  const boxQuantity = parseInt(boxFormData.value[0]) || 0;
+  
+  if (convertBox.value) {
+    // Save original quantity when first checked
+    if (originalBoxQuantity.value === 0) {
+      originalBoxQuantity.value = boxQuantity;
+    }
+    
+    if (boxQuantity > 0) {
+      applyBoxConversion(boxQuantity);
+    }
+  } else {
+    // Restore original values when unchecked
+    restoreOriginalBoxValues();
+  }
+};
+
+// Function to apply box conversion
+const applyBoxConversion = (boxQuantity) => {
+  // Find the gift with highest exp with "SR" rarity
+  const highestExpGift = findHighestExpSrGift();
+  
+  if (highestExpGift) {
+    // Halve the box quantity
+    const halvedQuantity = Math.floor(boxQuantity / 2);
+    boxFormData.value[0] = halvedQuantity;
+    
+    // Update the box exp and grade
+    props.student.Boxes[0].exp = highestExpGift.exp;
+    props.student.Boxes[0].grade = highestExpGift.grade;
+  }
+};
+
+// Function to find highest exp SR gift
+const findHighestExpSrGift = () => {
+  if (!props.student?.Gifts) return null;
+  
+  let highestExpGift = null;
+  
+  props.student.Gifts.forEach((gift) => {
+    if (gift.gift.Rarity === "SR" && (!highestExpGift || gift.exp > highestExpGift.exp)) {
+      highestExpGift = gift;
+    }
+  });
+  
+  return highestExpGift;
+};
+
+// Function to restore original box values
+const restoreOriginalBoxValues = () => {
+  // Restore original quantity
+  if (originalBoxQuantity.value > 0) {
+    boxFormData.value[0] = originalBoxQuantity.value;
+  }
+  
+  // Reset to original exp and grade
+  props.student.Boxes[0].exp = 20;
+  props.student.Boxes[0].grade = 1;
+  
+  // Reset original quantity tracking
+  originalBoxQuantity.value = 0;
+};
+
 const closeModal = () => {
   resetFormData();
   emit('close');
@@ -186,6 +256,16 @@ const closeModal = () => {
             <div class="total-exp">
               Total Cumulative EXP: {{ totalCumulativeExp }}
             </div>
+          </div>
+
+          <div class="convert-box-section">
+            <input
+              type="checkbox"
+              v-model="convertBox"
+              @change="convertBoxes"
+              class="convert-input"
+            />
+            <span>Convert Gift Choice Box</span>
           </div>
         </div>
 
@@ -264,13 +344,6 @@ const closeModal = () => {
           </div>
         </div>
       </div>
-
-      <button 
-        @click="closeModal"
-        class="close-button"
-      >
-        Close
-      </button>
     </div>
   </div>
 </template>
