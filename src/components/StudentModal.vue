@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import bondData from '../../src/data/data.json';
 import '../styles/studentModal.css'
 
@@ -16,26 +16,56 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-const formData = ref({});
+// Use separate form data objects for gifts and boxes
+const giftFormData = ref({});
+const boxFormData = ref({});
 const currentBond = ref(1);
 const bondXpTable = bondData.bond_xp;
 
-// Calculate individual gift exp
-function calculateExp(index, value) {
-  if (!value || isNaN(value)) return 0;
-  const totalExp = index.exp * parseInt(value);
-  return totalExp;
+// Reset form data when student changes
+onMounted(() => {
+  resetFormData();
+});
+
+function resetFormData() {
+  giftFormData.value = {};
+  boxFormData.value = {};
 }
 
-// Calculate cumulative exp across all gifts
+// Calculate individual item exp
+function calculateItemExp(item, quantity) {
+  if (!quantity || isNaN(quantity)) return 0;
+  return item.exp * parseInt(quantity);
+}
+
+// Calculate cumulative exp across all gifts and boxes
 const calculateCumulativeExp = () => {
   let total = 0;
-  Object.entries(formData.value).forEach(([giftId, value]) => {
-    if (value && !isNaN(value)) {
-      const giftIndex = props.student.Gifts[giftId];
-      total += calculateExp(giftIndex, value);
-    }
-  });
+  
+  // Calculate exp from regular gifts
+  if (props.student?.Gifts) {
+    Object.entries(giftFormData.value).forEach(([giftId, quantity]) => {
+      if (quantity && !isNaN(quantity)) {
+        const gift = props.student.Gifts[giftId];
+        if (gift) {
+          total += calculateItemExp(gift, quantity);
+        }
+      }
+    });
+  }
+  
+  // Calculate exp from gift boxes
+  if (props.student?.Boxes) {
+    Object.entries(boxFormData.value).forEach(([boxId, quantity]) => {
+      if (quantity && !isNaN(quantity)) {
+        const box = props.student.Boxes[boxId];
+        if (box) {
+          total += calculateItemExp(box, quantity);
+        }
+      }
+    });
+  }
+  
   return total;
 };
 
@@ -69,12 +99,13 @@ const remainingXp = computed(() => {
   return Math.max(0, nextLevelXp - newXp);
 });
 
-const handleInput = (giftId, event) => {
-  formData.value[giftId] = event.target.value;
-  const giftIndex = props.student.Gifts[giftId];
-  const currentGiftExp = calculateExp(giftIndex, formData.value[giftId]);
-  console.log('Current gift exp:', currentGiftExp);
-  console.log('Total cumulative exp:', totalCumulativeExp.value);
+// Separate handlers for gifts and boxes
+const handleGiftInput = (giftId, event) => {
+  giftFormData.value[giftId] = event.target.value;
+};
+
+const handleBoxInput = (boxId, event) => {
+  boxFormData.value[boxId] = event.target.value;
 };
 
 const handleBondInput = (event) => {
@@ -85,6 +116,7 @@ const handleBondInput = (event) => {
 };
 
 const closeModal = () => {
+  resetFormData();
   emit('close');
 };
 </script>
@@ -160,36 +192,75 @@ const closeModal = () => {
         <!-- Right Column - Gifts Grid -->
         <div class="right-column">
           <div class="gifts-grid">
-            <div v-for="(item, index) in student.Gifts" 
-                 :key="index"
-                 class="gift-card">
-              <div class="gift-header">
-                <img 
-                  :src="`https://schaledb.com/images/item/icon/${item.gift.Icon}.webp`"
-                  :alt="item.gift.Name"
-                  class="gift-icon"
-                />
-              </div>
-              <div class="gift-details">
-                <div class="gift-grade">
+            <!-- Regular Gifts Section -->
+            <template v-if="student.Gifts && student.Gifts.length > 0">
+              <div v-for="(item, index) in student.Gifts" 
+                  :key="`gift-${index}`"
+                  class="gift-card">
+                <div class="gift-header">
                   <img 
-                    :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
-                    :alt="item.grade"
-                    class="grade-icon"
+                    :src="`https://schaledb.com/images/item/icon/${item.gift.Icon}.webp`"
+                    :alt="item.gift.Name"
+                    class="gift-icon"
                   />
-                  <span class="exp-value">{{ item.exp }} EXP</span>
                 </div>
-                <div class="gift-exp-info">
-                  <input
-                    type="text"
-                    :value="formData[index]"
-                    @input="(e) => handleInput(index, e)"
-                    class="gift-input"
-                    :placeholder="'Amount'"
-                  />
+                <div class="gift-details">
+                  <div class="gift-grade">
+                    <img 
+                      :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
+                      :alt="item.grade"
+                      class="grade-icon"
+                    />
+                    <span class="exp-value">{{ item.exp }} EXP</span>
+                  </div>
+                  <div class="gift-exp-info">
+                    <input
+                      type="number"
+                      :value="giftFormData[index]"
+                      @input="(e) => handleGiftInput(index, e)"
+                      class="gift-input"
+                      min="0"
+                      placeholder="Amount"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
+            
+            <!-- Gift Boxes Section -->
+            <template v-if="student.Boxes && student.Boxes.length > 0">
+              <div v-for="(item, index) in student.Boxes" 
+                  :key="`box-${index}`"
+                  class="gift-card box-card">
+                <div class="gift-header">
+                  <img 
+                    :src="`https://schaledb.com/images/item/full/${item.gift.Icon}.webp`"
+                    :alt="item.gift.Name"
+                    class="gift-icon"
+                  />
+                </div>
+                <div class="gift-details">
+                  <div class="gift-grade">
+                    <img 
+                      :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
+                      :alt="item.grade"
+                      class="grade-icon"
+                    />
+                    <span class="exp-value">{{ item.exp }} EXP</span>
+                  </div>
+                  <div class="gift-exp-info">
+                    <input
+                      type="number"
+                      :value="boxFormData[index]"
+                      @input="(e) => handleBoxInput(index, e)"
+                      class="gift-input"
+                      min="0"
+                      placeholder="Amount"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
