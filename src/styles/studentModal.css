@@ -196,6 +196,23 @@
   color: var(--input-placeholder);
 }
 
+.placeholder-div {
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+}
+
+.invisible-placeholder {
+  height: 36px;
+  width: 100%;
+  display: flex;           
+  align-items: center;     
+  justify-content: center; 
+  font-size: 0.9em;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
 .bond-info {
   display: flex;
   flex-direction: column;
@@ -215,7 +232,7 @@
   }
 
   .modal-content {
-    width: 60%;
+    width: 90%;
   }
   
   .left-column {

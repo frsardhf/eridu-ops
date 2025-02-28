@@ -16,12 +16,12 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-// Use separate form data objects for gifts and boxes
 const giftFormData = ref({});
 const boxFormData = ref({});
 const currentBond = ref(1);
 const convertBox = ref(false);
-const originalBoxQuantity = ref(0);
+const originalYellowStoneQuantity = ref(0);
+const originalSrGiftQuantity = ref(0);
 const bondXpTable = bondData.bond_xp;
 
 // Reset form data when student changes
@@ -119,19 +119,22 @@ const handleBondInput = (event) => {
 
 const convertBoxes = () => {
   if (!props.student?.Boxes || props.student.Boxes.length === 0) {
-    return; // Exit early if no boxes
+    return; // Exit early
   }
   
-  const boxQuantity = parseInt(boxFormData.value[0]) || 0;
+  const yellowStoneQuantity = parseInt(boxFormData.value[0]) || 0;
+  const srGiftMaterialQuantity = parseInt(boxFormData.value[1]) || 0;
+
+  console.log(props.student.Boxes[0])
   
   if (convertBox.value) {
-    // Save original quantity when first checked
-    if (originalBoxQuantity.value === 0) {
-      originalBoxQuantity.value = boxQuantity;
+    if (originalSrGiftQuantity.value === 0) {
+    originalYellowStoneQuantity.value = yellowStoneQuantity;
+    originalSrGiftQuantity.value = srGiftMaterialQuantity;
     }
     
-    if (boxQuantity > 0) {
-      applyBoxConversion(boxQuantity);
+    if (srGiftMaterialQuantity > 0 && yellowStoneQuantity > 0) {
+      applyBoxConversion(srGiftMaterialQuantity, yellowStoneQuantity);
     }
   } else {
     // Restore original values when unchecked
@@ -140,18 +143,24 @@ const convertBoxes = () => {
 };
 
 // Function to apply box conversion
-const applyBoxConversion = (boxQuantity) => {
+const applyBoxConversion = (materialQuantity, stoneQuantity) => {
   // Find the gift with highest exp with "SR" rarity
   const highestExpGift = findHighestExpSrGift();
   
   if (highestExpGift) {
     // Halve the box quantity
-    const halvedQuantity = Math.floor(boxQuantity / 2);
-    boxFormData.value[0] = halvedQuantity;
+    const convertedQuantity = stoneQuantity;
+    const leftoverQuantity = materialQuantity - (convertedQuantity * 2);
+    boxFormData.value[0] = leftoverQuantity;
+    boxFormData.value[1] = convertedQuantity;
     
     // Update the box exp and grade
-    props.student.Boxes[0].exp = highestExpGift.exp;
-    props.student.Boxes[0].grade = highestExpGift.grade;
+    props.student.Boxes[0].exp = 20;
+    props.student.Boxes[0].grade = 1;
+    props.student.Boxes[0].gift.Icon = "item_icon_favor_random";
+    props.student.Boxes[1].exp = highestExpGift.exp;
+    props.student.Boxes[1].grade = highestExpGift.grade;
+    props.student.Boxes[1].gift.Icon = "item_icon_favor_selection";
   }
 };
 
@@ -173,16 +182,22 @@ const findHighestExpSrGift = () => {
 // Function to restore original box values
 const restoreOriginalBoxValues = () => {
   // Restore original quantity
-  if (originalBoxQuantity.value > 0) {
-    boxFormData.value[0] = originalBoxQuantity.value;
+  if (originalSrGiftQuantity.value > 0) {
+    boxFormData.value[0] = originalYellowStoneQuantity.value;
+    boxFormData.value[1] = originalSrGiftQuantity.value;
   }
   
-  // Reset to original exp and grade
-  props.student.Boxes[0].exp = 20;
-  props.student.Boxes[0].grade = 1;
+  // Reset to original exp, grade, and icon
+  props.student.Boxes[0].exp = 0;
+  props.student.Boxes[0].grade = 0;
+  props.student.Boxes[0].gift.Icon = "item_icon_shiftingcraftitem_2";
+  props.student.Boxes[1].exp = 20;
+  props.student.Boxes[1].grade = 1;
+  props.student.Boxes[1].gift.Icon = "item_icon_favor_random";
   
   // Reset original quantity tracking
-  originalBoxQuantity.value = 0;
+  originalYellowStoneQuantity.value = 0;
+  originalSrGiftQuantity.value = 0;
 };
 
 const closeModal = () => {
@@ -320,13 +335,18 @@ const closeModal = () => {
                   />
                 </div>
                 <div class="gift-details">
-                  <div class="gift-grade">
+                  <div class="gift-grade" v-if="convertBox || index !== 0">
                     <img 
                       :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
                       :alt="item.grade"
                       class="grade-icon"
                     />
                     <span class="exp-value">{{ item.exp }} EXP</span>
+                  </div>
+                  <div class="gift-grade placeholder-div" v-else>
+                    <div class="invisible-placeholder">
+                      <span>Keystone</span>
+                    </div>
                   </div>
                   <div class="gift-exp-info">
                     <input
@@ -336,6 +356,7 @@ const closeModal = () => {
                       class="gift-input"
                       min="0"
                       placeholder="Amount"
+                      :disabled="convertBox"
                     />
                   </div>
                 </div>

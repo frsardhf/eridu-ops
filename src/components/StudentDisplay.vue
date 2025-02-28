@@ -15,7 +15,7 @@ const isDarkMode = ref(false);
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew"];
-const GIFT_BOX_IDS = ['100008', '100009'];
+const GIFT_BOX_IDS = ['82', '100000', '100009'];
 const GIFT_BOX_EXP_VALUES = {
   'SR': 20,
   'SSR': 120
@@ -44,7 +44,7 @@ function filterByCategory(items, category) {
   return filteredItems;
 }
 
-function calculateGiftExp(item, tags, favorGrade) {
+function calculateGiftExp(item, tags) {
   return item.ExpValue * (1 + Math.min(tags.length, 3));
 }
 
@@ -63,7 +63,7 @@ function getGiftsByStudent(students, items) {
       const genericTagCount = item.Tags.filter(tag => GENERIC_GIFT_TAGS.includes(tag)).length;
       const commonTags = item.Tags.filter(tag => allTags.includes(tag));
       const favorGrade = Math.min(commonTags.length, 3);
-      const expValue = calculateGiftExp(item, commonTags, favorGrade);
+      const expValue = calculateGiftExp(item, commonTags);
       
       if (favorGrade - genericTagCount > 0) {
         studentGifts.push({
@@ -88,12 +88,17 @@ function getGiftBoxesByStudent(students, items) {
     
     for (const itemId in items) {
       const item = items[itemId];
-      const expValue = GIFT_BOX_EXP_VALUES[item.Rarity] || 0;
+      let expValue = 0;
+      let grade = 0;
+      if (item.Category == 'Consumable') {
+        expValue = GIFT_BOX_EXP_VALUES[item.Rarity] || 0;
+        grade = 1;
+      }
       
       studentGifts.push({
         gift: item,
         exp: expValue,
-        grade: 1  // Base grade
+        grade: grade  // Base grade
       });
     }
     
@@ -186,8 +191,6 @@ async function initializeData() {
   favoredGift.value = getGiftsByStudent(studentData.value, giftData.value);
   giftBoxData.value = getGiftBoxesByStudent(studentData.value, giftBoxes);
   
-  console.log(favoredGift.value)
-
   // Initialize theme from local storage
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme) {
