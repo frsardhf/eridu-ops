@@ -146,8 +146,11 @@ const applyBoxConversion = (materialQuantity, stoneQuantity) => {
   const highestExpGift = findHighestExpSrGift();
   
   if (highestExpGift) {
-    // Halve the box quantity
-    const convertedQuantity = stoneQuantity;
+    // Calculate how many boxes can be converted based on available materials
+    // Each conversion requires 2 materials
+    const maxConvertible = Math.floor(materialQuantity / 2);
+    // Use the minimum of stone quantity and what materials allow
+    const convertedQuantity = Math.min(stoneQuantity, maxConvertible);
     const leftoverQuantity = materialQuantity - (convertedQuantity * 2);
     boxFormData.value[0] = leftoverQuantity;
     boxFormData.value[1] = convertedQuantity;
@@ -197,6 +200,20 @@ const restoreOriginalBoxValues = () => {
   originalYellowStoneQuantity.value = 0;
   originalSrGiftQuantity.value = 0;
 };
+
+const shouldShowGiftGrade = computed(() => {
+  return (index) => {
+    return (
+      // Index 0: Keystone, Index 1: SR Gifts, Index 2: SSR Gifts
+      // When checkbox is unchecked AND not keystone
+      (!convertBox.value && index !== 0) || 
+      // When checkbox is checked AND it's keystone AND both inputs have values
+      (convertBox.value && index === 0 && boxFormData.value[0] > 0 && boxFormData.value[1] > 0) ||
+      // When checkbox is checked AND it's not keystone AND its input has value
+      (convertBox.value && index > 0 && boxFormData.value[index] > 0)
+    );
+  };
+});
 
 const closeModal = () => {
   resetFormData();
@@ -333,7 +350,7 @@ const closeModal = () => {
                   />
                 </div>
                 <div class="gift-details">
-                  <div class="gift-grade" v-if="convertBox || index !== 0">
+                  <div class="gift-grade" v-if="shouldShowGiftGrade(index)">
                     <img 
                       :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
                       :alt="item.grade"
@@ -343,7 +360,6 @@ const closeModal = () => {
                   </div>
                   <div class="gift-grade placeholder-div" v-else>
                     <div class="invisible-placeholder">
-                      <span>Keystone</span>
                     </div>
                   </div>
                   <div class="gift-exp-info">
