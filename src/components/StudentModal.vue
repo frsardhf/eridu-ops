@@ -125,8 +125,6 @@ const convertBoxes = () => {
   const yellowStoneQuantity = parseInt(boxFormData.value[0]) || 0;
   const srGiftMaterialQuantity = parseInt(boxFormData.value[1]) || 0;
 
-  console.log(props.student.Boxes[0])
-  
   if (convertBox.value) {
     if (originalSrGiftQuantity.value === 0) {
     originalYellowStoneQuantity.value = yellowStoneQuantity;

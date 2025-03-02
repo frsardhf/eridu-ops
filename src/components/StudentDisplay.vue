@@ -64,8 +64,11 @@ function getGiftsByStudent(students, items) {
       const commonTags = item.Tags.filter(tag => allTags.includes(tag));
       const favorGrade = Math.min(commonTags.length, 3);
       const expValue = calculateGiftExp(item, commonTags);
-      
-      if (favorGrade - genericTagCount > 0) {
+
+      const shouldGiftItem = (favorGrade - genericTagCount > 0) || 
+                             (favorGrade >= 2 && item.Tags.length <= 3);
+
+      if (shouldGiftItem) {
         studentGifts.push({
           gift: item,
           exp: expValue,
@@ -73,10 +76,8 @@ function getGiftsByStudent(students, items) {
         });
       }
     }
-    
     result[studentId] = studentGifts;
   }
-  
   return result;
 }
 
@@ -187,7 +188,7 @@ async function initializeData() {
   const allItems = await fetchData('items');
   giftData.value = filterByCategory(allItems, 'Favor');
   const giftBoxes = await fetchGiftBoxes();
-  
+
   favoredGift.value = getGiftsByStudent(studentData.value, giftData.value);
   giftBoxData.value = getGiftBoxesByStudent(studentData.value, giftBoxes);
   
