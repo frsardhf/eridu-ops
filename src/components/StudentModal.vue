@@ -156,9 +156,11 @@ const applyBoxConversion = (materialQuantity, stoneQuantity) => {
     boxFormData.value[1] = convertedQuantity;
     
     // Update the box exp and grade
+    props.student.Boxes[0].name = "SR Gifts";
     props.student.Boxes[0].exp = 20;
     props.student.Boxes[0].grade = 1;
     props.student.Boxes[0].gift.Icon = "item_icon_favor_random";
+    props.student.Boxes[1].name = "Selector SR Gifts";
     props.student.Boxes[1].exp = highestExpGift.exp;
     props.student.Boxes[1].grade = highestExpGift.grade;
     props.student.Boxes[1].gift.Icon = "item_icon_favor_selection";
@@ -189,9 +191,11 @@ const restoreOriginalBoxValues = () => {
   }
   
   // Reset to original exp, grade, and icon
+  props.student.Boxes[0].name = "Advanced Fusion Keystone";
   props.student.Boxes[0].exp = 0;
   props.student.Boxes[0].grade = 0;
   props.student.Boxes[0].gift.Icon = "item_icon_shiftingcraftitem_2";
+  props.student.Boxes[1].name = "SR Gifts";
   props.student.Boxes[1].exp = 20;
   props.student.Boxes[1].grade = 1;
   props.student.Boxes[1].gift.Icon = "item_icon_favor_random";
@@ -360,6 +364,7 @@ const closeModal = () => {
                   </div>
                   <div class="gift-grade placeholder-div" v-else>
                     <div class="invisible-placeholder">
+                      <span class="gift-name">{{ item.name }}</span>
                     </div>
                   </div>
                   <div class="gift-exp-info">

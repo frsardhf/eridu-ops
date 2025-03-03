@@ -177,6 +177,13 @@
   color: var(--text-primary);
 }
 
+.gift-name {
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+  color: var(--text-primary);
+}
+
 .gift-exp-info {
   display: flex;
   flex-direction: column;

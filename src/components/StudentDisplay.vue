@@ -16,6 +16,7 @@ const isDarkMode = ref(false);
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew"];
 const GIFT_BOX_IDS = ['82', '100000', '100009'];
+const GIFT_BOX_NAMES = ['Advanced Fusion Keystone', 'SR Gifts', 'SSR Gifts'];
 const GIFT_BOX_EXP_VALUES = {
   'SR': 20,
   'SSR': 120
@@ -89,15 +90,23 @@ function getGiftBoxesByStudent(students, items) {
     
     for (const itemId in items) {
       const item = items[itemId];
+      let nameIndex = 0; 
       let expValue = 0;
       let grade = 0;
+      
       if (item.Category == 'Consumable') {
+        if (item.Rarity === 'SR') {
+          nameIndex = 1;
+        } else {
+          nameIndex = 2;
+        }
         expValue = GIFT_BOX_EXP_VALUES[item.Rarity] || 0;
         grade = 1;
       }
       
       studentGifts.push({
         gift: item,
+        name: GIFT_BOX_NAMES[nameIndex],
         exp: expValue,
         grade: grade  // Base grade
       });
@@ -132,12 +141,6 @@ function toggleTheme() {
   const theme = isDarkMode.value ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
-}
-
-// API functions
-async function fetchItemsByCategory(category) {
-  const items = await fetchData('items');
-  return filterByCategory(items, category);
 }
 
 async function fetchGiftBoxes() {
