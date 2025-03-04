@@ -219,6 +219,7 @@ onMounted(initializeData);
           <div class="search-section">
             <div class="search-container">
               <input
+                id="search-input"
                 v-model="searchQuery"
                 type="text"
                 class="search-input"

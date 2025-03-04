@@ -145,26 +145,33 @@ const applyBoxConversion = (materialQuantity, stoneQuantity) => {
   // Find the gift with highest exp with "SR" rarity
   const highestExpGift = findHighestExpSrGift();
   
+  // Calculate how many boxes can be converted based on available materials
+  // Each conversion requires 2 materials
+  const maxConvertible = Math.floor(materialQuantity / 2);
+  // Use the minimum of stone quantity and what materials allow
+  const convertedQuantity = Math.min(stoneQuantity, maxConvertible);
+  const leftoverQuantity = materialQuantity - (convertedQuantity * 2);
+  
+  boxFormData.value[0] = leftoverQuantity;
+  boxFormData.value[1] = convertedQuantity;
+  
+  // Update the box exp and grade
+  props.student.Boxes[0].name = "SR Gifts";
+  props.student.Boxes[0].exp = 20;
+  props.student.Boxes[0].grade = 1;
+  props.student.Boxes[0].gift.Icon = "item_icon_favor_random";
+  props.student.Boxes[1].name = "Selector SR Gifts";
+  
   if (highestExpGift) {
-    // Calculate how many boxes can be converted based on available materials
-    // Each conversion requires 2 materials
-    const maxConvertible = Math.floor(materialQuantity / 2);
-    // Use the minimum of stone quantity and what materials allow
-    const convertedQuantity = Math.min(stoneQuantity, maxConvertible);
-    const leftoverQuantity = materialQuantity - (convertedQuantity * 2);
-    boxFormData.value[0] = leftoverQuantity;
-    boxFormData.value[1] = convertedQuantity;
-    
-    // Update the box exp and grade
-    props.student.Boxes[0].name = "SR Gifts";
-    props.student.Boxes[0].exp = 20;
-    props.student.Boxes[0].grade = 1;
-    props.student.Boxes[0].gift.Icon = "item_icon_favor_random";
-    props.student.Boxes[1].name = "Selector SR Gifts";
+    // If student has favorite gifts, use the highest exp one
     props.student.Boxes[1].exp = highestExpGift.exp;
     props.student.Boxes[1].grade = highestExpGift.grade;
-    props.student.Boxes[1].gift.Icon = "item_icon_favor_selection";
+  } else {
+    // For collab students with no favorite gifts, use default values
+    props.student.Boxes[1].exp = 20; // Default to standard SR gift exp
+    props.student.Boxes[1].grade = 1; // Default grade
   }
+  props.student.Boxes[1].gift.Icon = "item_icon_favor_selection";
 };
 
 // Function to find highest exp SR gift
@@ -207,6 +214,8 @@ const restoreOriginalBoxValues = () => {
 
 const shouldShowGiftGrade = computed(() => {
   return (index) => {
+    // Special case for collab students (without favorite gifts)
+    const isCollabStudent = !props.student.Gifts || props.student.Gifts.length === 4;
     return (
       // Index 0: Keystone, Index 1: SR Gifts, Index 2: SSR Gifts
       // When checkbox is unchecked AND not keystone
@@ -214,13 +223,16 @@ const shouldShowGiftGrade = computed(() => {
       // When checkbox is checked AND it's keystone AND both inputs have values
       (convertBox.value && index === 0 && boxFormData.value[0] > 0 && boxFormData.value[1] > 0) ||
       // When checkbox is checked AND it's not keystone AND its input has value
-      (convertBox.value && index > 0 && boxFormData.value[index] > 0)
+      (convertBox.value && index > 0 && boxFormData.value[index] > 0) ||
+      // Special case for collab students - always show grade for SR gifts when converted
+      (isCollabStudent && convertBox.value && index > 0)
     );
   };
 });
 
 const closeModal = () => {
   resetFormData();
+  restoreOriginalBoxValues();
   emit('close');
 };
 </script>
@@ -278,6 +290,7 @@ const closeModal = () => {
             </div>
             <div>
               <input
+                id="bond-input"
                 type="number"
                 :value="currentBond"
                 @input="handleBondInput"
@@ -294,6 +307,7 @@ const closeModal = () => {
 
           <div class="convert-box-section">
             <input
+              id="convert-input"
               type="checkbox"
               v-model="convertBox"
               @change="convertBoxes"
@@ -329,6 +343,7 @@ const closeModal = () => {
                   </div>
                   <div class="gift-exp-info">
                     <input
+                      :id="`gift-input-${index}`"
                       type="number"
                       :value="giftFormData[index]"
                       @input="(e) => handleGiftInput(index, e)"
@@ -369,6 +384,7 @@ const closeModal = () => {
                   </div>
                   <div class="gift-exp-info">
                     <input
+                      :id="`box-input-${index}`"
                       type="number"
                       :value="boxFormData[index]"
                       @input="(e) => handleBoxInput(index, e)"
