@@ -130,6 +130,10 @@ function openModal(student) {
     Boxes: giftBoxData.value[student.Id]
   };
   isModalVisible.value = true;
+  console.log(selectedStudent.value)
+  setTimeout(() => {
+    console.log("Modal should be loaded now");
+  }, 0);
 }
 
 function closeModal() {
