@@ -84,6 +84,7 @@ function saveToLocalStorage() {
 function loadFromLocalStorage() {
   if (!props.student) return;
   
+  const storageKey = `student-${props.student.Id}-data`;
   try {
     const savedData = localStorage.getItem(storageKey);
     
@@ -211,6 +212,10 @@ const remainingXp = computed(() => {
   
   return Math.max(0, nextLevelXp - newXp);
 });
+
+function getFontSizeClass(name) {
+  return name.length <= 15 ? 'text-xl' : 'text-normal';
+}
 
 const removeLeadingZeros = (event) => {
   event.target.value = event.target.value.replace(/^0+(?=\d)/, '');
@@ -351,7 +356,11 @@ const closeModal = () => {
               :alt="student.Name"
               class="student-image"
             />
-            <h2 class="student-name text-xl font-bold">{{ student.Name }}</h2>
+            <h2 
+              class="student-name text-xl font-bold" 
+              :class="getFontSizeClass(student.Name)">
+              {{ student.Name }}
+            </h2>
           </div>
 
           <!-- Bond Section -->
