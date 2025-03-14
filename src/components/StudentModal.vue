@@ -27,18 +27,15 @@ const bondXpTable = bondData.bond_xp;
 // Watch for changes to isVisible to load data when modal opens
 watch(() => props.isVisible, (newValue) => {
   if (newValue && props.student) {
-    // Add a small delay to ensure the student prop is fully reactive
     setTimeout(() => {
-      console.log("Loading data for student:", props.student.Id);
       loadFromLocalStorage();
     }, 50);
   }
-}, { immediate: true }); // Add immediate: true to run this when component mounts
+}, { immediate: true });
 
 // Watch for changes to the student prop to reset form when student changes
 watch(() => props.student, (newValue) => {
   if (newValue) {
-    // Reset and load appropriate data when student changes
     resetFormData();
     if (props.isVisible) {
       loadFromLocalStorage();
@@ -76,7 +73,6 @@ function saveToLocalStorage() {
     originalYellowStoneQuantity: originalYellowStoneQuantity.value,
     originalSrGiftQuantity: originalSrGiftQuantity.value
   };
-  console.log("saving to local storage")
   try {
     localStorage.setItem(storageKey, JSON.stringify(dataToSave));
   } catch (error) {
@@ -86,14 +82,10 @@ function saveToLocalStorage() {
 
 // Load form data from localStorage
 function loadFromLocalStorage() {
-  console.log("Loading data for student:", props.student?.Id);
   if (!props.student) return;
   
-  const storageKey = `student-${props.student.Id}-data`;
-  console.log("Looking for storage key:", storageKey);
   try {
     const savedData = localStorage.getItem(storageKey);
-    console.log("Found saved data:", savedData);
     
     if (savedData) {
       const parsedData = JSON.parse(savedData);
@@ -112,17 +104,13 @@ function loadFromLocalStorage() {
       if (wasConverted !== convertBox.value) {
         convertBox.value = wasConverted;
         if (wasConverted) {
-        // Apply box modifications without altering quantities again
         applyBoxProperties();
         } else {
-          // Ensure box properties are reset when not converted
           resetBoxProperties();
         }
         }
-      console.log("Loaded data successfully");
     }
   } catch (error) {
-    console.error('Error loading from localStorage:', error);
     resetFormData();
   }
 }
@@ -224,16 +212,22 @@ const remainingXp = computed(() => {
   return Math.max(0, nextLevelXp - newXp);
 });
 
-// Separate handlers for gifts and boxes
+const removeLeadingZeros = (event) => {
+  event.target.value = event.target.value.replace(/^0+(?=\d)/, '');
+};
+
 const handleGiftInput = (giftId, event) => {
+  removeLeadingZeros(event);
   giftFormData.value[giftId] = event.target.value;
 };
 
 const handleBoxInput = (boxId, event) => {
+  removeLeadingZeros(event);
   boxFormData.value[boxId] = event.target.value;
 };
 
 const handleBondInput = (event) => {
+  removeLeadingZeros(event);
   const value = parseInt(event.target.value);
   if (!isNaN(value) && value >= 1 && value <= 100) {
     currentBond.value = value;
@@ -276,7 +270,6 @@ const convertBoxes = () => {
 
 // Function to apply box conversion
 const applyBoxConversion = (materialQuantity, stoneQuantity) => {
-  // Find the gift with highest exp with "SR" rarity
   const highestExpGift = findHighestExpSrGift();
   
   // Calculate how many boxes can be converted based on available materials
@@ -329,13 +322,9 @@ const shouldShowGiftGrade = computed(() => {
     const isCollabStudent = !props.student.Gifts || props.student.Gifts.length === 4;
     return (
       // Index 0: Keystone, Index 1: SR Gifts, Index 2: SSR Gifts
-      // When checkbox is unchecked AND not keystone
       (!convertBox.value && index !== 0) || 
-      // When checkbox is checked AND it's keystone AND both inputs have values
       (convertBox.value && index === 0 && boxFormData.value[0] > 0 && boxFormData.value[1] > 0) ||
-      // When checkbox is checked AND it's not keystone AND its input has value
       (convertBox.value && index > 0 && boxFormData.value[index] > 0) ||
-      // Special case for collab students - always show grade for SR gifts when converted
       (isCollabStudent && convertBox.value && index > 0)
     );
   };
@@ -351,9 +340,6 @@ const closeModal = () => {
 <template>
   <div v-if="isVisible" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="text-xl font-bold">{{ student.Name }}</h2>
-      </div>
       
       <div class="modal-grid">
         <!-- Left Column -->
@@ -365,6 +351,7 @@ const closeModal = () => {
               :alt="student.Name"
               class="student-image"
             />
+            <h2 class="student-name text-xl font-bold">{{ student.Name }}</h2>
           </div>
 
           <!-- Bond Section -->
@@ -408,11 +395,10 @@ const closeModal = () => {
                 class="bond-input"
                 min="1"
                 max="100"
-                placeholder="Current Bond"
               />
             </div>
             <div class="total-exp">
-              Total Cumulative EXP: {{ totalCumulativeExp }}
+              Total EXP: {{ totalCumulativeExp }}
             </div>
           </div>
 

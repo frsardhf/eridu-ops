@@ -29,30 +29,54 @@
 
 .modal-grid {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 225px 1fr;
   gap: 20px;
 }
 
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
+}
+
+.right-column {
+  overflow-y: auto;
+  gap: 5px;
 }
 
 .student-section {
   background: var(--card-background);
   border-radius: 8px;
-  padding: 15px;
   border: 1px solid var(--border-color);
+  align-self: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .student-image {
   width: 100%;
   height: auto;
+  display: block;
   border-radius: 8px;
 }
 
+.student-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card-label-background-transparent);
+  color: var(--text-primary);
+  height: 15%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 10px;
+}
+
 .bond-section {
+  align-self: center;
   background: var(--card-background);
   border-radius: 8px;
   padding: 15px;
@@ -60,12 +84,11 @@
 }
 
 .convert-box-section {
+  align-self: center;
   background: var(--card-background);
   border-radius: 8px;
   padding: 15px;
   border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 
@@ -74,14 +97,13 @@
   grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
   gap: 15px;
   height: auto;
-  overflow-y: auto;
 }
 
 .bond-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 0px;
   margin-bottom: 15px;
 }
 
@@ -124,6 +146,8 @@
   border: 1px solid var(--text-primary);
   border-radius: 4px;
   text-align: center;
+  display: block;
+  margin: 0 auto;
 }
 
 .convert-input {
@@ -131,11 +155,16 @@
 }
 
 .total-exp {
-  font-size: 1.2em;
+  font-size: 1.1em;
   font-weight: bold;
   color: var(--text-primary);
-  margin-top: 10px;
+  margin-top: 15px;
   text-align: center;
+  background: var(--background-primary);
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .gift-card {
@@ -240,9 +269,5 @@
 
   .modal-content {
     width: 90%;
-  }
-  
-  .left-column {
-    max-width: 100%;
   }
 }
