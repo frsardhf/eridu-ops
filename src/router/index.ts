@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import StudentDisplay from '../components/StudentDisplay.vue';
+import StudentDisplay from '../components/students/StudentDisplay.vue';
 
 
 const routes = [

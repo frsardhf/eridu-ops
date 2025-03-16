@@ -19,16 +19,16 @@
   --text-secondary: #94a3b8;
   --border-color: #e9ecef;
   --card-background: #fff;
-  --card-label-background: antiquewhite;
-  --card-label-background-transparent: rgba(250, 235, 215, 0.9);
+  --card-label-background: #faebd7;
+  --card-label-background-transparent: #faebd7e6;
   --accent-color: #646cff;
   --accent-hover: #535bf2;
   --input-border: #e2e8f0;
-  --input-background: white;
-  --box-shadow: rgba(0, 0, 0, 0.1);
+  --input-background: #ffffff;
+  --box-shadow: #0000001a;
   --button-background: #f9f9f9;
-  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
-  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.5);
+  --scrollbar-thumb: #00000033;
+  --scrollbar-thumb-hover: #00000080;
 }
 
 /* Base styles */
@@ -44,19 +44,19 @@ body {
   --background-primary: #1a1a1a;
   --header-gradient-start: #1a1f2c;
   --header-gradient-end: #1a2634;
-  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-primary: #ffffffde;
   --text-secondary: #a0aec0;
   --border-color: #2d3748;
   --card-background: #2d3748;
-  --card-label-background: rgb(66, 66, 66);
-  --card-label-background-transparent: rgba(66, 66, 66, 0.9);
+  --card-label-background: #424242;
+  --card-label-background-transparent: #424242e6;
   --input-color: #4a5568;
   --input-placeholder: #ffffff;
   --accent-color: #646cff;
   --accent-hover: #747bff;
   --input-border: #4a5568;
   --input-background: #2d3748;
-  --box-shadow: rgba(0, 0, 0, 0.2);
+  --box-shadow: #00000033;
   --button-background: #1a1a1a;
 }
 

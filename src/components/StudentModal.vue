@@ -229,6 +229,15 @@ const handleGiftInput = (giftId, event) => {
 const handleBoxInput = (boxId, event) => {
   removeLeadingZeros(event);
   boxFormData.value[boxId] = event.target.value;
+
+  // Update original quantities when not in convert mode
+  if (!convertBox.value) {
+    if (boxId === 0) {
+      originalYellowStoneQuantity.value = parseInt(event.target.value) || 0;
+    } else if (boxId === 1) {
+      originalSrGiftQuantity.value = parseInt(event.target.value) || 0;
+    }
+  }
 };
 
 const handleBondInput = (event) => {
