@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import { Student } from '../types/student';
-import { GiftData } from '../types/gift';
+import { StudentProps } from '../types/student';
+import { BoxDataProps, GiftDataProps } from '../types/gift';
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew"];
@@ -13,7 +13,7 @@ const GIFT_BOX_EXP_VALUES = {
 
 export function useStudentData() {
   // State variables
-  const studentData = ref<Record<string, Student>>({});
+  const studentData = ref<{ [key: string]: StudentProps }>({});
   const giftData = ref<Record<string, any>>({});
   const favoredGift = ref<Record<string, any[]>>({});
   const giftBoxData = ref<Record<string, any[]>>({});
@@ -21,14 +21,16 @@ export function useStudentData() {
   const isDarkMode = ref<boolean>(false);
 
   // Computed properties
-  const filteredStudents = computed(() => {
-    if (!searchQuery.value) return studentData.value
-      
-    const query = searchQuery.value.toLowerCase()
-    return Object.values(studentData.value).filter((student: Student) => {
-      return student.Name.toLowerCase().includes(query)
-    })
-  })
+  const filteredStudents = computed<Record<string, StudentProps>>(() => {
+    if (!searchQuery.value) return studentData.value;
+  
+    const query = searchQuery.value.toLowerCase();
+    const filteredArray = Object.values(studentData.value).filter(
+      (student: StudentProps) => student.Name.toLowerCase().includes(query)
+    );
+  
+    return Object.fromEntries(filteredArray.map(student => [student.Id, student]));
+  });
 
   // Utility functions
   function filterByCategory(items, category) {
@@ -47,15 +49,15 @@ export function useStudentData() {
     return item.ExpValue * (1 + Math.min(tags.length, 3));
   }
   
-  function getGiftsByStudent(students, items): Record<string, GiftData[]> {
-    const result: Record<string, GiftData[]> = {};
+  function getGiftsByStudent(students, items): Record<string, GiftDataProps[]> {
+    const result: Record<string, GiftDataProps[]> = {};
     
     for (const studentId in students) {
       const student = students[studentId];
       const uniqueGiftTags = student.FavorItemUniqueTags;
       const rareGiftTags = student.FavorItemTags;
       const allTags = [...uniqueGiftTags, ...rareGiftTags, ...GENERIC_GIFT_TAGS];
-      const studentGifts: GiftData[] = [];
+      const studentGifts: GiftDataProps[] = [];
       
       for (const itemId in items) {
         const item = items[itemId];
@@ -80,11 +82,11 @@ export function useStudentData() {
     return result;
   }
   
-  function getGiftBoxesByStudent(students, items): Record<string, GiftData[]> {
-    const result: Record<string, GiftData[]> = {};
+  function getGiftBoxesByStudent(students, items): Record<string, BoxDataProps[]> {
+    const result: Record<string, BoxDataProps[]> = {};
     
     for (const studentId in students) {
-      const studentGifts: GiftData[] = [];
+      const studentGifts: BoxDataProps[] = [];
       
       for (const itemId in items) {
         const item = items[itemId];

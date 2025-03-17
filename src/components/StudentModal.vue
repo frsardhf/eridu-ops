@@ -1,20 +1,23 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { StudentProps } from '../types/student'
 import bondData from '../../src/data/data.json';
 import '../styles/studentModal.css'
+import { GiftDataProps } from '../types/gift';
 
-const props = defineProps({
-  student: {
-    type: Object,
-    required: true
-  },
-  isVisible: {
-    type: Boolean,
-    default: false
-  }
-});
+const props = defineProps<{
+  student: StudentProps | null,
+  isVisible?: boolean
+}>();
 
-const emit = defineEmits(['close']);
+type EmitFn = (event: 'close') => void;
+const emit = defineEmits<EmitFn>();
+
+function closeModal() {
+  // Save the current state (including conversion state) before closing
+  saveToLocalStorage();
+  emit('close');
+};
 
 const giftFormData = ref({});
 const boxFormData = ref({});
@@ -117,132 +120,131 @@ function loadFromLocalStorage() {
 }
 
 function applyBoxProperties() {
-  // Update the box properties without affecting quantities
-  props.student.Boxes[0].name = "SR Gifts";
-  props.student.Boxes[0].exp = 20;
-  props.student.Boxes[0].grade = 1;
-  props.student.Boxes[0].gift.Icon = "item_icon_favor_random";
-  props.student.Boxes[1].name = "Selector SR Gifts";
-  
+  if (!props.student) return;
+
+  const boxes = props.student.Boxes;
+
+  Object.assign(boxes[0], {
+    name: "SR Gifts",
+    exp: 20,
+    grade: 1,
+    gift: { ...boxes[0].gift, Icon: "item_icon_favor_random" },
+  });
+
   const highestExpGift = findHighestExpSrGift();
-  if (highestExpGift) {
-    props.student.Boxes[1].exp = highestExpGift.exp;
-    props.student.Boxes[1].grade = highestExpGift.grade;
-  } else {
-    props.student.Boxes[1].exp = 20;
-    props.student.Boxes[1].grade = 1;
-  }
-  props.student.Boxes[1].gift.Icon = "item_icon_favor_selection";
+
+  Object.assign(boxes[1], {
+    name: "Selector SR Gifts",
+    exp: highestExpGift?.exp ?? 20,
+    grade: highestExpGift?.grade ?? 1,
+    gift: { ...boxes[1].gift, Icon: "item_icon_favor_selection" },
+  });
 }
+
 
 function resetBoxProperties() {
-  props.student.Boxes[0].name = "Advanced Fusion Keystone";
-  props.student.Boxes[0].exp = 0;
-  props.student.Boxes[0].grade = 0;
-  props.student.Boxes[0].gift.Icon = "item_icon_shiftingcraftitem_2";
-  props.student.Boxes[1].name = "SR Gifts";
-  props.student.Boxes[1].exp = 20;
-  props.student.Boxes[1].grade = 1;
-  props.student.Boxes[1].gift.Icon = "item_icon_favor_random";
+  if (!props.student) return;
+
+  const boxes = props.student.Boxes;
+
+  Object.assign(boxes[0], {
+    name: "Advanced Fusion Keystone",
+    exp: 0,
+    grade: 0,
+    gift: { ...boxes[0].gift, Icon: "item_icon_shiftingcraftitem_2" },
+  });
+
+  Object.assign(boxes[1], {
+    name: "SR Gifts",
+    exp: 20,
+    grade: 1,
+    gift: { ...boxes[1].gift, Icon: "item_icon_favor_random" },
+  });
 }
 
-// Calculate individual item exp
-function calculateItemExp(item, quantity) {
-  if (!quantity || isNaN(quantity)) return 0;
-  return item.exp * parseInt(quantity);
-}
+// Calculate individual item EXP
+const calculateItemExp = (item: { exp: number }, quantity: number) => 
+  isNaN(quantity) || quantity <= 0 ? 0 : item.exp * quantity;
 
-// Calculate cumulative exp across all gifts and boxes
-const calculateCumulativeExp = () => {
-  let total = 0;
-  
-  // Calculate exp from regular gifts
-  if (props.student?.Gifts) {
-    Object.entries(giftFormData.value).forEach(([giftId, quantity]) => {
-      if (quantity && !isNaN(quantity)) {
-        const gift = props.student.Gifts[giftId];
-        if (gift) {
-          total += calculateItemExp(gift, quantity);
-        }
-      }
-    });
-  }
-  
-  // Calculate exp from gift boxes
-  if (props.student?.Boxes) {
-    Object.entries(boxFormData.value).forEach(([boxId, quantity]) => {
-      if (quantity && !isNaN(quantity)) {
-        const box = props.student.Boxes[boxId];
-        if (box) {
-          total += calculateItemExp(box, quantity);
-        }
-      }
-    });
-  }
-  
-  return total;
+// Generic function to calculate EXP from gifts or boxes
+const calculateExpFromItems = (
+  items: Record<string, any> | undefined,
+  formData: Record<string, number>
+) => {
+  if (!items) return 0;
+
+  return Object.entries(formData).reduce((total, [id, quantity]) => {
+    const parsedQuantity = Number(quantity);
+    return total + calculateItemExp(items[id], parsedQuantity);
+  }, 0);
 };
 
-// Computed property for total cumulative exp
-const totalCumulativeExp = computed(() => {
-  return calculateCumulativeExp();
-});
+// Compute total cumulative EXP across gifts and boxes
+const calculateCumulativeExp = () => 
+  calculateExpFromItems(props.student?.Gifts, giftFormData.value) +
+  calculateExpFromItems(props.student?.Boxes, boxFormData.value);
 
-// Compute new bond level based on current bond and cumulative exp
+const totalCumulativeExp = computed(calculateCumulativeExp);
+
+// Compute new bond level based on current bond and cumulative EXP
 const newBondLevel = computed(() => {
   const currentXp = bondXpTable[currentBond.value - 1] || 0;
   const newXp = currentXp + totalCumulativeExp.value;
-  
-  // Find the highest bond level where required XP is less than or equal to newXp
+
+  // Find the highest bond level where required XP is <= newXp
   let newLevel = currentBond.value;
   while (newLevel < bondXpTable.length && bondXpTable[newLevel - 1] <= newXp) {
     newLevel++;
   }
-  
+
   return Math.min(newLevel, 100); // Cap at level 100
 });
 
-// Compute remaining XP to next level
+// Compute remaining XP to the next level
 const remainingXp = computed(() => {
   if (newBondLevel.value >= 100) return 0;
-  
+
   const currentXp = bondXpTable[currentBond.value - 1] || 0;
-  const newXp = currentXp + totalCumulativeExp.value;
-  const nextLevelXp = bondXpTable[newBondLevel.value - 1];
-  
-  return Math.max(0, nextLevelXp - newXp);
+  const nextLevelXp = bondXpTable[newBondLevel.value - 1] || 0;
+  const xpNeeded = nextLevelXp - currentXp - totalCumulativeExp.value;
+
+  return Math.max(0, xpNeeded);
 });
 
-function getFontSizeClass(name) {
+function getFontSizeClass(name: string) {
   return name.length <= 15 ? 'text-xl' : 'text-normal';
 }
 
-const removeLeadingZeros = (event) => {
-  event.target.value = event.target.value.replace(/^0+(?=\d)/, '');
+const removeLeadingZeros = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  input.value = input.value.replace(/^0+(?=\d)/, '');
 };
 
-const handleGiftInput = (giftId, event) => {
+const handleGiftInput = (giftId: number, event: Event) => {
   removeLeadingZeros(event);
-  giftFormData.value[giftId] = event.target.value;
+  const input = event.target as HTMLInputElement;
+  giftFormData.value[giftId] = input.value;
 };
 
-const handleBoxInput = (boxId, event) => {
+const handleBoxInput = (boxId: number, event: Event) => {
   removeLeadingZeros(event);
-  boxFormData.value[boxId] = event.target.value;
+  const input = event.target as HTMLInputElement;
+  boxFormData.value[boxId] = input.value;
 
   // Update original quantities when not in convert mode
   if (!convertBox.value) {
     if (boxId === 0) {
-      originalYellowStoneQuantity.value = parseInt(event.target.value) || 0;
+      originalYellowStoneQuantity.value = parseInt(input.value) || 0;
     } else if (boxId === 1) {
-      originalSrGiftQuantity.value = parseInt(event.target.value) || 0;
+      originalSrGiftQuantity.value = parseInt(input.value) || 0;
     }
   }
 };
 
-const handleBondInput = (event) => {
+const handleBondInput = (event: Event) => {
   removeLeadingZeros(event);
-  const value = parseInt(event.target.value);
+  const input = event.target as HTMLInputElement;
+  const value = parseInt(input.value);
   if (!isNaN(value) && value >= 1 && value <= 100) {
     currentBond.value = value;
   }
@@ -283,7 +285,9 @@ const convertBoxes = () => {
 };
 
 // Function to apply box conversion
-const applyBoxConversion = (materialQuantity, stoneQuantity) => {
+const applyBoxConversion = (materialQuantity: number, stoneQuantity: number) => {
+  if (!props.student) return;
+
   const highestExpGift = findHighestExpSrGift();
   
   // Calculate how many boxes can be converted based on available materials
@@ -297,29 +301,28 @@ const applyBoxConversion = (materialQuantity, stoneQuantity) => {
   boxFormData.value[1] = convertedQuantity;
   
   // Update the box exp and grade
-  props.student.Boxes[0].name = "SR Gifts";
-  props.student.Boxes[0].exp = 20;
-  props.student.Boxes[0].grade = 1;
-  props.student.Boxes[0].gift.Icon = "item_icon_favor_random";
-  props.student.Boxes[1].name = "Selector SR Gifts";
+  const boxes = props.student.Boxes;
+
+  Object.assign(boxes[0], {
+    name: "SR Gifts",
+    exp: 20,
+    grade: 1,
+    gift: { ...boxes[0].gift, Icon: "item_icon_favor_random" },
+  });
   
-  if (highestExpGift) {
-    // If student has favorite gifts, use the highest exp one
-    props.student.Boxes[1].exp = highestExpGift.exp;
-    props.student.Boxes[1].grade = highestExpGift.grade;
-  } else {
-    // For collab students with no favorite gifts, use default values
-    props.student.Boxes[1].exp = 20; // Default to standard SR gift exp
-    props.student.Boxes[1].grade = 1; // Default grade
-  }
-  props.student.Boxes[1].gift.Icon = "item_icon_favor_selection";
+  Object.assign(boxes[1], {
+    name: "Selector SR Gifts",
+    exp: highestExpGift?.exp ?? 20,
+    grade: highestExpGift?.grade ?? 1,
+    gift: { ...boxes[1].gift, Icon: "item_icon_favor_selection" },
+  });
 };
 
 // Function to find highest exp SR gift
-const findHighestExpSrGift = () => {
+function findHighestExpSrGift(): GiftDataProps | null {
   if (!props.student?.Gifts) return null;
   
-  let highestExpGift = null;
+  let highestExpGift: GiftDataProps | null = null;
   
   props.student.Gifts.forEach((gift) => {
     if (gift.gift.Rarity === "SR" && (!highestExpGift || gift.exp > highestExpGift.exp)) {
@@ -331,9 +334,9 @@ const findHighestExpSrGift = () => {
 };
 
 const shouldShowGiftGrade = computed(() => {
-  return (index) => {
+  return (index: number):boolean => {
     // Special case for collab students (without favorite gifts)
-    const isCollabStudent = !props.student.Gifts || props.student.Gifts.length === 4;
+    const isCollabStudent = !props.student?.Gifts || props.student.Gifts.length === 4;
     return (
       // Index 0: Keystone, Index 1: SR Gifts, Index 2: SSR Gifts
       (!convertBox.value && index !== 0) || 
@@ -343,12 +346,6 @@ const shouldShowGiftGrade = computed(() => {
     );
   };
 });
-
-const closeModal = () => {
-  // Save the current state (including conversion state) before closing
-  saveToLocalStorage();
-  emit('close');
-};
 </script>
 
 <template>
@@ -361,14 +358,14 @@ const closeModal = () => {
           <!-- Student Image Section -->
           <div class="student-section">
             <img 
-              :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
-              :alt="student.Name"
+              :src="`https://schaledb.com/images/student/collection/${student!.Id}.webp`"
+              :alt="student!.Name"
               class="student-image"
             />
             <h2 
               class="student-name text-xl font-bold" 
-              :class="getFontSizeClass(student.Name)">
-              {{ student.Name }}
+              :class="getFontSizeClass(student!.Name)">
+              {{ student!.Name }}
             </h2>
           </div>
 
@@ -436,8 +433,8 @@ const closeModal = () => {
         <div class="right-column">
           <div class="gifts-grid">
             <!-- Regular Gifts Section -->
-            <template v-if="student.Gifts && student.Gifts.length > 0">
-              <div v-for="(item, index) in student.Gifts" 
+            <template v-if="student!.Gifts && student!.Gifts.length > 0">
+              <div v-for="(item, index) in student!.Gifts" 
                   :key="`gift-${index}`"
                   class="gift-card">
                 <div class="gift-header">
@@ -451,7 +448,7 @@ const closeModal = () => {
                   <div class="gift-grade">
                     <img 
                       :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
-                      :alt="item.grade"
+                      :alt="item.grade.toString()"
                       class="grade-icon"
                     />
                     <span class="exp-value">{{ item.exp }} EXP</span>
@@ -472,8 +469,8 @@ const closeModal = () => {
             </template>
             
             <!-- Gift Boxes Section -->
-            <template v-if="student.Boxes && student.Boxes.length > 0">
-              <div v-for="(item, index) in student.Boxes" 
+            <template v-if="student!.Boxes && student!.Boxes.length > 0">
+              <div v-for="(item, index) in student!.Boxes" 
                   :key="`box-${index}`"
                   class="gift-card box-card">
                 <div class="gift-header">
@@ -487,7 +484,7 @@ const closeModal = () => {
                   <div class="gift-grade" v-if="shouldShowGiftGrade(index)">
                     <img 
                       :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
-                      :alt="item.grade"
+                      :alt="item.grade.toString()"
                       class="grade-icon"
                     />
                     <span class="exp-value">{{ item.exp }} EXP</span>

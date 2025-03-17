@@ -1,14 +1,9 @@
-<script setup>
-import { defineProps } from 'vue'
+<script setup lang="ts">
+import { StudentProps } from '../../types/student'
 
-const props = defineProps({
-  student: {
-    type: Object,
-    required: true
-  }
-})
+const props = defineProps<{ student: StudentProps}>();
 
-function getFontSizeClass(name) {
+function getFontSizeClass(name: string): string {
   return name.length <= 10 ? 'text-normal' : 'text-small'
 }
 </script>
