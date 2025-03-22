@@ -12,7 +12,6 @@ const GIFT_BOX_EXP_VALUES = {
 };
 
 export function useStudentData() {
-  // State variables
   const studentData = ref<{ [key: string]: StudentProps }>({});
   const giftData = ref<Record<string, any>>({});
   const favoredGift = ref<Record<string, any[]>>({});

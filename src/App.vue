@@ -1,5 +1,5 @@
 <script setup>
-import StudentDisplay from './components/students/StudentDisplay.vue'
+import StudentDisplay from './components/students/display/StudentDisplay.vue'
 
 </script>
 

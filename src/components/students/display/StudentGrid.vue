@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import { StudentProps } from '../../types/student'
+import { StudentProps } from '../../../types/student'
 import StudentCard from './StudentCard.vue';
 
 const props = defineProps<{ students: Record<string, StudentProps> }>();
 
-type EmitFn = (event: 'openModal', student: StudentProps) => void;
-const emit = defineEmits<EmitFn>();
+type EmitEvents = {
+  'openModal': [student: StudentProps];
+}
+
+const emit = defineEmits<EmitEvents>();
 
 function handleOpenModal(student: StudentProps) {
   emit('openModal', student);

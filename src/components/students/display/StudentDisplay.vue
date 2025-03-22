@@ -2,9 +2,9 @@
 import { ref, onMounted } from 'vue'
 import StudentHeader from './StudentHeader.vue';
 import StudentGrid from './StudentGrid.vue';
-import StudentModal from '../StudentModal.vue'
-import { useStudentData } from '../../consumables/useStudentData';
-import '../../styles/studentDisplay.css'
+import StudentModal from '../modal/StudentModal.vue'
+import { useStudentData } from '../../../consumables/useStudentData';
+import '../../../styles/studentDisplay.css'
 
 // Use the composable to manage student data
 const {

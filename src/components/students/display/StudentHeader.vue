@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import { HeaderProps } from '../../types/header'
+import { HeaderProps } from '../../../types/header'
 
 const props = defineProps<HeaderProps>();
 
 const emit = defineEmits<{
-  (event: 'update:searchQuery', value: string): void;
-  (event: 'toggleTheme'): void;
+  'update:searchQuery': [value: string];
+  'toggleTheme': [];
 }>();
 
 function updateSearch(event: Event) {
