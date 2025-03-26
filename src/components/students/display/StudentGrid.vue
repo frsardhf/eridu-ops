@@ -20,8 +20,8 @@ function handleOpenModal(student: StudentProps) {
   <div class="student-grid-wrapper">
     <div class="student-grid">
       <StudentCard
-        v-for="(student, index) in students"
-        :key="index"
+        v-for="(student) in students"
+        :key="student.Id"
         :student="student"
         @click="handleOpenModal(student)"
       />

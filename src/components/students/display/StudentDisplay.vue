@@ -8,7 +8,7 @@ import '../../../styles/studentDisplay.css'
 
 // Use the composable to manage student data
 const {
-  studentData,
+  materialData,
   favoredGift,
   giftBoxData,
   isDarkMode,
@@ -26,7 +26,8 @@ function openModal(student) {
   selectedStudent.value = {
     ...student,
     Gifts: favoredGift.value[student.Id],
-    Boxes: giftBoxData.value[student.Id]
+    Boxes: giftBoxData.value[student.Id],
+    Materials: materialData.value
   };
   isModalVisible.value = true;
 }

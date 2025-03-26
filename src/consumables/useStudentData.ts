@@ -10,10 +10,17 @@ const GIFT_BOX_EXP_VALUES = {
   'SR': 20,
   'SSR': 120
 };
+const MATERIAL = {
+  'category': "CharacterExpGrowth",
+  'subcategory': ["Artifact", "CDItem", "BookItem"],
+  'id': ['2000', '2001', '2002']
+}
 
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
   const giftData = ref<Record<string, any>>({});
+  const boxData = ref<Record<string, any>>({});
+  const materialData = ref<Record<string, any>>({});
   const favoredGift = ref<Record<string, any[]>>({});
   const giftBoxData = ref<Record<string, any[]>>({});
   const searchQuery = ref<string>('');
@@ -32,11 +39,16 @@ export function useStudentData() {
   });
 
   // Utility functions
-  function filterByCategory(items, category) {
+  function filterByProperty(items: Record<string, any>, type: string, value: string | string[]) {
     const filteredItems = {};
+    let valueArray: (string | number)[] = Array.isArray(value) ? value : [value];
+    
+    if (type === 'id') {
+      valueArray = valueArray.map(val => Number(val));
+    }
     
     for (const itemId in items) {
-      if (items[itemId].Category === category) {
+      if (isItemMatch(items[itemId], type, valueArray)) {
         filteredItems[itemId] = items[itemId];
       }
     }
@@ -44,7 +56,45 @@ export function useStudentData() {
     return filteredItems;
   }
 
-  function calculateGiftExp(item, tags) {
+  function isItemMatch(item: any, type: string, valueArray: (string | number)[]): boolean {
+    switch (type) {
+      case 'category':
+        return valueArray.includes(item.Category);
+      case 'subcategory':
+        return valueArray.includes(item.SubCategory);
+      case 'id':
+        return valueArray.includes(item.Id);
+      default:
+        return false;
+    }
+  }
+
+  function mergeFilteredItems(...objects: Record<string, any>[]) {
+    const result: Record<string, any> = {};
+    
+    for (const obj of objects) {
+      for (const key in obj) {
+        result[key] = obj[key];
+      }
+    }
+    
+    return result;
+  }
+
+  function applyFilters(items: Record<string, any>, filterObj: Record<string, any>) {
+    const results: Record<string, any>[] = [];
+    
+    for (const [type, value] of Object.entries(filterObj)) {
+      if (value) { // Check if the value exists
+        const filtered = filterByProperty(items, type, value);
+        results.push(filtered);
+      }
+    }
+    
+    return mergeFilteredItems(...results);
+  }
+
+  function calculateGiftExp(item, tags: string[]) {
     return item.ExpValue * (1 + Math.min(tags.length, 3));
   }
   
@@ -70,9 +120,10 @@ export function useStudentData() {
   
         if (shouldGiftItem) {
           studentGifts.push({
+            id: item.Id,
             gift: item,
             exp: expValue,
-            grade: favorGrade + 1
+            grade: favorGrade + 1,
           });
         }
       }
@@ -104,10 +155,11 @@ export function useStudentData() {
         }
         
         studentGifts.push({
+          id: item.Id,
           gift: item,
           name: GIFT_BOX_NAMES[nameIndex],
           exp: expValue,
-          grade: grade  // Base grade
+          grade: grade,
         });
       }
       
@@ -123,33 +175,8 @@ export function useStudentData() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }
-
-  async function fetchGiftBoxes() {
-    try {
-      const url = 'https://schaledb.com/data/en/items.json';
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data from ${url}`);
-      }
-      
-      const data = await response.json();
-      const giftBoxes = {};
-      
-      GIFT_BOX_IDS.forEach(id => {
-        if (data[id]) {
-          giftBoxes[id] = data[id];
-        }
-      });
-      
-      return giftBoxes;
-    } catch (error) {
-      console.error('Error fetching gift boxes:', error);
-      return {};
-    }
-  }
   
-  async function fetchData(type) {
+  async function fetchData(type: string) {
     try {
       const url = `https://schaledb.com/data/en/${type}.json`;
       const response = await fetch(url);
@@ -168,13 +195,17 @@ export function useStudentData() {
 
   // Initialization
   async function initializeData() {
+    const hasResetStorage = localStorage.getItem('storageReset');
+    if (!hasResetStorage) {
+      localStorage.clear();
+    }
     studentData.value = await fetchData('students');
     const allItems = await fetchData('items');
-    giftData.value = filterByCategory(allItems, 'Favor');
-    const giftBoxes = await fetchGiftBoxes();
-
+    giftData.value = filterByProperty(allItems, 'category', 'Favor');
+    boxData.value = filterByProperty(allItems, 'id', GIFT_BOX_IDS);
+    materialData.value = applyFilters(allItems, MATERIAL);
     favoredGift.value = getGiftsByStudent(studentData.value, giftData.value);
-    giftBoxData.value = getGiftBoxesByStudent(studentData.value, giftBoxes);
+    giftBoxData.value = getGiftBoxesByStudent(studentData.value, boxData.value);
   }
 
   initializeData()
@@ -182,6 +213,8 @@ export function useStudentData() {
   return {
     studentData,
     giftData,
+    boxData,
+    materialData,
     favoredGift,
     giftBoxData,
     searchQuery,

@@ -17,6 +17,7 @@
   --header-gradient-end: #dbffff;
   --text-primary: #213547;
   --text-secondary: #94a3b8;
+  --text-tertiary: #142330;
   --border-color: #e9ecef;
   --card-background: #fff;
   --card-label-background: #faebd7;
@@ -46,6 +47,7 @@ body {
   --header-gradient-end: #1a2634;
   --text-primary: #ffffffde;
   --text-secondary: #a0aec0;
+  --text-tertiary: #282c31;
   --border-color: #2d3748;
   --card-background: #2d3748;
   --card-label-background: #424242;
