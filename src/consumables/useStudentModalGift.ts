@@ -3,6 +3,17 @@ import { StudentProps } from '../types/student';
 import { GiftDataProps } from '../types/gift';
 import xpData from '../data/data.json';
 
+// Define a type for student data storage
+interface StudentStorageData {
+  Id: number;
+  giftFormData: Record<string, number>;
+  boxFormData: Record<string, number>;
+  currentBond: number;
+  convertBox: boolean;
+  originalYellowStoneQuantity: number;
+  originalSrGiftQuantity: number;
+}
+
 export function useStudentModalGift(props: {   
   student: StudentProps | null,   
   isVisible?: boolean 
@@ -27,7 +38,7 @@ export function useStudentModalGift(props: {
   }
 
   // Centralized storage management
-  function getStudentsFromStorage(): StudentProps[] {
+  function getStudentsFromStorage(): StudentStorageData[] {
     try {
       const studentsData = localStorage.getItem('students');
       return studentsData ? JSON.parse(studentsData) : [];
@@ -37,7 +48,7 @@ export function useStudentModalGift(props: {
     }
   }
 
-  function updateStudentsInStorage(students: StudentProps[]) {
+  function updateStudentsInStorage(students: StudentStorageData[]) {
     try {
       localStorage.setItem('students', JSON.stringify(students));
     } catch (error) {
@@ -54,25 +65,18 @@ export function useStudentModalGift(props: {
     // Find existing student data or create new entry
     const existingStudentIndex = students.findIndex(s => s.Id === props.student?.Id);
     
-    const studentData: StudentProps = {
-      ...props.student,
-      Gifts: props.student.Gifts?.map((gift, index) => ({
-        ...gift,
-        quantity: giftFormData.value[index] || 0
-      })),
-      Boxes: props.student.Boxes?.map((box, index) => ({
-        ...box,
-        quantity: boxFormData.value[index] || 0
-      })),
-      BondFormData: {
-        currentBond: currentBond.value,
-        convertBox: convertBox.value,
-        originalYellowStoneQuantity: originalYellowStoneQuantity.value,
-        originalSrGiftQuantity: originalSrGiftQuantity.value
-      }
+    const studentData: StudentStorageData = {
+      Id: props.student.Id,
+      giftFormData: giftFormData.value,
+      boxFormData: boxFormData.value,
+      currentBond: currentBond.value,
+      convertBox: convertBox.value,
+      originalYellowStoneQuantity: originalYellowStoneQuantity.value,
+      originalSrGiftQuantity: originalSrGiftQuantity.value
     };
-    console.log(studentData);
+
     if (existingStudentIndex !== -1) {
+      // Update existing student
       students[existingStudentIndex] = studentData;
     } else {
       // Add new student
@@ -85,43 +89,25 @@ export function useStudentModalGift(props: {
   // Load form data from localStorage
   function loadFromLocalStorage() {
     if (!props.student) return;
-    console.log(props.student);
+
     const students = getStudentsFromStorage();
     const savedStudentData = students.find(s => s.Id === props.student?.Id);
     if (savedStudentData) {
-      // Apply saved data from the new structure
-      if (savedStudentData.Gifts) {
-        giftFormData.value = savedStudentData.Gifts.reduce((acc, gift) => {
-          acc[gift.id] = gift.quantity || 0;
-          return acc;
-        }, {} as Record<string, number>);
-      }
+      // Apply saved data
+      giftFormData.value = savedStudentData.giftFormData || {};
+      boxFormData.value = savedStudentData.boxFormData || {};
+      currentBond.value = savedStudentData.currentBond || 1;
+      originalYellowStoneQuantity.value = savedStudentData.originalYellowStoneQuantity || 0;
+      originalSrGiftQuantity.value = savedStudentData.originalSrGiftQuantity || 0;
 
-      if (savedStudentData.Boxes) {
-        boxFormData.value = savedStudentData.Boxes.reduce((acc, box) => {
-          acc[box.id] = box.quantity || 0;
-          return acc;
-        }, {} as Record<string, number>);
-      }
-
-      // Load bond form data
-      if (savedStudentData.BondFormData) {
-        currentBond.value = 
-          savedStudentData.BondFormData.currentBond || 1;
-        originalYellowStoneQuantity.value = 
-          savedStudentData.BondFormData.originalYellowStoneQuantity || 0;
-        originalSrGiftQuantity.value = 
-          savedStudentData.BondFormData.originalSrGiftQuantity || 0;
-
-        // Handle conversion state
-        const wasConverted = savedStudentData.BondFormData.convertBox || false;
-        if (wasConverted !== convertBox.value) {
-          convertBox.value = wasConverted;
-          if (wasConverted) {
-            applyBoxProperties();
-          } else {
-            resetBoxProperties();
-          }
+      // Handle conversion state
+      const wasConverted = savedStudentData.convertBox || false;
+      if (wasConverted !== convertBox.value) {
+        convertBox.value = wasConverted;
+        if (wasConverted) {
+          applyBoxProperties();
+        } else {
+          resetBoxProperties();
         }
       }
     }
