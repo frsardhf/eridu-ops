@@ -5,7 +5,6 @@ import { BoxDataProps, GiftDataProps } from '../types/gift';
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew"];
 const GIFT_BOX_IDS = ['82', '100000', '100009'];
-const GIFT_BOX_NAMES = ['Advanced Fusion Keystone', 'SR Gifts', 'SSR Gifts'];
 const GIFT_BOX_EXP_VALUES = {
   'SR': 20,
   'SSR': 120
@@ -85,7 +84,7 @@ export function useStudentData() {
     const results: Record<string, any>[] = [];
     
     for (const [type, value] of Object.entries(filterObj)) {
-      if (value) { // Check if the value exists
+      if (value) { 
         const filtered = filterByProperty(items, type, value);
         results.push(filtered);
       }
@@ -140,24 +139,21 @@ export function useStudentData() {
       
       for (const itemId in items) {
         const item = items[itemId];
-        let nameIndex = 0; 
         let expValue = 0;
         let grade = 0;
         
         if (item.Category == 'Consumable') {
           if (item.Rarity === 'SR') {
-            nameIndex = 1;
+            grade = 1;
           } else {
-            nameIndex = 2;
+            grade = 2;
           }
           expValue = GIFT_BOX_EXP_VALUES[item.Rarity] || 0;
-          grade = 1;
         }
         
         studentGifts.push({
           id: item.Id,
           gift: item,
-          name: GIFT_BOX_NAMES[nameIndex],
           exp: expValue,
           grade: grade,
         });

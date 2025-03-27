@@ -1,4 +1,4 @@
-import { GiftDataProps, BoxDataProps } from "./gift";
+import { GiftDataProps, BoxDataProps, BondFormDataProps } from "./gift";
 import { ResourceProps } from "./resource";
 
 export interface StudentProps {
@@ -7,4 +7,5 @@ export interface StudentProps {
   Gifts: GiftDataProps[];
   Boxes: BoxDataProps[];
   Materials: ResourceProps[];
+  BondFormData: BondFormDataProps;
 }
