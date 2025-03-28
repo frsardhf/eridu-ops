@@ -4,7 +4,7 @@ import { BoxDataProps, GiftDataProps } from '../types/gift';
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew"];
-const GIFT_BOX_IDS = ['82', '100000', '100009'];
+const GIFT_BOX_IDS = ['82', '100000', '100008', '100009'];
 const GIFT_BOX_EXP_VALUES = {
   'SR': 20,
   'SSR': 120
@@ -191,10 +191,10 @@ export function useStudentData() {
 
   // Initialization
   async function initializeData() {
-    // const hasResetStorage = localStorage.getItem('storageReset');
-    // if (!hasResetStorage) {
-    //   localStorage.clear();
-    // }
+    const hasResetStorage = localStorage.getItem('storageReset');
+    if (!hasResetStorage) {
+      localStorage.clear();
+    }
     studentData.value = await fetchData('students');
     const allItems = await fetchData('items');
     giftData.value = filterByProperty(allItems, 'category', 'Favor');
