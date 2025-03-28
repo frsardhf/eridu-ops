@@ -8,4 +8,6 @@ export interface StudentProps {
   Boxes: BoxDataProps[];
   Materials: ResourceProps[];
   BondFormData: BondFormDataProps;
+  FavorItemUniqueTags: string[];
+  FavorItemTags: string[];
 }

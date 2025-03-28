@@ -14,6 +14,7 @@ export function useStudentModalGift(props: {
   const convertBox = ref(false);
   const originalYellowStoneQuantity = ref(0);
   const originalSrGiftQuantity = ref(0);
+  const originalSelectorBoxQuantity = ref(0);
   const bondXpTable = bondData.bond_xp;
 
   // Reset form data
@@ -24,6 +25,7 @@ export function useStudentModalGift(props: {
     convertBox.value = false;
     originalYellowStoneQuantity.value = 0;
     originalSrGiftQuantity.value = 0;
+    originalSelectorBoxQuantity.value = 0;
   }
 
   // Watch for changes to isVisible to load data when modal opens
@@ -55,15 +57,16 @@ export function useStudentModalGift(props: {
   // Save current form data to localStorage
   function saveToLocalStorage() {
     if (!props.student) return;
-    
     const storageKey = `student-${props.student.Id}-data`;
     const dataToSave = {
+      studentId: props.student.Id,
       giftFormData: giftFormData.value,
       boxFormData: boxFormData.value,
       currentBond: currentBond.value,
       convertBox: convertBox.value,
       originalYellowStoneQuantity: originalYellowStoneQuantity.value,
-      originalSrGiftQuantity: originalSrGiftQuantity.value
+      originalSrGiftQuantity: originalSrGiftQuantity.value,
+      originalSelectorBoxQuantity: originalSelectorBoxQuantity.value
     };
     try {
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
@@ -91,102 +94,16 @@ export function useStudentModalGift(props: {
         // Restore original quantities
         originalYellowStoneQuantity.value = parsedData.originalYellowStoneQuantity || 0;
         originalSrGiftQuantity.value = parsedData.originalSrGiftQuantity || 0;
+        originalSelectorBoxQuantity.value = parsedData.originalSelectorBoxQuantity || 0;
         
         // Handle conversion state
         const wasConverted = parsedData.convertBox || false;
         if (wasConverted !== convertBox.value) {
           convertBox.value = wasConverted;
-          if (wasConverted) {
-            applyBoxProperties();
-          } else {
-            resetBoxProperties();
-          }
         }
       }
     } catch (error) {
       resetFormData();
-    }
-  }
-
-  // Function to find highest exp SR gift
-  function findHighestExpSrGift(): GiftDataProps | null {
-    if (!props.student?.Gifts) return null;
-    
-    let highestExpGift: GiftDataProps | null = null;
-    
-    props.student.Gifts.forEach((gift) => {
-      if (gift.gift.Rarity === "SR" && (!highestExpGift || gift.exp > highestExpGift.exp)) {
-        highestExpGift = gift;
-      }
-    });
-    
-    return highestExpGift;
-  }
-
-  function applyBoxProperties() {
-    if (!props.student) return;
-
-    const boxes = props.student.Boxes;
-    const yellowStoneQuantity = boxFormData.value[0] || 0;
-    const srGiftMaterialQuantity = boxFormData.value[1] || 0;
-    const selectorBoxQuantity = boxFormData.value[2] || 0;
-
-    // Box[0] is always the yellow stone
-    Object.assign(boxes[0], {
-      name: "Advanced Fusion Keystone",
-      exp: 0, // Stone has no exp
-      grade: 0,
-      gift: { ...boxes[0].gift, Icon: "item_icon_shiftingcraftitem_2" },
-    });
-
-    const highestExpGift = findHighestExpSrGift();
-    
-    // Box[1] is always the SR gift materials
-    Object.assign(boxes[1], {
-      name: "SR Gifts",
-      exp: 20,
-      grade: 1,
-      gift: { ...boxes[1].gift, Icon: "item_icon_favor_random" },
-    });
-
-    // Box[2] is the SR gift selector (only exists when converting)
-    if (convertBox.value) {
-      Object.assign(boxes[2], {
-        name: "Selector SR Gifts",
-        exp: highestExpGift?.exp ?? 20,
-        grade: highestExpGift?.grade ?? 1,
-        gift: { ...boxes[2].gift, Icon: "item_icon_favor_selection" },
-      });
-    }
-  }
-
-  function resetBoxProperties() {
-    if (!props.student) return;
-
-    const boxes = props.student.Boxes;
-
-    Object.assign(boxes[0], {
-      name: "Advanced Fusion Keystone",
-      exp: 0,
-      grade: 0,
-      gift: { ...boxes[0].gift, Icon: "item_icon_shiftingcraftitem_2" },
-    });
-
-    Object.assign(boxes[1], {
-      name: "SR Gifts",
-      exp: 20,
-      grade: 1,
-      gift: { ...boxes[1].gift, Icon: "item_icon_favor_random" },
-    });
-
-    // Reset the selector box if it exists
-    if (boxes[2]) {
-      Object.assign(boxes[2], {
-        name: "Selector SR Gifts",
-        exp: 0,
-        grade: 0,
-        gift: { ...boxes[2].gift, Icon: "item_icon_favor_selection" },
-      });
     }
   }
 
@@ -265,6 +182,8 @@ export function useStudentModalGift(props: {
         originalYellowStoneQuantity.value = parseInt(input.value) || 0;
       } else if (boxId === 1) {
         originalSrGiftQuantity.value = parseInt(input.value) || 0;
+      } else if (boxId === 2) {
+        originalSelectorBoxQuantity.value = parseInt(input.value) || 0;
       }
     }
   };
@@ -286,16 +205,18 @@ export function useStudentModalGift(props: {
       return;
     }
     
+    // Apply conversion logic for quantities
+    const yellowStoneQuantity = originalYellowStoneQuantity.value;
+    const srGiftMaterialQuantity = originalSrGiftQuantity.value;
+    const selectorBoxQuantity = originalSelectorBoxQuantity.value;
+
     if (convertBox.value) {
       // Save original values only when first checked
       if (originalYellowStoneQuantity.value === 0 || originalSrGiftQuantity.value === 0) {
         originalYellowStoneQuantity.value = parseInt(boxFormData.value[0] as unknown as string) || 0;
         originalSrGiftQuantity.value = parseInt(boxFormData.value[1] as unknown as string) || 0;
+        originalSelectorBoxQuantity.value = parseInt(boxFormData.value[2] as unknown as string) || 0;
       }
-      
-      // Apply conversion logic for quantities
-      const yellowStoneQuantity = originalYellowStoneQuantity.value;
-      const srGiftMaterialQuantity = originalSrGiftQuantity.value;
       
       // Calculate how many boxes can be converted based on available materials
       // Each conversion requires 2 materials and 1 stone
@@ -305,23 +226,14 @@ export function useStudentModalGift(props: {
       const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
       
       // Set the quantities in boxFormData
-      // boxFormData[0] is stone (leftover)
-      // boxFormData[1] is SR gift materials (remaining)
-      // boxFormData[2] is selector box (converted)
       boxFormData.value[0] = yellowStoneQuantity - convertedQuantity; // Leftover stones
       boxFormData.value[1] = srGiftMaterialQuantity - (convertedQuantity * 2); // Remaining materials
-      boxFormData.value[2] = convertedQuantity; // Number of selector boxes
-      
-      // Apply box properties
-      applyBoxProperties();
+      boxFormData.value[2] = selectorBoxQuantity + convertedQuantity; // Number of selector boxes
     } else {
       // Restore original values when unchecked
-      if (originalYellowStoneQuantity.value > 0 || originalSrGiftQuantity.value > 0) {
-        boxFormData.value[0] = originalYellowStoneQuantity.value;
-        boxFormData.value[1] = originalSrGiftQuantity.value;
-        boxFormData.value[2] = 0; // Reset selector box quantity
-      }
-      resetBoxProperties();
+      boxFormData.value[0] = originalYellowStoneQuantity.value;
+      boxFormData.value[1] = originalSrGiftQuantity.value;
+      boxFormData.value[2] = originalSelectorBoxQuantity.value;
     }
   };
 
@@ -330,12 +242,12 @@ export function useStudentModalGift(props: {
       // Special case for collab students (without favorite gifts)
       const isCollabStudent = !props.student?.Gifts || props.student.Gifts.length === 4;
       return (
-        // Index 0: Keystone, Index 1: SR Gifts, Index 2: Selector SR Gifts
+        // Index 0: Keystone, Index 1: SR Gifts, 
+        // Index 2: Selector SR Gifts, Index 3: Selector Keystone
         (!convertBox.value && index !== 0) || 
-        (convertBox.value && index === 0 && boxFormData.value[0] > 0) ||
         (convertBox.value && index === 1 && boxFormData.value[1] > 0) ||
         (convertBox.value && index === 2 && boxFormData.value[2] > 0) ||
-        (isCollabStudent && convertBox.value && index > 0)
+        (convertBox.value && index === 3 && boxFormData.value[3] > 0)
       );
     };
   });
@@ -354,6 +266,7 @@ export function useStudentModalGift(props: {
     convertBox,
     originalYellowStoneQuantity,
     originalSrGiftQuantity,
+    originalSelectorBoxQuantity,
     
     // Computed
     totalCumulativeExp,
@@ -366,8 +279,6 @@ export function useStudentModalGift(props: {
     resetFormData,
     saveToLocalStorage,
     loadFromLocalStorage,
-    applyBoxProperties,
-    resetBoxProperties,
     getFontSizeClass,
     handleGiftInput,
     handleBoxInput,
