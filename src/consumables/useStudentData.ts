@@ -38,7 +38,8 @@
     });
 
     // Utility functions
-    function filterByProperty(items: Record<string, any>, type: string, value: string | string[]) {
+    function filterByProperty(
+      items: Record<string, any>, type: string, value: string | string[]) {
       const filteredItems = {};
       let valueArray: (string | number)[] = Array.isArray(value) ? value : [value];
       
@@ -55,7 +56,8 @@
       return filteredItems;
     }
 
-    function isItemMatch(item: any, type: string, valueArray: (string | number)[]): boolean {
+    function isItemMatch(
+      item: any, type: string, valueArray: (string | number)[]): boolean {
       switch (type) {
         case 'category':
           return valueArray.includes(item.Category);
@@ -80,7 +82,8 @@
       return result;
     }
 
-    function applyFilters(items: Record<string, any>, filterObj: Record<string, any>) {
+    function applyFilters(
+      items: Record<string, any>, filterObj: Record<string, any>) {
       const results: Record<string, any>[] = [];
       
       for (const [type, value] of Object.entries(filterObj)) {
@@ -93,90 +96,150 @@
       return mergeFilteredItems(...results);
     }
 
-    function calculateGiftExp(item, tags: string[]) {
-      return item.ExpValue * (1 + Math.min(tags.length, 3));
-    }
-    
-    function getGiftsByStudent(students, items, isGiftBox): Record<string, (GiftDataProps | BoxDataProps)[]> {
+    function getGiftsByStudent(
+      students: Record<string, StudentProps>, 
+      items: Record<string, any>, 
+      isGiftBox: boolean): Record<string, (GiftDataProps | BoxDataProps)[]> {
       const result: Record<string, (GiftDataProps | BoxDataProps)[]> = {};
       
       for (const studentId in students) {
         const student = students[studentId];
-        const uniqueGiftTags = student.FavorItemUniqueTags;
-        const rareGiftTags = student.FavorItemTags;
-        const allTags = [...uniqueGiftTags, ...rareGiftTags, ...GENERIC_GIFT_TAGS];
-        const studentGifts: (GiftDataProps | BoxDataProps)[] = [];
-    
-        // Calculate highest SR gift exp using favoredGift.value
-        let highestExpGift = 0;
-        let highestGradeGift = 0;
-        let isCollabStudent = false;
-        if (isGiftBox) {
-          const studentFavoredGifts = favoredGift.value[studentId] || [];
-          if (studentFavoredGifts.length == 4) {
-            isCollabStudent = true;
-          }
-          studentFavoredGifts.forEach((gift) => {
-            if (gift.gift.Rarity === "SR" && gift.exp > highestExpGift) {
-              highestExpGift = gift.exp;
-              highestGradeGift = gift.grade;
-            }
-          });
-        }
-
-        for (const itemId in items) {
-          const item = items[itemId];
-          const genericTagCount = item.Tags.filter(tag => GENERIC_GIFT_TAGS.includes(tag)).length;
-          const commonTags = item.Tags.filter(tag => allTags.includes(tag));
-          const favorGrade = Math.min(commonTags.length, 3);
-    
-          if (isGiftBox) {
-            const shouldGiftItem = (favorGrade + genericTagCount >= 0);
-            let expValue = 0;
-            let newFavorGrade = 0;
-            
-            if (item.Category == 'Consumable') {
-              expValue = GIFT_BOX_EXP_VALUES[item.Rarity];
-              newFavorGrade = favorGrade + genericTagCount + item.Quality - 2; 
-              if (item.Tags.includes('DW')) {
-                expValue = highestExpGift || 20;
-                newFavorGrade = highestGradeGift;
-              }
-              if (isCollabStudent) {
-                newFavorGrade = item.Rarity === "SR" ? 1 : 2;
-              }
-            }
-            
-            if (shouldGiftItem) {
-              studentGifts.push({
-                id: item.Id,
-                gift: item,
-                exp: expValue,
-                grade: newFavorGrade,
-              });
-            }
-          } else {
-            // Regular gifts logic
-            const genericTagCount = item.Tags.filter(tag => GENERIC_GIFT_TAGS.includes(tag)).length;
-            const expValue = item.ExpValue * (1 + Math.min(commonTags.length, 3));
-            const shouldGiftItem = (favorGrade - genericTagCount > 0) || 
-                                   (favorGrade >= 2 && item.Tags.length <= 3);
-            
-            if (shouldGiftItem) {
-              studentGifts.push({
-                id: item.Id,
-                gift: item,
-                exp: expValue,
-                grade: favorGrade + 1,
-              });
-            }
-          }
-        }
+        const allTags = getAllStudentTags(student);
+        const studentGifts = isGiftBox 
+          ? processGiftBoxItems(studentId, items, allTags)
+          : processRegularGiftItems(items, allTags);
         
         result[studentId] = studentGifts;
       }
       
       return result;
+    }
+    
+    function getAllStudentTags(student: StudentProps) {
+      const uniqueGiftTags = student.FavorItemUniqueTags;
+      const rareGiftTags = student.FavorItemTags;
+      return [...uniqueGiftTags, ...rareGiftTags, ...GENERIC_GIFT_TAGS];
+    }
+    
+    function processRegularGiftItems(
+      items: Record<string, any>, allTags: string[]) {
+      const studentGifts: (GiftDataProps | BoxDataProps)[] = [];
+      
+      for (const itemId in items) {
+        const item = items[itemId];
+        const giftDetails = evaluateRegularGift(item, allTags);
+        
+        if (giftDetails.shouldGift) {
+          studentGifts.push({
+            id: item.Id,
+            gift: item,
+            exp: giftDetails.expValue,
+            grade: giftDetails.favorGrade + 1,
+          });
+        }
+      }
+      
+      return studentGifts;
+    }
+    
+    function evaluateRegularGift(item: any, allTags: string[]) {
+      const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
+      const favorGrade = Math.min(commonTags.length, 3);
+      const genericTagCount = countGenericTags(item);
+      const expValue = calculateGiftExp(item, commonTags);
+      
+      const shouldGift = (favorGrade - genericTagCount > 0) ||
+                         (favorGrade >= 2 && item.Tags.length <= 3);
+      
+      return { shouldGift, expValue, favorGrade };
+    }
+    
+    function processGiftBoxItems(
+      studentId: string, items: Record<string, any>, allTags: string[]) {
+      const studentGifts: (GiftDataProps | BoxDataProps)[] = [];
+      const { 
+        highestExpGift, 
+        highestGradeGift, 
+        isCollabStudent 
+      } = getStudentGiftBoxInfo(studentId);
+      
+      for (const itemId in items) {
+        const item = items[itemId];
+        const giftDetails = evaluateGiftBoxItem(
+          item, 
+          allTags, 
+          highestExpGift, 
+          highestGradeGift, 
+          isCollabStudent
+        );
+        
+        if (giftDetails.shouldGift) {
+          studentGifts.push({
+            id: item.Id,
+            gift: item,
+            exp: giftDetails.expValue,
+            grade: giftDetails.newFavorGrade,
+          });
+        }
+      }
+      
+      return studentGifts;
+    }
+    
+    function getStudentGiftBoxInfo(studentId) {
+      let highestExpGift = 0;
+      let highestGradeGift = 0;
+      let isCollabStudent = false;
+      
+      const studentFavoredGifts = favoredGift.value[studentId] || [];
+      if (studentFavoredGifts.length === 4) {
+        isCollabStudent = true;
+      }
+      
+      studentFavoredGifts.forEach((gift) => {
+        if (gift.gift.Rarity === "SR" && gift.exp > highestExpGift) {
+          highestExpGift = gift.exp;
+          highestGradeGift = gift.grade;
+        }
+      });
+      
+      return { highestExpGift, highestGradeGift, isCollabStudent };
+    }
+    
+    function evaluateGiftBoxItem(
+      item: any, allTags: string[], highestExpGift: number, 
+      highestGradeGift: number, isCollabStudent: boolean) {
+      const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
+      const favorGrade = Math.min(commonTags.length, 3);
+      const genericTagCount = countGenericTags(item);
+      const shouldGift = (favorGrade + genericTagCount >= 0);
+      
+      let expValue = 0;
+      let newFavorGrade = 0;
+      
+      if (item.Category === 'Consumable') {
+        expValue = GIFT_BOX_EXP_VALUES[item.Rarity];
+        newFavorGrade = favorGrade + genericTagCount + item.Quality - 2;
+        
+        if (item.Tags.includes('DW')) {
+          expValue = highestExpGift || 20;
+          newFavorGrade = highestGradeGift;
+        }
+        
+        if (isCollabStudent) {
+          newFavorGrade = item.Rarity === "SR" ? 1 : 2;
+        }
+      }
+      
+      return { shouldGift, expValue, newFavorGrade };
+    }
+    
+    function countGenericTags(item: any) {
+      return item.Tags.filter((tag: string) => GENERIC_GIFT_TAGS.includes(tag)).length;
+    }
+    
+    function calculateGiftExp(item: any, tags: string[]) {
+      return item.ExpValue * (1 + Math.min(tags.length, 3));
     }
 
     function toggleTheme() {

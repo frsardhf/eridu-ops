@@ -212,10 +212,14 @@ export function useStudentModalGift(props: {
 
     if (convertBox.value) {
       // Save original values only when first checked
-      if (originalYellowStoneQuantity.value === 0 || originalSrGiftQuantity.value === 0) {
-        originalYellowStoneQuantity.value = parseInt(boxFormData.value[0] as unknown as string) || 0;
-        originalSrGiftQuantity.value = parseInt(boxFormData.value[1] as unknown as string) || 0;
-        originalSelectorBoxQuantity.value = parseInt(boxFormData.value[2] as unknown as string) || 0;
+      if (originalYellowStoneQuantity.value === 0 || 
+        originalSrGiftQuantity.value === 0) {
+        originalYellowStoneQuantity.value = 
+          parseInt(boxFormData.value[0] as unknown as string) || 0;
+        originalSrGiftQuantity.value = 
+          parseInt(boxFormData.value[1] as unknown as string) || 0;
+        originalSelectorBoxQuantity.value = 
+          parseInt(boxFormData.value[2] as unknown as string) || 0;
       }
       
       // Calculate how many boxes can be converted based on available materials
@@ -223,12 +227,16 @@ export function useStudentModalGift(props: {
       const maxConvertibleByMaterials = Math.floor(srGiftMaterialQuantity / 2);
       const maxConvertibleByStones = yellowStoneQuantity;
       // Use the minimum of what materials and stones allow
-      const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
+      const convertedQuantity = Math.min(maxConvertibleByMaterials, 
+        maxConvertibleByStones);
       
       // Set the quantities in boxFormData
-      boxFormData.value[0] = yellowStoneQuantity - convertedQuantity; // Leftover stones
-      boxFormData.value[1] = srGiftMaterialQuantity - (convertedQuantity * 2); // Remaining materials
-      boxFormData.value[2] = selectorBoxQuantity + convertedQuantity; // Number of selector boxes
+      // Leftover stones
+      boxFormData.value[0] = yellowStoneQuantity - convertedQuantity; 
+      // Remaining materials
+      boxFormData.value[1] = srGiftMaterialQuantity - (convertedQuantity * 2);
+      // Number of selector boxes 
+      boxFormData.value[2] = selectorBoxQuantity + convertedQuantity; 
     } else {
       // Restore original values when unchecked
       boxFormData.value[0] = originalYellowStoneQuantity.value;
@@ -239,8 +247,6 @@ export function useStudentModalGift(props: {
 
   const shouldShowGiftGrade = computed(() => {
     return (index: number): boolean => {
-      // Special case for collab students (without favorite gifts)
-      const isCollabStudent = !props.student?.Gifts || props.student.Gifts.length === 4;
       return (
         // Index 0: Keystone, Index 1: SR Gifts, 
         // Index 2: Selector SR Gifts, Index 3: Selector Keystone
