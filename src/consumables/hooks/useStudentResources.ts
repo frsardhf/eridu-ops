@@ -1,7 +1,8 @@
 import { ref, watch } from 'vue';
-import { StudentProps } from '../types/student';
+import { StudentProps } from '../../types/student';
+import { getResources, saveResourcesFromStudent } from '../utils/studentStorage';
 
-export function useStudentModalResource(props: { 
+export function useStudentResources(props: { 
   student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
@@ -40,13 +41,12 @@ export function useStudentModalResource(props: {
 
   function loadResources() {
     try {
-      const resourcesData = localStorage.getItem('resources');
-      if (resourcesData) {
-        const parsedData = JSON.parse(resourcesData);
+      const resources = getResources();
+      if (resources) {
         const quantities: Record<string, number> = {};
         
         // Extract quantities from the stored material objects
-        Object.values(parsedData).forEach((material: any) => {
+        Object.values(resources).forEach((material: any) => {
           if (material && material.Id !== undefined && material.QuantityOwned !== undefined) {
             quantities[material.Id] = material.QuantityOwned;
           }
@@ -60,21 +60,9 @@ export function useStudentModalResource(props: {
   }
 
   function saveResources() {
-    try {
-      if (!props.student?.Materials) return;
+    if (!props.student?.Materials) return;
 
-      const resourceData = Object.values(props.student.Materials).reduce((acc, material: any) => {
-        acc[material.Id] = {
-          ...material,
-          QuantityOwned: resourceFormData.value[material.Id] || 0
-        };
-        return acc;
-      }, {} as Record<string, any>);
-
-      localStorage.setItem('resources', JSON.stringify(resourceData));
-    } catch (error) {
-      console.error('Error saving resources to localStorage:', error);
-    }
+    saveResourcesFromStudent(props.student, resourceFormData);
   }
 
   return {

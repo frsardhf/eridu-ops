@@ -1,8 +1,9 @@
 import { ref, computed, watch } from 'vue';
-import { StudentProps } from '../types/student';
-import xpData from '../data/data.json';
+import { StudentProps } from '../../types/student';
+import xpData from '../../data/data.json';
+import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 
-export function useStudentModalUpgrade(props: {
+export function useStudentUpgrade(props: {
   student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
@@ -51,46 +52,33 @@ export function useStudentModalUpgrade(props: {
   function saveToLocalStorage() {
     if (!props.student) return;
     
-    const storageKey = `student-${props.student.Id}-data`;
-
-    let existingData = localStorage.getItem(storageKey);
-    let parsedData: Record<string, any> = existingData ? JSON.parse(existingData) : {};
-
     const dataToSave = {
-      ...parsedData,
       currentCharacterLevel: currentCharacterLevel.value,
       currentLimitBreakLevel: currentLimitBreakLevel.value,
       targetCharacterLevel: targetCharacterLevel.value,
     };
 
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
+    saveFormData(props.student.Id, dataToSave);
   }
 
   // Load form data from localStorage
   function loadFromLocalStorage() {
     if (!props.student) return;
+
+    // Define the refs and their default values
+    const refs = {
+      currentCharacterLevel,
+      targetCharacterLevel,
+      currentLimitBreakLevel
+    };
     
-    const storageKey = `student-${props.student.Id}-data`;
-    try {
-      const savedData = localStorage.getItem(storageKey);
-      
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        
-        // Apply saved data
-        // giftFormData.value = parsedData.giftFormData || {};
-        // boxFormData.value = parsedData.boxFormData || {};
-        currentCharacterLevel.value = parsedData.currentCharacterLevel || 1;
-        targetCharacterLevel.value = parsedData.targetCharacterLevel || 1;
-        currentLimitBreakLevel.value = parsedData.currentLimitBreakLevel || {};
-      }
-    } catch (error) {
-      resetFormData();
-    }
+    const defaultValues = {
+      currentCharacterLevel: 1,
+      targetCharacterLevel: 1,
+      currentLimitBreakLevel: {}
+    };
+    
+    loadFormDataToRefs(props.student.Id, refs, defaultValues);
   }
 
   // Compute total XP needed

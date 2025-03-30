@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { StudentProps } from '../../../types/student';
-import { useStudentModalGift } from '../../../consumables/useStudentModalGift';
-import { useStudentModalUpgrade } from '../../../consumables/useStudentModalUpgrade';
-import { useStudentModalResource } from '../../../consumables/useStudentModalResource';
+import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
+import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
+import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
@@ -36,7 +36,7 @@ const {
   handleGiftInput,
   handleBoxInput,
   shouldShowGiftGrade
-} = useStudentModalGift(props, emit);
+} = useStudentGifts(props, emit);
 
 const {
   currentCharacterLevel,
@@ -51,12 +51,12 @@ const {
   // materialsNeeded,
   // handleLevelInput,
   // handleStarInput
-} = useStudentModalUpgrade(props, emit);
+} = useStudentUpgrade(props, emit);
 
 const {
   resourceFormData,
   handleResourceInput
-} = useStudentModalResource(props, emit);
+} = useStudentResources(props, emit);
 </script>
 
 <template>

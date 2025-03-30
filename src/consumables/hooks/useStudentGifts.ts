@@ -1,9 +1,9 @@
 import { ref, computed, watch } from 'vue';
-import { StudentProps } from '../types/student';
-import { GiftDataProps } from '../types/gift';
-import bondData from '../../src/data/data.json';
+import { StudentProps } from '../../types/student';
+import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
+import bondData from '../../data/data.json';
 
-export function useStudentModalGift(props: {
+export function useStudentGifts(props: {
   student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
@@ -54,12 +54,10 @@ export function useStudentModalGift(props: {
     }
   }, { deep: true });
 
-  // Save current form data to localStorage
   function saveToLocalStorage() {
     if (!props.student) return;
-    const storageKey = `student-${props.student.Id}-data`;
+
     const dataToSave = {
-      studentId: props.student.Id,
       giftFormData: giftFormData.value,
       boxFormData: boxFormData.value,
       currentBond: currentBond.value,
@@ -67,67 +65,120 @@ export function useStudentModalGift(props: {
       originalYellowStoneQuantity: originalYellowStoneQuantity.value,
       originalSrGiftQuantity: originalSrGiftQuantity.value,
       originalSelectorBoxQuantity: originalSelectorBoxQuantity.value
-    };
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
     }
+
+    saveFormData(props.student.Id, dataToSave);
   }
 
-  // Load form data from localStorage
   function loadFromLocalStorage() {
     if (!props.student) return;
     
-    const storageKey = `student-${props.student.Id}-data`;
-    try {
-      const savedData = localStorage.getItem(storageKey);
-      
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        
-        // Apply saved data
-        giftFormData.value = parsedData.giftFormData || {};
-        boxFormData.value = parsedData.boxFormData || {};
-        currentBond.value = parsedData.currentBond || 1;
+    // Define the refs and their default values
+    const refs = {
+      giftFormData,
+      boxFormData,
+      currentBond,
+      convertBox,
+      originalYellowStoneQuantity,
+      originalSrGiftQuantity,
+      originalSelectorBoxQuantity
+    };
+    
+    const defaultValues = {
+      giftFormData: {},
+      boxFormData: {},
+      currentBond: 1,
+      convertBox: false,
+      originalYellowStoneQuantity: 0,
+      originalSrGiftQuantity: 0,
+      originalSelectorBoxQuantity: 0
+    };
 
-        // Restore original quantities
-        originalYellowStoneQuantity.value = parsedData.originalYellowStoneQuantity || 0;
-        originalSrGiftQuantity.value = parsedData.originalSrGiftQuantity || 0;
-        originalSelectorBoxQuantity.value = parsedData.originalSelectorBoxQuantity || 0;
-        
-        // Handle conversion state
-        const wasConverted = parsedData.convertBox || false;
-        if (wasConverted !== convertBox.value) {
-          convertBox.value = wasConverted;
-        }
-      }
-    } catch (error) {
+    const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
+    
+    if (!success) {
       resetFormData();
     }
   }
 
   // Calculate individual item EXP
-  const calculateItemExp = (item: { exp: number }, quantity: number) => 
-    isNaN(quantity) || quantity <= 0 ? 0 : item.exp * quantity;
+  const calculateItemExp = (expValue: number, quantity: number): number => {
+    if (isNaN(quantity) || quantity <= 0) return 0;
+    return expValue * quantity;
+  };
 
-  // Generic function to calculate EXP from gifts or boxes
-  const calculateExpFromItems = (
+  // Extract exp value from an item regardless of its structure
+  const getItemExpValue = (item: any): number => {
+    if (!item) return 0;
+    
+    // Direct exp property
+    if (typeof item.exp === 'number') {
+      return item.exp;
+    }
+    
+    // Nested in gift object
+    if (item.gift && typeof item.gift.exp === 'number') {
+      return item.gift.exp;
+    }
+    
+    return 0;
+  };
+
+  // Calculate EXP for a single item type (gifts or boxes)
+  const calculateItemTypeExp = (
     items: Record<string, any> | undefined,
-    formData: Record<string, number>
-  ) => {
-    if (!items) return 0;
-
-    return Object.entries(formData).reduce((total, [id, quantity]) => {
-      const parsedQuantity = Number(quantity);
-      return total + calculateItemExp(items[id], parsedQuantity);
-    }, 0);
+    formData: Record<string, number>,
+    itemType: string // For logging
+  ): number => {
+    if (!items || !formData) return 0;
+    
+    let typeTotal = 0;
+    
+    // Process each item with quantity in the form data
+    Object.entries(formData).forEach(([itemId, quantity]) => {
+      if (quantity <= 0) return;
+      
+      // Get the item by ID
+      const item = items[itemId];
+      if (!item) return;
+      
+      // Get exp value
+      const expValue = getItemExpValue(item);
+      if (expValue <= 0) return;
+      
+      // Calculate and add exp
+      const itemExp = calculateItemExp(expValue, quantity);
+      typeTotal += itemExp;
+      
+      // console.log(`${itemType} ID ${itemId}: ${quantity} x ${expValue} = ${itemExp} EXP`);
+    });
+    
+    return typeTotal;
   };
 
   // Compute total cumulative EXP across gifts and boxes
-  const calculateCumulativeExp = () => 
-    calculateExpFromItems(props.student?.Gifts, giftFormData.value) +
-    calculateExpFromItems(props.student?.Boxes, boxFormData.value);
+  const calculateCumulativeExp = (): number => {
+    if (!props.student) return 0;
+    
+    // Calculate exp for gifts
+    const giftsExp = calculateItemTypeExp(
+      props.student.Gifts,
+      giftFormData.value,
+      'Gift'
+    );
+    
+    // Calculate exp for boxes
+    const boxesExp = calculateItemTypeExp(
+      props.student.Boxes,
+      boxFormData.value,
+      'Box'
+    );
+    
+    const totalExp = giftsExp + boxesExp;
+    // console.log(`Total EXP: Gifts (${giftsExp}) + Boxes (${boxesExp}) = ${totalExp}`);
+    
+    return totalExp;
+  };
 
   const totalCumulativeExp = computed(calculateCumulativeExp);
 
@@ -156,10 +207,6 @@ export function useStudentModalGift(props: {
     return Math.max(0, xpNeeded);
   });
 
-  function getFontSizeClass(name: string) {
-    return name.length <= 15 ? 'text-xl' : 'text-normal';
-  }
-
   const removeLeadingZeros = (event: Event) => {
     const input = event.target as HTMLInputElement;
     input.value = input.value.replace(/^0+(?=\d)/, '');
@@ -178,12 +225,17 @@ export function useStudentModalGift(props: {
 
     // Update original quantities when not in convert mode
     if (!convertBox.value) {
-      if (boxId === 0) {
-        originalYellowStoneQuantity.value = parseInt(input.value) || 0;
-      } else if (boxId === 1) {
-        originalSrGiftQuantity.value = parseInt(input.value) || 0;
-      } else if (boxId === 2) {
-        originalSelectorBoxQuantity.value = parseInt(input.value) || 0;
+      // Find the box by ID
+      const box = props.student?.Boxes[boxId];
+      if (box) {
+        // Store original values based on the gift ID
+        if (box.gift.Id === 82) { // Yellow stone
+          originalYellowStoneQuantity.value = parseInt(input.value) || 0;
+        } else if (box.gift.Id === 100000) { // SR gift material
+          originalSrGiftQuantity.value = parseInt(input.value) || 0;
+        } else if (box.gift.Id === 100008) { // Selector box
+          originalSelectorBoxQuantity.value = parseInt(input.value) || 0;
+        }
       }
     }
   };
@@ -201,9 +253,14 @@ export function useStudentModalGift(props: {
     // Toggle the convertBox value first
     convertBox.value = !convertBox.value;
 
-    if (!props.student?.Boxes || props.student.Boxes.length === 0) {
+    if (!props.student?.Boxes || Object.keys(props.student.Boxes).length === 0) {
       return;
     }
+    
+    // Define IDs for our special items
+    const YELLOW_STONE_ID = 82;
+    const SR_GIFT_MATERIAL_ID = 100000;
+    const SELECTOR_BOX_ID = 100008;
     
     // Apply conversion logic for quantities
     const yellowStoneQuantity = originalYellowStoneQuantity.value;
@@ -214,12 +271,13 @@ export function useStudentModalGift(props: {
       // Save original values only when first checked
       if (originalYellowStoneQuantity.value === 0 || 
         originalSrGiftQuantity.value === 0) {
+        // Store the original quantities directly by ID
         originalYellowStoneQuantity.value = 
-          parseInt(boxFormData.value[0] as unknown as string) || 0;
+          parseInt(boxFormData.value[YELLOW_STONE_ID] as unknown as string) || 0;
         originalSrGiftQuantity.value = 
-          parseInt(boxFormData.value[1] as unknown as string) || 0;
+          parseInt(boxFormData.value[SR_GIFT_MATERIAL_ID] as unknown as string) || 0;
         originalSelectorBoxQuantity.value = 
-          parseInt(boxFormData.value[2] as unknown as string) || 0;
+          parseInt(boxFormData.value[SELECTOR_BOX_ID] as unknown as string) || 0;
       }
       
       // Calculate how many boxes can be converted based on available materials
@@ -230,30 +288,32 @@ export function useStudentModalGift(props: {
       const convertedQuantity = Math.min(maxConvertibleByMaterials, 
         maxConvertibleByStones);
       
-      // Set the quantities in boxFormData
-      // Leftover stones
-      boxFormData.value[0] = yellowStoneQuantity - convertedQuantity; 
-      // Remaining materials
-      boxFormData.value[1] = srGiftMaterialQuantity - (convertedQuantity * 2);
-      // Number of selector boxes 
-      boxFormData.value[2] = selectorBoxQuantity + convertedQuantity; 
+      // Set the quantities in boxFormData using gift IDs
+      boxFormData.value[YELLOW_STONE_ID] = yellowStoneQuantity - convertedQuantity; // Leftover stones
+      boxFormData.value[SR_GIFT_MATERIAL_ID] = srGiftMaterialQuantity - (convertedQuantity * 2); // Remaining materials
+      boxFormData.value[SELECTOR_BOX_ID] = selectorBoxQuantity + convertedQuantity; // Number of selector boxes
     } else {
       // Restore original values when unchecked
-      boxFormData.value[0] = originalYellowStoneQuantity.value;
-      boxFormData.value[1] = originalSrGiftQuantity.value;
-      boxFormData.value[2] = originalSelectorBoxQuantity.value;
+      boxFormData.value[YELLOW_STONE_ID] = originalYellowStoneQuantity.value;
+      boxFormData.value[SR_GIFT_MATERIAL_ID] = originalSrGiftQuantity.value;
+      boxFormData.value[SELECTOR_BOX_ID] = originalSelectorBoxQuantity.value;
     }
   };
 
   const shouldShowGiftGrade = computed(() => {
-    return (index: number): boolean => {
+    // Define IDs for our special items
+    const YELLOW_STONE_ID = 82;
+    const SR_GIFT_MATERIAL_ID = 100000;
+    const SELECTOR_BOX_ID = 100008;
+    const SELECTOR_KEYSTONE_ID = 100009;
+    
+    return (id: number): boolean => {
       return (
-        // Index 0: Keystone, Index 1: SR Gifts, 
-        // Index 2: Selector SR Gifts, Index 3: Selector Keystone
-        (!convertBox.value && index !== 0) || 
-        (convertBox.value && index === 1 && boxFormData.value[1] > 0) ||
-        (convertBox.value && index === 2 && boxFormData.value[2] > 0) ||
-        (convertBox.value && index === 3 && boxFormData.value[3] > 0)
+        // Only show grades for non-keystones or when converted boxes have quantities
+        (!convertBox.value && id !== YELLOW_STONE_ID) || 
+        (convertBox.value && id === SR_GIFT_MATERIAL_ID && boxFormData.value[SR_GIFT_MATERIAL_ID] > 0) ||
+        (convertBox.value && id === SELECTOR_BOX_ID && boxFormData.value[SELECTOR_BOX_ID] > 0) ||
+        (convertBox.value && id === SELECTOR_KEYSTONE_ID && boxFormData.value[SELECTOR_KEYSTONE_ID] > 0)
       );
     };
   });
@@ -283,9 +343,6 @@ export function useStudentModalGift(props: {
     // Methods
     closeModal,
     resetFormData,
-    saveToLocalStorage,
-    loadFromLocalStorage,
-    getFontSizeClass,
     handleGiftInput,
     handleBoxInput,
     handleBondInput,

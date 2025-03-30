@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import StudentHeader from './StudentHeader.vue';
 import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../modal/StudentModal.vue'
-import { useStudentData } from '../../../consumables/useStudentData';
+import { useStudentData } from '../../../consumables/hooks/useStudentData';
 import '../../../styles/studentDisplay.css'
 
 // Use the composable to manage student data
@@ -23,12 +23,37 @@ const isModalVisible = ref(false)
 
 // Event handlers
 function openModal(student) {
+  // Convert gifts and boxes arrays to ID-based objects if they're arrays
+  const studentGifts = favoredGift.value[student.Id] || {};
+  const studentBoxes = giftBoxData.value[student.Id] || {};
+  
+  // Create objects with gift IDs as keys if they're arrays
+  const giftsObject = Array.isArray(studentGifts) 
+    ? studentGifts.reduce((acc, gift) => {
+        if (gift.gift && gift.gift.Id) {
+          acc[gift.gift.Id] = gift;
+        }
+        return acc;
+      }, {})
+    : studentGifts;
+    
+  const boxesObject = Array.isArray(studentBoxes)
+    ? studentBoxes.reduce((acc, box) => {
+        if (box.gift && box.gift.Id) {
+          acc[box.gift.Id] = box;
+        }
+        return acc;
+      }, {})
+    : studentBoxes;
+  
+  // Set the selected student with properly structured gifts and boxes
   selectedStudent.value = {
     ...student,
-    Gifts: favoredGift.value[student.Id],
-    Boxes: giftBoxData.value[student.Id],
+    Gifts: giftsObject,
+    Boxes: boxesObject,
     Materials: materialData.value
   };
+  
   isModalVisible.value = true;
 }
 

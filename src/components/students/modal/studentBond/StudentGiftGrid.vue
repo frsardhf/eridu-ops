@@ -9,24 +9,24 @@ const props = defineProps<{
   giftFormData: Record<string, number>,
   boxFormData: Record<string, number>,
   convertBox: boolean,
-  shouldShowGiftGrade: (index: number) => boolean
+  shouldShowGiftGrade: (id: number) => boolean
 }>();
 
 const emit = defineEmits<{
-  (e: 'update-gift', index: number, event: Event): void,
-  (e: 'update-box', index: number, event: Event): void
+  (e: 'update-gift', id: number, event: Event): void,
+  (e: 'update-box', id: number, event: Event): void
 }>();
 
-function handleGiftInput(index: number, event: Event) {
-  emit('update-gift', index, event);
+function handleGiftInput(id: number, event: Event) {
+  emit('update-gift', id, event);
 }
 
-function handleBoxInput(index: number, event: Event) {
-  emit('update-box', index, event);
+function handleBoxInput(id: number, event: Event) {
+  emit('update-box', id, event);
 }
 
-const hasGifts = computed(() => props.student?.Gifts && props.student.Gifts.length > 0);
-const hasBoxes = computed(() => props.student?.Boxes && props.student.Boxes.length > 0);
+const hasGifts = computed(() => props.student?.Gifts && Object.keys(props.student.Gifts).length > 0);
+const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.student.Boxes).length > 0);
 </script>
 
 <template>
@@ -34,24 +34,24 @@ const hasBoxes = computed(() => props.student?.Boxes && props.student.Boxes.leng
     <!-- Regular Gifts Section -->
     <template v-if="hasGifts">
       <StudentGiftCard 
-        v-for="(gift, index) in student!.Gifts" 
-        :key="`gift-${index}`"
-        :item="gift"
-        :value="giftFormData[index]"
-        @update:value="(e) => handleGiftInput(index, e)"
+        v-for="(item) in student!.Gifts" 
+        :key="`gift-${item.gift.Id}`"
+        :item="item"
+        :value="giftFormData[item.gift.Id]"
+        @update:value="(e) => handleGiftInput(item.gift.Id, e)"
       />
     </template>
     
     <!-- Gift Boxes Section -->
     <template v-if="hasBoxes">
       <StudentBoxCard 
-        v-for="(box, index) in student!.Boxes" 
-        :key="`box-${index}`"
-        :item="box"
-        :value="boxFormData[index]"
+        v-for="(item) in student!.Boxes" 
+        :key="`box-${item.gift.Id}`"
+        :item="item"
+        :value="boxFormData[item.gift.Id]"
         :convert-box="convertBox"
-        :show-gift-grade="shouldShowGiftGrade(index)"
-        @update:value="(e) => handleBoxInput(index, e)"
+        :show-gift-grade="shouldShowGiftGrade(Number(item.gift.Id))"
+        @update:value="(e) => handleBoxInput(Number(item.gift.Id), e)"
       />
     </template>
   </div>

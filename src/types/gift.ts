@@ -1,5 +1,4 @@
 export interface GiftDataProps {
-  id: number;
   gift: any;
   exp: number;
   grade: number;
@@ -7,7 +6,6 @@ export interface GiftDataProps {
 }
 
 export interface BoxDataProps {
-  id: number;
   gift: any;
   exp: number;
   grade: number;
