@@ -267,10 +267,10 @@ export function useStudentData() {
 
   // Usage in initialization
   async function initializeData() {
-    const hasResetStorage = localStorage.getItem('storageReset');
-    if (!hasResetStorage) {
-      localStorage.clear();
-    }
+    // const hasResetStorage = localStorage.getItem('storageReset');
+    // if (!hasResetStorage) {
+    //   localStorage.clear();
+    // }
     studentData.value = await fetchData('students');
     const allItems = await fetchData('items');
     giftData.value = filterByProperty(allItems, 'category', 'Favor');

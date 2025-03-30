@@ -67,7 +67,7 @@ export function saveFormData(studentId: string | number, data: Record<string, an
   
   try {
     // Get all students data
-    let studentsData = getFormsCollection();
+    let studentsData = getDataCollection(STORAGE_KEYS.FORMS);
     if (!studentsData) studentsData = {};
     
     // Get existing data for this student
@@ -90,15 +90,30 @@ export function saveFormData(studentId: string | number, data: Record<string, an
 }
 
 /**
- * Retrieves all students data from localStorage
- * @returns Record of all students or empty object if not found
+ * Retrieves all data collection by key from localStorage
+ * @returns Record of all collection or empty object if not found
  */
-export function getFormsCollection(): Record<string | number, any> {
+export function getDataCollection(key: string): Record<string | number, any> {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.FORMS);
+    const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : {};
   } catch (error) {
     console.error('Error retrieving students collection from localStorage:', error);
+    return {};
+  }
+}
+
+/**
+ * Retrieves a single resource data from localStorage
+ * @param id The ID of the resource
+ * @returns The resource data or null if not found
+ */
+export function getResourceDataById(id: string | number): Record<string, any> | null {
+  try {
+    const resourcesData = getDataCollection(STORAGE_KEYS.RESOURCES);
+    return resourcesData[id] || null;
+  } catch (error) {
+    console.error('Error retrieving materials collection from localStorage:', error);
     return {};
   }
 }
@@ -112,10 +127,10 @@ export function getFormData(studentId: string | number): Record<string, any> | n
   if (!studentId) return null;
   
   try {
-    const studentsData = getFormsCollection();
+    const studentsData = getDataCollection(STORAGE_KEYS.FORMS)
     return studentsData[studentId] || null;
   } catch (error) {
-    console.error('Error retrieving student data from localStorage:', error);
+    console.error('Error retrieving form data from localStorage:', error);
     return null;
   }
 }

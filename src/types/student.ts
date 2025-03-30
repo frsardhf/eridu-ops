@@ -7,7 +7,7 @@ export interface StudentProps {
   Gifts: GiftDataProps[];
   Boxes: BoxDataProps[];
   Materials: ResourceProps[];
-  BondFormData: BondFormDataProps;
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];
+  PotentialMaterial: number;
 }

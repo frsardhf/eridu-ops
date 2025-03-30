@@ -9,6 +9,7 @@ import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
 import StudentGiftGrid from './studentBond/StudentGiftGrid.vue';
 import StudentLevelSection from './studentUpgrade/StudentLevelSection.vue';
+import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vue';
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
 import '../../../styles/studentModal.css'
 
@@ -41,16 +42,17 @@ const {
 const {
   currentCharacterLevel,
   targetCharacterLevel,
+  currentPotentialLevel,
+  targetPotentialLevel,
+  potentialMaterials,
+  potentialMaterialsNeeded,
   handleCharacterLevelInput,
   handleTargetCharacterLevelInput,
+  handleCurrentPotentialInput,
+  handleTargetPotentialInput,
+  handlePotentialUpdate,
   remainingXp: characterRemainingXp,
   totalCumulativeExp: characterTotalXp,
-  // currentStars,
-  // targetStars,
-  // totalXpNeeded,
-  // materialsNeeded,
-  // handleLevelInput,
-  // handleStarInput
 } = useStudentUpgrade(props, emit);
 
 const {
@@ -132,9 +134,20 @@ const {
           </div>
           
           <div class="right-column">
-            <!-- Placeholder for your materials grid -->
+            <StudentPotentialSection
+              :current-potential="currentPotentialLevel"
+              :target-potential="targetPotentialLevel"
+              :materials="potentialMaterialsNeeded"
+              @update-current-potential="handleCurrentPotentialInput"
+              @update-target-potential="handleTargetPotentialInput"
+              @update-potential="handlePotentialUpdate"
+            />
+            <!-- This will be replaced with actual materials grid later -->
             <div class="materials-placeholder">
-              Materials grid will be displayed here
+              <div class="placeholder-message">
+                <p>Upgrade materials calculation is in development</p>
+                <p class="note">The potential materials calculator is now available!</p>
+              </div>
             </div>
           </div>
         </div>
@@ -143,13 +156,37 @@ const {
         <div v-if="activeTab === 'resources'">
           <div class="resources-placeholder">
             <StudentResourceGrid
-            :student="student"
-            :resource-form-data="resourceFormData"
-            @update-resource="handleResourceInput"
-          />
+              :student="student"
+              :resource-form-data="resourceFormData"
+              @update-resource="handleResourceInput"
+            />
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.materials-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  background-color: var(--background-primary);
+}
+
+.placeholder-message {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.note {
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: var(--accent-color);
+}
+</style>
