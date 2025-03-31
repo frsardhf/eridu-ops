@@ -10,6 +10,8 @@ import StudentConvertBox from './studentBond/StudentConvertBox.vue';
 import StudentGiftGrid from './studentBond/StudentGiftGrid.vue';
 import StudentLevelSection from './studentUpgrade/StudentLevelSection.vue';
 import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vue';
+import StudentSkillSection from './studentUpgrade/StudentSkillSection.vue';
+import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vue';
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
 import '../../../styles/studentModal.css'
 
@@ -44,13 +46,16 @@ const {
   targetCharacterLevel,
   currentPotentialLevel,
   targetPotentialLevel,
-  potentialMaterials,
+  potentialLevels,
+  skillLevels,
   potentialMaterialsNeeded,
+  skillMaterialsNeeded,
   handleCharacterLevelInput,
   handleTargetCharacterLevelInput,
   handleCurrentPotentialInput,
   handleTargetPotentialInput,
   handlePotentialUpdate,
+  handleSkillUpdate,
   remainingXp: characterRemainingXp,
   totalCumulativeExp: characterTotalXp,
 } = useStudentUpgrade(props, emit);
@@ -138,17 +143,28 @@ const {
               :current-potential="currentPotentialLevel"
               :target-potential="targetPotentialLevel"
               :materials="potentialMaterialsNeeded"
+              :potential-levels="potentialLevels"
               @update-current-potential="handleCurrentPotentialInput"
               @update-target-potential="handleTargetPotentialInput"
               @update-potential="handlePotentialUpdate"
             />
-            <!-- This will be replaced with actual materials grid later -->
-            <div class="materials-placeholder">
-              <div class="placeholder-message">
-                <p>Upgrade materials calculation is in development</p>
-                <p class="note">The potential materials calculator is now available!</p>
-              </div>
-            </div>
+            
+            <StudentSkillSection
+              :student="student"
+              :skill-levels="skillLevels || {
+                Ex: { current: 1, target: 1 },
+                Public: { current: 1, target: 1 },
+                Passive: { current: 1, target: 1 },
+                ExtraPassive: { current: 1, target: 1 }
+              }"
+              :materials="skillMaterialsNeeded || []"
+              @update-skill="handleSkillUpdate"
+            />
+            
+            <StudentMaterialsSection
+              :skill-materials="skillMaterialsNeeded || []"
+              :potential-materials="potentialMaterialsNeeded || []"
+            />
           </div>
         </div>
 
@@ -168,25 +184,13 @@ const {
 </template>
 
 <style scoped>
-.materials-placeholder {
+.resources-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  border: 1px dashed var(--border-color);
   border-radius: 8px;
-  padding: 20px;
+  padding: 5px;
   background-color: var(--background-primary);
-}
-
-.placeholder-message {
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-.note {
-  margin-top: 10px;
-  font-size: 0.9em;
-  color: var(--accent-color);
 }
 </style>

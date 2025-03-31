@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
 import { BoxDataProps, GiftDataProps } from '../../types/gift';
-import { saveStudentData } from '../utils/studentStorage';
+import { saveResources, saveStudentData } from '../utils/studentStorage';
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
@@ -13,7 +13,7 @@ const GIFT_BOX_EXP_VALUES = {
 const MATERIAL = {
   'category': "CharacterExpGrowth",
   'subcategory': ["Artifact", "CDItem", "BookItem"],
-  'id': ['2000', '2001', '2002']
+  'id': ['2000', '2001', '2002', '9999']
 }
 
 export function useStudentData() {
@@ -281,8 +281,9 @@ export function useStudentData() {
     favoredGift.value = getGiftsByStudent(studentData.value, giftData.value, false);
     giftBoxData.value = getGiftsByStudent(studentData.value, boxData.value, true);
     
-    // Save the combined data to localStorage
+    // Save the combined data to localStorage as initial data
     saveStudentData(studentData.value, favoredGift.value, giftBoxData.value);
+    saveResources(allItems);
   }
 
   initializeData()

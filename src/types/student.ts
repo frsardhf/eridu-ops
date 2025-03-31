@@ -1,4 +1,4 @@
-import { GiftDataProps, BoxDataProps, BondFormDataProps } from "./gift";
+import { GiftDataProps, BoxDataProps } from "./gift";
 import { ResourceProps } from "./resource";
 
 export interface StudentProps {
@@ -10,4 +10,8 @@ export interface StudentProps {
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];
   PotentialMaterial: number;
+  SkillExMaterial: number[][];
+  SkillMaterial: number[][];
+  SkillExMaterialAmount: number[][];
+  SkillMaterialAmount: number[][];
 }

@@ -1,30 +1,20 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
+import { 
+  PotentialType, 
+  PotentialSettings,
+  PotentialMaterial
+} from '../../../../types/upgrade';
 
-// Define the potential types
-type PotentialType = 'attack' | 'maxhp' | 'healpower';
-
-interface MaterialItem {
-  material: Record<string, any> | null;
-  workbookQuantity: number;
-  materialQuantity: number;
-  levelsInBlock: number;
-  blockStart: number;
-  blockEnd: number;
+interface MaterialItem extends Omit<PotentialMaterial, 'potentialType'> {
   potentialType?: PotentialType;
-}
-
-interface PotentialSettings {
-  current: number;
-  target: number;
-  icon: string;
-  name: string;
 }
 
 const props = defineProps<{
   currentPotential: number;
   targetPotential: number;
   materials: MaterialItem[];
+  potentialLevels?: Record<PotentialType, { current: number; target: number }>;
 }>();
 
 const emit = defineEmits<{
@@ -42,20 +32,20 @@ const potentialTypes = ref<Record<PotentialType, PotentialSettings>>({
     name: 'Attack'
   },
   maxhp: {
-    current: props.currentPotential,
-    target: props.targetPotential,
+    current: 0,
+    target: 0,
     icon: 'item_icon_workbook_potentialmaxhp',
     name: 'Max HP'
   },
   healpower: {
-    current: props.currentPotential,
-    target: props.targetPotential,
+    current: 0,
+    target: 0,
     icon: 'item_icon_workbook_potentialhealpower',
     name: 'Heal Power'
   }
 });
 
-// Watch for prop changes to update potential types
+// Watch for prop changes to update attack potential directly
 watch(() => props.currentPotential, (newVal) => {
   potentialTypes.value.attack.current = newVal;
 }, { immediate: true });
@@ -64,12 +54,21 @@ watch(() => props.targetPotential, (newVal) => {
   potentialTypes.value.attack.target = newVal;
 }, { immediate: true });
 
-// Determine which potential types are active (target > current)
-const activePotentialTypes = computed(() => {
-  return Object.entries(potentialTypes.value).filter(([_, settings]) => 
-    settings.target > settings.current
-  ) as [PotentialType, PotentialSettings][];
-});
+// Watch for changes to potentialLevels to update maxhp and healpower
+watch(() => props.potentialLevels, (newVal) => {
+  if (newVal) {
+    // Update maxhp and healpower from potentialLevels prop
+    if (newVal.maxhp) {
+      potentialTypes.value.maxhp.current = newVal.maxhp.current;
+      potentialTypes.value.maxhp.target = newVal.maxhp.target;
+    }
+    
+    if (newVal.healpower) {
+      potentialTypes.value.healpower.current = newVal.healpower.current;
+      potentialTypes.value.healpower.target = newVal.healpower.target;
+    }
+  }
+}, { deep: true, immediate: true });
 
 // Handle potential type changes
 const updatePotentialCurrent = (type: PotentialType, value: number) => {
@@ -121,236 +120,58 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
     }
   }
 };
-
-// Update your combinedMaterials computed property to filter materials by potentialType
-const combinedMaterials = computed(() => {
-  // Create new materials array based on the original materials
-  const combinedMats: MaterialItem[] = [];
-  
-  // Process each potential type individually
-  Object.entries(potentialTypes.value).forEach(([type, settings]) => {
-    // Only process if target > current for this specific potential type
-    if (settings.target > settings.current) {
-      // Get materials already tagged with this potential type from props.materials
-      const typeSpecificMaterials = props.materials.filter(material => 
-        material.potentialType === type || !material.potentialType
-      );
-      
-      if (typeSpecificMaterials.length > 0) {
-        // Add these materials to our combined list
-        combinedMats.push(...typeSpecificMaterials);
-      } else {
-        // If no materials are already tagged, calculate what materials would be needed
-        const startBlock = Math.floor(settings.current / 5);
-        const endBlock = Math.floor((settings.target - 1) / 5);
-        
-        for (let block = startBlock; block <= endBlock; block++) {
-          // Find the matching material in props.materials
-          const matchingMaterial = props.materials.find(m => 
-            m.blockStart === block * 5 && m.blockEnd <= (block + 1) * 5
-          );
-          
-          if (matchingMaterial) {
-            // Calculate levels within this block
-            let levelsInBlock = 5;
-            
-            // Handle first block (may not need all 5 levels)
-            if (block === startBlock) {
-              const levelStart = settings.current % 5;
-              levelsInBlock = 5 - levelStart;
-            }
-            
-            // Handle last block (may not need all 5 levels)
-            if (block === endBlock) {
-              const remainder = settings.target % 5;
-              if (remainder > 0) {
-                levelsInBlock = remainder;
-              }
-            }
-            
-            // Create a clone with adjusted quantities
-            const materialClone = { 
-              ...matchingMaterial,
-              levelsInBlock,
-              workbookQuantity: Math.ceil(matchingMaterial.workbookQuantity * (levelsInBlock / matchingMaterial.levelsInBlock)),
-              materialQuantity: Math.ceil(matchingMaterial.materialQuantity * (levelsInBlock / matchingMaterial.levelsInBlock)),
-              potentialType: type as PotentialType
-            };
-            
-            combinedMats.push(materialClone);
-          }
-        }
-      }
-    }
-  });
-  
-  return combinedMats;
-});
-
-// Calculate cumulative materials needed
-const cumulativeMaterials = computed(() => {
-  const mats = combinedMaterials.value;
-  if (!mats.length) return [];
-
-  // Group materials by type (based on material?.Id or similar identifier)
-  const materialMap = new Map();
-  
-  // Process each material item
-  mats.forEach(item => {
-    const materialId = item.material?.Id;
-    
-    // Skip if material is invalid
-    if (!materialId) return;
-    
-    // If this material type already exists in the map, update quantities
-    if (materialMap.has(materialId)) {
-      const existingEntry = materialMap.get(materialId);
-      existingEntry.materialQuantity += item.materialQuantity;
-    } else {
-      // Create a new entry for this material type
-      materialMap.set(materialId, {
-        material: item.material,
-        materialQuantity: item.materialQuantity
-      });
-    }
-  });
-  
-  // Convert map to array
-  return Array.from(materialMap.values());
-});
-
-// Calculate workbooks needed by type
-const workbooksByType = computed(() => {
-  const workbooks: Record<string, number> = {};
-  
-  combinedMaterials.value.forEach(item => {
-    const type = item.potentialType || 'attack';
-    if (!workbooks[type]) {
-      workbooks[type] = 0;
-    }
-    workbooks[type] += item.workbookQuantity;
-  });
-  
-  return workbooks;
-});
-
-// Calculate total workbooks needed
-const totalWorkbooksNeeded = computed(() => {
-  return Object.values(workbooksByType.value).reduce((sum, qty) => sum + qty, 0);
-});
-
-// Calculate total materials needed
-const totalMaterialsNeeded = computed(() => {
-  return cumulativeMaterials.value.reduce((sum, item) => sum + item.materialQuantity, 0);
-});
-
-// Determine if any potential is active
-const hasAnyActivePotential = computed(() => {
-  return Object.values(potentialTypes.value).some(settings => 
-    settings.target > settings.current
-  );
-});
 </script>
 
 <template>
   <div class="potential-section">
     <h3 class="section-title">Potential Upgrade Calculator</h3>
     
-    <div class="potential-calculator-layout">
-      <!-- Left Column: Potential Sliders -->
-      <div class="potential-sliders-column">
-        <template v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]" :key="potType">
-          <div class="potential-type-section">
-            <div class="potential-type-header">
-              <img 
-                :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType].icon}.webp`" 
-                :alt="potentialTypes[potType].name"
-                class="potential-type-icon"
-              />
-              <h4>{{ potentialTypes[potType].name }}</h4>
-              <div class="level-display">
-                <span class="current-level">{{ potentialTypes[potType].current }}</span>
-                <span class="level-arrow">→</span>
-                <span class="target-level">{{ potentialTypes[potType].target }}</span>
-              </div>
-            </div>
-            
-            <div class="potential-sliders">
-              <!-- Current Potential Slider -->
-              <div class="slider-row">
-                <span class="slider-label">Current</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="25"
-                  class="potential-slider"
-                  :value="potentialTypes[potType].current"
-                  @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
-                />
-              </div>
-              
-              <!-- Target Potential Slider -->
-              <div class="slider-row">
-                <span class="slider-label">Target</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="25"
-                  class="potential-slider"
-                  :value="potentialTypes[potType].target"
-                  @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
-                />
-              </div>
+    <div class="potential-sliders-column">
+      <template v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]" :key="potType">
+        <div class="potential-type-section">
+          <div class="potential-type-header">
+            <img 
+              :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType].icon}.webp`" 
+              :alt="potentialTypes[potType].name"
+              class="potential-type-icon"
+            />
+            <h4>{{ potentialTypes[potType].name }}</h4>
+            <div class="level-display">
+              <span class="current-level">{{ potentialTypes[potType].current }}</span>
+              <span class="level-arrow">→</span>
+              <span class="target-level">{{ potentialTypes[potType].target }}</span>
             </div>
           </div>
-        </template>
-      </div>
-      
-      <!-- Right Column: Materials -->
-      <div class="materials-column">
-        <h4 class="materials-title">Materials Needed</h4>
-        
-        <!-- No materials message -->
-        <div v-if="!hasAnyActivePotential" class="no-materials">
-          Target levels must be higher than current levels
-        </div>
-        
-        <!-- Materials list -->
-        <div v-else-if="combinedMaterials.length === 0" class="no-materials">
-          No materials needed for this upgrade
-        </div>
-        
-        <div v-else class="materials-summary">
-          <!-- Workbooks by potential type -->
-          <template v-for="potType in Object.keys(workbooksByType)" :key="potType">
-            <div class="material-item" :title="`${potentialTypes[potType as PotentialType]?.name || 'Potential'} Workbooks`">
-              <div class="material-icon-container">
-                <img 
-                  :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType as PotentialType]?.icon || 'item_icon_workbook_potentialattack'}.webp`" 
-                  :alt="`${potentialTypes[potType as PotentialType]?.name || 'Potential'} Workbooks`"
-                  class="material-icon"
-                />
-              </div>
-              <div class="material-quantity">{{ workbooksByType[potType] }}</div>
-            </div>
-          </template>
           
-          <!-- Materials -->
-          <template v-for="(item, index) in cumulativeMaterials" :key="index">
-            <div class="material-item" :title="item.material?.Name || 'Material'">
-              <div class="material-icon-container">
-                <img 
-                  v-if="item.material?.Icon"
-                  :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
-                  :alt="item.material?.Name || 'Material'"
-                  class="material-icon"
-                />
-              </div>
-              <div class="material-quantity">{{ item.materialQuantity }}</div>
+          <div class="potential-sliders">
+            <!-- Current Potential Slider -->
+            <div class="slider-row">
+              <span class="slider-label">Current</span>
+              <input
+                type="range"
+                min="0"
+                max="25"
+                class="potential-slider"
+                :value="potentialTypes[potType].current"
+                @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
+              />
             </div>
-          </template>
+            
+            <!-- Target Potential Slider -->
+            <div class="slider-row">
+              <span class="slider-label">Target</span>
+              <input
+                type="range"
+                min="0"
+                max="25"
+                class="potential-slider"
+                :value="potentialTypes[potType].target"
+                @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -373,13 +194,6 @@ const hasAnyActivePotential = computed(() => {
   border-bottom: 1px solid var(--border-color);
 }
 
-.potential-calculator-layout {
-  display: grid;
-  grid-template-columns: 9fr 1fr;
-  gap: 15px;
-}
-
-/* Left Column Styles */
 .potential-sliders-column {
   display: flex;
   flex-direction: column;
@@ -472,86 +286,7 @@ const hasAnyActivePotential = computed(() => {
   padding: 0 5px;
 }
 
-/* Right Column Styles */
-.materials-column {
-  background: var(--background-primary);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-}
-
-.materials-title {
-  font-size: 1em;
-  font-weight: bold;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-  text-align: center;
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.no-materials {
-  color: var(--text-secondary);
-  font-style: italic;
-  text-align: center;
-  padding: 15px;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.materials-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  padding: 5px;
-}
-
-.material-item {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  background: var(--background-secondary);
-  border-radius: 8px;
-  padding: 8px;
-  position: relative;
-}
-
-.material-icon-container {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.material-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.material-quantity {
-  font-size: 1.3em;
-  font-weight: bold;
-  color: var(--accent-color);
-}
-
 @media (max-width: 976px) {
-  .potential-calculator-layout {
-    grid-template-columns: 1fr;
-  }
-  
-  .materials-column {
-    padding: 10px;
-  }
-  
-  .material-icon-container {
-    width: 40px;
-    height: 40px;
-  }
-  
   .potential-slider {
     height: 8px;
   }
