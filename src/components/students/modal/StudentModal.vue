@@ -58,6 +58,10 @@ const {
   handleSkillUpdate,
   remainingXp: characterRemainingXp,
   totalCumulativeExp: characterTotalXp,
+  allSkillsMaxed,
+  toggleMaxAllSkills,
+  targetSkillsMaxed,
+  toggleMaxTargetSkills
 } = useStudentUpgrade(props, emit);
 
 const {
@@ -158,7 +162,11 @@ const {
                 ExtraPassive: { current: 1, target: 1 }
               }"
               :materials="skillMaterialsNeeded || []"
+              :all-skills-maxed="allSkillsMaxed"
+              :target-skills-maxed="targetSkillsMaxed"
               @update-skill="handleSkillUpdate"
+              @toggle-max-skills="toggleMaxAllSkills"
+              @toggle-max-target="toggleMaxTargetSkills"
             />
             
             <StudentMaterialsSection

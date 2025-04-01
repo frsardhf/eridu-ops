@@ -19,10 +19,14 @@ const props = defineProps<{
   student: Record<string, any> | null,
   skillLevels: Record<string, { current: number; target: number; }>,
   materials: SkillMaterial[];
+  allSkillsMaxed: boolean;
+  targetSkillsMaxed: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'update-skill', type: SkillType, current: number, target: number): void;
+  (e: 'toggle-max-skills', checked: boolean): void;
+  (e: 'toggle-max-target', checked: boolean): void;
 }>();
 
 // Create skill settings for each type
@@ -137,22 +141,171 @@ const updateSkillTarget = (type: SkillType, value: number) => {
 const getSkillIconUrl = (iconName: string) => {
   return `https://schaledb.com/images/skill/${iconName}.webp`;
 };
+
+// Add this function to format the skill description
+const formatSkillDescription = (desc: string, parameters: any[][], current: number, target: number) => {
+  if (!desc || !parameters) return '';
+  
+  // First process the special tags before handling parameters
+  let formattedDesc = desc;
+  
+  // 1. Handle <b:Tag> format by adding spaces before capital letters and removing tags
+  formattedDesc = formattedDesc.replace(/<b:([^>]+)>/g, (match, tagContent) => {
+    // Add spaces before capital letters (except the first one)
+    return tagContent.replace(/([A-Z])/g, (_, capital, index) => {
+      return index > 0 ? ' ' + capital : capital;
+    });
+  });
+  
+  // 2. Handle <s:Tag> which references skill names - for simplicity, just remove these tags
+  formattedDesc = formattedDesc.replace(/<s:[^>]+>/g, '');
+  
+  // 3. Handle any other tags that might be present (except parameter placeholders)
+  formattedDesc = formattedDesc.replace(/<(?!\?)[^>]+>/g, '');
+  
+  // Now replace parameter placeholders with current/target values
+  parameters.forEach((paramGroup, groupIndex) => {
+    const currentValue = paramGroup[current - 1] || paramGroup[0];
+    const targetValue = paramGroup[target - 1] || paramGroup[0];
+    const placeholder = `<?${groupIndex + 1}>`;
+    
+    formattedDesc = formattedDesc.replace(
+      placeholder,
+      `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`
+    );
+  });
+  
+  return formattedDesc;
+};
+
+// Add this function to format the skill cost
+const formatSkillCost = (cost: number[], current: number, target: number) => {
+  if (!cost || !cost.length) return '';
+  const currentValue = cost[current - 1] || cost[0];
+  const targetValue = cost[target - 1] || cost[0];
+  
+  return `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`;
+};
+
+// Add these refs for tooltip positioning
+const activeTooltip = ref<SkillType | null>(null);
+const tooltipStyle = ref({
+  top: '0px',
+  left: '0px'
+});
+
+// Add these methods for tooltip handling
+const showTooltip = (event: MouseEvent, skillType: SkillType) => {
+  const rect = (event.target as HTMLElement).getBoundingClientRect();
+  const tooltipWidth = 250; // Approximate width of tooltip
+  const tooltipHeight = 100; // Approximate height of tooltip
+  
+  // Calculate position
+  let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+  let top = rect.top - tooltipHeight - 10; // 10px gap
+  
+  // Adjust if tooltip would go off screen
+  if (left < 0) left = 0;
+  if (left + tooltipWidth > window.innerWidth) {
+    left = window.innerWidth - tooltipWidth;
+  }
+  
+  // If tooltip would go off top of screen, show below instead
+  if (top < 0) {
+    top = rect.bottom + 10;
+  }
+  
+  tooltipStyle.value = {
+    top: `${top}px`,
+    left: `${left}px`
+  };
+  
+  activeTooltip.value = skillType;
+};
+
+const hideTooltip = () => {
+  activeTooltip.value = null;
+};
+
+// Handle max all skills checkbox change
+const handleMaxAllSkillsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-skills', checked);
+};
+
+// Handle max target skills checkbox change
+const handleMaxTargetSkillsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-target', checked);
+};
 </script>
 
 <template>
   <div class="skill-section">
-    <h3 class="section-title">Skill Upgrade Calculator</h3>
+    <h3 class="section-title">
+      Skill Upgrade Calculator
+      <div class="options-container">
+        <div class="max-all-container">
+          <input
+            type="checkbox"
+            id="max-all-skills"
+            :checked="props.allSkillsMaxed"
+            @change="handleMaxAllSkillsChange"
+          />
+          <label for="max-all-skills">Max All Skills</label>
+        </div>
+        <div class="max-all-container">
+          <input
+            type="checkbox"
+            id="max-target-skills"
+            :checked="props.targetSkillsMaxed"
+            @change="handleMaxTargetSkillsChange"
+          />
+          <label for="max-target-skills">Max Target Skills</label>
+        </div>
+      </div>
+    </h3>
     
     <div class="skill-sliders-column">
       <template v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
-        <!-- Only show ExtraPassive if student has it -->
-        <div v-if="skillType !== 'ExtraPassive' || (props.student?.Skills?.ExtraPassive)" class="skill-type-section">
+        <div class="skill-type-section">
           <div class="skill-type-header">
-            <img 
-              :src="getSkillIconUrl(skillTypes[skillType].icon)"
-              :alt="skillTypes[skillType].name"
-              class="skill-type-icon"
-            />
+            <div class="skill-icon-wrapper">
+              <img 
+                :src="getSkillIconUrl(skillTypes[skillType].icon)"
+                :alt="skillTypes[skillType].name"
+                class="skill-type-icon"
+                :class="{
+                  'icon-background-explosive': props.student?.BulletType === 'Explosion',
+                  'icon-background-piercing': props.student?.BulletType === 'Pierce',
+                  'icon-background-mystic': props.student?.BulletType === 'Mystic',
+                  'icon-background-sonic': props.student?.BulletType === 'Sonic'
+                }"
+                @mouseenter="showTooltip($event, skillType)"
+                @mouseleave="hideTooltip"
+              />
+              <div 
+                class="skill-tooltip"
+                :style="tooltipStyle"
+                v-show="activeTooltip === skillType"
+              >
+                <div class="tooltip-content">
+                  <div class="tooltip-cost" v-if="props.student?.Skills?.[skillType]?.Cost">
+                    Cost: <span v-html="formatSkillCost(
+                      props.student.Skills[skillType].Cost,
+                      skillTypes[skillType].current,
+                      skillTypes[skillType].target
+                    )"></span>
+                  </div>
+                  <div class="tooltip-desc" v-html="formatSkillDescription(
+                    props.student?.Skills?.[skillType]?.Desc,
+                    props.student?.Skills?.[skillType]?.Parameters,
+                    skillTypes[skillType].current,
+                    skillTypes[skillType].target
+                  )"></div>
+                </div>
+              </div>
+            </div>
             <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
             <div class="level-display">
               <span class="current-level">{{ skillTypes[skillType].current }}</span>
@@ -212,6 +365,32 @@ const getSkillIconUrl = (iconName: string) => {
   color: var(--text-primary);
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.options-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.max-all-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.max-all-container input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.max-all-container label {
+  cursor: pointer;
+  user-select: none;
 }
 
 .skill-sliders-column {
@@ -233,21 +412,70 @@ const getSkillIconUrl = (iconName: string) => {
   margin-bottom: 10px;
 }
 
+.skill-icon-wrapper {
+  position: relative;
+}
+
+.skill-tooltip {
+  position: fixed;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  pointer-events: none; /* Prevent tooltip from interfering with hover */
+}
+
+.skill-icon-wrapper:hover .skill-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-content {
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.tooltip-cost {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.tooltip-desc {
+  white-space: pre-wrap;
+}
+
 .skill-type-icon {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  border-radius: 50%;
-  background-color: var(--background-secondary);
+  width: 40px;
+  height: 40px;
+  border-radius: 20%;
   padding: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.icon-background-explosive {
+  background-color: rgb(167, 12, 25);
+}
+
+.icon-background-piercing {
+  background-color: rgb(178, 109, 31);
+}
+
+.icon-background-mystic {
+  background-color: rgb(33, 111, 156);
+}
+
+.icon-background-sonic {
+  background-color: rgb(148, 49, 165);
 }
 
 .skill-name {
   font-size: 0.95em;
-  max-width: 150px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .level-display {

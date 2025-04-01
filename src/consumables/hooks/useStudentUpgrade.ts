@@ -63,6 +63,115 @@ export function useStudentUpgrade(props: {
   const characterXpTable = dataTable.character_xp;
   const potentialMaterials = dataTable.potential;
 
+  // Track if all skills are currently maxed
+  const allSkillsMaxed = ref(false);
+  
+  // Track if all target skills are maxed
+  const targetSkillsMaxed = ref(false);
+
+  // Check if all skills are at their maximum level
+  const checkAllSkillsMaxed = () => {
+    const skillDefaults = {
+      Ex: 5, // EX skill has 5 levels by default
+      Public: 10,
+      Passive: 10,
+      ExtraPassive: 10
+    };
+
+    return Object.entries(skillLevels.value).every(([type, levels]) => {
+      // Use type assertion to avoid TypeScript errors
+      const student = props.student as Record<string, any>;
+      const maxLevel = student?.Skills?.[type]?.Parameters?.[0]?.length || skillDefaults[type as SkillType];
+      return levels.current === maxLevel && levels.target === maxLevel;
+    });
+  };
+  
+  // Check if all target skills are at their maximum level
+  const checkTargetSkillsMaxed = () => {
+    const skillDefaults = {
+      Ex: 5, // EX skill has 5 levels by default
+      Public: 10,
+      Passive: 10,
+      ExtraPassive: 10
+    };
+
+    return Object.entries(skillLevels.value).every(([type, levels]) => {
+      // Use type assertion to avoid TypeScript errors
+      const student = props.student as Record<string, any>;
+      const maxLevel = student?.Skills?.[type]?.Parameters?.[0]?.length || skillDefaults[type as SkillType];
+      return levels.target === maxLevel;
+    });
+  };
+
+  // Set all skills (current and target) to maximum or minimum levels
+  const toggleMaxAllSkills = (checked: boolean) => {
+    Object.keys(skillLevels.value).forEach((type) => {
+      const skillType = type as SkillType;
+      // Use type assertion to avoid TypeScript errors
+      const student = props.student as Record<string, any>;
+      const maxLevel = student?.Skills?.[skillType]?.Parameters?.[0]?.length || 
+                      (skillType === 'Ex' ? 5 : 10);
+      
+      if (checked) {
+        // Set to max level
+        skillLevels.value[skillType].current = maxLevel;
+        skillLevels.value[skillType].target = maxLevel;
+      } else {
+        // Reset to level 1
+        skillLevels.value[skillType].current = 1;
+        skillLevels.value[skillType].target = 1;
+      }
+    });
+    
+    // Update the allSkillsMaxed ref
+    allSkillsMaxed.value = checked;
+    
+    // Target skills will also be maxed if checked
+    targetSkillsMaxed.value = checked;
+    
+    // Save changes to localStorage
+    saveToLocalStorage();
+  };
+  
+  // Set just target skills to maximum or minimum levels
+  const toggleMaxTargetSkills = (checked: boolean) => {
+    Object.keys(skillLevels.value).forEach((type) => {
+      const skillType = type as SkillType;
+      // Use type assertion to avoid TypeScript errors
+      const student = props.student as Record<string, any>;
+      const maxLevel = student?.Skills?.[skillType]?.Parameters?.[0]?.length || 
+                      (skillType === 'Ex' ? 5 : 10);
+      
+      if (checked) {
+        // Set target to max level
+        skillLevels.value[skillType].target = maxLevel;
+        
+        // Ensure current is never greater than target
+        if (skillLevels.value[skillType].current > maxLevel) {
+          skillLevels.value[skillType].current = maxLevel;
+        }
+      } else {
+        // Reset target to current level
+        skillLevels.value[skillType].target = skillLevels.value[skillType].current;
+      }
+    });
+    
+    // Update the targetSkillsMaxed ref
+    targetSkillsMaxed.value = checked;
+    
+    // Update allSkillsMaxed as well (it depends on both current and target)
+    allSkillsMaxed.value = checkAllSkillsMaxed();
+    
+    // Save changes to localStorage
+    saveToLocalStorage();
+  };
+
+  // Update allSkillsMaxed and targetSkillsMaxed when skill levels change
+  watch(skillLevels, () => {
+    allSkillsMaxed.value = checkAllSkillsMaxed();
+    targetSkillsMaxed.value = checkTargetSkillsMaxed();
+  }, { deep: true });
+
   // Reset form data
   function resetFormData() {
     currentCharacterLevel.value = 1;
@@ -429,6 +538,12 @@ export function useStudentUpgrade(props: {
     handleCurrentPotentialInput,
     handleTargetPotentialInput,
     handlePotentialUpdate,
-    handleSkillUpdate
+    handleSkillUpdate,
+    allSkillsMaxed,
+    checkAllSkillsMaxed,
+    toggleMaxAllSkills,
+    toggleMaxTargetSkills,
+    targetSkillsMaxed,
+    checkTargetSkillsMaxed
   };
 }
