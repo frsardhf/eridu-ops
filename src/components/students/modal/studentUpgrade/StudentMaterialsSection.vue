@@ -5,11 +5,11 @@ import { computed } from 'vue';
 interface BaseMaterial {
   material: Record<string, any> | null;
   materialQuantity: number;
-  potentialType: string;
 }
 
 interface SkillMaterial extends BaseMaterial {
   level?: number;
+  potentialType: string;
 }
 
 interface PotentialMaterial extends BaseMaterial {
@@ -18,6 +18,7 @@ interface PotentialMaterial extends BaseMaterial {
   levelsInBlock?: number;
   blockStart?: number;
   blockEnd?: number;
+  potentialType: string;
 }
 
 const props = defineProps<{
@@ -54,72 +55,44 @@ const cumulativeMaterials = computed(() => {
   
   // Process potential materials
   props.potentialMaterials.forEach(item => {
+    // Process regular material
     const materialId = item.material?.Id;
-    
-    // Skip if material is invalid
-    if (!materialId) return;
-    
-    // If this material type already exists in the map, update quantities
-    if (materialMap.has(materialId)) {
-      const existingEntry = materialMap.get(materialId);
-      existingEntry.materialQuantity += item.materialQuantity;
-    } else {
-      // Create a new entry for this material type
-      materialMap.set(materialId, {
-        material: item.material,
-        materialQuantity: item.materialQuantity
-      });
+    if (materialId) {
+      if (materialMap.has(materialId)) {
+        const existingEntry = materialMap.get(materialId);
+        existingEntry.materialQuantity += item.materialQuantity;
+      } else {
+        materialMap.set(materialId, {
+          material: item.material,
+          materialQuantity: item.materialQuantity
+        });
+      }
     }
-  });
-  
-  // Convert map to array
-  return Array.from(materialMap.values());
-});
 
-// Calculate workbooks needed by potential type
-const workbooksByType = computed(() => {
-  const workbooks: Record<string, number> = {};
-  
-  props.potentialMaterials.forEach(item => {
-    if (!item.workbook) return;
-    
-    const type = item.potentialType;
-    if (!workbooks[type]) {
-      workbooks[type] = 0;
+    // Process workbook
+    const workbookId = item.workbook?.Id;
+    if (workbookId) {
+      if (materialMap.has(workbookId)) {
+        const existingEntry = materialMap.get(workbookId);
+        existingEntry.materialQuantity += item.workbookQuantity || 0;
+      } else {
+        materialMap.set(workbookId, {
+          material: item.workbook,
+          materialQuantity: item.workbookQuantity || 0
+        });
+      }
     }
-    workbooks[type] += item.workbookQuantity || 0;
   });
   
-  return workbooks;
+  // Convert map to array and sort by material ID
+  return Array.from(materialMap.values())
+    .sort((a, b) => (a.material?.Id || 0) - (b.material?.Id || 0));
 });
 
 // Determine if any upgrades are active (materials needed)
 const hasMaterials = computed(() => {
-  return cumulativeMaterials.value.length > 0 || 
-         Object.keys(workbooksByType.value).length > 0;
+  return cumulativeMaterials.value.length > 0;
 });
-
-// Format workbook icons based on potential type
-const getPotentialIcon = (potentialType: string) => {
-  const iconMap: Record<string, string> = {
-    'attack': 'item_icon_workbook_potentialattack',
-    'maxhp': 'item_icon_workbook_potentialmaxhp',
-    'healpower': 'item_icon_workbook_potentialhealpower'
-  };
-  
-  return iconMap[potentialType] || 'item_icon_workbook_potentialattack';
-};
-
-// Get the display name for potential types
-const getPotentialName = (potentialType: string) => {
-  const nameMap: Record<string, string> = {
-    'attack': 'Attack',
-    'maxhp': 'Max HP',
-    'healpower': 'Heal Power'
-  };
-  
-  return nameMap[potentialType] || 'Potential';
-};
 </script>
 
 <template>
@@ -132,29 +105,8 @@ const getPotentialName = (potentialType: string) => {
     </div>
     
     <div v-else class="materials-content">
-      <!-- Workbooks section -->
-      <div v-if="Object.keys(workbooksByType).length > 0" class="material-category">
-        <h4 class="category-title">Potential Workbooks</h4>
-        <div class="materials-grid">
-          <template v-for="(quantity, potType) in workbooksByType" :key="potType">
-            <div class="material-item" :title="`${getPotentialName(potType)} Workbooks`">
-              <div class="material-icon-container">
-                <img 
-                  :src="`https://schaledb.com/images/item/icon/${getPotentialIcon(potType)}.webp`" 
-                  :alt="`${getPotentialName(potType)} Workbooks`"
-                  class="material-icon"
-                />
-                <div class="material-quantity">{{ quantity }}</div>
-              </div>
-              <div class="material-name">{{ getPotentialName(potType) }}</div>
-            </div>
-          </template>
-        </div>
-      </div>
-      
-      <!-- Other materials section -->
+      <!-- Materials grid -->
       <div v-if="cumulativeMaterials.length > 0" class="material-category">
-        <h4 class="category-title">Materials</h4>
         <div class="materials-grid">
           <template v-for="(item, index) in cumulativeMaterials" :key="index">
             <div class="material-item" :title="item.material?.Name || 'Material'">
@@ -167,7 +119,6 @@ const getPotentialName = (potentialType: string) => {
                 />
                 <div class="material-quantity">{{ item.materialQuantity }}</div>
               </div>
-              <div class="material-name">{{ item.material?.Name }}</div>
             </div>
           </template>
         </div>
@@ -226,8 +177,8 @@ const getPotentialName = (potentialType: string) => {
 
 .materials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 5px;
   padding: 5px;
 }
 
@@ -237,7 +188,6 @@ const getPotentialName = (potentialType: string) => {
   align-items: center;
   background: var(--background-secondary);
   border-radius: 8px;
-  padding: 10px;
   position: relative;
 }
 
@@ -257,21 +207,11 @@ const getPotentialName = (potentialType: string) => {
   object-fit: contain;
 }
 
-.material-name {
-  font-size: 0.8em;
-  text-align: center;
-  color: var(--text-primary);
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .material-quantity {
   position: absolute;
   bottom: -10px;
   right: -10px;
-  font-size: 1.2em;
+  font-size: 1em;
   font-weight: bold;
   color: var(--text-primary);
   background: var(--card-label-background);
