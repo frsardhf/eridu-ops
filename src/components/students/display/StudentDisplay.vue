@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import StudentHeader from './StudentHeader.vue';
 import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../modal/StudentModal.vue'
-import { useStudentData } from '../../../consumables/hooks/useStudentData';
+import { useStudentData, SortOption } from '../../../consumables/hooks/useStudentData';
 import '../../../styles/studentDisplay.css'
 
 // Use the composable to manage student data
@@ -13,8 +13,13 @@ const {
   giftBoxData,
   isDarkMode,
   searchQuery,
-  filteredStudents,
-  toggleTheme
+  sortedStudentsArray,
+  toggleTheme,
+  setSortOption,
+  currentSort,
+  sortDirection,
+  updateSearchQuery,
+  toggleDirection
 } = useStudentData()
 
 // Modal state
@@ -62,8 +67,16 @@ function closeModal() {
   selectedStudent.value = null;
 }
 
-function updateSearchQuery(value) {
-  searchQuery.value = value
+function handleSearchUpdate(value) {
+  updateSearchQuery(value);
+}
+
+function updateSortOption(option: SortOption) {
+  setSortOption(option);
+}
+
+function handleToggleDirection() {
+  toggleDirection();
 }
 
 onMounted(() => {
@@ -82,12 +95,17 @@ onMounted(() => {
     <StudentHeader
       :search-query="searchQuery"
       :is-dark-mode="isDarkMode"
-      @update:search-query="updateSearchQuery"
+      :current-sort="currentSort"
+      :sort-direction="sortDirection"
+      @update:search-query="handleSearchUpdate"
       @toggle-theme="toggleTheme"
+      @update-sort="updateSortOption"
+      @toggle-direction="handleToggleDirection"
     />
 
     <StudentGrid
-      :students="filteredStudents"
+      :students-array="sortedStudentsArray"
+      :key="`${currentSort}-${sortDirection}-${searchQuery}`"
       @open-modal="openModal"
     />
 

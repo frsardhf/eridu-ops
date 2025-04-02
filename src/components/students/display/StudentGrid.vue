@@ -3,7 +3,10 @@ import { defineProps, defineEmits } from 'vue';
 import { StudentProps } from '../../../types/student'
 import StudentCard from './StudentCard.vue';
 
-const props = defineProps<{ students: Record<string, StudentProps> }>();
+// Update props to accept the array directly
+const props = defineProps<{ 
+  studentsArray: StudentProps[]
+}>();
 
 type EmitEvents = {
   'openModal': [student: StudentProps];
@@ -20,7 +23,7 @@ function handleOpenModal(student: StudentProps) {
   <div class="student-grid-wrapper">
     <div class="student-grid">
       <StudentCard
-        v-for="(student) in students"
+        v-for="student in studentsArray"
         :key="student.Id"
         :student="student"
         @click="handleOpenModal(student)"

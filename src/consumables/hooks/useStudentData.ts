@@ -16,6 +16,10 @@ const MATERIAL = {
   'id': ['2000', '2001', '2002', '9999']
 }
 
+// Define sort options
+export type SortOption = 'id' | 'name' | 'default';
+export type SortDirection = 'asc' | 'desc';
+
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
   const giftData = ref<Record<string, any>>({});
@@ -25,18 +29,126 @@ export function useStudentData() {
   const giftBoxData = ref<Record<string, any[]>>({});
   const searchQuery = ref<string>('');
   const isDarkMode = ref<boolean>(false);
+  const currentSort = ref<SortOption>('id');
+  const sortDirection = ref<SortDirection>('asc');
+  
+  // Store the sorted students array directly
+  const sortedStudentsArray = ref<StudentProps[]>([]);
 
-  // Computed properties
+  // Function to update the sorted students array
+  function updateSortedStudents() {
+    // First filter by search query
+    let filteredStudents = Object.values(studentData.value);
+    if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase();
+      filteredStudents = filteredStudents.filter(
+        (student: StudentProps) => student.Name.toLowerCase().includes(query)
+      );
+    }
+    
+    // Then sort according to the selected sort option
+    filteredStudents.sort((a, b) => {
+      let comparison = 0;
+      switch (currentSort.value) {
+        case 'name':
+          comparison = a.Name.localeCompare(b.Name);
+          break;
+        case 'default':
+          comparison = ((a as any).DefaultOrder || 0) - ((b as any).DefaultOrder || 0);
+          break;
+        case 'id':
+        default:
+          comparison = Number(a.Id) - Number(b.Id);
+          break;
+      }
+      
+      // Apply sort direction
+      return sortDirection.value === 'asc' ? comparison : -comparison;
+    });
+    
+    // Create completely new array to ensure reactivity
+    sortedStudentsArray.value = [...filteredStudents];
+  }
+  
+  // For backward compatibility with code expecting an object
   const filteredStudents = computed<Record<string, StudentProps>>(() => {
-    if (!searchQuery.value) return studentData.value;
-  
-    const query = searchQuery.value.toLowerCase();
-    const filteredArray = Object.values(studentData.value).filter(
-      (student: StudentProps) => student.Name.toLowerCase().includes(query)
-    );
-  
-    return Object.fromEntries(filteredArray.map(student => [student.Id, student]));
+    return Object.fromEntries(sortedStudentsArray.value.map(student => [student.Id, student]));
   });
+  
+  // Load saved sort preferences
+  function loadSortPreferences() {
+    const savedSort = localStorage.getItem('sort-option') as SortOption;
+    const savedDirection = localStorage.getItem('sort-direction') as SortDirection;
+    
+    if (savedSort && ['id', 'name', 'default'].includes(savedSort)) {
+      currentSort.value = savedSort;
+    }
+    
+    if (savedDirection && ['asc', 'desc'].includes(savedDirection)) {
+      sortDirection.value = savedDirection;
+    }
+  }
+
+  // Save sort preferences
+  function saveSortPreferences() {
+    localStorage.setItem('sort-option', currentSort.value);
+    localStorage.setItem('sort-direction', sortDirection.value);
+  }
+
+  // Change the sort option
+  function setSortOption(option: SortOption) {
+    // If the same option is selected, toggle the direction
+    if (currentSort.value === option) {
+      sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+    } else {
+      // If a new option is selected, reset to ascending
+      currentSort.value = option;
+      sortDirection.value = 'asc';
+    }
+    
+    // Save preferences
+    saveSortPreferences();
+    
+    // Update the sorted array
+    updateSortedStudents();
+  }
+  
+  // Toggle sort direction explicitly
+  function toggleDirection() {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+    saveSortPreferences();
+    updateSortedStudents();
+  }
+
+  function toggleTheme() {
+    isDarkMode.value = !isDarkMode.value
+    const theme = isDarkMode.value ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+  
+  // Update search query
+  function updateSearchQuery(query: string) {
+    searchQuery.value = query;
+    updateSortedStudents();
+  }
+
+  async function fetchData(type: string) {
+    try {
+      const url = `https://schaledb.com/data/en/${type}.json`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data from ${url}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Error fetching ${type} data:`, error);
+      return {};
+    }
+  }
 
   // Utility functions
   function filterByProperty(
@@ -241,36 +353,11 @@ export function useStudentData() {
     return item.ExpValue * (1 + Math.min(tags.length, 3));
   }
 
-  function toggleTheme() {
-    isDarkMode.value = !isDarkMode.value
-    const theme = isDarkMode.value ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }
-  
-  async function fetchData(type: string) {
-    try {
-      const url = `https://schaledb.com/data/en/${type}.json`;
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data from ${url}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error(`Error fetching ${type} data:`, error);
-      return {};
-    }
-  }
-
   // Usage in initialization
   async function initializeData() {
-    // const hasResetStorage = localStorage.getItem('storageReset');
-    // if (!hasResetStorage) {
-    //   localStorage.clear();
-    // }
+    // Load sort preferences first
+    loadSortPreferences();
+    
     studentData.value = await fetchData('students');
     const allItems = await fetchData('items');
     giftData.value = filterByProperty(allItems, 'category', 'Favor');
@@ -284,6 +371,9 @@ export function useStudentData() {
     // Save the combined data to localStorage as initial data
     saveStudentData(studentData.value, favoredGift.value, giftBoxData.value);
     saveResources(allItems);
+    
+    // Initialize the sorted students array
+    updateSortedStudents();
   }
 
   initializeData()
@@ -298,6 +388,12 @@ export function useStudentData() {
     searchQuery,
     isDarkMode,
     filteredStudents,
-    toggleTheme
+    sortedStudentsArray,
+    toggleTheme,
+    setSortOption,
+    currentSort,
+    sortDirection,
+    updateSearchQuery,
+    toggleDirection
   }
 }
