@@ -184,27 +184,45 @@ export function useStudentGifts(props: {
 
   // Compute new bond level based on current bond and cumulative EXP
   const newBondLevel = computed(() => {
-    const currentXp = bondXpTable[currentBond.value - 1] || 0;
-    const newXp = currentXp + totalCumulativeExp.value;
-
-    // Find the highest bond level where required XP is <= newXp
+    // Return early if we're already at max level
+    if (currentBond.value >= 100) return 100;
+    
+    // No gifts added, stay at current level
+    if (totalCumulativeExp.value <= 0) return currentBond.value;
+    
+    // Calculate total XP including current level's cumulative XP and gift XP
+    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] || 0;
+    const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
+    
+    // Find the highest level we can reach with this total XP
     let newLevel = currentBond.value;
-    while (newLevel < bondXpTable.length && bondXpTable[newLevel - 1] <= newXp) {
-      newLevel++;
+    for (let i = currentBond.value; i < 100; i++) {
+      if (totalXp >= bondXpTable[i]) {
+        newLevel = i + 1;
+      } else {
+        break;
+      }
     }
-
-    return Math.min(newLevel, 100); // Cap at level 100
+    
+    return newLevel;
   });
 
   // Compute remaining XP to the next level
   const remainingXp = computed(() => {
+    // Return 0 if already at max level
     if (newBondLevel.value >= 100) return 0;
-
-    const currentXp = bondXpTable[currentBond.value - 1] || 0;
-    const nextLevelXp = bondXpTable[newBondLevel.value - 1] || 0;
-    const xpNeeded = nextLevelXp - currentXp - totalCumulativeExp.value;
-
-    return Math.max(0, xpNeeded);
+    
+    // Calculate total XP including current level's cumulative XP and gift XP
+    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] || 0;
+    const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
+    
+    // Get the XP needed for the next level
+    const nextLevelXp = bondXpTable[newBondLevel.value];
+    
+    // Calculate remaining XP needed
+    const remainingExp = nextLevelXp - totalXp;
+    
+    return Math.max(0, remainingExp);
   });
 
   const removeLeadingZeros = (event: Event) => {
