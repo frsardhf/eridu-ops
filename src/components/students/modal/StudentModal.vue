@@ -98,7 +98,7 @@ const {
           :class="['tab-button', { active: activeTab === 'summary' }]" 
           @click="activeTab = 'summary'"
         >
-          Resource Summary
+          Material Summary
         </button>
       </div>
 

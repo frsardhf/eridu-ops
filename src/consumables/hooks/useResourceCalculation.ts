@@ -180,7 +180,8 @@ export function useResourceCalculation() {
   ) => {
     // Get all resources to find material info
     const resources = getResources() || {};
-    const material = resources[materialId];
+    // Convert materialId to string when accessing the resources object
+    const material = resources[materialId.toString()];
     
     if (materialMap.has(materialId)) {
       // Update existing entry
@@ -190,7 +191,11 @@ export function useResourceCalculation() {
     } else {
       // Create new entry
       materialMap.set(materialId, {
-        material: material || { Id: materialId, Name: `Unknown (${materialId})`, Icon: 'unknown' },
+        material: material || { 
+          Id: materialId, 
+          Name: `Unknown (${materialId})`, 
+          Icon: materialId.toString()
+        },
         materialQuantity: quantity,
         owned: material?.QuantityOwned || 0,
         remaining: (material?.QuantityOwned || 0) - quantity
@@ -201,7 +206,8 @@ export function useResourceCalculation() {
   // Resources owned by the user
   const ownedResources = computed(() => {
     const resources = getResources() || {};
-    return Object.values(resources)
+    return Object.entries(resources)
+      .map(([id, resource]) => resource)
       .filter(resource => resource && resource.Id !== undefined)
       .sort((a, b) => (a.Id || 0) - (b.Id || 0));
   });
@@ -225,7 +231,9 @@ export function useResourceCalculation() {
     
     // Calculate leftover for each material
     const leftoverList = Array.from(allMaterialIds).map(id => {
-      const resource = ownedResources.value.find(r => r.Id === id) || null;
+      // Convert id to string when looking up in resources
+      const resources = getResources() || {};
+      const resource = resources[id.toString()] || ownedResources.value.find(r => r.Id === id) || null;
       const needed = neededMap.get(id);
       
       const owned = resource?.QuantityOwned || 0;
@@ -233,7 +241,11 @@ export function useResourceCalculation() {
       const remaining = owned - neededQuantity;
       
       return {
-        material: resource || needed?.material || { Id: id, Name: `Unknown (${id})`, Icon: 'unknown' },
+        material: resource || needed?.material || { 
+          Id: id, 
+          Name: `Unknown (${id})`,
+          Icon: id.toString() 
+        },
         owned,
         materialQuantity: neededQuantity,
         remaining

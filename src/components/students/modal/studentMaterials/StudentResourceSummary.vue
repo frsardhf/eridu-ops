@@ -3,21 +3,26 @@ import { ref, computed, onMounted } from 'vue';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 
 // Define view options
-type ViewMode = 'owned' | 'needed' | 'leftover';
+type ViewMode = 'needed' | 'missing';
 
 // UI state
-const activeView = ref<ViewMode>('owned');
-const { ownedResources, totalMaterialsNeeded, materialsLeftover, refreshData } = useResourceCalculation();
+const activeView = ref<ViewMode>('needed');
+const { totalMaterialsNeeded, materialsLeftover, refreshData } = useResourceCalculation();
+
+// Materials that are missing (negative leftover)
+const missingMaterials = computed(() => {
+  return materialsLeftover.value
+    .filter(item => item.remaining < 0)
+    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
+});
 
 // Computed property to get the resources based on active view
 const displayResources = computed(() => {
   switch (activeView.value) {
-    case 'owned':
-      return ownedResources.value;
     case 'needed':
       return totalMaterialsNeeded.value;
-    case 'leftover':
-      return materialsLeftover.value;
+    case 'missing':
+      return missingMaterials.value;
     default:
       return [];
   }
@@ -25,33 +30,21 @@ const displayResources = computed(() => {
 
 // Format quantity based on the current view
 const formatQuantity = (item: any) => {
-  if (activeView.value === 'owned') {
-    return item.QuantityOwned || 0;
-  } else if (activeView.value === 'needed') {
+  if (activeView.value === 'needed') {
     return item.materialQuantity || 0;
-  } else if (activeView.value === 'leftover') {
-    return item.remaining;
+  } else if (activeView.value === 'missing') {
+    // For missing materials, display the absolute value of the negative remaining
+    return Math.abs(item.remaining);
   }
   return 0;
 };
 
-// Get CSS class for leftover quantity 
+// Get CSS class for quantity 
 const getQuantityClass = (item: any) => {
-  if (activeView.value !== 'leftover') return '';
-  
-  const remaining = item.remaining;
-  if (remaining < 0) return 'negative';
-  if (remaining > 0) return 'positive';
-  return 'neutral';
-};
-
-// Get quantity display prefix (+ or - for leftover view)
-const getQuantityPrefix = (item: any) => {
-  if (activeView.value !== 'leftover') return '';
-  
-  const remaining = item.remaining;
-  if (remaining > 0) return '+';
-  return ''; // Negative number will have its own minus sign
+  if (activeView.value === 'missing') {
+    return 'negative'; // Always negative (missing materials)
+  }
+  return '';
 };
 
 // Change the current view
@@ -70,13 +63,6 @@ onMounted(() => {
     <div class="view-tabs">
       <button 
         class="view-tab" 
-        :class="{ active: activeView === 'owned' }"
-        @click="setView('owned')"
-      >
-        Owned
-      </button>
-      <button 
-        class="view-tab" 
         :class="{ active: activeView === 'needed' }"
         @click="setView('needed')"
       >
@@ -84,16 +70,17 @@ onMounted(() => {
       </button>
       <button 
         class="view-tab" 
-        :class="{ active: activeView === 'leftover' }"
-        @click="setView('leftover')"
+        :class="{ active: activeView === 'missing' }"
+        @click="setView('missing')"
       >
-        Leftover
+        Missing Materials
       </button>
     </div>
     
     <div class="resources-content">
       <div v-if="displayResources.length === 0" class="no-resources">
-        No resources {{ activeView === 'owned' ? 'owned' : activeView === 'needed' ? 'needed' : 'calculated' }}
+        <span v-if="activeView === 'needed'">No resources needed for upgrades</span>
+        <span v-else>You have all the materials you need! ✓</span>
       </div>
       
       <div v-else class="resources-grid">
@@ -119,7 +106,7 @@ onMounted(() => {
               class="resource-quantity" 
               :class="getQuantityClass(item)"
             >
-              {{ getQuantityPrefix(item) }}{{ formatQuantity(item) }}
+              {{ formatQuantity(item) }}
             </div>
           </div>
         </div>
@@ -231,7 +218,7 @@ onMounted(() => {
   color: var(--text-primary);
   background: var(--card-label-background);
   border-radius: 12px;
-  padding: 2px 8px;
+  padding: 2px 6px;
   min-width: 24px;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
