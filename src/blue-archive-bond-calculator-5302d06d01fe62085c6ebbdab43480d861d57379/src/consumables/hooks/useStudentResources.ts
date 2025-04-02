@@ -61,6 +61,7 @@ export function useStudentResources(props: {
 
   function saveResources() {
     if (!props.student?.Materials) return;
+
     saveResourcesFromStudent(props.student, resourceFormData);
   }
 

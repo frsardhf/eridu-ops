@@ -414,13 +414,10 @@
   border-radius: 3px 0 0 0;
   opacity: 0;
   z-index: 2;
-  transition: opacity 0.2s ease;
 }
 
 .resource-input:focus {
   opacity: 1;
-  outline: none;
-  border-color: var(--accent-color);
 }
 
 .resource-input::-webkit-inner-spin-button,

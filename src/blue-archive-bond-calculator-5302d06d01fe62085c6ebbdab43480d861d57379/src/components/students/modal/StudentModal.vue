@@ -13,7 +13,6 @@ import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vu
 import StudentSkillSection from './studentUpgrade/StudentSkillSection.vue';
 import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vue';
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
-import StudentResourceSummary from './studentMaterials/StudentResourceSummary.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
@@ -24,7 +23,7 @@ const props = defineProps<{
 type EmitFn = (event: 'close') => void;
 const emit = defineEmits<EmitFn>();
 
-const activeTab = ref('bond'); // 'bond', 'upgrade', 'resources', or 'summary'
+const activeTab = ref('bond'); // 'bond' or 'upgrade'
 
 const {
   closeModal,
@@ -93,12 +92,6 @@ const {
           @click="activeTab = 'resources'"
         >
           Resources
-        </button>
-        <button 
-          :class="['tab-button', { active: activeTab === 'summary' }]" 
-          @click="activeTab = 'summary'"
-        >
-          Resource Summary
         </button>
       </div>
 
@@ -183,7 +176,7 @@ const {
           </div>
         </div>
 
-        <!-- Resources Tab - Just the input grid -->
+        <!-- Resources Tab -->
         <div v-if="activeTab === 'resources'">
           <div class="resources-placeholder">
             <StudentResourceGrid
@@ -191,13 +184,6 @@ const {
               :resource-form-data="resourceFormData"
               @update-resource="handleResourceInput"
             />
-          </div>
-        </div>
-        
-        <!-- Summary Tab - Just the resource summary -->
-        <div v-if="activeTab === 'summary'">
-          <div class="resources-placeholder">
-            <StudentResourceSummary />
           </div>
         </div>
       </div>
