@@ -14,6 +14,7 @@ function handleChange() {
   <div class="convert-box-section">
     <input
       id="convert-input"
+      name="convert-input"
       type="checkbox"
       :checked="convertBox"
       @change="handleChange"

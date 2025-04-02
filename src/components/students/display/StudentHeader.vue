@@ -32,6 +32,7 @@ function onToggleTheme() {
           <div class="search-container">
             <input
               id="search-input"
+              name="search-input"
               :value="searchQuery"
               @input="updateSearch"
               type="text"
@@ -49,6 +50,7 @@ function onToggleTheme() {
           <label class="switch" for="theme-toggle">
             <input 
               id="theme-toggle"
+              name="theme-toggle"
               type="checkbox" 
               :checked="isDarkMode"
               @change="onToggleTheme"

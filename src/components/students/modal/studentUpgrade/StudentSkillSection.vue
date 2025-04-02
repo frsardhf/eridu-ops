@@ -169,10 +169,18 @@ const formatSkillDescription = (desc: string, parameters: any[][], current: numb
     const targetValue = paramGroup[target - 1] || paramGroup[0];
     const placeholder = `<?${groupIndex + 1}>`;
     
-    formattedDesc = formattedDesc.replace(
-      placeholder,
-      `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`
-    );
+    // If current and target are the same, just show a single value
+    if (current === target) {
+      formattedDesc = formattedDesc.replace(
+        placeholder,
+        `<span style="color: var(--accent-color)">${currentValue}</span>`
+      );
+    } else {
+      formattedDesc = formattedDesc.replace(
+        placeholder,
+        `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`
+      );
+    }
   });
   
   return formattedDesc;
@@ -184,7 +192,12 @@ const formatSkillCost = (cost: number[], current: number, target: number) => {
   const currentValue = cost[current - 1] || cost[0];
   const targetValue = cost[target - 1] || cost[0];
   
-  return `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`;
+  // If current and target are the same, just show a single value
+  if (current === target) {
+    return `<span style="color: var(--accent-color)">${currentValue}</span>`;
+  } else {
+    return `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`;
+  }
 };
 
 // Add these refs for tooltip positioning
@@ -249,6 +262,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
           <input
             type="checkbox"
             id="max-all-skills"
+            name="max-all-skills"
             :checked="props.allSkillsMaxed"
             @change="handleMaxAllSkillsChange"
           />
@@ -258,6 +272,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
           <input
             type="checkbox"
             id="max-target-skills"
+            name="max-target-skills"
             :checked="props.targetSkillsMaxed"
             @change="handleMaxTargetSkillsChange"
           />
@@ -323,6 +338,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
                 min="1"
                 :max="skillTypes[skillType].maxLevel"
                 class="skill-slider"
+                :name="`skill-current-${skillType}`"
                 :value="skillTypes[skillType].current"
                 @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
               />
@@ -337,6 +353,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
                 min="1"
                 :max="skillTypes[skillType].maxLevel"
                 class="skill-slider"
+                :name="`skill-target-${skillType}`"
                 :value="skillTypes[skillType].target"
                 @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
               />

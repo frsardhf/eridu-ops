@@ -13,6 +13,7 @@ import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vu
 import StudentSkillSection from './studentUpgrade/StudentSkillSection.vue';
 import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vue';
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
+import StudentResourceSummary from './studentMaterials/StudentResourceSummary.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
@@ -24,6 +25,7 @@ type EmitFn = (event: 'close') => void;
 const emit = defineEmits<EmitFn>();
 
 const activeTab = ref('bond'); // 'bond' or 'upgrade'
+const resourceView = ref('input'); // 'input' or 'summary'
 
 const {
   closeModal,
@@ -178,11 +180,30 @@ const {
 
         <!-- Resources Tab -->
         <div v-if="activeTab === 'resources'">
+          <div class="resources-tabs">
+            <button 
+              :class="['resource-tab-button', { active: resourceView === 'input' }]" 
+              @click="resourceView = 'input'"
+            >
+              Input Resources
+            </button>
+            <button 
+              :class="['resource-tab-button', { active: resourceView === 'summary' }]" 
+              @click="resourceView = 'summary'"
+            >
+              Resource Summary
+            </button>
+          </div>
+          
           <div class="resources-placeholder">
             <StudentResourceGrid
+              v-if="resourceView === 'input'"
               :student="student"
               :resource-form-data="resourceFormData"
               @update-resource="handleResourceInput"
+            />
+            <StudentResourceSummary
+              v-else
             />
           </div>
         </div>
@@ -200,5 +221,35 @@ const {
   border-radius: 8px;
   padding: 5px;
   background-color: var(--background-primary);
+}
+
+.resources-tabs {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.resource-tab-button {
+  padding: 8px 15px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resource-tab-button:first-child {
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+}
+
+.resource-tab-button:last-child {
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+}
+
+.resource-tab-button.active {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
 }
 </style>

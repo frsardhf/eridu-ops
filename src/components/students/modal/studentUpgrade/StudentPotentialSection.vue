@@ -152,6 +152,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
                 min="0"
                 max="25"
                 class="potential-slider"
+                :name="`potential-current-${potType}`"
                 :value="potentialTypes[potType].current"
                 @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
               />
@@ -165,6 +166,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
                 min="0"
                 max="25"
                 class="potential-slider"
+                :name="`potential-target-${potType}`"
                 :value="potentialTypes[potType].target"
                 @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
               />

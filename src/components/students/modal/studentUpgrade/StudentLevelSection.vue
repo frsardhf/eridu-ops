@@ -25,6 +25,7 @@ function handleTargetLevelInput(event: Event) {
       <div class="input-group">
         <input
           id="current-level-input"
+          name="current-level-input"
           type="number"
           :value="currentLevel"
           @input="handleLevelInput"
@@ -44,6 +45,7 @@ function handleTargetLevelInput(event: Event) {
       <div class="input-group">
         <input
           id="target-level-input"
+          name="target-level-input"
           type="number"
           :value="targetLevel"
           @input="handleTargetLevelInput"

@@ -38,6 +38,7 @@ function handleInput(event: Event) {
       <div class="gift-exp-info">
         <input
           type="number"
+          :name="`box-${item.gift.Id}`"
           :value="value"
           @input="handleInput"
           class="gift-input"

@@ -42,6 +42,7 @@ function handleBlur() {
       </div>
       <input
         type="number"
+        :name="`resource-${item.Id}`"
         :value="value"
         @input="handleInput"
         @focus="handleFocus"

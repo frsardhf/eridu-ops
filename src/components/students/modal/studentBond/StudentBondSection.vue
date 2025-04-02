@@ -49,6 +49,7 @@ function handleBondInput(event: Event) {
     <div>
       <input
         id="bond-input"
+        name="bond-input"
         type="number"
         :value="currentBond"
         @input="handleBondInput"
