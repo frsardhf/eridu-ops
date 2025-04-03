@@ -30,13 +30,14 @@ const displayResources = computed(() => {
 
 // Format quantity based on the current view
 const formatQuantity = (item: any) => {
+  let quantity = 0;
   if (activeView.value === 'needed') {
-    return item.materialQuantity || 0;
+    quantity = item.materialQuantity || 0;
   } else if (activeView.value === 'missing') {
     // For missing materials, display the absolute value of the negative remaining
-    return Math.abs(item.remaining);
+    quantity = Math.abs(item.remaining);
   }
-  return 0;
+  return quantity > 0 ? `×${quantity}` : '';
 };
 
 // Get CSS class for quantity 
@@ -90,7 +91,7 @@ onMounted(() => {
           class="resource-item"
           :title="item.material?.Name || 'Unknown Resource'"
         >
-          <div class="resource-icon-container">
+          <div class="resource-content">
             <img 
               v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
               :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
@@ -173,28 +174,27 @@ onMounted(() => {
 }
 
 .resource-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: var(--background-secondary);
-  border-radius: 8px;
   position: relative;
-  padding: 5px;
+  aspect-ratio: 1;
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
 }
 
-.resource-icon-container {
-  width: 64px;
-  height: 64px;
+.resource-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  padding: 2px;
 }
 
 .resource-icon {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .missing-icon {
@@ -211,49 +211,27 @@ onMounted(() => {
 
 .resource-quantity {
   position: absolute;
-  bottom: -10px;
-  right: -10px;
+  bottom: 0px;
+  right: 0px;
   font-size: 1em;
-  font-weight: bold;
-  color: var(--text-primary);
-  background: var(--card-label-background);
-  border-radius: 12px;
-  padding: 2px 6px;
-  min-width: 24px;
-  text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-shadow: 
+    -0.5px -0.5px 0 #fff,
+    0.5px -0.5px 0 #fff,
+    -0.5px 0.5px 0 #fff,
+    0.5px 0.5px 0 #fff;
+  z-index: 1;
 }
 
 .resource-quantity.negative {
-  color: #fff;
-  background-color: #e53935;
-  font-weight: bold;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.resource-quantity.positive {
-  color: #fff;
-  background-color: #43a047;
-  font-weight: bold;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-
-.resource-quantity.neutral {
-  color: #fff;
-  background-color: #757575;
-  font-weight: bold;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  color: #e53935;
 }
 
 @media (max-width: 600px) {
   .resources-grid {
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 8px;
-  }
-  
-  .resource-icon-container {
-    width: 56px;
-    height: 56px;
   }
 }
 </style> 

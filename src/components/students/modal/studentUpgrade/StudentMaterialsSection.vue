@@ -112,14 +112,16 @@ const hasMaterials = computed(() => {
           class="material-item" 
           :title="item.material?.Name || 'Material'"
         >
-          <div class="material-icon-container">
+          <div class="material-content">
             <img 
               v-if="item.material?.Icon"
               :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
               :alt="item.material?.Name || 'Material'"
               class="material-icon"
             />
-            <div class="material-quantity">{{ item.materialQuantity }}</div>
+            <div class="material-quantity">
+              {{ item.materialQuantity > 0 ? `×${item.materialQuantity}` : '' }}
+            </div>
           </div>
         </div>
       </div>
@@ -169,54 +171,48 @@ const hasMaterials = computed(() => {
 }
 
 .material-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: var(--background-secondary);
-  border-radius: 8px;
   position: relative;
-  padding: 5px;
+  aspect-ratio: 1;
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
 }
 
-.material-icon-container {
-  width: 64px;
-  height: 64px;
+.material-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  padding: 2px;
 }
 
 .material-icon {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .material-quantity {
   position: absolute;
-  bottom: -10px;
-  right: -10px;
+  bottom: 0px;
+  right: 0px;
   font-size: 1em;
-  font-weight: bold;
-  color: var(--text-primary);
-  background: var(--card-label-background);
-  border-radius: 12px;
-  padding: 2px 6px;
-  min-width: 24px;
-  text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-shadow: 
+    -0.5px -0.5px 0 #fff,
+    0.5px -0.5px 0 #fff,
+    -0.5px 0.5px 0 #fff,
+    0.5px 0.5px 0 #fff;
+  z-index: 1;
 }
 
 @media (max-width: 600px) {
   .materials-grid {
     grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 8px;
-  }
-  
-  .material-icon-container {
-    width: 56px;
-    height: 56px;
   }
 }
 </style> 
