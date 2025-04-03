@@ -105,22 +105,22 @@ const hasMaterials = computed(() => {
     </div>
     
     <div v-else class="materials-content">
-      <!-- Materials grid -->
-      <div v-if="cumulativeMaterials.length > 0" class="material-category">
-        <div class="materials-grid">
-          <template v-for="(item, index) in cumulativeMaterials" :key="index">
-            <div class="material-item" :title="item.material?.Name || 'Material'">
-              <div class="material-icon-container">
-                <img 
-                  v-if="item.material?.Icon"
-                  :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
-                  :alt="item.material?.Name || 'Material'"
-                  class="material-icon"
-                />
-                <div class="material-quantity">{{ item.materialQuantity }}</div>
-              </div>
-            </div>
-          </template>
+      <div class="materials-grid">
+        <div 
+          v-for="(item, index) in cumulativeMaterials" 
+          :key="index"
+          class="material-item" 
+          :title="item.material?.Name || 'Material'"
+        >
+          <div class="material-icon-container">
+            <img 
+              v-if="item.material?.Icon"
+              :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
+              :alt="item.material?.Name || 'Material'"
+              class="material-icon"
+            />
+            <div class="material-quantity">{{ item.materialQuantity }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -156,29 +156,15 @@ const hasMaterials = computed(() => {
 }
 
 .materials-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.material-category {
   background: var(--background-primary);
   border-radius: 8px;
-  padding: 12px;
-}
-
-.category-title {
-  font-size: 1em;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 10px;
 }
 
 .materials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+  gap: 4px;
   padding: 5px;
 }
 
@@ -189,16 +175,16 @@ const hasMaterials = computed(() => {
   background: var(--background-secondary);
   border-radius: 8px;
   position: relative;
+  padding: 5px;
 }
 
 .material-icon-container {
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 8px;
 }
 
 .material-icon {
@@ -216,25 +202,21 @@ const hasMaterials = computed(() => {
   color: var(--text-primary);
   background: var(--card-label-background);
   border-radius: 12px;
-  padding: 2px 8px;
+  padding: 2px 6px;
   min-width: 24px;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-@media (max-width: 976px) {
+@media (max-width: 600px) {
   .materials-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
   }
   
   .material-icon-container {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .material-quantity {
-    font-size: 1em;
+    width: 56px;
+    height: 56px;
   }
 }
 </style> 

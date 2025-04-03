@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
 import { BoxDataProps, GiftDataProps } from '../../types/gift';
-import { saveResources, saveStudentData } from '../utils/studentStorage';
+import { saveResources, saveStudentData, getResources } from '../utils/studentStorage';
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
@@ -370,7 +370,12 @@ export function useStudentData() {
     
     // Save the combined data to localStorage as initial data
     saveStudentData(studentData.value, favoredGift.value, giftBoxData.value);
-    saveResources(allItems);
+    
+    // Only save resources if they don't already exist in localStorage
+    const existingResources = getResources();
+    if (!existingResources) {
+      saveResources(allItems);
+    }
     
     // Initialize the sorted students array
     updateSortedStudents();

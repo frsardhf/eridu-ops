@@ -151,7 +151,6 @@ onMounted(() => {
 
 .resources-content {
   flex: 1;
-  overflow-y: auto;
   background: var(--card-background);
   border-radius: 8px;
   padding: 15px;
@@ -168,8 +167,9 @@ onMounted(() => {
 
 .resources-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+  gap: 4px;
+  padding: 5px;
 }
 
 .resource-item {
@@ -245,9 +245,9 @@ onMounted(() => {
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
-@media (max-width: 976px) {
+@media (max-width: 600px) {
   .resources-grid {
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
     gap: 8px;
   }
   
