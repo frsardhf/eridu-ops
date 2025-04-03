@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { getDataCollection, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
-import { SECRET_TECH_NOTE_ID, WORKBOOK_ID } from '../../types/upgrade';
+import { SECRET_TECH_NOTE_ID, WORKBOOK_ID, CREDITS_ID } from '../../types/upgrade';
 import dataTable from '../../data/data.json';
 
 interface MaterialSummary {
@@ -32,21 +32,49 @@ export function useResourceCalculation() {
   const calculateTotalMaterialsNeeded = () => {
     const studentsWithUpgrades = getAllStudentsWithUpgrades();
     const materialMap = new Map<number, MaterialSummary>();
+    let totalCredits = 0;
     
     studentsWithUpgrades.forEach(({ student, upgrade }) => {
       // Skip if no skill or potential data
       if (!upgrade.skillLevels || !upgrade.potentialLevels) return;
       
-      // Process skill materials
-      processSkillMaterials(student, upgrade.skillLevels, materialMap);
+      // Process skill materials and track credits
+      const skillCredits = processSkillMaterials(student, upgrade.skillLevels, materialMap);
+      totalCredits += skillCredits;
       
-      // Process potential materials
-      processPotentialMaterials(student, upgrade.potentialLevels, materialMap);
+      // Process potential materials and track credits
+      const potentialCredits = processPotentialMaterials(student, upgrade.potentialLevels, materialMap);
+      totalCredits += potentialCredits;
     });
     
-    // Convert map to array and sort by ID
+    // Add credits as a special material if needed
+    if (totalCredits > 0) {
+      // Get resources to find credits info
+      const resources = getResources() || {};
+      const creditsResource = resources[CREDITS_ID.toString()] || {
+        Id: CREDITS_ID,
+        Name: 'Credits',
+        Icon: 'currency_icon_gold',
+        Description: 'In-game currency used for various upgrades'
+      };
+      
+      materialMap.set(CREDITS_ID, {
+        material: creditsResource,
+        materialQuantity: totalCredits,
+        owned: creditsResource.QuantityOwned || 0,
+        remaining: (creditsResource.QuantityOwned || 0) - totalCredits
+      });
+    }
+    
+    // Convert map to array and sort by ID with credits first
     return Array.from(materialMap.values())
-      .sort((a, b) => (a.material?.Id || 0) - (b.material?.Id || 0));
+      .sort((a, b) => {
+        // Put credits first
+        if (a.material?.Id === CREDITS_ID) return -1;
+        if (b.material?.Id === CREDITS_ID) return 1;
+        // Then sort by ID
+        return (a.material?.Id || 0) - (b.material?.Id || 0);
+      });
   };
 
   // Process skill materials from a student
@@ -54,7 +82,14 @@ export function useResourceCalculation() {
     student: StudentProps,
     skillLevels: Record<string, { current: number; target: number }>,
     materialMap: Map<number, MaterialSummary>
-  ) => {
+  ): number => {
+    // Track total credits needed for all skill upgrades
+    let totalCredits = 0;
+    
+    // Get credit tables from data
+    const exskillCreditsTable = dataTable.exskill_credits || [];
+    const skillCreditsTable = dataTable.skill_credits || [];
+    
     // Process each skill type
     Object.entries(skillLevels).forEach(([type, levels]) => {
       const { current, target } = levels;
@@ -65,42 +100,60 @@ export function useResourceCalculation() {
       // Get material IDs and quantities
       let materialIds: number[][] | null = null;
       let materialQuantities: number[][] | null = null;
+      let creditsTable: number[] | null = null;
       
       if (type === 'Ex') {
         materialIds = student.SkillExMaterial ?? null;
         materialQuantities = student.SkillExMaterialAmount ?? null;
+        creditsTable = exskillCreditsTable;
       } else {
         materialIds = student.SkillMaterial ?? null;
         materialQuantities = student.SkillMaterialAmount ?? null;
+        creditsTable = skillCreditsTable;
       }
       
       if (!materialIds || !materialQuantities) return;
       
       // Calculate for each level upgrade
       for (let level = current; level < target; level++) {
-        // Get materials for this level
-        const levelMaterialIds = materialIds[level-1];
-        const levelMaterialQuantities = materialQuantities[level-1];
-        
-        if (!levelMaterialIds || !levelMaterialQuantities) continue;
-        
-        // Process each material
-        for (let i = 0; i < levelMaterialIds.length; i++) {
-          const materialId = levelMaterialIds[i];
-          const quantity = levelMaterialQuantities[i];
+        // Special case for level 9 to 10 upgrade for non-Ex skills
+        // This needs to be handled first in case the material arrays don't have data for level 9
+        if (level === 9 && type !== 'Ex') {
+          // Add the secret technical note for level 10
+          updateMaterialMap(SECRET_TECH_NOTE_ID, 1, materialMap);
           
-          if (!materialId || !quantity) continue;
-          
-          // Add to material map
-          updateMaterialMap(materialId, quantity, materialMap);
+          // Add special credits cost for level 10 upgrade (fixed amount)
+          totalCredits += 4000000; // 4M credits for level 10 upgrade
         }
         
-        // Special case: Add SECRET_TECH_NOTE for level 9 to 10 for non-Ex skills
-        if (level === 9 && type !== 'Ex') {
-          updateMaterialMap(SECRET_TECH_NOTE_ID, 1, materialMap);
+        // Get materials for this level - only if within bounds of the array
+        if (level - 1 < materialIds.length) {
+          const levelMaterialIds = materialIds[level-1];
+          const levelMaterialQuantities = materialQuantities[level-1];
+          
+          if (levelMaterialIds && levelMaterialQuantities) {
+            // Process each material
+            for (let i = 0; i < levelMaterialIds.length; i++) {
+              const materialId = levelMaterialIds[i];
+              const quantity = levelMaterialQuantities[i];
+              
+              if (!materialId || !quantity) continue;
+              
+              // Add to material map
+              updateMaterialMap(materialId, quantity, materialMap);
+            }
+          }
+        }
+        
+        // Add credits for this level - only if within bounds of the credits table
+        if (creditsTable && level - 1 < creditsTable.length) {
+          const levelCreditsCost = creditsTable[level-1] || 0;
+          totalCredits += levelCreditsCost;
         }
       }
     });
+    
+    return totalCredits;
   };
 
   // Process potential materials from a student
@@ -108,9 +161,10 @@ export function useResourceCalculation() {
     student: StudentProps,
     potentialLevels: Record<string, { current: number; target: number }>,
     materialMap: Map<number, MaterialSummary>
-  ) => {
+  ): number => {
     // Use the imported data table
     const potentialMaterials = dataTable.potential;
+    let totalCredits = 0;
     
     // Process each potential type
     Object.entries(potentialLevels).forEach(([type, levels]) => {
@@ -147,7 +201,7 @@ export function useResourceCalculation() {
         
         // Calculate materials
         let materialId: number;
-        let [workbookQuantity, materialQuality, materialQuantity] = blockData;
+        let [workbookQuantity, materialQuality, materialQuantity, creditsQuantity = 0] = blockData;
         
         // Determine workbook ID - using imported constants
         let workbookId = WORKBOOK_ID[1]; // Default to attack
@@ -164,12 +218,18 @@ export function useResourceCalculation() {
         // Scale quantities by levels
         materialQuantity = Math.ceil(materialQuantity * levelsInBlock);
         workbookQuantity = Math.ceil(workbookQuantity * levelsInBlock);
+        if (creditsQuantity) {
+          creditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
+          totalCredits += creditsQuantity;
+        }
         
         // Add to material map
         updateMaterialMap(materialId, materialQuantity, materialMap);
         updateMaterialMap(workbookId, workbookQuantity, materialMap);
       }
     });
+    
+    return totalCredits;
   };
 
   // Helper to update material map with new quantities

@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
 import { BoxDataProps, GiftDataProps } from '../../types/gift';
 import { saveResources, saveStudentData, getResources } from '../utils/studentStorage';
+import { ResourceProps } from '../../types/resource';
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
@@ -13,7 +14,7 @@ const GIFT_BOX_EXP_VALUES = {
 const MATERIAL = {
   'category': "CharacterExpGrowth",
   'subcategory': ["Artifact", "CDItem", "BookItem"],
-  'id': ['2000', '2001', '2002', '9999']
+  'id': ['5', '2000', '2001', '2002', '9999']
 }
 
 // Define sort options
@@ -54,7 +55,7 @@ export function useStudentData() {
           comparison = a.Name.localeCompare(b.Name);
           break;
         case 'default':
-          comparison = ((a as any).DefaultOrder || 0) - ((b as any).DefaultOrder || 0);
+          comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
           break;
         case 'id':
         default:
@@ -362,7 +363,6 @@ export function useStudentData() {
     const allItems = await fetchData('items');
     giftData.value = filterByProperty(allItems, 'category', 'Favor');
     boxData.value = filterByProperty(allItems, 'id', GIFT_BOX_IDS);
-    materialData.value = applyFilters(allItems, MATERIAL);
     
     // Use the new combined function
     favoredGift.value = getGiftsByStudent(studentData.value, giftData.value, false);
@@ -371,11 +371,29 @@ export function useStudentData() {
     // Save the combined data to localStorage as initial data
     saveStudentData(studentData.value, favoredGift.value, giftBoxData.value);
     
-    // Only save resources if they don't already exist in localStorage
+    // Handle resources initialization and credits
     const existingResources = getResources();
+
+    // Define credits object
+    const creditsEntry = {
+      Id: 5,
+      Name: 'Credits',
+      Icon: 'currency_icon_gold',
+      Description: 'In-game currency used for various upgrades',
+      QuantityOwned: 0
+    };
+
     if (!existingResources) {
+      // If no resources exist, save all items including credits
+      allItems[5] = creditsEntry;
       saveResources(allItems);
+    } else if (!existingResources[5]) {
+      // If resources exist but don't include credits, add just the credits
+      existingResources[5] = creditsEntry;
+      saveResources(existingResources);
     }
+
+    materialData.value = existingResources || applyFilters(allItems, MATERIAL);
     
     // Initialize the sorted students array
     updateSortedStudents();

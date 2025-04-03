@@ -1,0 +1,83 @@
+/* 
+ * Shared styles for resource display components:
+ * - StudentResourceGrid.vue
+ * - StudentResourceSummary.vue 
+ * - StudentMaterialsSection.vue
+ */
+
+/* Resource grid layout */
+.resources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+  gap: 4px;
+  padding: 5px;
+}
+
+/* Individual resource/material item */
+.resource-item {
+  position: relative;
+  aspect-ratio: 1;
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Content container for the resource */
+.resource-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+/* Resource icon styling */
+.resource-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Placeholder for missing icons */
+.missing-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--text-secondary);
+  background: var(--background-primary);
+  border-radius: 8px;
+}
+
+/* Quantity display */
+.resource-quantity {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  font-size: 1em;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-shadow: 
+    -0.5px -0.5px 0 #fff,
+    0.5px -0.5px 0 #fff,
+    -0.5px 0.5px 0 #fff,
+    0.5px 0.5px 0 #fff;
+  z-index: 1;
+}
+
+/* Negative quantity (for missing resources) */
+.resource-quantity.negative {
+  color: #e53935;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .resources-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+  }
+} 

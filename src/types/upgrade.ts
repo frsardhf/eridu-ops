@@ -4,8 +4,10 @@ export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 export interface PotentialMaterial {
   material: Record<string, any> | null;
   workbook: Record<string, any> | null;
+  credits: Record<string, any> | null;
   materialQuantity: number;
   workbookQuantity: number;
+  creditsQuantity: number;
   levelsInBlock: number;
   blockStart: number;
   blockEnd: number;
@@ -74,6 +76,8 @@ export interface SkillSettings {
 }
 
 // Constants
+export const CREDITS_ID = 5;
+
 export const WORKBOOK_ID = [2000, 2001, 2002];
 
 export const SECRET_TECH_NOTE_ID = 9999;

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import '../../../../styles/resourceDisplay.css'; 
 
 // Define interfaces for material items
 interface BaseMaterial {
   material: Record<string, any> | null;
+  credits?: Record<string, any> | null;
   materialQuantity: number;
+  creditsQuantity?: number;
 }
 
 interface SkillMaterial extends BaseMaterial {
@@ -26,6 +29,21 @@ const props = defineProps<{
   potentialMaterials: PotentialMaterial[];
 }>();
 
+// Function to format quantity with 'k' for large numbers
+const formatQuantity = (quantity: number): string => {
+  if (!quantity || quantity <= 0) return '';
+  
+  // Format large numbers with 'k' suffix
+  if (quantity >= 1000000) {
+    return `×${Math.floor(quantity / 1000000)}M`;
+  } else if (quantity >= 10000) {
+    return `×${Math.floor(quantity / 1000)}K`;
+  } 
+  
+  // Keep normal display for smaller numbers
+  return `×${quantity}`;
+};
+
 // Calculate cumulative materials needed by combining both types
 const cumulativeMaterials = computed(() => {
   if (!props.skillMaterials.length && !props.potentialMaterials.length) return [];
@@ -36,7 +54,6 @@ const cumulativeMaterials = computed(() => {
   // Process skill materials
   props.skillMaterials.forEach(item => {
     const materialId = item.material?.Id;
-    
     // Skip if material is invalid
     if (!materialId) return;
     
@@ -53,6 +70,9 @@ const cumulativeMaterials = computed(() => {
     }
   });
   
+  // Track total credits needed
+  let totalCredits = 0;
+  
   // Process potential materials
   props.potentialMaterials.forEach(item => {
     // Process regular material
@@ -64,7 +84,7 @@ const cumulativeMaterials = computed(() => {
       } else {
         materialMap.set(materialId, {
           material: item.material,
-          materialQuantity: item.materialQuantity
+          materialQuantity: item.materialQuantity,
         });
       }
     }
@@ -79,6 +99,20 @@ const cumulativeMaterials = computed(() => {
         materialMap.set(workbookId, {
           material: item.workbook,
           materialQuantity: item.workbookQuantity || 0
+        });
+      }
+    }
+    
+    // Process credits
+    const creditsId = item.credits?.Id;
+    if (creditsId) {
+      if (materialMap.has(creditsId)) {
+        const existingEntry = materialMap.get(creditsId);
+        existingEntry.materialQuantity += item.creditsQuantity || 0;
+      } else {
+        materialMap.set(creditsId, {
+          material: item.credits,
+          materialQuantity: item.creditsQuantity || 0
         });
       }
     }
@@ -105,22 +139,22 @@ const hasMaterials = computed(() => {
     </div>
     
     <div v-else class="materials-content">
-      <div class="materials-grid">
+      <div class="resources-grid">
         <div 
           v-for="(item, index) in cumulativeMaterials" 
           :key="index"
-          class="material-item" 
+          class="resource-item" 
           :title="item.material?.Name || 'Material'"
         >
-          <div class="material-content">
+          <div class="resource-content">
             <img 
               v-if="item.material?.Icon"
               :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
               :alt="item.material?.Name || 'Material'"
-              class="material-icon"
+              class="resource-icon"
             />
-            <div class="material-quantity">
-              {{ item.materialQuantity > 0 ? `×${item.materialQuantity}` : '' }}
+            <div class="resource-quantity">
+              {{ formatQuantity(item.materialQuantity) }}
             </div>
           </div>
         </div>
@@ -130,6 +164,7 @@ const hasMaterials = computed(() => {
 </template>
 
 <style scoped>
+/* Only keep component-specific styles */
 .materials-section {
   background: var(--card-background);
   border-radius: 8px;
@@ -161,58 +196,5 @@ const hasMaterials = computed(() => {
   background: var(--background-primary);
   border-radius: 8px;
   padding: 10px;
-}
-
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-  gap: 4px;
-  padding: 5px;
-}
-
-.material-item {
-  position: relative;
-  aspect-ratio: 1;
-  background: transparent;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.material-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-}
-
-.material-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.material-quantity {
-  position: absolute;
-  bottom: 0px;
-  right: 0px;
-  font-size: 1em;
-  color: var(--text-tertiary);
-  font-weight: 500;
-  text-shadow: 
-    -0.5px -0.5px 0 #fff,
-    0.5px -0.5px 0 #fff,
-    -0.5px 0.5px 0 #fff,
-    0.5px 0.5px 0 #fff;
-  z-index: 1;
-}
-
-@media (max-width: 600px) {
-  .materials-grid {
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 8px;
-  }
 }
 </style> 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
+import '../../../../styles/resourceDisplay.css';
 
 // Define view options
 type ViewMode = 'needed' | 'missing';
@@ -28,6 +29,23 @@ const displayResources = computed(() => {
   }
 });
 
+// Function to format quantity with 'K/M' for large numbers
+const formatLargeNumber = (quantity: number): string => {
+  if (!quantity || quantity <= 0) return '';
+  
+  // Format large numbers with 'M' suffix for millions
+  if (quantity >= 1000000) {
+    return `×${Math.floor(quantity / 1000000)}M`;
+  } 
+  // Format large numbers with 'K' suffix for thousands
+  else if (quantity >= 10000) {
+    return `×${Math.floor(quantity / 1000)}K`;
+  } 
+  
+  // Keep normal display for smaller numbers
+  return `×${quantity}`;
+};
+
 // Format quantity based on the current view
 const formatQuantity = (item: any) => {
   let quantity = 0;
@@ -37,7 +55,13 @@ const formatQuantity = (item: any) => {
     // For missing materials, display the absolute value of the negative remaining
     quantity = Math.abs(item.remaining);
   }
-  return quantity > 0 ? `×${quantity}` : '';
+  
+  // Use special formatting for large numbers
+  if (quantity > 0) {
+    return formatLargeNumber(quantity);
+  }
+  
+  return '';
 };
 
 // Get CSS class for quantity 
@@ -117,6 +141,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Only keep component-specific styles */
 .resource-summary {
   display: flex;
   flex-direction: column;
@@ -164,74 +189,5 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   height: 100px;
-}
-
-.resources-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-  gap: 4px;
-  padding: 5px;
-}
-
-.resource-item {
-  position: relative;
-  aspect-ratio: 1;
-  background: transparent;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.resource-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-}
-
-.resource-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.missing-icon {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  color: var(--text-secondary);
-  background: var(--background-primary);
-  border-radius: 8px;
-}
-
-.resource-quantity {
-  position: absolute;
-  bottom: 0px;
-  right: 0px;
-  font-size: 1em;
-  color: var(--text-tertiary);
-  font-weight: 500;
-  text-shadow: 
-    -0.5px -0.5px 0 #fff,
-    0.5px -0.5px 0 #fff,
-    -0.5px 0.5px 0 #fff,
-    0.5px 0.5px 0 #fff;
-  z-index: 1;
-}
-
-.resource-quantity.negative {
-  color: #e53935;
-}
-
-@media (max-width: 600px) {
-  .resources-grid {
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 8px;
-  }
 }
 </style> 

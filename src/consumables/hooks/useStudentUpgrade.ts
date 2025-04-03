@@ -14,7 +14,8 @@ import {
   SkillMaterial,
   SkillLevels,
   WORKBOOK_ID,
-  SECRET_TECH_NOTE_ID
+  SECRET_TECH_NOTE_ID,
+  CREDITS_ID
 } from '../../types/upgrade';
 
 export function useStudentUpgrade(props: {
@@ -61,6 +62,8 @@ export function useStudentUpgrade(props: {
   });
   
   const characterXpTable = dataTable.character_xp;
+  const exskillCreditsTable = dataTable.exskill_credits;
+  const skillCreditsTable = dataTable.skill_credits;
   const potentialMaterials = dataTable.potential;
 
   // Track if all skills are currently maxed
@@ -289,14 +292,20 @@ export function useStudentUpgrade(props: {
       // Get the correct material IDs and quantities based on skill type
       let materialIds: number[][] | null = null;
       let materialQuantities: number[][] | null = null;
+      let creditsQuantities: number[] | null = null;
+
+      const levelCreditsIds = CREDITS_ID;
+      const creditsData = getResourceDataById(levelCreditsIds);
 
       // Determine which material data to use based on skill type
       if (type === 'Ex') {
         materialIds = props.student?.SkillExMaterial ?? null;
         materialQuantities = props.student?.SkillExMaterialAmount ?? null;
+        creditsQuantities = exskillCreditsTable;
       } else {
         materialIds = props.student?.SkillMaterial ?? null;
         materialQuantities = props.student?.SkillMaterialAmount ?? null;
+        creditsQuantities = skillCreditsTable;
       }
 
       // If no material data is available, skip this skill type
@@ -317,11 +326,20 @@ export function useStudentUpgrade(props: {
               potentialType: type as SkillType
             });
           }
+
+          // Add credits for this skill level
+          materialsNeeded.push({
+            material: creditsData,
+            materialQuantity: 4000000,
+            level,
+            potentialType: type as SkillType
+          });
         }
         
         // Get the materials for this skill level
         const levelMaterialIds = materialIds[level-1];
         const levelMaterialQuantities = materialQuantities[level-1];
+        const levelCreditsQuantities = creditsQuantities[level-1];
         
         // Skip if there's no material data for this level
         if (!levelMaterialIds || !levelMaterialQuantities) {
@@ -345,6 +363,14 @@ export function useStudentUpgrade(props: {
             potentialType: type as SkillType
           });
         }
+
+        // Add credits for this skill level
+        materialsNeeded.push({
+          material: creditsData,
+          materialQuantity: levelCreditsQuantities,
+          level,
+          potentialType: type as SkillType
+        });
       }
     });
     
@@ -396,7 +422,7 @@ export function useStudentUpgrade(props: {
         
         // Calculate materials for this block based on how many levels we need
         let materialId: number | undefined;
-        let [workbookQuantity, materialQuality, materialQuantity] = blockData;
+        let [workbookQuantity, materialQuality, materialQuantity, creditsQuantity] = blockData;
         
         // Use different workbook IDs based on potential type
         let workbookId = WORKBOOK_ID[1]; // Default to attack (1)
@@ -411,15 +437,19 @@ export function useStudentUpgrade(props: {
  
         materialQuantity = Math.ceil(materialQuantity * levelsInBlock);
         workbookQuantity = Math.ceil(workbookQuantity * levelsInBlock);
+        creditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
 
         const materialData = getResourceDataById(materialId);
         const workbookData = getResourceDataById(workbookId);
+        const creditsData = getResourceDataById(CREDITS_ID);
 
         materialsNeeded.push({
           material: materialData,
           workbook: workbookData,
+          credits: creditsData,
           workbookQuantity,
           materialQuantity,
+          creditsQuantity,
           levelsInBlock,
           blockStart: block * 5,
           blockEnd: block * 5 + levelsInBlock,

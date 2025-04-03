@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { ResourceProps } from '../../../../types/resource';
+import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
   item: ResourceProps,
-  value?: any
+  value?: any,
+  formatQuantity?: (quantity: number) => string
 }>();
 
 const emit = defineEmits<{
@@ -31,10 +33,23 @@ function forceInputFocus() {
     inputEl.value.focus();
   }
 }
+
+// Format the quantity value
+function formatValue(value: any): string {
+  if (!value || value === '0') return '';
+  
+  // If formatQuantity prop is provided, use it
+  if (props.formatQuantity) {
+    return props.formatQuantity(Number(value));
+  }
+  
+  // Otherwise use default formatting
+  return `×${value}`;
+}
 </script>
 
 <template>
-  <div class="resource-card" @click="forceInputFocus">
+  <div class="resource-item" @click="forceInputFocus">
     <div class="resource-content">
       <img 
         :src="`https://schaledb.com/images/item/icon/${props.item.Icon}.webp`"
@@ -45,7 +60,7 @@ function forceInputFocus() {
         class="resource-quantity" 
         v-if="!isInputFocused"
       >
-        {{ props.value && props.value !== '0' ? `×${props.value}` : '' }}
+        {{ formatValue(props.value) }}
       </div>
       <input
         ref="inputEl"
@@ -62,42 +77,12 @@ function forceInputFocus() {
 </template>
 
 <style scoped>
-.resource-card {
-  position: relative;
-  aspect-ratio: 1;
-  background: transparent;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.resource-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-}
-
-.resource-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.resource-quantity {
+.resource-input {
   position: absolute;
-  bottom: 0px;
-  right: 0px;
-  font-size: 1em;
-  color: var(--text-tertiary);
-  font-weight: 500;
-  text-shadow: 
-    -0.5px -0.5px 0 #fff,
-    0.5px -0.5px 0 #fff,
-    -0.5px 0.5px 0 #fff,
-    0.5px 0.5px 0 #fff;
-  z-index: 1;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
 }
 </style>

@@ -149,8 +149,6 @@ export function useStudentGifts(props: {
       // Calculate and add exp
       const itemExp = calculateItemExp(expValue, quantity);
       typeTotal += itemExp;
-      
-      // console.log(`${itemType} ID ${itemId}: ${quantity} x ${expValue} = ${itemExp} EXP`);
     });
     
     return typeTotal;
@@ -175,7 +173,6 @@ export function useStudentGifts(props: {
     );
     
     const totalExp = giftsExp + boxesExp;
-    // console.log(`Total EXP: Gifts (${giftsExp}) + Boxes (${boxesExp}) = ${totalExp}`);
     
     return totalExp;
   };

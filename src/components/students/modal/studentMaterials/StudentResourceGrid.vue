@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted, onMounted } from 'vue';
 import { StudentProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
+import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
   student: StudentProps | null,
@@ -26,7 +27,7 @@ const resources = computed(() => {
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(resources.value.length / 84); // Show 84 items per page
+  return Math.ceil(resources.value.length / 85); // Show 85 items per page
 });
 
 function handleResourceInput(item: any, event: Event) {
@@ -125,6 +126,21 @@ function handleResize() {
   }
 }
 
+// Function to format quantity with 'k' for large numbers
+const formatQuantity = (quantity: number): string => {
+  if (!quantity || quantity <= 0) return '';
+  
+  // Format large numbers with 'k' suffix
+  if (quantity >= 1000000) {
+    return `×${Math.floor(quantity / 1000000)}M`;
+  } else if (quantity >= 10000) {
+    return `×${Math.floor(quantity / 1000)}K`;
+  } 
+  
+  // Keep normal display for smaller numbers
+  return `×${quantity}`;
+};
+
 // Clean up event listeners when component is unmounted
 onUnmounted(() => {
   window.removeEventListener('mousemove', handleDragMove);
@@ -152,10 +168,11 @@ onUnmounted(() => {
         >
           <div class="resources-grid">
             <StudentResourceCard 
-              v-for="(item) in resources.slice((page - 1) * 84, page * 84)" 
+              v-for="(item) in resources.slice((page - 1) * 85, page * 85)" 
               :key="`resource-${item.Id}`"
               :item="item"
               :value="resourceFormData[item.Id]"
+              :format-quantity="formatQuantity"
               @update:value="(e) => handleResourceInput(item, e)"
             />
           </div>
@@ -194,6 +211,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* Only keep component-specific styles */
 .resources-tab {
   display: flex;
   flex-direction: column;
@@ -228,17 +246,6 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.resources-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-  gap: 4px;
-  padding: 10px;
-  background: var(--card-background);
-  border-radius: 8px;
-  height: 100%;
-  overflow-y: auto;
 }
 
 .resources-pagination {

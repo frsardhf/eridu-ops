@@ -4,6 +4,7 @@ import { ResourceProps } from "./resource";
 export interface StudentProps {
   Id: number;
   Name: string;
+  DefaultOrder: number;
   Gifts: GiftDataProps[];
   Boxes: BoxDataProps[];
   Materials: ResourceProps[];
