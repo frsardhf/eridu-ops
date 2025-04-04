@@ -4,6 +4,7 @@ import {
   SkillType,
   SkillSettings
 } from '../../../../types/upgrade';
+import '../../../../styles/studentUpgrade.css';
 
 // Modify this interface to match our component needs
 interface SkillMaterial {
@@ -146,24 +147,9 @@ const getSkillIconUrl = (iconName: string) => {
 const formatSkillDescription = (desc: string, parameters: any[][], current: number, target: number) => {
   if (!desc || !parameters) return '';
   
-  // First process the special tags before handling parameters
   let formattedDesc = desc;
   
-  // 1. Handle <b:Tag> format by adding spaces before capital letters and removing tags
-  formattedDesc = formattedDesc.replace(/<b:([^>]+)>/g, (match, tagContent) => {
-    // Add spaces before capital letters (except the first one)
-    return tagContent.replace(/([A-Z])/g, (_, capital, index) => {
-      return index > 0 ? ' ' + capital : capital;
-    });
-  });
-  
-  // 2. Handle <s:Tag> which references skill names - for simplicity, just remove these tags
-  formattedDesc = formattedDesc.replace(/<s:[^>]+>/g, '');
-  
-  // 3. Handle any other tags that might be present (except parameter placeholders)
-  formattedDesc = formattedDesc.replace(/<(?!\?)[^>]+>/g, '');
-  
-  // Now replace parameter placeholders with current/target values
+  // First replace parameter placeholders with current/target values
   parameters.forEach((paramGroup, groupIndex) => {
     const currentValue = paramGroup[current - 1] || paramGroup[0];
     const targetValue = paramGroup[target - 1] || paramGroup[0];
@@ -181,6 +167,19 @@ const formatSkillDescription = (desc: string, parameters: any[][], current: numb
         `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`
       );
     }
+  });
+  
+  // Then process all special tags like <b:value>, <s:value>, <d:value>, etc.
+  formattedDesc = formattedDesc.replace(/<([a-z]):([^>]+)>/g, (match, tagType, value) => {
+    // Case 1: If value is all uppercase (like ATK, DEF, MAXHP), return as is
+    if (value === value.toUpperCase() && value.length > 1) {
+      return value;
+    }
+    
+    // Case 2: If value has mixed case (like CritDamage), add spaces before capital letters
+    return value.replace(/([A-Z])/g, (_, capital, index) => {
+      return index > 0 ? ' ' + capital : capital;
+    });
   });
   
   return formattedDesc;
@@ -251,12 +250,28 @@ const handleMaxTargetSkillsChange = (event: Event) => {
   const checked = (event.target as HTMLInputElement).checked;
   emit('toggle-max-target', checked);
 };
+
+// Add this function to handle level display state
+const getLevelDisplayState = (current: number, target: number, maxLevel: number) => {
+  if (current === maxLevel && target === maxLevel) {
+    return 'max';
+  } else if (current === target) {
+    return 'same';
+  } else {
+    return 'different';
+  }
+};
+
+// Add this function to check if target is at max level
+const isTargetMaxLevel = (target: number, maxLevel: number) => {
+  return target === maxLevel;
+};
 </script>
 
 <template>
-  <div class="skill-section">
+  <div class="upgrade-section">
     <h3 class="section-title">
-      Skill Upgrade Calculator
+      Skills
       <div class="options-container">
         <div class="max-all-container">
           <input
@@ -281,15 +296,15 @@ const handleMaxTargetSkillsChange = (event: Event) => {
       </div>
     </h3>
     
-    <div class="skill-sliders-column">
+    <div class="sliders-column">
       <template v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
-        <div class="skill-type-section">
-          <div class="skill-type-header">
+        <div class="type-section">
+          <div class="type-header">
             <div class="skill-icon-wrapper">
               <img 
                 :src="getSkillIconUrl(skillTypes[skillType].icon)"
                 :alt="skillTypes[skillType].name"
-                class="skill-type-icon"
+                class="type-icon skill-icon"
                 :class="{
                   'icon-background-explosive': props.student?.BulletType === 'Explosion',
                   'icon-background-piercing': props.student?.BulletType === 'Pierce',
@@ -323,13 +338,35 @@ const handleMaxTargetSkillsChange = (event: Event) => {
             </div>
             <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
             <div class="level-display">
-              <span class="current-level">{{ skillTypes[skillType].current }}</span>
-              <span class="level-arrow">→</span>
-              <span class="target-level">{{ skillTypes[skillType].target }}</span>
+              <template v-if="getLevelDisplayState(
+                skillTypes[skillType].current, 
+                skillTypes[skillType].target, 
+                skillTypes[skillType].maxLevel
+              ) === 'max'">
+                <span class="max-level">MAX</span>
+              </template>
+              
+              <template v-else-if="getLevelDisplayState(
+                skillTypes[skillType].current, 
+                skillTypes[skillType].target, 
+                skillTypes[skillType].maxLevel
+              ) === 'same'">
+                <span class="target-level">{{ skillTypes[skillType].current }}</span>
+              </template>
+              
+              <template v-else>
+                <span class="current-level">{{ skillTypes[skillType].current }}</span>
+                <span class="level-arrow">→</span>
+                <span class="target-level">{{ skillTypes[skillType].target }}</span>
+                <span class="max-indicator" 
+                      v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
+                  MAX
+                </span>
+              </template>
             </div>
           </div>
           
-          <div class="skill-sliders">
+          <div class="sliders">
             <!-- Current Skill Level Slider -->
             <div class="slider-row">
               <span class="slider-label">Current</span>
@@ -337,7 +374,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
                 type="range"
                 min="1"
                 :max="skillTypes[skillType].maxLevel"
-                class="skill-slider"
+                class="slider"
                 :name="`skill-current-${skillType}`"
                 :value="skillTypes[skillType].current"
                 @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
@@ -352,7 +389,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
                 type="range"
                 min="1"
                 :max="skillTypes[skillType].maxLevel"
-                class="skill-slider"
+                class="slider"
                 :name="`skill-target-${skillType}`"
                 :value="skillTypes[skillType].target"
                 @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
@@ -367,26 +404,7 @@ const handleMaxTargetSkillsChange = (event: Event) => {
 </template>
 
 <style scoped>
-.skill-section {
-  background: var(--card-background);
-  border-radius: 8px;
-  padding: 15px;
-  border: 1px solid var(--border-color);
-  margin-bottom: 15px;
-}
-
-.section-title {
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-bottom: 15px;
-  color: var(--text-primary);
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
+/* Component-specific styles */
 .options-container {
   display: flex;
   align-items: center;
@@ -410,67 +428,13 @@ const handleMaxTargetSkillsChange = (event: Event) => {
   user-select: none;
 }
 
-.skill-sliders-column {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.skill-type-section {
-  background: var(--background-primary);
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.skill-type-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
 .skill-icon-wrapper {
   position: relative;
 }
 
-.skill-tooltip {
-  position: fixed;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px;
-  min-width: 200px;
-  max-width: 300px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  pointer-events: none; /* Prevent tooltip from interfering with hover */
-}
-
-.skill-icon-wrapper:hover .skill-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-.tooltip-content {
-  font-size: 0.9em;
-  line-height: 1.4;
-  color: var(--text-primary);
-}
-
-.tooltip-cost {
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.tooltip-desc {
-  white-space: pre-wrap;
-}
-
-.skill-type-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 20%;
+.skill-icon {
   padding: 4px;
+  border-radius: 20%;
   transition: background-color 0.3s ease;
 }
 
@@ -490,48 +454,38 @@ const handleMaxTargetSkillsChange = (event: Event) => {
   background-color: rgb(148, 49, 165);
 }
 
+.skill-tooltip {
+  position: fixed;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.tooltip-content {
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.tooltip-cost {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.tooltip-desc {
+  white-space: pre-wrap;
+}
+
 .skill-name {
   font-size: 0.95em;
   white-space: nowrap;
-}
-
-.level-display {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 5px;
   font-weight: bold;
-  font-size: 0.9em;
-}
-
-.level-arrow {
-  color: var(--text-secondary);
-}
-
-.current-level {
-  color: var(--text-secondary);
-}
-
-.target-level {
-  color: var(--accent-color);
-}
-
-.skill-sliders {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.slider-label {
-  font-size: 0.8em;
-  color: var(--text-secondary);
-  width: 50px;
 }
 
 .slider-value {
@@ -539,36 +493,5 @@ const handleMaxTargetSkillsChange = (event: Event) => {
   color: var(--text-primary);
   width: 20px;
   text-align: center;
-}
-
-.skill-slider {
-  flex: 1;
-  height: 10px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--background-secondary);
-  border-radius: 5px;
-  outline: none;
-}
-
-.skill-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: var(--accent-color);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-@media (max-width: 976px) {
-  .skill-slider {
-    height: 8px;
-  }
-  
-  .skill-slider::-webkit-slider-thumb {
-    width: 16px;
-    height: 16px;
-  }
 }
 </style> 

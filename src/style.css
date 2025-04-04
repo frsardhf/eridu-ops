@@ -24,6 +24,8 @@
   --card-label-background-transparent: #faebd7e6;
   --accent-color: #646cff;
   --accent-hover: #535bf2;
+  --accent-color-rgb: 100, 108, 255;
+  --background-hover-rgb: 230, 230, 230;
   --input-border: #e2e8f0;
   --input-background: #ffffff;
   --box-shadow: #0000001a;
@@ -56,6 +58,8 @@ body {
   --input-placeholder: #ffffff;
   --accent-color: #646cff;
   --accent-hover: #747bff;
+  --accent-color-rgb: 100, 108, 255;
+  --background-hover-rgb: 60, 60, 60;
   --input-border: #4a5568;
   --input-background: #2d3748;
   --box-shadow: #00000033;

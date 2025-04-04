@@ -31,9 +31,14 @@ function handleChange() {
 .convert-box-section {
   background: var(--card-background);
   border-radius: 8px;
-  padding: 7px 10px;
+  padding: 12px 15px;
   border: 1px solid var(--border-color);
   width: 100%;
+}
+
+.convert-box-section h3.section-title {
+  margin-bottom: 5px;
+  padding-bottom: 0;
 }
 
 .section-title {

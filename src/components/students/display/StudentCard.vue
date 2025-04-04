@@ -35,10 +35,12 @@ function getFontSizeClass(name: string): string {
   // For desktop screens (normal sizing)
   if (name.length < 10) {
     return 'text-xl'; 
-  } else if (name.length <= 15) {
+  } else if (name.length < 13) {
     return 'text-lg'; 
-  } else {
+  } else if (name.length < 17) {
     return 'text-normal';
+  } else {
+    return 'text-sm';
   }
 }
 </script>
@@ -100,7 +102,7 @@ function getFontSizeClass(name: string): string {
   padding: 4px;
   text-align: center;
   background-color: var(--card-label-background);
-  height: 48px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,10 +144,6 @@ function getFontSizeClass(name: string): string {
   .card-img {
     width: 100px;
     height: 100px;
-  }
-
-  .card-label {
-    height: 36px;
   }
 }
 </style>

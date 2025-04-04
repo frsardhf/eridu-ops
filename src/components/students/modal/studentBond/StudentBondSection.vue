@@ -16,6 +16,21 @@ function handleBondInput(event: Event) {
 
 <template>
   <div class="bond-section">
+    <!-- Bond input moved to the top -->
+    <div class="bond-input-container">
+      <label for="bond-input">Current Bond:</label>
+      <input
+        id="bond-input"
+        name="bond-input"
+        type="number"
+        :value="currentBond"
+        @input="handleBondInput"
+        class="bond-input"
+        min="1"
+        max="100"
+      />
+    </div>
+    
     <div class="bond-container">
       <div class="bond-display">
         <div class="bond-icon-container">
@@ -28,12 +43,7 @@ function handleBondInput(event: Event) {
         </div>
       </div>
       
-      <div class="bond-info">
-        <div class="bond-arrow">→</div>
-        <div class="exp-info" v-if="remainingXp > 0">
-          {{ remainingXp }} XP to next level
-        </div>
-      </div>
+      <div class="bond-arrow">→</div>
       
       <div class="bond-display">
         <div class="bond-icon-container">
@@ -46,18 +56,11 @@ function handleBondInput(event: Event) {
         </div>
       </div>
     </div>
-    <div>
-      <input
-        id="bond-input"
-        name="bond-input"
-        type="number"
-        :value="currentBond"
-        @input="handleBondInput"
-        class="bond-input"
-        min="1"
-        max="100"
-      />
+    
+    <div class="exp-info" v-if="remainingXp > 0">
+      {{ remainingXp }} XP to next level
     </div>
+    
     <div class="total-exp">
       Total EXP: {{ totalExp }}
     </div>
@@ -69,35 +72,47 @@ function handleBondInput(event: Event) {
   align-self: center;
   background: var(--card-background);
   border-radius: 8px;
-  padding: 15px;
+  padding: 20px;
   border: 1px solid var(--border-color);
 }
 
-.bond-info {
+.section-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bond-input-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.bond-input-container label {
+  font-size: 0.9em;
+  color: var(--text-secondary);
 }
 
 .exp-info {
-  font-size: 0.8em;
+  font-size: 0.9em;
   color: var(--text-primary);
   text-align: center;
+  margin: 10px 0 0 0;
 }
 
 .bond-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0px;
-  margin-bottom: 15px;
+  gap: 15px;
 }
 
 .bond-display {
   display: flex;
   align-items: center;
-  gap: 5px;
 }
 
 .bond-icon-container {
@@ -126,16 +141,17 @@ function handleBondInput(event: Event) {
 .bond-arrow {
   font-size: 24px;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
 }
 
 .bond-input {
   width: 60px;
   padding: 4px;
-  border: 1px solid var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   text-align: center;
-  display: block;
-  margin: 0 auto;
+  background-color: var(--input-color, var(--background-primary));
 }
 
 .total-exp {

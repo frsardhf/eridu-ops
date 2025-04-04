@@ -1,0 +1,138 @@
+/* 
+ * Shared styles for student upgrade components
+ * Used by:
+ * - StudentSkillSection.vue
+ * - StudentPotentialSection.vue
+ */
+
+/* Section containers */
+.upgrade-section {
+  background: var(--card-background);
+  border-radius: 8px;
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 15px;
+}
+
+.section-title {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0 3px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Item containers */
+.sliders-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.type-section {
+  background: var(--background-primary);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.type-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.type-icon {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+}
+
+/* Level display */
+.level-display {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: bolder;
+  font-size: 1em;
+}
+
+.level-arrow {
+  color: var(--text-secondary);
+}
+
+.current-level {
+  color: var(--text-secondary);
+}
+
+.target-level {
+  color: var(--accent-color);
+}
+
+.max-level {
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+.max-indicator {
+  font-size: 0.7em;
+  color: var(--accent-color);
+  background-color: rgba(var(--accent-color-rgb, 74, 144, 226), 0.1);
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-left: 2px;
+}
+
+/* Sliders */
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-label {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  width: 50px;
+}
+
+.slider {
+  flex: 1;
+  height: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--background-secondary);
+  border-radius: 5px;
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 976px) {
+  .slider {
+    height: 8px;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+  }
+} 

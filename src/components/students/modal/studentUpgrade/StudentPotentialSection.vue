@@ -5,6 +5,7 @@ import {
   PotentialSettings,
   PotentialMaterial
 } from '../../../../types/upgrade';
+import '../../../../styles/studentUpgrade.css';
 
 interface MaterialItem extends Omit<PotentialMaterial, 'potentialType'> {
   potentialType?: PotentialType;
@@ -22,6 +23,14 @@ const emit = defineEmits<{
   (e: 'update-target-potential', value: number): void;
   (e: 'update-potential', type: PotentialType, current: number, target: number): void;
 }>();
+
+// State for collapsible section
+const isExpanded = ref(false);
+
+// Toggle expansion
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value;
+};
 
 // Create potential settings for each type
 const potentialTypes = ref<Record<PotentialType, PotentialSettings>>({
@@ -69,6 +78,25 @@ watch(() => props.potentialLevels, (newVal) => {
     }
   }
 }, { deep: true, immediate: true });
+
+// Constants
+const MAX_POTENTIAL_LEVEL = 25;
+
+// Add this function to handle level display state
+const getLevelDisplayState = (current: number, target: number) => {
+  if (current === MAX_POTENTIAL_LEVEL && target === MAX_POTENTIAL_LEVEL) {
+    return 'max';
+  } else if (current === target) {
+    return 'same';
+  } else {
+    return 'different';
+  }
+};
+
+// Add this function to check if target is at max level
+const isTargetMaxLevel = (target: number) => {
+  return target === MAX_POTENTIAL_LEVEL;
+};
 
 // Handle potential type changes
 const updatePotentialCurrent = (type: PotentialType, value: number) => {
@@ -123,27 +151,77 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
 </script>
 
 <template>
-  <div class="potential-section">
-    <h3 class="section-title">Potential Upgrade Calculator</h3>
+  <div class="upgrade-section">
+    <h3 class="section-title collapsible-header" @click="toggleExpand">
+      <div class="collapsible-title">
+        <span>Potential</span>
+        <div class="material-summary" v-if="!isExpanded && materials.length > 0">
+          <span class="material-hint">Requires: 
+            <span v-for="(item, index) in materials.slice(0, 3)" :key="index" class="material-item">
+              {{ item.material?.Name || 'Unknown material' }}{{ index < Math.min(materials.length, 3) - 1 ? ', ' : '' }}
+            </span>
+            <span v-if="materials.length > 3">+{{ materials.length - 3 }} more</span>
+          </span>
+        </div>
+        <span class="collapsible-hint" v-else>(Click to {{ isExpanded ? 'collapse' : 'expand' }})</span>
+      </div>
+      <div class="expand-icon" :class="{ 'rotated': isExpanded }">
+        <svg 
+          width="12" 
+          height="12" 
+          viewBox="0 0 12 12" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path 
+            d="M2 4L6 8L10 4" 
+            stroke="currentColor" 
+            stroke-width="2" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+    </h3>
     
-    <div class="potential-sliders-column">
+    <div class="sliders-column" v-show="isExpanded">
       <template v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]" :key="potType">
-        <div class="potential-type-section">
-          <div class="potential-type-header">
+        <div class="type-section">
+          <div class="type-header">
             <img 
               :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType].icon}.webp`" 
               :alt="potentialTypes[potType].name"
-              class="potential-type-icon"
+              class="type-icon"
             />
             <h4>{{ potentialTypes[potType].name }}</h4>
             <div class="level-display">
-              <span class="current-level">{{ potentialTypes[potType].current }}</span>
-              <span class="level-arrow">→</span>
-              <span class="target-level">{{ potentialTypes[potType].target }}</span>
+              <template v-if="getLevelDisplayState(
+                potentialTypes[potType].current, 
+                potentialTypes[potType].target
+              ) === 'max'">
+                <span class="max-level">MAX</span>
+              </template>
+              
+              <template v-else-if="getLevelDisplayState(
+                potentialTypes[potType].current, 
+                potentialTypes[potType].target
+              ) === 'same'">
+                <span class="target-level">{{ potentialTypes[potType].current }}</span>
+              </template>
+              
+              <template v-else>
+                <span class="current-level">{{ potentialTypes[potType].current }}</span>
+                <span class="level-arrow">→</span>
+                <span class="target-level">{{ potentialTypes[potType].target }}</span>
+                <span class="max-indicator" 
+                      v-if="isTargetMaxLevel(potentialTypes[potType].target)">
+                  MAX
+                </span>
+              </template>
             </div>
           </div>
           
-          <div class="potential-sliders">
+          <div class="sliders">
             <!-- Current Potential Slider -->
             <div class="slider-row">
               <span class="slider-label">Current</span>
@@ -151,7 +229,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
                 type="range"
                 min="0"
                 max="25"
-                class="potential-slider"
+                class="slider"
                 :name="`potential-current-${potType}`"
                 :value="potentialTypes[potType].current"
                 @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
@@ -165,7 +243,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
                 type="range"
                 min="0"
                 max="25"
-                class="potential-slider"
+                class="slider"
                 :name="`potential-target-${potType}`"
                 :value="potentialTypes[potType].target"
                 @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
@@ -179,123 +257,59 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
 </template>
 
 <style scoped>
-.potential-section {
-  background: var(--card-background);
-  border-radius: 8px;
-  padding: 15px;
-  border: 1px solid var(--border-color);
-  margin-bottom: 15px;
-}
-
-.section-title {
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-bottom: 15px;
-  color: var(--text-primary);
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.potential-sliders-column {
+/* Component-specific styles */
+.collapsible-header {
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: 15px;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  margin-bottom: 0;
 }
 
-.potential-type-section {
-  background: var(--background-primary);
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.potential-type-header {
+.collapsible-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.potential-type-icon {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
+.collapsible-hint {
+  font-size: 0.75em;
+  font-weight: normal;
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
-.level-display {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: bold;
-  font-size: 0.9em;
+.material-summary {
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.level-arrow {
+.material-hint {
+  font-size: 0.75em;
+  font-weight: normal;
   color: var(--text-secondary);
 }
 
-.current-level {
-  color: var(--text-secondary);
-}
-
-.target-level {
+.material-item {
   color: var(--accent-color);
 }
 
-.potential-sliders {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.collapsible-header:hover {
+  background-color: rgba(var(--background-hover-rgb, 60, 60, 60), 0.15);
+  border-radius: 4px;
 }
 
-.slider-row {
+.expand-icon {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 
-.slider-label {
-  font-size: 0.8em;
-  color: var(--text-secondary);
-  width: 50px;
-}
-
-.potential-slider {
-  flex: 1;
-  height: 10px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--background-secondary);
-  border-radius: 5px;
-  outline: none;
-}
-
-.potential-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: var(--accent-color);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.potential-levels {
-  display: flex;
-  justify-content: space-between;
-  color: var(--text-secondary);
-  font-size: 0.7em;
-  padding: 0 5px;
-}
-
-@media (max-width: 976px) {
-  .potential-slider {
-    height: 8px;
-  }
-  
-  .potential-slider::-webkit-slider-thumb {
-    width: 16px;
-    height: 16px;
-  }
+.expand-icon.rotated svg {
+  transform: rotate(180deg);
 }
 </style> 

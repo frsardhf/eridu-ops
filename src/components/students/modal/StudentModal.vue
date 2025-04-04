@@ -152,16 +152,6 @@ const {
           </div>
           
           <div class="right-column">
-            <StudentPotentialSection
-              :current-potential="currentPotentialLevel"
-              :target-potential="targetPotentialLevel"
-              :materials="potentialMaterialsNeeded"
-              :potential-levels="potentialLevels"
-              @update-current-potential="handleCurrentPotentialInput"
-              @update-target-potential="handleTargetPotentialInput"
-              @update-potential="handlePotentialUpdate"
-            />
-            
             <StudentSkillSection
               :student="student"
               :skill-levels="skillLevels || {
@@ -176,6 +166,16 @@ const {
               @update-skill="handleSkillUpdate"
               @toggle-max-skills="toggleMaxAllSkills"
               @toggle-max-target="toggleMaxTargetSkills"
+            />
+            
+            <StudentPotentialSection
+              :current-potential="currentPotentialLevel"
+              :target-potential="targetPotentialLevel"
+              :materials="potentialMaterialsNeeded"
+              :potential-levels="potentialLevels"
+              @update-current-potential="handleCurrentPotentialInput"
+              @update-target-potential="handleTargetPotentialInput"
+              @update-potential="handlePotentialUpdate"
             />
             
             <StudentMaterialsSection
@@ -224,6 +224,6 @@ const {
   gap: 15px;
   background-color: var(--background-primary);
   border-radius: 8px;
-  padding: 15px;
+  padding: 0 15px 15px 15px;
 }
 </style>
