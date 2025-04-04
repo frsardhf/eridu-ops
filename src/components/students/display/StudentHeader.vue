@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue';
 import { HeaderProps } from '../../../types/header';
-import { SortOption, SortDirection } from '../../../consumables/hooks/useStudentData';
+import { SortOption } from '../../../consumables/hooks/useStudentData';
 
 const props = defineProps<HeaderProps>();
 const dropdownOpen = ref(false);

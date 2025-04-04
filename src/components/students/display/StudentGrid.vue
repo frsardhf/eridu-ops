@@ -31,3 +31,40 @@ function handleOpenModal(student: StudentProps) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.student-grid-wrapper {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 150px);
+  gap: 1rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Media Queries */
+@media screen and (max-width: 768px) {
+  .student-grid-wrapper {
+    padding: 0.5rem;
+  }
+  
+  .student-grid {
+    grid-template-columns: repeat(auto-fit, 100px);
+    gap: 0.75rem;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .student-grid {
+    gap: 1.5rem;
+  }
+}
+</style>
