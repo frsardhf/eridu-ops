@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { StudentProps } from '../../../../types/student';
-import StudentGiftCard from './StudentGiftCard.vue';
-import StudentBoxCard from './StudentBoxCard.vue';
+import StudentItemCard from './StudentItemCard.vue';
 
 const props = defineProps<{
   student: StudentProps | null,
@@ -33,24 +32,26 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
   <div class="gifts-grid">
     <!-- Regular Gifts Section -->
     <template v-if="hasGifts">
-      <StudentGiftCard 
+      <StudentItemCard 
         v-for="(item) in student!.Gifts" 
         :key="`gift-${item.gift.Id}`"
         :item="item"
         :value="giftFormData[item.gift.Id]"
+        :is-box="false"
         @update:value="(e) => handleGiftInput(item.gift.Id, e)"
       />
     </template>
     
     <!-- Gift Boxes Section -->
     <template v-if="hasBoxes">
-      <StudentBoxCard 
+      <StudentItemCard 
         v-for="(item) in student!.Boxes" 
         :key="`box-${item.gift.Id}`"
         :item="item"
         :value="boxFormData[item.gift.Id]"
         :convert-box="convertBox"
         :show-gift-grade="shouldShowGiftGrade(Number(item.gift.Id))"
+        :is-box="true"
         @update:value="(e) => handleBoxInput(Number(item.gift.Id), e)"
       />
     </template>
