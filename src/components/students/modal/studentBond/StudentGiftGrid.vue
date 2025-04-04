@@ -35,6 +35,7 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
       <StudentItemCard 
         v-for="(item) in student!.Gifts" 
         :key="`gift-${item.gift.Id}`"
+        :name="`gift-${item.gift.Id}`"
         :item="item"
         :value="giftFormData[item.gift.Id]"
         :is-box="false"
@@ -47,6 +48,7 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
       <StudentItemCard 
         v-for="(item) in student!.Boxes" 
         :key="`box-${item.gift.Id}`"
+        :name="`box-${item.gift.Id}`"
         :item="item"
         :value="boxFormData[item.gift.Id]"
         :convert-box="convertBox"
@@ -57,3 +59,13 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
     </template>
   </div>
 </template>
+
+<style scoped>
+.gifts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 7px;
+  height: auto;
+  background-color: var(--background-primary);
+}
+</style>

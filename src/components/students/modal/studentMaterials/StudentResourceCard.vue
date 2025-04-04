@@ -75,14 +75,3 @@ function formatValue(value: any): string {
     </div>
   </div>
 </template>
-
-<style scoped>
-.resource-input {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
-}
-</style>

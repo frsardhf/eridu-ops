@@ -154,6 +154,83 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.page-header {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(
+    to right,
+    var(--header-gradient-start),
+    var(--header-gradient-end)
+  );
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.header-title-section {
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  letter-spacing: -0.025em;
+}
+
+.header-divider {
+  height: 3px;
+  width: 60px;
+  background: var(--accent-color);
+  margin-top: 0.5rem;
+  border-radius: 2px;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  padding-right: 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: black;
+  background: white;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #a0a5ff;
+  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
 .search-section {
   display: flex;
   align-items: center;
@@ -239,5 +316,87 @@ onBeforeUnmount(() => {
 .sort-option.active {
   background-color: var(--background-tertiary);
   font-weight: 500;
+}
+
+/* Theme toggle styles */
+.theme-toggle {
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* Media Queries */
+@media screen and (max-width: 768px) {
+  .page-header {
+    padding: 1rem;
+  }
+
+  .header-main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .header-title {
+    font-size: 1.75rem;
+  }
+
+  .search-section {
+    max-width: none;
+    margin-bottom: 0;
+  }
+
+  .theme-toggle {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .student-grid {
+    gap: 1.5rem;
+  }
 }
 </style>

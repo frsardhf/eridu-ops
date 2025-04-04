@@ -106,6 +106,17 @@ function getFontSizeClass(name: string): string {
   justify-content: center;
 }
 
+.label-text {
+  line-height: 1;
+  width: 100%;
+  padding: 0 2px;
+  color: var(--text-primary);
+}
+
+.label-text:hover {
+  color: var(--accent-color);
+}
+
 /* Font size classes */
 .text-xl {
   font-size: 1.25rem;

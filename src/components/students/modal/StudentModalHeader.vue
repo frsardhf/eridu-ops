@@ -18,7 +18,7 @@ function getFontSizeClass(name: string) {
       class="student-image"
     />
     <h2 
-      class="student-name text-xl font-bold" 
+      class="student-name font-bold" 
       :class="getFontSizeClass(student!.Name)">
       {{ student!.Name }}
     </h2>

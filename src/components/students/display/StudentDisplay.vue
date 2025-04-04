@@ -4,7 +4,6 @@ import StudentHeader from './StudentHeader.vue';
 import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../modal/StudentModal.vue'
 import { useStudentData, SortOption } from '../../../consumables/hooks/useStudentData';
-import '../../../styles/studentDisplay.css'
 import { StudentProps } from '../../../types/student';
 import { ResourceProps } from '../../../types/resource';
 

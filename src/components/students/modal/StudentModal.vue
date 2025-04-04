@@ -115,23 +115,25 @@ const {
               :total-exp="totalCumulativeExp"
               @update-bond="handleBondInput"
             />
-            
-            <StudentConvertBox
-              :convert-box="convertBox"
-              @toggle-convert="convertBoxes"
-            />
           </div>
           
           <div class="right-column">
-            <StudentGiftGrid
-              :student="student"
-              :gift-form-data="giftFormData"
-              :box-form-data="boxFormData"
-              :convert-box="convertBox"
-              :should-show-gift-grade="shouldShowGiftGrade"
-              @update-gift="handleGiftInput"
-              @update-box="handleBoxInput"
-            />
+            <div class="gift-section">
+              <StudentConvertBox
+                :convert-box="convertBox"
+                @toggle-convert="convertBoxes"
+              />
+              
+              <StudentGiftGrid
+                :student="student"
+                :gift-form-data="giftFormData"
+                :box-form-data="boxFormData"
+                :convert-box="convertBox"
+                :should-show-gift-grade="shouldShowGiftGrade"
+                @update-gift="handleGiftInput"
+                @update-box="handleBoxInput"
+              />
+            </div>
           </div>
         </div>
         
@@ -214,5 +216,14 @@ const {
   border-radius: 8px;
   padding: 5px;
   background-color: var(--background-primary);
+}
+
+.gift-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background-color: var(--background-primary);
+  border-radius: 8px;
+  padding: 15px;
 }
 </style>
