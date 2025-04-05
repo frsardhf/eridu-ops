@@ -63,7 +63,7 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
 <style scoped>
 .gifts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
   gap: 7px;
   height: auto;
   background-color: var(--background-primary);

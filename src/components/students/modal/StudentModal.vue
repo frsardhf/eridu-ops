@@ -226,4 +226,12 @@ const {
   border-radius: 8px;
   padding: 0 15px 15px 15px;
 }
+
+@media (max-width: 576px) {
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+}
 </style>

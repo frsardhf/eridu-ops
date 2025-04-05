@@ -155,13 +155,8 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
     <h3 class="section-title collapsible-header" @click="toggleExpand">
       <div class="collapsible-title">
         <span>Potential</span>
-        <div class="material-summary" v-if="!isExpanded && materials.length > 0">
-          <span class="material-hint">Requires: 
-            <span v-for="(item, index) in materials.slice(0, 3)" :key="index" class="material-item">
-              {{ item.material?.Name || 'Unknown material' }}{{ index < Math.min(materials.length, 3) - 1 ? ', ' : '' }}
-            </span>
-            <span v-if="materials.length > 3">+{{ materials.length - 3 }} more</span>
-          </span>
+        <div class="material-summary" v-if="!isExpanded">
+      
         </div>
         <span class="collapsible-hint" v-else>(Click to {{ isExpanded ? 'collapse' : 'expand' }})</span>
       </div>
@@ -188,11 +183,6 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
       <template v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]" :key="potType">
         <div class="type-section">
           <div class="type-header">
-            <img 
-              :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType].icon}.webp`" 
-              :alt="potentialTypes[potType].name"
-              class="type-icon"
-            />
             <h4>{{ potentialTypes[potType].name }}</h4>
             <div class="level-display">
               <template v-if="getLevelDisplayState(
@@ -221,33 +211,41 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
             </div>
           </div>
           
-          <div class="sliders">
-            <!-- Current Potential Slider -->
-            <div class="slider-row">
-              <span class="slider-label">Current</span>
-              <input
-                type="range"
-                min="0"
-                max="25"
-                class="slider"
-                :name="`potential-current-${potType}`"
-                :value="potentialTypes[potType].current"
-                @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
-              />
-            </div>
+          <div class="content-container">
+            <img 
+              :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType].icon}.webp`" 
+              :alt="potentialTypes[potType].name"
+              class="type-icon"
+            />
             
-            <!-- Target Potential Slider -->
-            <div class="slider-row">
-              <span class="slider-label">Target</span>
-              <input
-                type="range"
-                min="0"
-                max="25"
-                class="slider"
-                :name="`potential-target-${potType}`"
-                :value="potentialTypes[potType].target"
-                @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
-              />
+            <div class="sliders">
+              <!-- Current Potential Slider -->
+              <div class="slider-row">
+                <span class="slider-label">Current</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="25"
+                  class="slider"
+                  :name="`potential-current-${potType}`"
+                  :value="potentialTypes[potType].current"
+                  @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
+                />
+              </div>
+              
+              <!-- Target Potential Slider -->
+              <div class="slider-row">
+                <span class="slider-label">Target</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="25"
+                  class="slider"
+                  :name="`potential-target-${potType}`"
+                  :value="potentialTypes[potType].target"
+                  @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -311,5 +309,19 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
 
 .expand-icon.rotated svg {
   transform: rotate(180deg);
+}
+
+.content-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.type-icon {
+  flex-shrink: 0;
+}
+
+.sliders {
+  flex: 1;
 }
 </style> 

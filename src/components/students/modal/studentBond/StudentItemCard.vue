@@ -123,9 +123,9 @@ const isInputDisabled = props.isBox && props.convertBox;
 .grade-icon {
   position: absolute;
   bottom: 0px;
-  left: -10px;
+  left: 0px;
   width: 34px;
-  height: 30px;
+  height: 29px;
   object-fit: contain;
 }
 </style>

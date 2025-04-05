@@ -300,6 +300,37 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
       <template v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
         <div class="type-section">
           <div class="type-header">
+            <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
+            <div class="level-display">
+              <template v-if="getLevelDisplayState(
+                skillTypes[skillType].current, 
+                skillTypes[skillType].target, 
+                skillTypes[skillType].maxLevel
+              ) === 'max'">
+                <span class="max-level">MAX</span>
+              </template>
+              
+              <template v-else-if="getLevelDisplayState(
+                skillTypes[skillType].current, 
+                skillTypes[skillType].target, 
+                skillTypes[skillType].maxLevel
+              ) === 'same'">
+                <span class="target-level">{{ skillTypes[skillType].current }}</span>
+              </template>
+              
+              <template v-else>
+                <span class="current-level">{{ skillTypes[skillType].current }}</span>
+                <span class="level-arrow">→</span>
+                <span class="target-level">{{ skillTypes[skillType].target }}</span>
+                <span class="max-indicator" 
+                      v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
+                  MAX
+                </span>
+              </template>
+            </div>
+          </div>
+          
+          <div class="content-container">
             <div class="skill-icon-wrapper">
               <img 
                 :src="getSkillIconUrl(skillTypes[skillType].icon)"
@@ -336,65 +367,35 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
                 </div>
               </div>
             </div>
-            <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
-            <div class="level-display">
-              <template v-if="getLevelDisplayState(
-                skillTypes[skillType].current, 
-                skillTypes[skillType].target, 
-                skillTypes[skillType].maxLevel
-              ) === 'max'">
-                <span class="max-level">MAX</span>
-              </template>
-              
-              <template v-else-if="getLevelDisplayState(
-                skillTypes[skillType].current, 
-                skillTypes[skillType].target, 
-                skillTypes[skillType].maxLevel
-              ) === 'same'">
-                <span class="target-level">{{ skillTypes[skillType].current }}</span>
-              </template>
-              
-              <template v-else>
-                <span class="current-level">{{ skillTypes[skillType].current }}</span>
-                <span class="level-arrow">→</span>
-                <span class="target-level">{{ skillTypes[skillType].target }}</span>
-                <span class="max-indicator" 
-                      v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
-                  MAX
-                </span>
-              </template>
-            </div>
-          </div>
-          
-          <div class="sliders">
-            <!-- Current Skill Level Slider -->
-            <div class="slider-row">
-              <span class="slider-label">Current</span>
-              <input
-                type="range"
-                min="1"
-                :max="skillTypes[skillType].maxLevel"
-                class="slider"
-                :name="`skill-current-${skillType}`"
-                :value="skillTypes[skillType].current"
-                @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
-              />
-              <span class="slider-value">{{ skillTypes[skillType].current }}</span>
-            </div>
             
-            <!-- Target Skill Level Slider -->
-            <div class="slider-row">
-              <span class="slider-label">Target</span>
-              <input
-                type="range"
-                min="1"
-                :max="skillTypes[skillType].maxLevel"
-                class="slider"
-                :name="`skill-target-${skillType}`"
-                :value="skillTypes[skillType].target"
-                @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
-              />
-              <span class="slider-value">{{ skillTypes[skillType].target }}</span>
+            <div class="sliders">
+              <!-- Current Skill Level Slider -->
+              <div class="slider-row">
+                <span class="slider-label">Current</span>
+                <input
+                  type="range"
+                  min="1"
+                  :max="skillTypes[skillType].maxLevel"
+                  class="slider"
+                  :name="`skill-current-${skillType}`"
+                  :value="skillTypes[skillType].current"
+                  @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
+                />
+              </div>
+              
+              <!-- Target Skill Level Slider -->
+              <div class="slider-row">
+                <span class="slider-label">Target</span>
+                <input
+                  type="range"
+                  min="1"
+                  :max="skillTypes[skillType].maxLevel"
+                  class="slider"
+                  :name="`skill-target-${skillType}`"
+                  :value="skillTypes[skillType].target"
+                  @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -408,13 +409,13 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
 .options-container {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .max-all-container {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   font-size: 0.85em;
   color: var(--text-secondary);
 }
@@ -428,8 +429,15 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
   user-select: none;
 }
 
+.content-container {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
 .skill-icon-wrapper {
   position: relative;
+  flex-shrink: 0;
 }
 
 .skill-icon {
@@ -488,10 +496,43 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
   font-weight: bold;
 }
 
+.sliders {
+  flex: 1;
+}
+
 .slider-value {
   font-size: 0.9em;
   color: var(--text-primary);
   width: 20px;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .skill-icon-wrapper {
+    align-self: center;
+  }
+  
+  .sliders {
+    width: 100%;
+  }
+}
+
+@media (max-width: 500px) {
+  :deep(.section-title) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .options-container {
+    width: 100%;
+    gap: 0px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style> 

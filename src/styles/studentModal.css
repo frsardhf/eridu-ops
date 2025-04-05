@@ -167,7 +167,7 @@
 /* ==========================================================================
    Responsive Styles
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 976px) {
   .modal-content {
     width: 90%;
     padding: 15px;
@@ -195,17 +195,5 @@
   input[type="text"] {
     width: 100%;
     box-sizing: border-box;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-content {
-    width: 95%;
-    padding: 10px;
-  }
-  
-  .left-column,
-  .right-column {
-    padding: 5px;
   }
 }
