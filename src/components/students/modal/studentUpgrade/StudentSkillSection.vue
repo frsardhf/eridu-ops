@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import {
   SkillType,
   SkillSettings
@@ -143,14 +143,15 @@ const getSkillIconUrl = (iconName: string) => {
   return `https://schaledb.com/images/skill/${iconName}.webp`;
 };
 
-// Add this function to format the skill description
-const formatSkillDescription = (desc: string, parameters: any[][], current: number, target: number) => {
-  if (!desc || !parameters) return '';
+// Refactored function to format the skill description
+const formatSkillDescription = (skill: any, current: number, target: number) => {
+  if (!skill || !skill.Desc || !skill.Parameters) return '';
   
-  let formattedDesc = desc;
+  let formattedDesc = skill.Desc;
+  const parameters = skill.Parameters;
   
   // First replace parameter placeholders with current/target values
-  parameters.forEach((paramGroup, groupIndex) => {
+  parameters.forEach((paramGroup: any[], groupIndex: number) => {
     const currentValue = paramGroup[current - 1] || paramGroup[0];
     const targetValue = paramGroup[target - 1] || paramGroup[0];
     const placeholder = `<?${groupIndex + 1}>`;
@@ -169,21 +170,93 @@ const formatSkillDescription = (desc: string, parameters: any[][], current: numb
     }
   });
   
-  // Then process all special tags like <b:value>, <s:value>, <d:value>, etc.
-  formattedDesc = formattedDesc.replace(/<([a-z]):([^>]+)>/g, (match, tagType, value) => {
-    // Case 1: If value is all uppercase (like ATK, DEF, MAXHP), return as is
-    if (value === value.toUpperCase() && value.length > 1) {
-      return value;
+  // Handle knockback tag <kb:value> by finding Knockback effect and its scale value
+  formattedDesc = formattedDesc.replace(/<kb:(\d+)>/g, (match: string, valueIndex: string) => {
+    const indexNum = parseInt(valueIndex);
+    if (!skill.Effects) return match;
+    
+    // Find the Knockback effect
+    const knockbackEffect = skill.Effects.find((effect: any) => effect.Type === "Knockback");
+    if (!knockbackEffect || !knockbackEffect.Scale) {
+      return match;
     }
     
-    // Case 2: If value has mixed case (like CritDamage), add spaces before capital letters
-    return value.replace(/([A-Z])/g, (_, capital, index) => {
-      return index > 0 ? ' ' + capital : capital;
-    });
+    // Calculate the sum of all knockback values up to the specified index
+    let knockbackSum = 0;
+    for (let i = 0; i <= indexNum && i < knockbackEffect.Scale.length; i++) {
+      knockbackSum += knockbackEffect.Scale[i] || 0;
+    }
+    
+    // Return a fixed format with the sum value and "units"
+    return `${knockbackSum} units`;
+  });
+  
+  // Process special tags with localization data
+  formattedDesc = formattedDesc.replace(/<([bcds]):([^>]+)>/g, 
+    (match: string, tagType: string, value: string) => {
+    // Handle special tags according to the rules
+    let prefix = '';
+    
+    switch (tagType) {
+      case 'b': prefix = 'Buff_'; break;
+      case 'd': prefix = 'Debuff_'; break;
+      case 'c': prefix = 'CC_'; break;
+      case 's': prefix = 'Special_'; break;
+    }
+    
+    // Fetch the localized name
+    const key = prefix + value;
+    const localizedName = fetchLocalizedBuffName(key);
+    
+    if (localizedName) {
+      return localizedName;
+    }
   });
   
   return formattedDesc;
 };
+
+// Cache for localization data to avoid repeated fetching
+const localizationCache = ref<Record<string, any> | null>(null);
+
+// Function to fetch localized buff names from the schaledb
+const fetchLocalizedBuffName = (key: string) => {
+  // If we already have the data cached, use it
+  if (localizationCache.value && localizationCache.value.BuffName && localizationCache.value.BuffName[key]) {
+    return localizationCache.value.BuffName[key];
+  }
+  
+  // If cache is empty, fetch the data
+  if (!localizationCache.value) {
+    // We'll use a Promise to handle this asynchronously
+    fetch('https://schaledb.com/data/en/localization.json')
+      .then(response => response.json())
+      .then(data => {
+        localizationCache.value = data;
+      })
+      .catch(error => {
+        console.error('Error fetching localization data:', error);
+      });
+    
+    // Return the original key for now until we have the data
+    return key.replace(/^(Buff_|Debuff_|CC_|Special_)/, '');
+  }
+  
+  // If we have the cache but the key doesn't exist
+  return key.replace(/^(Buff_|Debuff_|CC_|Special_)/, '');
+};
+
+// Load localization data on component mount
+onMounted(() => {
+  fetch('https://schaledb.com/data/en/localization.json')
+    .then(response => response.json())
+    .then(data => {
+      localizationCache.value = data;
+    })
+    .catch(error => {
+      console.error('Error fetching localization data:', error);
+    });
+});
 
 // Add this function to format the skill cost
 const formatSkillCost = (cost: number[], current: number, target: number) => {
@@ -297,7 +370,8 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
     </h3>
     
     <div class="sliders-column">
-      <template v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
+      <template 
+        v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
         <div class="type-section">
           <div class="type-header">
             <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
@@ -323,7 +397,7 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
                 <span class="level-arrow">→</span>
                 <span class="target-level">{{ skillTypes[skillType].target }}</span>
                 <span class="max-indicator" 
-                      v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
+                  v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
                   MAX
                 </span>
               </template>
@@ -359,8 +433,7 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
                     )"></span>
                   </div>
                   <div class="tooltip-desc" v-html="formatSkillDescription(
-                    props.student?.Skills?.[skillType]?.Desc,
-                    props.student?.Skills?.[skillType]?.Parameters,
+                    props.student?.Skills?.[skillType],
                     skillTypes[skillType].current,
                     skillTypes[skillType].target
                   )"></div>
@@ -438,12 +511,15 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
 .skill-icon-wrapper {
   position: relative;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .skill-icon {
   padding: 4px;
   border-radius: 20%;
   transition: background-color 0.3s ease;
+  max-width: 100%;
+  height: auto;
 }
 
 .icon-background-explosive {

@@ -157,6 +157,7 @@ onMounted(() => {
 
 .view-tab {
   padding: 10px 15px;
+  font-size: 0.9em;
   background: none;
   border: none;
   border-bottom: 3px solid transparent;

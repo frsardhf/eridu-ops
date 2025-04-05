@@ -53,18 +53,12 @@ function handleOpenModal(student: StudentProps) {
 /* Media Queries */
 @media screen and (max-width: 768px) {
   .student-grid-wrapper {
-    padding: 0.5rem;
+    padding: 0 0 4rem 0;
   }
   
   .student-grid {
     grid-template-columns: repeat(auto-fit, 100px);
     gap: 0.75rem;
-  }
-}
-
-@media screen and (min-width: 1600px) {
-  .student-grid {
-    gap: 1.5rem;
   }
 }
 </style>

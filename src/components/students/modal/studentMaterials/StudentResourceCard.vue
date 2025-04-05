@@ -66,6 +66,7 @@ function formatValue(value: any): string {
         ref="inputEl"
         type="number"
         :value="props.value"
+        :name="`${props.item.Name}-${props.item.Id}`"
         @input="handleInput"
         @focus="handleFocus"
         @blur="handleBlur"

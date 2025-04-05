@@ -80,13 +80,13 @@ const {
           :class="['tab-button', { active: activeTab === 'bond' }]" 
           @click="activeTab = 'bond'"
         >
-          Bond Calculator
+          Bond
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'upgrade' }]" 
           @click="activeTab = 'upgrade'"
         >
-          Upgrade Materials
+          Upgrade
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'resources' }]" 
@@ -98,7 +98,7 @@ const {
           :class="['tab-button', { active: activeTab === 'summary' }]" 
           @click="activeTab = 'summary'"
         >
-          Material Summary
+          Summary
         </button>
       </div>
 

@@ -174,7 +174,6 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 1rem;
 }
 
 .header-title-section {
@@ -328,8 +327,9 @@ onBeforeUnmount(() => {
 .switch {
   position: relative;
   display: inline-block;
-  width: 50px;
-  height: 28px;
+  width: 46px;
+  height: 26px;
+  margin: 3px 0;
 }
 
 .switch input {
@@ -341,22 +341,29 @@ onBeforeUnmount(() => {
 .slider {
   position: absolute;
   cursor: pointer;
-  inset: 0;
-  background-color: #ccc;
+  height: 28px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e9e9ea;
   transition: .4s;
-  border-radius: 34px;
+  border-radius: 26px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 0.5px solid rgba(0, 0, 0, 0.04);
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 20px;
-  width: 20px;
-  left: 4px;
-  bottom: 4px;
+  height: 22px;
+  width: 22px;
+  left: 2px;
+  bottom: 2px;
   background-color: white;
-  transition: .4s;
+  transition: .3s;
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 input:checked + .slider {
@@ -364,7 +371,7 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(22px);
+  transform: translateX(18px);
 }
 
 /* Media Queries */
@@ -376,7 +383,7 @@ input:checked + .slider:before {
   .header-main {
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
+    gap: 0.3rem;
   }
 
   .header-title {
@@ -390,7 +397,6 @@ input:checked + .slider:before {
 
   .theme-toggle {
     margin-left: 0;
-    margin-top: 0.5rem;
   }
 }
 
