@@ -322,7 +322,7 @@ export function useStudentUpgrade(props: {
     
     // Calculate how many of each report we need, prioritizing using owned reports first
     expItems.forEach(entry => {
-      if (!entry.item || !entry.item.ExpValue || remainingXpNeeded <= 0) return;
+      if (!entry.item?.ExpValue || remainingXpNeeded <= 0) return;
       
       const expValue = entry.item.ExpValue;
       const quantityOwned = entry.item.QuantityOwned || 0;
@@ -339,7 +339,7 @@ export function useStudentUpgrade(props: {
     // If we still need more XP, use additional reports, starting from highest value
     if (remainingXpNeeded > 0) {
       expItems.forEach(entry => {
-        if (!entry.item || !entry.item.ExpValue || remainingXpNeeded <= 0) return;
+        if (!entry.item?.ExpValue || remainingXpNeeded <= 0) return;
         
         const expValue = entry.item.ExpValue;
         // Calculate how many additional reports we need
@@ -356,7 +356,7 @@ export function useStudentUpgrade(props: {
     if (remainingXpNeeded > 0 && expItems.length > 0) {
       // Get the smallest exp item (last in our sorted array)
       const smallestExp = expItems[expItems.length - 1];
-      if (smallestExp.item && smallestExp.item.ExpValue) {
+      if (smallestExp.item?.ExpValue) {
         // Add one more of the smallest report to cover the remaining XP
         smallestExp.count += 1;
       }

@@ -34,6 +34,17 @@ export function useResourceCalculation() {
     const materialMap = new Map<number, MaterialSummary>();
     let totalCredits = 0;
     
+    // Get resources to find exp items info and track remaining quantities
+    const resources = getResources() || {};
+    const availableExpReports = new Map<number, number>();
+    
+    // Initialize available exp reports (IDs: 10, 11, 12, 13)
+    [10, 11, 12, 13].forEach(id => {
+      const resource = resources[id.toString()];
+      availableExpReports.set(id, resource?.QuantityOwned || 0);
+    });
+    
+    // First pass: Process all skill and potential upgrades
     studentsWithUpgrades.forEach(({ student, upgrade }) => {
       // Skip if no skill or potential data
       if (!upgrade.skillLevels || !upgrade.potentialLevels) return;
@@ -45,20 +56,24 @@ export function useResourceCalculation() {
       // Process potential materials and track credits
       const potentialCredits = processPotentialMaterials(student, upgrade.potentialLevels, materialMap);
       totalCredits += potentialCredits;
-      
-      // Process exp materials if character level needs to be upgraded
+    });
+    
+    // Second pass: Process character level upgrades with shared exp report pool
+    studentsWithUpgrades.forEach(({ student, upgrade }) => {
       if (upgrade.currentCharacterLevel && upgrade.targetCharacterLevel && 
           upgrade.currentCharacterLevel < upgrade.targetCharacterLevel) {
-        // The credits from exp materials are added directly to the materialMap by processExpMaterials
-        // We don't need to add them to totalCredits here since they're already in the map
-        processExpMaterials(upgrade, materialMap);
+        // Process exp materials with the shared pool of available reports
+        processExpMaterialsWithSharedPool(
+          upgrade, 
+          materialMap, 
+          availableExpReports
+        );
       }
     });
     
     // Add skill and potential credits as a special material if needed
     if (totalCredits > 0) {
       // Get resources to find credits info
-      const resources = getResources() || {};
       const creditsResource = resources[CREDITS_ID.toString()] || {
         Id: CREDITS_ID,
         Name: 'Credits',
@@ -249,14 +264,12 @@ export function useResourceCalculation() {
     return totalCredits;
   };
 
-  // Process exp materials needed for character level upgrades
-  const processExpMaterials = (
+  // Process exp materials with shared pool of available reports
+  const processExpMaterialsWithSharedPool = (
     upgrade: any,
-    materialMap: Map<number, MaterialSummary>
+    materialMap: Map<number, MaterialSummary>,
+    availableExpReports: Map<number, number>
   ): number => {
-    // Exp item IDs
-    const expItemIds = [10, 11, 12, 13]; // Novice, Normal, Advanced, Superior
-    
     // Get all resources to access exp items
     const resources = getResources() || {};
     
@@ -288,10 +301,6 @@ export function useResourceCalculation() {
       totalCreditCost = targetLevelCreditCost - currentLevelCreditCost;
       
       if (totalCreditCost > 0) {
-        // Get credits resource
-        const resources = getResources() || {};
-        const creditsResource = resources[CREDITS_ID.toString()];
-        
         // Add credits cost to material map
         updateMaterialMap(CREDITS_ID, totalCreditCost, materialMap);
       }
@@ -301,54 +310,79 @@ export function useResourceCalculation() {
     let remainingXpNeeded = totalXpNeeded;
     
     // Create an array of exp items in descending order of exp value
-    const expItems = expItemIds
-      .map(id => resources[id.toString()])
-      .filter(item => item && item.ExpValue)
-      .sort((a, b) => (b.ExpValue || 0) - (a.ExpValue || 0));
+    const expItems = [
+      { id: 13, value: resources['13']?.ExpValue || 0 }, // Superior
+      { id: 12, value: resources['12']?.ExpValue || 0 }, // Advanced
+      { id: 11, value: resources['11']?.ExpValue || 0 }, // Normal
+      { id: 10, value: resources['10']?.ExpValue || 0 }  // Novice
+    ].filter(item => item.value > 0);
     
-    // First use reports that the user already owns
+    // Calculate how many of each report we need based on available reports
     expItems.forEach(item => {
-      if (!item || !item.ExpValue || remainingXpNeeded <= 0) return;
+      if (remainingXpNeeded <= 0) return;
       
-      const expValue = item.ExpValue;
-      const quantityOwned = item.QuantityOwned || 0;
+      const expValue = item.value;
+      const available = availableExpReports.get(item.id) || 0;
       
-      if (quantityOwned > 0) {
-        // Calculate how many of the owned reports we need to use
-        const ownedUsage = Math.min(quantityOwned, Math.ceil(remainingXpNeeded / expValue));
+      if (available > 0) {
+        // Calculate how many of this report we need
+        const neededCount = Math.ceil(remainingXpNeeded / expValue);
+        const useCount = Math.min(available, neededCount);
         
-        // Add to material map
-        if (ownedUsage > 0) {
-          updateMaterialMap(item.Id, ownedUsage, materialMap);
-          remainingXpNeeded -= ownedUsage * expValue;
+        if (useCount > 0) {
+          // Add to material map
+          updateMaterialMap(item.id, useCount, materialMap);
+          
+          // Update available quantity
+          availableExpReports.set(item.id, available - useCount);
+          
+          // Update remaining XP needed
+          remainingXpNeeded -= useCount * expValue;
         }
       }
     });
     
-    // If we still need more XP, calculate additional reports needed
+    // If we still need more XP, add additional reports (beyond what's available)
     if (remainingXpNeeded > 0) {
-      expItems.forEach(item => {
-        if (!item || !item.ExpValue || remainingXpNeeded <= 0) return;
+      for (const item of expItems) {
+        if (remainingXpNeeded <= 0) break;
         
-        const expValue = item.ExpValue;
+        const expValue = item.value;
+        // How many more of this report do we need
         const additionalCount = Math.floor(remainingXpNeeded / expValue);
         
         if (additionalCount > 0) {
-          updateMaterialMap(item.Id, additionalCount, materialMap);
+          // Check if material is already in the map
+          const existing = materialMap.get(item.id);
+          if (existing) {
+            existing.materialQuantity += additionalCount;
+            existing.remaining = existing.owned - existing.materialQuantity;
+          } else {
+            // Add to material map
+            updateMaterialMap(item.id, additionalCount, materialMap);
+          }
+          
+          // Update remaining XP needed
           remainingXpNeeded -= additionalCount * expValue;
         }
-      });
+      }
       
-      // Handle any remaining XP with the smallest report
+      // Handle any remaining XP with the smallest report (round up)
       if (remainingXpNeeded > 0 && expItems.length > 0) {
         const smallestExp = expItems[expItems.length - 1];
-        if (smallestExp && smallestExp.ExpValue) {
-          updateMaterialMap(smallestExp.Id, 1, materialMap);
+        
+        // Check if material is already in the map
+        const existing = materialMap.get(smallestExp.id);
+        if (existing) {
+          existing.materialQuantity += 1;
+          existing.remaining = existing.owned - existing.materialQuantity;
+        } else {
+          // Add to material map
+          updateMaterialMap(smallestExp.id, 1, materialMap);
         }
       }
     }
     
-    // Return the total credits needed for this level upgrade
     return totalCreditCost;
   };
 
