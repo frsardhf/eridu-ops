@@ -17,16 +17,43 @@ const missingMaterials = computed(() => {
     .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
 });
 
+// Check if the material is an exp report
+const isExpReport = (materialId: number) => {
+  // Exp report IDs: Novice (10), Normal (11), Advanced (12), Superior (13)
+  return [10, 11, 12, 13].includes(materialId);
+};
+
 // Computed property to get the resources based on active view
 const displayResources = computed(() => {
+  let resources: any[] = [];
+  
   switch (activeView.value) {
     case 'needed':
-      return totalMaterialsNeeded.value;
+      resources = totalMaterialsNeeded.value;
+      break;
     case 'missing':
-      return missingMaterials.value;
+      resources = missingMaterials.value;
+      break;
     default:
-      return [];
+      resources = [];
   }
+  
+  // Sort to put credits first, then exp reports, then other materials
+  return resources.sort((a, b) => {
+    const aId = a.material?.Id || 0;
+    const bId = b.material?.Id || 0;
+    
+    // Always put credits (ID: 5) first
+    if (aId === 5) return -1;
+    if (bId === 5) return 1;
+    
+    // Put exp reports next (IDs: 10, 11, 12, 13)
+    if (isExpReport(aId) && !isExpReport(bId)) return -1;
+    if (!isExpReport(aId) && isExpReport(bId)) return 1;
+    
+    // For all other materials, sort by ID
+    return aId - bId;
+  });
 });
 
 // Function to format quantity with 'K/M' for large numbers
@@ -114,6 +141,7 @@ onMounted(() => {
           :key="`resource-${item.material?.Id || index}`"
           class="resource-item"
           :title="item.material?.Name || 'Unknown Resource'"
+          :class="{ 'exp-report': isExpReport(item.material?.Id) }"
         >
           <div class="resource-content">
             <img 
@@ -190,5 +218,22 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   height: 100px;
+}
+
+.exp-report {
+  position: relative;
+}
+
+.exp-report::after {
+  content: 'XP';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 0.6em;
+  background-color: rgba(var(--accent-color-rgb, 100, 108, 255), 0.7);
+  color: white;
+  padding: 1px 3px;
+  border-radius: 3px;
+  pointer-events: none;
 }
 </style> 

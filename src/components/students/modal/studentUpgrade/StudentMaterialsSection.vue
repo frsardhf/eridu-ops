@@ -24,9 +24,14 @@ interface PotentialMaterial extends BaseMaterial {
   potentialType: string;
 }
 
+interface ExpMaterial extends BaseMaterial {
+  // Additional properties specific to exp materials could be added here
+}
+
 const props = defineProps<{
   skillMaterials: SkillMaterial[];
   potentialMaterials: PotentialMaterial[];
+  expMaterials?: ExpMaterial[];
 }>();
 
 // Function to format quantity with 'k' for large numbers
@@ -44,9 +49,17 @@ const formatQuantity = (quantity: number): string => {
   return `×${quantity}`;
 };
 
+// Function to check if a material is an exp report
+const isExpReport = (materialId: number | undefined): boolean => {
+  if (!materialId) return false;
+  // Exp reports are IDs 10, 11, 12, 13
+  return [10, 11, 12, 13].includes(materialId);
+};
+
 // Calculate cumulative materials needed by combining both types
 const cumulativeMaterials = computed(() => {
-  if (!props.skillMaterials.length && !props.potentialMaterials.length) return [];
+  if (!props.skillMaterials.length && !props.potentialMaterials.length && 
+    (!props.expMaterials || !props.expMaterials.length)) return [];
 
   // Group materials by ID
   const materialMap = new Map();
@@ -117,10 +130,45 @@ const cumulativeMaterials = computed(() => {
       }
     }
   });
+
+  // Process exp materials if they exist
+  if (props.expMaterials && props.expMaterials.length > 0) {
+    props.expMaterials.forEach(item => {
+      const materialId = item.material?.Id;
+      if (!materialId) return;
+
+      if (materialMap.has(materialId)) {
+        const existingEntry = materialMap.get(materialId);
+        existingEntry.materialQuantity += item.materialQuantity;
+      } else {
+        materialMap.set(materialId, {
+          material: item.material,
+          materialQuantity: item.materialQuantity
+        });
+      }
+    });
+  }
   
   // Convert map to array and sort by material ID
   return Array.from(materialMap.values())
-    .sort((a, b) => (a.material?.Id || 0) - (b.material?.Id || 0));
+    .sort((a, b) => {
+      const aId = a.material?.Id || 0;
+      const bId = b.material?.Id || 0;
+      
+      // Always put credits (ID: 5) first
+      if (aId === 5) return -1;
+      if (bId === 5) return 1;
+      
+      // Put exp reports next (IDs: 10, 11, 12, 13)
+      const isExpReportA = isExpReport(aId);
+      const isExpReportB = isExpReport(bId);
+      
+      if (isExpReportA && !isExpReportB) return -1;
+      if (!isExpReportA && isExpReportB) return 1;
+      
+      // For all other materials, sort by ID
+      return aId - bId;
+    });
 });
 
 // Determine if any upgrades are active (materials needed)
@@ -144,6 +192,7 @@ const hasMaterials = computed(() => {
           v-for="(item, index) in cumulativeMaterials" 
           :key="index"
           class="resource-item" 
+          :class="{ 'exp-report': isExpReport(item.material?.Id) }"
           :title="item.material?.Name || 'Material'"
         >
           <div class="resource-content">
@@ -196,5 +245,22 @@ const hasMaterials = computed(() => {
   background: var(--background-primary);
   border-radius: 8px;
   padding: 10px;
+}
+
+.exp-report {
+  position: relative;
+}
+
+.exp-report::after {
+  content: 'XP';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 0.6em;
+  background-color: rgba(var(--accent-color-rgb, 100, 108, 255), 0.7);
+  color: white;
+  padding: 1px 3px;
+  border-radius: 3px;
+  pointer-events: none;
 }
 </style> 

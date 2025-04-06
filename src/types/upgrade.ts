@@ -75,6 +75,12 @@ export interface SkillSettings {
   maxLevel: number;
 }
 
+export interface ExpMaterial {
+  material: Record<string, any> | null;
+  materialQuantity: number;
+  potentialType?: string;
+}
+
 // Constants
 export const CREDITS_ID = 5;
 

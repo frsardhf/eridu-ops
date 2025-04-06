@@ -15,7 +15,8 @@ import {
   SkillLevels,
   WORKBOOK_ID,
   SECRET_TECH_NOTE_ID,
-  CREDITS_ID
+  CREDITS_ID,
+  ExpMaterial
 } from '../../types/upgrade';
 
 export function useStudentUpgrade(props: {
@@ -61,7 +62,11 @@ export function useStudentUpgrade(props: {
     }
   });
   
+  const levelCreditsIds = CREDITS_ID;
+  const creditsData = getResourceDataById(levelCreditsIds);
+
   const characterXpTable = dataTable.character_xp;
+  const characterXpCreditsTable = dataTable.character_credits
   const exskillCreditsTable = dataTable.exskill_credits;
   const skillCreditsTable = dataTable.skill_credits;
   const potentialMaterials = dataTable.potential;
@@ -278,6 +283,99 @@ export function useStudentUpgrade(props: {
     return totalCumulativeExp.value;
   });
 
+  const charExpMaterialsNeeded = computed<ExpMaterial[]>(() => {
+    const materialsNeeded: ExpMaterial[] = []
+
+    if (currentCharacterLevel.value >= targetCharacterLevel.value) return materialsNeeded;
+
+    const expItemNovice = getResourceDataById(10);
+    const expItemNormal = getResourceDataById(11);
+    const expItemAdvanced = getResourceDataById(12);
+    const expItemSuperior = getResourceDataById(13);
+    let totalCredits = 0;
+
+    // Calculate total credits needed for level upgrade
+    const currentLevelCreditCost = currentCharacterLevel.value > 0 ? 
+      characterXpCreditsTable[currentCharacterLevel.value - 1] : 0;
+    const targetLevelCreditCost = targetCharacterLevel.value > 0 ? 
+      characterXpCreditsTable[targetCharacterLevel.value - 1] : 0;
+    
+    totalCredits = targetLevelCreditCost - currentLevelCreditCost;
+
+    // Add credits
+    materialsNeeded.push({
+      material: creditsData,
+      materialQuantity: totalCredits,
+      potentialType: 'level' as any
+    });
+
+    // Calculate exp reports needed based on remaining XP
+    let remainingXpNeeded = remainingXp.value;
+    
+    // Create an array of exp items in descending order of exp value
+    const expItems = [
+      { item: expItemSuperior, count: 0 },
+      { item: expItemAdvanced, count: 0 },
+      { item: expItemNormal, count: 0 },
+      { item: expItemNovice, count: 0 }
+    ].filter(entry => entry.item); // Filter out any undefined items
+    
+    // Calculate how many of each report we need, prioritizing using owned reports first
+    expItems.forEach(entry => {
+      if (!entry.item || !entry.item.ExpValue || remainingXpNeeded <= 0) return;
+      
+      const expValue = entry.item.ExpValue;
+      const quantityOwned = entry.item.QuantityOwned || 0;
+      
+      // First use reports the user already owns
+      if (quantityOwned > 0) {
+        // Calculate how many of the owned reports we need to use
+        const ownedUsage = Math.min(quantityOwned, Math.ceil(remainingXpNeeded / expValue));
+        entry.count = ownedUsage;
+        remainingXpNeeded -= ownedUsage * expValue;
+      }
+    });
+    
+    // If we still need more XP, use additional reports, starting from highest value
+    if (remainingXpNeeded > 0) {
+      expItems.forEach(entry => {
+        if (!entry.item || !entry.item.ExpValue || remainingXpNeeded <= 0) return;
+        
+        const expValue = entry.item.ExpValue;
+        // Calculate how many additional reports we need
+        const additionalCount = Math.floor(remainingXpNeeded / expValue);
+        
+        if (additionalCount > 0) {
+          entry.count += additionalCount;
+          remainingXpNeeded -= additionalCount * expValue;
+        }
+      });
+    }
+    
+    // Handle any remaining XP with the smallest report (round up)
+    if (remainingXpNeeded > 0 && expItems.length > 0) {
+      // Get the smallest exp item (last in our sorted array)
+      const smallestExp = expItems[expItems.length - 1];
+      if (smallestExp.item && smallestExp.item.ExpValue) {
+        // Add one more of the smallest report to cover the remaining XP
+        smallestExp.count += 1;
+      }
+    }
+    
+    // Add all the exp items to the materials needed
+    expItems.forEach(entry => {
+      if (entry.item && entry.count > 0) {
+        materialsNeeded.push({
+          material: entry.item,
+          materialQuantity: entry.count,
+          potentialType: 'level' as any
+        });
+      }
+    });
+
+    return materialsNeeded;
+  })
+
   const skillMaterialsNeeded = computed<SkillMaterial[]>(() => {
     const materialsNeeded: SkillMaterial[] = [];
    
@@ -285,17 +383,12 @@ export function useStudentUpgrade(props: {
       const { current, target } = levels;
       
       // Skip if no upgrade needed for this type
-      if (current >= target) {
-        return;
-      }
+      if (current >= target) return;
 
       // Get the correct material IDs and quantities based on skill type
       let materialIds: number[][] | null = null;
       let materialQuantities: number[][] | null = null;
       let creditsQuantities: number[] | null = null;
-
-      const levelCreditsIds = CREDITS_ID;
-      const creditsData = getResourceDataById(levelCreditsIds);
 
       // Determine which material data to use based on skill type
       if (type === 'Ex') {
@@ -557,6 +650,7 @@ export function useStudentUpgrade(props: {
     remainingXp,
     potentialMaterialsNeeded,
     skillMaterialsNeeded,
+    charExpMaterialsNeeded,
 
     // Methods
     closeModal,

@@ -62,7 +62,8 @@ const {
   allSkillsMaxed,
   toggleMaxAllSkills,
   targetSkillsMaxed,
-  toggleMaxTargetSkills
+  toggleMaxTargetSkills,
+  charExpMaterialsNeeded
 } = useStudentUpgrade(props, emit);
 
 const {
@@ -181,6 +182,7 @@ const {
             <StudentMaterialsSection
               :skill-materials="skillMaterialsNeeded || []"
               :potential-materials="potentialMaterialsNeeded || []"
+              :exp-materials="charExpMaterialsNeeded || []"
             />
           </div>
         </div>
