@@ -339,6 +339,20 @@ const getLevelDisplayState = (current: number, target: number, maxLevel: number)
 const isTargetMaxLevel = (target: number, maxLevel: number) => {
   return target === maxLevel;
 };
+
+// Track which skill sliders are being hovered
+const hoveredSkill = ref<SkillType | null>(null);
+
+// Set the currently hovered skill
+const setHoveredSkill = (skillType: SkillType | null) => {
+  hoveredSkill.value = skillType;
+};
+
+// Check if a slider should be shown (either always show current, or show target only when hovered or current !== target)
+const shouldShowTargetSlider = (skillType: SkillType) => {
+  const skill = skillTypes.value[skillType];
+  return hoveredSkill.value === skillType || skill.current !== skill.target;
+};
 </script>
 
 <template>
@@ -441,10 +455,14 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
               </div>
             </div>
             
-            <div class="sliders">
+            <div 
+              class="sliders" 
+              @mouseenter="setHoveredSkill(skillType)" 
+              @mouseleave="setHoveredSkill(null)"
+            >
               <!-- Current Skill Level Slider -->
               <div class="slider-row">
-                <span class="slider-label">Current</span>
+                <span class="slider-label">{{ skillTypes[skillType].current === skillTypes[skillType].target ? 'Level' : 'Current' }}</span>
                 <input
                   type="range"
                   min="1"
@@ -456,8 +474,12 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
                 />
               </div>
               
-              <!-- Target Skill Level Slider -->
-              <div class="slider-row">
+              <!-- Target Skill Level Slider - Only show when hovering or current !== target -->
+              <div 
+                class="slider-row target-slider"
+                v-show="shouldShowTargetSlider(skillType)"
+                :class="{ 'fade-in': hoveredSkill === skillType }"
+              >
                 <span class="slider-label">Target</span>
                 <input
                   type="range"
@@ -478,6 +500,26 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
 </template>
 
 <style scoped>
+/* Add these styles to your existing styles */
+.target-slider {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Component-specific styles */
 .options-container {
   display: flex;
@@ -506,6 +548,7 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
   display: flex;
   gap: 15px;
   align-items: center;
+  padding-right: 20px;
 }
 
 .skill-icon-wrapper {
@@ -568,7 +611,7 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
 
 .skill-name {
   font-size: 0.95em;
-  white-space: nowrap;
+  white-space: normal;
   font-weight: bold;
 }
 
@@ -585,8 +628,7 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
 
 @media (max-width: 768px) {
   .content-container {
-    flex-direction: row;
-    align-items: flex-start;
+    padding-right: 10px;
   }
   
   .skill-icon-wrapper {
@@ -609,6 +651,12 @@ const isTargetMaxLevel = (target: number, maxLevel: number) => {
     gap: 0px;
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 350px) {
+  .sliders {
+    gap: 3px;
   }
 }
 </style> 
