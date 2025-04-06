@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 
-defineProps<{
+const props = defineProps<{
   currentLevel: number,
   targetLevel: number,
   totalXpNeeded: number
@@ -9,12 +10,35 @@ defineProps<{
 const emit = defineEmits(['update-level', 'update-target-level']);
 
 function handleLevelInput(event: Event) {
-  emit('update-level', event);
+  const input = event.target as HTMLInputElement;
+  const value = parseInt(input.value);
+  if (!isNaN(value) && value >= 1 && value <= 90) {
+    emit('update-level', event);
+    // If current level is higher than target level, update target level
+    const targetInput = document.getElementById('target-level-input') as HTMLInputElement;
+    if (targetInput && value > parseInt(targetInput.value)) {
+      targetInput.value = value.toString();
+      emit('update-target-level', { target: { value: value.toString() } } as any);
+    }
+  }
 }
 
 function handleTargetLevelInput(event: Event) {
-  emit('update-target-level', event);
+  const input = event.target as HTMLInputElement;
+  const value = parseInt(input.value);
+  if (!isNaN(value) && value >= 1 && value <= 90) {
+    // If target level is lower than current level, update current level
+    const currentInput = document.getElementById('current-level-input') as HTMLInputElement;
+    if (currentInput && value < parseInt(currentInput.value)) {
+      currentInput.value = value.toString();
+      emit('update-level', { target: { value: value.toString() } } as any);
+    }
+    emit('update-target-level', event);
+  }
 }
+
+// Add computed property to check if level is maxed
+const isMaxLevel = computed(() => props.currentLevel === 90);
 </script>
 
 <template>
@@ -45,18 +69,22 @@ function handleTargetLevelInput(event: Event) {
         </div>
       </div>
       
-      <div class="level-arrow">→</div>
-      
-      <div class="level-display">
-        <div class="level-icon-container">
-          <div class="level-badge">
-            <span class="level-number">{{ targetLevel }}</span>
+      <!-- Only show arrow and target level if not maxed -->
+      <template v-if="!isMaxLevel">
+        <div class="level-arrow">→</div>
+        
+        <div class="level-display">
+          <div class="level-icon-container">
+            <div class="level-badge">
+              <span class="level-number">{{ targetLevel }}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </div>
     
-    <div class="input-container">
+    <!-- Only show target input if not maxed -->
+    <div class="input-container" v-if="!isMaxLevel">
       <label for="target-level-input">Target Level:</label>
       <input
         id="target-level-input"
@@ -70,8 +98,14 @@ function handleTargetLevelInput(event: Event) {
       />
     </div>
     
-    <div class="total-exp">
+    <!-- Only show XP required if not maxed -->
+    <div class="total-exp" v-if="!isMaxLevel">
       XP Required: {{ totalXpNeeded.toLocaleString() }}
+    </div>
+    
+    <!-- Show MAX indicator when level is maxed -->
+    <div v-else class="max-level-indicator">
+      MAX LEVEL
     </div>
   </div>
 </template>
@@ -176,6 +210,19 @@ function handleTargetLevelInput(event: Event) {
   font-size: 1.1em;
   font-weight: bold;
   color: var(--text-primary);
+  margin-top: 15px;
+  text-align: center;
+  background: var(--background-primary);
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.max-level-indicator {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--accent-color);
   margin-top: 15px;
   text-align: center;
   background: var(--background-primary);
