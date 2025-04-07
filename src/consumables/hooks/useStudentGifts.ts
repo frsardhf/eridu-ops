@@ -2,6 +2,7 @@ import { ref, computed, watch } from 'vue';
 import { StudentProps } from '../../types/student';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import bondData from '../../data/data.json';
+import { updateStudentData } from '../stores/studentStore';
 
 export function useStudentGifts(props: {
   student: StudentProps | null,
@@ -51,6 +52,7 @@ export function useStudentGifts(props: {
   watch([giftFormData, boxFormData, currentBond, convertBox], () => {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
+      updateStudentData(props.student.Id);
     }
   }, { deep: true });
 

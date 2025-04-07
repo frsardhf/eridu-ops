@@ -19,6 +19,7 @@ import {
   ExpMaterial
 } from '../../types/upgrade';
 import { useResourceCalculation } from './useResourceCalculation';
+import { updateStudentData } from '../stores/studentStore';
 
 export function useStudentUpgrade(props: {
   student: StudentProps | null,
@@ -228,6 +229,7 @@ export function useStudentUpgrade(props: {
   watch([currentCharacterLevel, targetCharacterLevel, potentialLevels, skillLevels], () => {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
+      updateStudentData(props.student.Id); // Update the store
     }
   }, { deep: true });
 

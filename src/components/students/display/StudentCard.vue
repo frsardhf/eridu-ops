@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { StudentProps } from '../../../types/student'
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { getFormData } from '../../../consumables/utils/studentStorage'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { getStudentData, updateStudentData } from '../../../consumables/stores/studentStore'
 
 const props = defineProps<{ student: StudentProps }>();
 
 const isMobile = ref(false);
-const studentData = computed(() => getFormData(props.student.Id));
+const studentData = computed(() => getStudentData(props.student.Id));
+
+// Watch for changes in the store
+watch(() => studentData.value, () => {
+  // This will trigger a re-render when the data changes
+}, { deep: true });
 
 function checkScreenWidth() {
   isMobile.value = window.innerWidth <= 768;
