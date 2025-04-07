@@ -337,8 +337,6 @@ onMounted(() => {
 .student-icons-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 8px;
-  max-height: 250px;
   overflow-y: auto;
 }
 
