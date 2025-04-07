@@ -27,8 +27,8 @@ const {
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
 
-// Event handlers
-function openModal(student: StudentProps) {
+// Prepare student for modal
+function prepareStudentForModal(student: StudentProps): StudentProps {
   // Convert gifts and boxes arrays to ID-based objects if they're arrays
   const studentGifts = favoredGift.value[student.Id] || {};
   const studentBoxes = giftBoxData.value[student.Id] || {};
@@ -52,20 +52,28 @@ function openModal(student: StudentProps) {
       }, {})
     : studentBoxes;
   
-  // Set the selected student with properly structured gifts and boxes
-  selectedStudent.value = {
+  // Return the prepared student object
+  return {
     ...student,
     Gifts: giftsObject,
     Boxes: boxesObject,
     Materials: materialData.value as ResourceProps[]
   };
-  
+}
+
+// Event handlers
+function openModal(student: StudentProps) {
+  selectedStudent.value = prepareStudentForModal(student);
   isModalVisible.value = true;
 }
 
 function closeModal() {
   isModalVisible.value = false;
   selectedStudent.value = null;
+}
+
+function handleNavigate(student: StudentProps) {
+  selectedStudent.value = prepareStudentForModal(student);
 }
 
 function handleSearchUpdate(value) {
@@ -113,8 +121,10 @@ onMounted(() => {
     <StudentModal 
       v-if="isModalVisible" 
       :student="selectedStudent" 
-      :isVisible="isModalVisible" 
-      @close="closeModal" 
+      :isVisible="isModalVisible"
+      :studentsArray="sortedStudentsArray"
+      @close="closeModal"
+      @navigate="handleNavigate"
     />
   </div>
 </template>
