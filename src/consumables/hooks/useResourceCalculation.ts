@@ -555,7 +555,35 @@ export function useResourceCalculation() {
     return leftoverList;
   });
 
-  // Refresh data (can be called when students or resources are updated)
+  // Add a timer ref to track the last refresh
+  const lastRefreshTime = ref(Date.now());
+  const refreshTimeout = ref<number | null>(null);
+  const COOLDOWN_DURATION = 5000; // 5 seconds cooldown
+
+  // Debounced refresh function
+  const debouncedRefresh = () => {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTime.value;
+
+    // Clear any existing timeout
+    if (refreshTimeout.value !== null) {
+      clearTimeout(refreshTimeout.value);
+    }
+
+    // If we're past the cooldown, refresh immediately
+    if (timeSinceLastRefresh >= COOLDOWN_DURATION) {
+      refreshData();
+      lastRefreshTime.value = now;
+    } else {
+      // Otherwise, schedule a refresh for when the cooldown ends
+      refreshTimeout.value = window.setTimeout(() => {
+        refreshData();
+        lastRefreshTime.value = Date.now();
+      }, COOLDOWN_DURATION - timeSinceLastRefresh);
+    }
+  };
+
+  // Original refresh function
   const refreshData = () => {
     // This will trigger recomputation of all computed properties
     const dummy = ref(Date.now());
@@ -572,7 +600,7 @@ export function useResourceCalculation() {
     ownedResources,
     totalMaterialsNeeded,
     materialsLeftover,
-    refreshData,
+    refreshData: debouncedRefresh, // Return the debounced version
     getMaterialUsageByStudents
   };
 } 

@@ -209,7 +209,7 @@ export function useStudentUpgrade(props: {
     if (newValue && props.student) {
       setTimeout(() => {
         loadFromLocalStorage();
-        refreshData(); // Refresh resource calculation data
+        refreshData(); // This will now use the debounced version
       }, 50);
     }
   }, { immediate: true });
@@ -220,7 +220,7 @@ export function useStudentUpgrade(props: {
       resetFormData();
       if (props.isVisible) {
         loadFromLocalStorage();
-        refreshData(); // Refresh resource calculation data
+        refreshData(); // This will now use the debounced version
       }
     }
   });
@@ -229,14 +229,15 @@ export function useStudentUpgrade(props: {
   watch([currentCharacterLevel, targetCharacterLevel, potentialLevels, skillLevels], () => {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
-      updateStudentData(props.student.Id); // Update the store
+      updateStudentData(props.student.Id);
+      refreshData(); // Add refresh here for form data changes
     }
   }, { deep: true });
 
   // Additionally refresh resource calculations when target character level changes
   watch(targetCharacterLevel, () => {
     if (props.student && props.isVisible) {
-      refreshData(); // Recalculate exp reports allocation
+      refreshData(); // This will now use the debounced version
     }
   });
 
