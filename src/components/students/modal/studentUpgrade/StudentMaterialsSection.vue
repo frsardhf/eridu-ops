@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { getResources } from '../../../../consumables/utils/studentStorage';
 import '../../../../styles/resourceDisplay.css'; 
 
 // Define interfaces for material items
@@ -25,7 +26,7 @@ interface PotentialMaterial extends BaseMaterial {
 }
 
 interface ExpMaterial extends BaseMaterial {
-  // Additional properties specific to exp materials could be added here
+  potentialType: string;
 }
 
 const props = defineProps<{
@@ -61,6 +62,9 @@ const cumulativeMaterials = computed(() => {
   if (!props.skillMaterials.length && !props.potentialMaterials.length && 
     (!props.expMaterials || !props.expMaterials.length)) return [];
 
+  // Get all resources to access exp items
+  const resources = getResources() || {};
+  
   // Group materials by ID
   const materialMap = new Map();
   
@@ -133,18 +137,52 @@ const cumulativeMaterials = computed(() => {
 
   // Process exp materials if they exist
   if (props.expMaterials && props.expMaterials.length > 0) {
+    // Create a map to track available exp reports
+    const availableExpReports = new Map<number, number>();
+    [10, 11, 12, 13].forEach(id => {
+      const resource = resources[id.toString()];
+      availableExpReports.set(id, resource?.QuantityOwned || 0);
+    });
+
+    // Process each exp material
     props.expMaterials.forEach(item => {
       const materialId = item.material?.Id;
       if (!materialId) return;
 
+      // Get the available quantity for this exp report
+      const available = availableExpReports.get(materialId) || 0;
+      
       if (materialMap.has(materialId)) {
         const existingEntry = materialMap.get(materialId);
-        existingEntry.materialQuantity += item.materialQuantity;
+        // Only add the quantity if we have enough available
+        if (available >= item.materialQuantity) {
+          existingEntry.materialQuantity += item.materialQuantity;
+          // Update available quantity
+          availableExpReports.set(materialId, available - item.materialQuantity);
+        } else {
+          // If not enough available, add what we can
+          existingEntry.materialQuantity += available;
+          // Update available quantity to 0
+          availableExpReports.set(materialId, 0);
+        }
       } else {
-        materialMap.set(materialId, {
-          material: item.material,
-          materialQuantity: item.materialQuantity
-        });
+        // Only add the material if we have enough available
+        if (available >= item.materialQuantity) {
+          materialMap.set(materialId, {
+            material: item.material,
+            materialQuantity: item.materialQuantity
+          });
+          // Update available quantity
+          availableExpReports.set(materialId, available - item.materialQuantity);
+        } else {
+          // If not enough available, add what we can
+          materialMap.set(materialId, {
+            material: item.material,
+            materialQuantity: available
+          });
+          // Update available quantity to 0
+          availableExpReports.set(materialId, 0);
+        }
       }
     });
   }

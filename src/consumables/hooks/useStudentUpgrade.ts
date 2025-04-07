@@ -4,7 +4,8 @@ import dataTable from '../../data/data.json';
 import { 
   getResourceDataById, 
   loadFormDataToRefs, 
-  saveFormData 
+  saveFormData,
+  getResources
 } from '../utils/studentStorage';
 import {
   PotentialType,
@@ -288,6 +289,9 @@ export function useStudentUpgrade(props: {
 
     if (currentCharacterLevel.value >= targetCharacterLevel.value) return materialsNeeded;
 
+    // Get all resources to access exp items
+    const resources = getResources() || {};
+    
     const expItemNovice = getResourceDataById(10);
     const expItemNormal = getResourceDataById(11);
     const expItemAdvanced = getResourceDataById(12);
@@ -314,10 +318,10 @@ export function useStudentUpgrade(props: {
     
     // Create an array of exp items in descending order of exp value
     const expItems = [
-      { item: expItemSuperior, count: 0 },
-      { item: expItemAdvanced, count: 0 },
-      { item: expItemNormal, count: 0 },
-      { item: expItemNovice, count: 0 }
+      { id: 13, item: expItemSuperior, count: 0, available: resources['13']?.QuantityOwned || 0 },
+      { id: 12, item: expItemAdvanced, count: 0, available: resources['12']?.QuantityOwned || 0 },
+      { id: 11, item: expItemNormal, count: 0, available: resources['11']?.QuantityOwned || 0 },
+      { id: 10, item: expItemNovice, count: 0, available: resources['10']?.QuantityOwned || 0 }
     ].filter(entry => entry.item); // Filter out any undefined items
     
     // Calculate how many of each report we need, prioritizing using owned reports first
@@ -325,7 +329,7 @@ export function useStudentUpgrade(props: {
       if (!entry.item?.ExpValue || remainingXpNeeded <= 0) return;
       
       const expValue = entry.item.ExpValue;
-      const quantityOwned = entry.item.QuantityOwned || 0;
+      const quantityOwned = entry.available;
       
       // First use reports the user already owns
       if (quantityOwned > 0) {
