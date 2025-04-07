@@ -26,7 +26,7 @@ const props = defineProps<{
 type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
 const emit = defineEmits<EmitFn>();
 
-const activeTab = ref('bond'); // 'bond', 'upgrade', 'resources', or 'summary'
+const activeTab = ref('upgrade'); // 'bond', 'upgrade', 'resources', or 'summary'
 
 const {
   closeModal,

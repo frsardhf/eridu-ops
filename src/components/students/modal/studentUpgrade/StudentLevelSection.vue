@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 
 const props = defineProps<{
   currentLevel: number,
   targetLevel: number,
   totalXpNeeded: number
 }>();
+
+// Import the useResourceCalculation hook to get consistent data
+const { refreshData } = useResourceCalculation();
 
 const emit = defineEmits(['update-level', 'update-target-level']);
 
