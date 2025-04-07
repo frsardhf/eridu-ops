@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { getResources } from '../../../../consumables/utils/studentStorage';
-import '../../../../styles/resourceDisplay.css'; 
+import { computed, onMounted } from 'vue';
+import '../../../../styles/resourceDisplay.css';
+import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 
 // Define interfaces for material items
 interface BaseMaterial {
@@ -26,14 +26,23 @@ interface PotentialMaterial extends BaseMaterial {
 }
 
 interface ExpMaterial extends BaseMaterial {
-  potentialType: string;
+  potentialType?: string;
 }
 
 const props = defineProps<{
   skillMaterials: SkillMaterial[];
   potentialMaterials: PotentialMaterial[];
   expMaterials?: ExpMaterial[];
+  student?: Record<string, any> | null;
 }>();
+
+// Import the useResourceCalculation hook to get consistent data
+const { refreshData } = useResourceCalculation();
+
+// Refresh data when component mounts
+onMounted(() => {
+  refreshData();
+});
 
 // Function to format quantity with 'k' for large numbers
 const formatQuantity = (quantity: number): string => {
@@ -57,14 +66,36 @@ const isExpReport = (materialId: number | undefined): boolean => {
   return [10, 11, 12, 13].includes(materialId);
 };
 
+// Get exp materials and credits directly from props (already synchronized with resource calculation)
+const studentExpMaterials = computed(() => {
+  const result: ExpMaterial[] = [];
+  
+  // Process exp materials from props (these are specific to this student)
+  if (props.expMaterials && props.expMaterials.length > 0) {
+    for (const item of props.expMaterials) {
+      if (!item.material?.Id) continue;
+      
+      const materialId = item.material.Id;
+      
+      // Include exp reports and credits
+      if (materialId === 5 || isExpReport(materialId)) {
+        result.push({
+          material: item.material,
+          materialQuantity: item.materialQuantity,
+          potentialType: item.potentialType || 'level'
+        });
+      }
+    }
+  }
+  
+  return result;
+});
+
 // Calculate cumulative materials needed by combining both types
 const cumulativeMaterials = computed(() => {
   if (!props.skillMaterials.length && !props.potentialMaterials.length && 
-    (!props.expMaterials || !props.expMaterials.length)) return [];
+    studentExpMaterials.value.length === 0) return [];
 
-  // Get all resources to access exp items
-  const resources = getResources() || {};
-  
   // Group materials by ID
   const materialMap = new Map();
   
@@ -73,6 +104,9 @@ const cumulativeMaterials = computed(() => {
     const materialId = item.material?.Id;
     // Skip if material is invalid
     if (!materialId) return;
+    
+    // Skip exp reports and credits as we'll handle them separately
+    if (isExpReport(materialId) || materialId === 5) return;
     
     // If this material type already exists in the map, update quantities
     if (materialMap.has(materialId)) {
@@ -87,14 +121,14 @@ const cumulativeMaterials = computed(() => {
     }
   });
   
-  // Track total credits needed
-  let totalCredits = 0;
-  
   // Process potential materials
   props.potentialMaterials.forEach(item => {
     // Process regular material
     const materialId = item.material?.Id;
     if (materialId) {
+      // Skip exp reports and credits as we'll handle them separately
+      if (isExpReport(materialId) || materialId === 5) return;
+      
       if (materialMap.has(materialId)) {
         const existingEntry = materialMap.get(materialId);
         existingEntry.materialQuantity += item.materialQuantity;
@@ -119,73 +153,18 @@ const cumulativeMaterials = computed(() => {
         });
       }
     }
-    
-    // Process credits
-    const creditsId = item.credits?.Id;
-    if (creditsId) {
-      if (materialMap.has(creditsId)) {
-        const existingEntry = materialMap.get(creditsId);
-        existingEntry.materialQuantity += item.creditsQuantity || 0;
-      } else {
-        materialMap.set(creditsId, {
-          material: item.credits,
-          materialQuantity: item.creditsQuantity || 0
-        });
-      }
-    }
   });
 
-  // Process exp materials if they exist
-  if (props.expMaterials && props.expMaterials.length > 0) {
-    // Create a map to track available exp reports
-    const availableExpReports = new Map<number, number>();
-    [10, 11, 12, 13].forEach(id => {
-      const resource = resources[id.toString()];
-      availableExpReports.set(id, resource?.QuantityOwned || 0);
-    });
+  // Use consistent exp materials and credits from the student exp materials
+  studentExpMaterials.value.forEach(item => {
+    const materialId = item.material?.Id;
+    if (!materialId) return;
 
-    // Process each exp material
-    props.expMaterials.forEach(item => {
-      const materialId = item.material?.Id;
-      if (!materialId) return;
-
-      // Get the available quantity for this exp report
-      const available = availableExpReports.get(materialId) || 0;
-      
-      if (materialMap.has(materialId)) {
-        const existingEntry = materialMap.get(materialId);
-        // Only add the quantity if we have enough available
-        if (available >= item.materialQuantity) {
-          existingEntry.materialQuantity += item.materialQuantity;
-          // Update available quantity
-          availableExpReports.set(materialId, available - item.materialQuantity);
-        } else {
-          // If not enough available, add what we can
-          existingEntry.materialQuantity += available;
-          // Update available quantity to 0
-          availableExpReports.set(materialId, 0);
-        }
-      } else {
-        // Only add the material if we have enough available
-        if (available >= item.materialQuantity) {
-          materialMap.set(materialId, {
-            material: item.material,
-            materialQuantity: item.materialQuantity
-          });
-          // Update available quantity
-          availableExpReports.set(materialId, available - item.materialQuantity);
-        } else {
-          // If not enough available, add what we can
-          materialMap.set(materialId, {
-            material: item.material,
-            materialQuantity: available
-          });
-          // Update available quantity to 0
-          availableExpReports.set(materialId, 0);
-        }
-      }
+    materialMap.set(materialId, {
+      material: item.material,
+      materialQuantity: item.materialQuantity
     });
-  }
+  });
   
   // Convert map to array and sort by material ID
   return Array.from(materialMap.values())

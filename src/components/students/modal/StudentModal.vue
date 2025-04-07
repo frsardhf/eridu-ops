@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { StudentProps } from '../../../types/student';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
+import { useResourceCalculation } from '../../../consumables/hooks/useResourceCalculation';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
@@ -70,6 +71,17 @@ const {
   resourceFormData,
   handleResourceInput
 } = useStudentResources(props, emit);
+
+// Get the refresh function from useResourceCalculation
+const { refreshData } = useResourceCalculation();
+
+// Watch for tab changes to refresh data as needed
+watch(activeTab, (newTab) => {
+  if (newTab === 'upgrade' || newTab === 'summary') {
+    // Refresh data when switching to tabs that need updated calculation
+    refreshData();
+  }
+});
 </script>
 
 <template>
@@ -183,6 +195,7 @@ const {
               :skill-materials="skillMaterialsNeeded || []"
               :potential-materials="potentialMaterialsNeeded || []"
               :exp-materials="charExpMaterialsNeeded || []"
+              :student="student"
             />
           </div>
         </div>

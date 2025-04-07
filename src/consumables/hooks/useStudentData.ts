@@ -2,8 +2,6 @@ import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
 import { BoxDataProps, GiftDataProps } from '../../types/gift';
 import { saveResources, saveStudentData, getResources } from '../utils/studentStorage';
-import { ResourceProps } from '../../types/resource';
-
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
 const GIFT_BOX_IDS = ['82', '100000', '100008', '100009'];
@@ -262,7 +260,7 @@ export function useStudentData() {
     const expValue = calculateGiftExp(item, commonTags);
     
     const shouldGift = (favorGrade - genericTagCount > 0) ||
-                        (favorGrade >= 2 && item.Tags.length <= 3);
+      (favorGrade >= 2 && item.Tags.length <= 3);
     
     return { shouldGift, expValue, favorGrade };
   }

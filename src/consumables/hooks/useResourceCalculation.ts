@@ -560,7 +560,13 @@ export function useResourceCalculation() {
     // This will trigger recomputation of all computed properties
     const dummy = ref(Date.now());
     dummy.value = Date.now();
+    
+    // Calculate total materials needed to ensure the materialUsageByStudents map is filled
+    calculateTotalMaterialsNeeded();
   };
+
+  // Initial calculation to populate usage data
+  calculateTotalMaterialsNeeded();
 
   return {
     ownedResources,

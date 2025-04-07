@@ -4,8 +4,7 @@ import dataTable from '../../data/data.json';
 import { 
   getResourceDataById, 
   loadFormDataToRefs, 
-  saveFormData,
-  getResources
+  saveFormData 
 } from '../utils/studentStorage';
 import {
   PotentialType,
@@ -19,6 +18,7 @@ import {
   CREDITS_ID,
   ExpMaterial
 } from '../../types/upgrade';
+import { useResourceCalculation } from './useResourceCalculation';
 
 export function useStudentUpgrade(props: {
   student: StudentProps | null,
@@ -27,6 +27,9 @@ export function useStudentUpgrade(props: {
   // State
   const currentCharacterLevel = ref(1);
   const targetCharacterLevel = ref(1);
+  
+  // Import resource calculation hook to use material data
+  const { getMaterialUsageByStudents, refreshData } = useResourceCalculation();
   
   // Track all potential levels in one object
   const potentialLevels = ref<PotentialLevels>({
@@ -67,7 +70,6 @@ export function useStudentUpgrade(props: {
   const creditsData = getResourceDataById(levelCreditsIds);
 
   const characterXpTable = dataTable.character_xp;
-  const characterXpCreditsTable = dataTable.character_credits
   const exskillCreditsTable = dataTable.exskill_credits;
   const skillCreditsTable = dataTable.skill_credits;
   const potentialMaterials = dataTable.potential;
@@ -206,6 +208,7 @@ export function useStudentUpgrade(props: {
     if (newValue && props.student) {
       setTimeout(() => {
         loadFromLocalStorage();
+        refreshData(); // Refresh resource calculation data
       }, 50);
     }
   }, { immediate: true });
@@ -216,6 +219,7 @@ export function useStudentUpgrade(props: {
       resetFormData();
       if (props.isVisible) {
         loadFromLocalStorage();
+        refreshData(); // Refresh resource calculation data
       }
     }
   });
@@ -226,6 +230,13 @@ export function useStudentUpgrade(props: {
       saveToLocalStorage();
     }
   }, { deep: true });
+
+  // Additionally refresh resource calculations when target character level changes
+  watch(targetCharacterLevel, () => {
+    if (props.student && props.isVisible) {
+      refreshData(); // Recalculate exp reports allocation
+    }
+  });
 
   // Save current form data to localStorage
   function saveToLocalStorage() {
@@ -285,97 +296,51 @@ export function useStudentUpgrade(props: {
   });
 
   const charExpMaterialsNeeded = computed<ExpMaterial[]>(() => {
-    const materialsNeeded: ExpMaterial[] = []
+    const materialsNeeded: ExpMaterial[] = [];
 
     if (currentCharacterLevel.value >= targetCharacterLevel.value) return materialsNeeded;
 
-    // Get all resources to access exp items
-    const resources = getResources() || {};
-    
-    const expItemNovice = getResourceDataById(10);
-    const expItemNormal = getResourceDataById(11);
-    const expItemAdvanced = getResourceDataById(12);
-    const expItemSuperior = getResourceDataById(13);
-    let totalCredits = 0;
+    // Get credits information for display
+    const creditsData = getResourceDataById(CREDITS_ID);
 
-    // Calculate total credits needed for level upgrade
-    const currentLevelCreditCost = currentCharacterLevel.value > 0 ? 
-      characterXpCreditsTable[currentCharacterLevel.value - 1] : 0;
-    const targetLevelCreditCost = targetCharacterLevel.value > 0 ? 
-      characterXpCreditsTable[targetCharacterLevel.value - 1] : 0;
-    
-    totalCredits = targetLevelCreditCost - currentLevelCreditCost;
+    // Initialize before first access to ensure data is populated
+    refreshData();
 
-    // Add credits
-    materialsNeeded.push({
-      material: creditsData,
-      materialQuantity: totalCredits,
-      potentialType: 'level' as any
-    });
-
-    // Calculate exp reports needed based on remaining XP
-    let remainingXpNeeded = remainingXp.value;
-    
-    // Create an array of exp items in descending order of exp value
-    const expItems = [
-      { id: 13, item: expItemSuperior, count: 0, available: resources['13']?.QuantityOwned || 0 },
-      { id: 12, item: expItemAdvanced, count: 0, available: resources['12']?.QuantityOwned || 0 },
-      { id: 11, item: expItemNormal, count: 0, available: resources['11']?.QuantityOwned || 0 },
-      { id: 10, item: expItemNovice, count: 0, available: resources['10']?.QuantityOwned || 0 }
-    ].filter(entry => entry.item); // Filter out any undefined items
-    
-    // Calculate how many of each report we need, prioritizing using owned reports first
-    expItems.forEach(entry => {
-      if (!entry.item?.ExpValue || remainingXpNeeded <= 0) return;
+    // Get exp materials from resource calculation based on student ID
+    if (props.student?.Id) {
+      // EXP Report IDs: 10, 11, 12, 13
+      const expReportIds = [10, 11, 12, 13];
       
-      const expValue = entry.item.ExpValue;
-      const quantityOwned = entry.available;
-      
-      // First use reports the user already owns
-      if (quantityOwned > 0) {
-        // Calculate how many of the owned reports we need to use
-        const ownedUsage = Math.min(quantityOwned, Math.ceil(remainingXpNeeded / expValue));
-        entry.count = ownedUsage;
-        remainingXpNeeded -= ownedUsage * expValue;
-      }
-    });
-    
-    // If we still need more XP, use additional reports, starting from highest value
-    if (remainingXpNeeded > 0) {
-      expItems.forEach(entry => {
-        if (!entry.item?.ExpValue || remainingXpNeeded <= 0) return;
+      for (const expId of expReportIds) {
+        const usageData = getMaterialUsageByStudents(expId);
+        const studentUsage = usageData.find(usage => usage.student.Id === props.student?.Id);
         
-        const expValue = entry.item.ExpValue;
-        // Calculate how many additional reports we need
-        const additionalCount = Math.floor(remainingXpNeeded / expValue);
-        
-        if (additionalCount > 0) {
-          entry.count += additionalCount;
-          remainingXpNeeded -= additionalCount * expValue;
+        if (studentUsage && studentUsage.quantity > 0) {
+          // Get the resource data for the exp report
+          const expData = getResourceDataById(expId);
+          
+          if (expData) {
+            materialsNeeded.push({
+              material: expData,
+              materialQuantity: studentUsage.quantity,
+              potentialType: 'level'
+            });
+          }
         }
-      });
-    }
-    
-    // Handle any remaining XP with the smallest report (round up)
-    if (remainingXpNeeded > 0 && expItems.length > 0) {
-      // Get the smallest exp item (last in our sorted array)
-      const smallestExp = expItems[expItems.length - 1];
-      if (smallestExp.item?.ExpValue) {
-        // Add one more of the smallest report to cover the remaining XP
-        smallestExp.count += 1;
       }
-    }
-    
-    // Add all the exp items to the materials needed
-    expItems.forEach(entry => {
-      if (entry.item && entry.count > 0) {
+      
+      // Get credits usage for character level
+      const creditsUsage = getMaterialUsageByStudents(CREDITS_ID)
+        .find(usage => usage.student.Id === props.student?.Id && usage.upgradeType === 'level');
+      
+      if (creditsUsage && creditsUsage.quantity > 0 && creditsData) {
         materialsNeeded.push({
-          material: entry.item,
-          materialQuantity: entry.count,
-          potentialType: 'level' as any
+          material: creditsData,
+          materialQuantity: creditsUsage.quantity,
+          potentialType: 'level'
         });
       }
-    });
+    }
 
     return materialsNeeded;
   })
