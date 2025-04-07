@@ -8,7 +8,11 @@ type ViewMode = 'needed' | 'missing';
 
 // UI state
 const activeView = ref<ViewMode>('needed');
-const { totalMaterialsNeeded, materialsLeftover, refreshData } = useResourceCalculation();
+const { totalMaterialsNeeded, materialsLeftover, refreshData, getMaterialUsageByStudents } = useResourceCalculation();
+
+// Track the currently hovered item for tooltip
+const hoveredItemId = ref<number | null>(null);
+const tooltipPosition = ref({ x: 0, y: 0 });
 
 // Materials that are missing (negative leftover)
 const missingMaterials = computed(() => {
@@ -54,6 +58,14 @@ const displayResources = computed(() => {
     // For all other materials, sort by ID
     return aId - bId;
   });
+});
+
+// Student usage data for the hovered material
+const studentUsageForMaterial = computed(() => {
+  if (hoveredItemId.value === null) return [];
+  
+  return getMaterialUsageByStudents(hoveredItemId.value)
+    .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
 });
 
 // Function to format quantity with 'K/M' for large numbers
@@ -104,6 +116,40 @@ const setView = (view: ViewMode) => {
   activeView.value = view;
 };
 
+// Function to show tooltip
+const showTooltip = (event: MouseEvent, materialId: number) => {
+  hoveredItemId.value = materialId;
+  
+  // Position the tooltip near the cursor but not directly under it
+  tooltipPosition.value = {
+    x: event.clientX + 10,
+    y: event.clientY + 10
+  };
+  
+  // Adjust tooltip position if it would go off screen
+  setTimeout(() => {
+    const tooltip = document.querySelector('.material-tooltip') as HTMLElement;
+    if (tooltip) {
+      const rect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      if (rect.right > viewportWidth) {
+        tooltipPosition.value.x = event.clientX - rect.width - 10;
+      }
+      
+      if (rect.bottom > viewportHeight) {
+        tooltipPosition.value.y = event.clientY - rect.height - 10;
+      }
+    }
+  }, 0);
+};
+
+// Function to hide tooltip
+const hideTooltip = () => {
+  hoveredItemId.value = null;
+};
+
 // Refresh the data initially
 onMounted(() => {
   refreshData();
@@ -142,6 +188,8 @@ onMounted(() => {
           class="resource-item"
           :title="item.material?.Name || 'Unknown Resource'"
           :class="{ 'exp-report': isExpReport(item.material?.Id) }"
+          @mousemove="showTooltip($event, item.material?.Id)"
+          @mouseleave="hideTooltip()"
         >
           <div class="resource-content">
             <img 
@@ -161,6 +209,31 @@ onMounted(() => {
             >
               {{ formatQuantity(item) }}
             </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Material Usage Tooltip -->
+      <div 
+        v-if="hoveredItemId !== null && studentUsageForMaterial.length > 0" 
+        class="material-tooltip"
+        :style="{ left: `${tooltipPosition.x}px`, top: `${tooltipPosition.y}px` }"
+      >
+        <div class="tooltip-header">
+          <span>Used By</span>
+        </div>
+        <div class="student-icons-grid">
+          <div 
+            v-for="(usage, i) in studentUsageForMaterial" 
+            :key="`usage-${i}`"
+            class="student-usage-item"
+          >
+            <img 
+              :src="`https://schaledb.com/images/student/icon/${usage.student.Id}.webp`" 
+              :alt="usage.student.Name" 
+              class="student-icon"
+            />
+            <span class="usage-quantity">{{ formatLargeNumber(usage.quantity) }}</span>
           </div>
         </div>
       </div>
@@ -235,5 +308,59 @@ onMounted(() => {
   padding: 1px 3px;
   border-radius: 3px;
   pointer-events: none;
+}
+
+/* Tooltip styles */
+.material-tooltip {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(12, 12, 20, 0.92);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-width: 300px;
+  min-width: 180px;
+  pointer-events: none;
+  backdrop-filter: blur(5px);
+}
+
+.tooltip-header {
+  font-size: 0.9em;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+}
+
+.student-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.student-usage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.student-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.usage-quantity {
+  font-size: 0.75em;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 4px;
+  border-radius: 4px;
 }
 </style> 

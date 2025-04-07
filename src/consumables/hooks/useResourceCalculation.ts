@@ -11,7 +11,16 @@ interface MaterialSummary {
   remaining: number;
 }
 
+interface StudentMaterialUsage {
+  student: StudentProps;
+  quantity: number;
+  upgradeType: 'skill' | 'potential' | 'level';
+}
+
 export function useResourceCalculation() {
+  // Track student-specific material usage
+  const materialUsageByStudents = new Map<number, StudentMaterialUsage[]>();
+
   // Get all students with their upgrade data
   const getAllStudentsWithUpgrades = () => {
     const studentsData = getDataCollection('students') as Record<string, StudentProps>;
@@ -33,6 +42,9 @@ export function useResourceCalculation() {
     const studentsWithUpgrades = getAllStudentsWithUpgrades();
     const materialMap = new Map<number, MaterialSummary>();
     let totalCredits = 0;
+    
+    // Reset material usage tracking
+    materialUsageByStudents.clear();
     
     // Get resources to find exp items info and track remaining quantities
     const resources = getResources() || {};
@@ -66,7 +78,8 @@ export function useResourceCalculation() {
         processExpMaterialsWithSharedPool(
           upgrade, 
           materialMap, 
-          availableExpReports
+          availableExpReports,
+          student
         );
       }
     });
@@ -149,13 +162,18 @@ export function useResourceCalculation() {
       // Calculate for each level upgrade
       for (let level = current; level < target; level++) {
         // Special case for level 9 to 10 upgrade for non-Ex skills
-        // This needs to be handled first in case the material arrays don't have data for level 9
         if (level === 9 && type !== 'Ex') {
           // Add the secret technical note for level 10
           updateMaterialMap(SECRET_TECH_NOTE_ID, 1, materialMap);
           
+          // Track student usage for this material
+          trackMaterialUsage(student, SECRET_TECH_NOTE_ID, 1, 'skill');
+          
           // Add special credits cost for level 10 upgrade (fixed amount)
           totalCredits += 4000000; // 4M credits for level 10 upgrade
+          
+          // Track student usage for credits
+          trackMaterialUsage(student, CREDITS_ID, 4000000, 'skill');
         }
         
         // Get materials for this level - only if within bounds of the array
@@ -173,6 +191,9 @@ export function useResourceCalculation() {
               
               // Add to material map
               updateMaterialMap(materialId, quantity, materialMap);
+              
+              // Track student usage for this material
+              trackMaterialUsage(student, materialId, quantity, 'skill');
             }
           }
         }
@@ -181,6 +202,9 @@ export function useResourceCalculation() {
         if (creditsTable && level - 1 < creditsTable.length) {
           const levelCreditsCost = creditsTable[level-1] || 0;
           totalCredits += levelCreditsCost;
+          
+          // Track student usage for credits
+          trackMaterialUsage(student, CREDITS_ID, levelCreditsCost, 'skill');
         }
       }
     });
@@ -253,11 +277,18 @@ export function useResourceCalculation() {
         if (creditsQuantity) {
           creditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
           totalCredits += creditsQuantity;
+          
+          // Track student usage for credits
+          trackMaterialUsage(student, CREDITS_ID, creditsQuantity, 'potential');
         }
         
         // Add to material map
         updateMaterialMap(materialId, materialQuantity, materialMap);
         updateMaterialMap(workbookId, workbookQuantity, materialMap);
+        
+        // Track student usage for these materials
+        trackMaterialUsage(student, materialId, materialQuantity, 'potential');
+        trackMaterialUsage(student, workbookId, workbookQuantity, 'potential');
       }
     });
     
@@ -268,7 +299,8 @@ export function useResourceCalculation() {
   const processExpMaterialsWithSharedPool = (
     upgrade: any,
     materialMap: Map<number, MaterialSummary>,
-    availableExpReports: Map<number, number>
+    availableExpReports: Map<number, number>,
+    student: StudentProps
   ): number => {
     // Get all resources to access exp items
     const resources = getResources() || {};
@@ -303,6 +335,11 @@ export function useResourceCalculation() {
       if (totalCreditCost > 0) {
         // Add credits cost to material map
         updateMaterialMap(CREDITS_ID, totalCreditCost, materialMap);
+        
+        // Track student usage for credits
+        if (student) {
+          trackMaterialUsage(student, CREDITS_ID, totalCreditCost, 'level');
+        }
       }
     }
     
@@ -333,6 +370,11 @@ export function useResourceCalculation() {
           // Add to material map
           updateMaterialMap(item.id, useCount, materialMap);
           
+          // Track student usage for this exp report
+          if (student) {
+            trackMaterialUsage(student, item.id, useCount, 'level');
+          }
+          
           // Update available quantity
           availableExpReports.set(item.id, available - useCount);
           
@@ -362,6 +404,11 @@ export function useResourceCalculation() {
             updateMaterialMap(item.id, additionalCount, materialMap);
           }
           
+          // Track student usage for this exp report
+          if (student) {
+            trackMaterialUsage(student, item.id, additionalCount, 'level');
+          }
+          
           // Update remaining XP needed
           remainingXpNeeded -= additionalCount * expValue;
         }
@@ -380,10 +427,49 @@ export function useResourceCalculation() {
           // Add to material map
           updateMaterialMap(smallestExp.id, 1, materialMap);
         }
+        
+        // Track student usage for this exp report
+        if (student) {
+          trackMaterialUsage(student, smallestExp.id, 1, 'level');
+        }
       }
     }
     
     return totalCreditCost;
+  };
+
+  // Helper to track which students use which materials and in what quantities
+  const trackMaterialUsage = (
+    student: StudentProps,
+    materialId: number,
+    quantity: number,
+    upgradeType: 'skill' | 'potential' | 'level'
+  ) => {
+    if (!materialUsageByStudents.has(materialId)) {
+      materialUsageByStudents.set(materialId, []);
+    }
+    
+    const usageList = materialUsageByStudents.get(materialId)!;
+    
+    // Check if this student already has an entry for this material
+    const existingEntry = usageList.find(entry => entry.student.Id === student.Id);
+    
+    if (existingEntry) {
+      // Update the existing entry
+      existingEntry.quantity += quantity;
+    } else {
+      // Add a new entry
+      usageList.push({
+        student,
+        quantity,
+        upgradeType
+      });
+    }
+  };
+
+  // Get the list of students using a specific material
+  const getMaterialUsageByStudents = (materialId: number): StudentMaterialUsage[] => {
+    return materialUsageByStudents.get(materialId) || [];
   };
 
   // Helper to update material map with new quantities
@@ -480,6 +566,7 @@ export function useResourceCalculation() {
     ownedResources,
     totalMaterialsNeeded,
     materialsLeftover,
-    refreshData
+    refreshData,
+    getMaterialUsageByStudents
   };
 } 
