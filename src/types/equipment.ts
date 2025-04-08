@@ -1,6 +1,6 @@
 // Define equipment types
 export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' | 
-  'Hairpin' | 'Amulet' | 'Watch' | 'Necklace';
+  'Hairpin' | 'Charm' | 'Watch' | 'Necklace';
 
 export interface EquipmentMaterial {
   material: Record<string, any> | null;

@@ -24,7 +24,7 @@ const equipmentTypes = {
   Bag: 'Bag',
   Badge: 'Badge',
   Hairpin: 'Hairpin',
-  Amulet: 'Amulet',
+  Charm: 'Amulet',
   Watch: 'Watch',
   Necklace: 'Necklace'
 };

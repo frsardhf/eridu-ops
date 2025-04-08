@@ -2,6 +2,7 @@
 import { StudentProps } from '../../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { getStudentData, updateStudentData } from '../../../consumables/stores/studentStore'
+import { EquipmentType } from '../../../types/equipment'
 
 const props = defineProps<{ student: StudentProps }>();
 
@@ -84,6 +85,47 @@ const hasAnySkillDifference = computed(() => {
     (skillLevels.ExtraPassive?.current !== skillLevels.ExtraPassive?.target && skillLevels.ExtraPassive?.current !== undefined && skillLevels.ExtraPassive?.target !== undefined)
   );
 });
+
+// New computed property to get equipment types for this student
+const studentEquipment = computed(() => {
+  return props.student.Equipment || [];
+});
+
+// Format equipment tier value
+function formatEquipmentTier(value: number | undefined): string {
+  if (!value) return '1';
+  return value.toString();
+}
+
+// Check if any equipment has different current and target values
+const hasAnyEquipmentDifference = computed(() => {
+  if (!studentData.value?.equipmentLevels) return false;
+  
+  const equipmentLevels = studentData.value.equipmentLevels;
+  
+  // Check each equipment type
+  for (const type of studentEquipment.value) {
+    const equipment = equipmentLevels[type as EquipmentType];
+    if (equipment?.current !== equipment?.target && 
+        equipment?.current !== undefined && 
+        equipment?.target !== undefined) {
+      return true;
+    }
+  }
+  
+  return false;
+});
+
+// Get equipment items to display (limit to prevent overflow)
+const displayEquipment = computed(() => {
+  return studentEquipment.value;
+});
+
+// Check if we have equipment data
+const hasEquipmentData = computed(() => {
+  return studentData.value?.equipmentLevels && 
+    Object.keys(studentData.value.equipmentLevels).length > 0;
+});
 </script>
 
 <template>
@@ -116,35 +158,62 @@ const hasAnySkillDifference = computed(() => {
             )">/{{ studentData.targetCharacterLevel }}</span>
           </div>
           
-          <!-- Skill Levels -->
-          <div class="skill-levels" v-if="studentData?.skillLevels">
-            <div class="skill-row">
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.Ex?.current, true) }}
-              </span>
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.Public?.current, false) }}
-              </span>
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.Passive?.current, false) }}
-              </span>
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.ExtraPassive?.current, false) }}
-              </span>
+          <!-- Bottom overlays container -->
+          <div class="bottom-overlays">
+            <!-- Equipment Levels -->
+            <div class="equipment-levels" v-if="hasEquipmentData && displayEquipment.length > 0">
+              <div class="equipment-row">
+                <span 
+                  v-for="type in displayEquipment" 
+                  :key="type" 
+                  class="equipment-value"
+                  :title="type"
+                >
+                  {{ formatEquipmentTier(studentData.equipmentLevels[type]?.current) }}
+                </span>
+              </div>
+              <div class="equipment-row" v-if="hasAnyEquipmentDifference">
+                <span 
+                  v-for="type in displayEquipment" 
+                  :key="`target-${type}`" 
+                  class="equipment-value target-value"
+                  :title="`Target ${type}`"
+                >
+                  {{ formatEquipmentTier(studentData.equipmentLevels[type]?.target) }}
+                </span>
+              </div>
             </div>
-            <div class="skill-row" v-if="hasAnySkillDifference">
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.Ex?.target, true) }}
-              </span>
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.Public?.target, false) }}
-              </span>
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.Passive?.target, false) }}
-              </span>
-              <span class="skill-value">
-                {{ formatSkillValue(studentData.skillLevels.ExtraPassive?.target, false) }}
-              </span>
+            
+            <!-- Skill Levels -->
+            <div class="skill-levels" v-if="studentData?.skillLevels">
+              <div class="skill-row">
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.Ex?.current, true) }}
+                </span>
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.Public?.current, false) }}
+                </span>
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.Passive?.current, false) }}
+                </span>
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.ExtraPassive?.current, false) }}
+                </span>
+              </div>
+              <div class="skill-row" v-if="hasAnySkillDifference">
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.Ex?.target, true) }}
+                </span>
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.Public?.target, false) }}
+                </span>
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.Passive?.target, false) }}
+                </span>
+                <span class="skill-value">
+                  {{ formatSkillValue(studentData.skillLevels.ExtraPassive?.target, false) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -199,8 +268,17 @@ const hasAnySkillDifference = computed(() => {
   display: grid;
   grid-template-areas: 
     "bond level"
-    "skills skills";
+    "bottom bottom";
+  grid-template-rows: auto 1fr;
   padding: 4px;
+}
+
+.bottom-overlays {
+  grid-area: bottom;
+  align-self: end;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .bond-container {
@@ -255,7 +333,6 @@ const hasAnySkillDifference = computed(() => {
 }
 
 .skill-levels {
-  grid-area: skills;
   align-self: end;
   display: flex;
   flex-direction: column;
@@ -280,6 +357,34 @@ const hasAnySkillDifference = computed(() => {
   width: 20px; 
   text-align: center;
   display: inline-block; 
+  box-sizing: border-box;
+}
+
+/* New equipment styles */
+.equipment-levels {
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+.equipment-row {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.equipment-value {
+  color: white;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 0px;
+  border-radius: 2px;
+  min-width: 20px;
+  text-align: center;
+  display: inline-block;
   box-sizing: border-box;
 }
 
@@ -353,7 +458,7 @@ const hasAnySkillDifference = computed(() => {
     font-size: 10px;
   }
 
-  .skill-levels {
+  .skill-levels, .equipment-levels {
     gap: 1px;
     padding: 1px;
   }
@@ -363,6 +468,16 @@ const hasAnySkillDifference = computed(() => {
     padding: 0 2px;
     min-width: 14px; 
     width: 14px; 
+  }
+  
+  .equipment-value {
+    font-size: 8px;
+    min-width: 14px;
+    padding: 1px;
+  }
+  
+  .bottom-overlays {
+    gap: 2px;
   }
 }
 </style>
