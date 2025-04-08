@@ -176,7 +176,7 @@ const isMaxLevel = computed(() => props.currentLevel === 90);
 }
 
 .level-badge {
-  background: linear-gradient(135deg, #2c2f49, #1a1b2a);
+  background: var(--header-gradient-start);
   border: 2px solid #4e7eff;
   border-radius: 50%;
   width: 40px;
@@ -190,8 +190,7 @@ const isMaxLevel = computed(() => props.currentLevel === 90);
 .level-number {
   font-weight: bold;
   font-size: 1em;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  color: var(--text-primary);
 }
 
 .level-arrow {

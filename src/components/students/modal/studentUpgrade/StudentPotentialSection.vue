@@ -148,6 +148,20 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
     }
   }
 };
+
+// Track which potential sliders are being hovered
+const hoveredPotential = ref<PotentialType | null>(null);
+
+// Set the currently hovered potential
+const setHoveredPotential = (potType: PotentialType | null) => {
+  hoveredPotential.value = potType;
+};
+
+// Check if a slider should be shown (either always show current, or show target only when hovered or current !== target)
+const shouldShowTargetSlider = (potType: PotentialType) => {
+  const potential = potentialTypes.value[potType];
+  return hoveredPotential.value === potType || potential.current !== potential.target;
+};
 </script>
 
 <template>
@@ -218,10 +232,14 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
               class="type-icon"
             />
             
-            <div class="sliders">
+            <div 
+              class="sliders" 
+              @mouseenter="setHoveredPotential(potType)" 
+              @mouseleave="setHoveredPotential(null)"
+            >
               <!-- Current Potential Slider -->
               <div class="slider-row">
-                <span class="slider-label">Current</span>
+                <span class="slider-label">{{ potentialTypes[potType].current === potentialTypes[potType].target ? 'Level' : 'Current' }}</span>
                 <input
                   type="range"
                   min="0"
@@ -233,8 +251,12 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
                 />
               </div>
               
-              <!-- Target Potential Slider -->
-              <div class="slider-row">
+              <!-- Target Potential Slider - Only show when hovering or current !== target -->
+              <div 
+                class="slider-row target-slider"
+                v-show="shouldShowTargetSlider(potType)"
+                :class="{ 'fade-in': hoveredPotential === potType }"
+              >
                 <span class="slider-label">Target</span>
                 <input
                   type="range"
@@ -323,5 +345,25 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
 
 .sliders {
   flex: 1;
+}
+
+/* Add these styles to your existing styles */
+.target-slider {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style> 

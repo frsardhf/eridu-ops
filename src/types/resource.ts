@@ -4,4 +4,5 @@ export interface ResourceProps {
   Rarity: string;
   ExpValue?: number;
   Icon: string;
+  Tier?: number;
 }

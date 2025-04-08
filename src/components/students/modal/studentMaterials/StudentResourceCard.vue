@@ -38,7 +38,9 @@ function forceInputFocus() {
 // Determine the correct icon path based on itemType
 function getIconPath(): string {
   const type = props.itemType === 'equipment' ? 'equipment' : 'item';
-  return `https://schaledb.com/images/${type}/icon/${props.item.Icon}.webp`;
+  let iconName = props.item.Icon;
+  if (props.itemType === 'equipment' && props.item.Tier !== 0) iconName = `${props.item.Icon}_piece`;
+  return `https://schaledb.com/images/${type}/icon/${iconName}.webp`;
 }
 
 // Format the quantity value
