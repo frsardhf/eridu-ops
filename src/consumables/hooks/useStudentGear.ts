@@ -1,9 +1,22 @@
 import { ref, computed, watch } from 'vue';
 import { ModalProps, StudentProps } from '../../types/student';
-import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
+import { loadFormDataToRefs, saveFormData, getEquipments } from '../utils/studentStorage';
 import { EquipmentLevels, EquipmentType } from '../../types/equipment';
 import { useResourceCalculation } from './useResourceCalculation';
 import { updateStudentData } from '../stores/studentStore';
+
+// Function to get maximum tier for each equipment type
+function getMaxTierForType(type: string): number {
+  const equipments = getEquipments();
+  if (!equipments) return 10; // Default to 10 if data not found
+
+  // Find the equipment that matches the type
+  const equipment = Object.values(equipments).find(
+    (item: any) => item.Category === type
+  );
+
+  return equipment?.Tier || 10; // Return the tier if found, otherwise default to 10
+}
 
 export function useStudentGear(props: { 
   student: StudentProps | null,
@@ -17,11 +30,8 @@ export function useStudentGear(props: {
   // Track all equipment levels in one object
   const equipmentLevels = ref<EquipmentLevels>({});
 
-  console.log('useStudentGear initialized with:', equipmentLevels.value);
-
   // Reset form data
   function resetFormData() {
-    console.log('Resetting form data');
     // Reset equipment levels based on student's equipment
     if (props.student?.Equipment) {
       const newLevels: EquipmentLevels = {};
@@ -30,12 +40,10 @@ export function useStudentGear(props: {
       });
       equipmentLevels.value = newLevels;
     }
-    console.log('Form data reset to:', equipmentLevels.value);
   }
 
   // Watch for changes to isVisible to load data when modal opens
   watch(() => props.isVisible, (newValue) => {
-    console.log('isVisible changed to:', newValue);
     if (newValue && props.student) {
       setTimeout(() => {
         loadFromLocalStorage();
@@ -46,7 +54,6 @@ export function useStudentGear(props: {
 
   // Watch for changes to the student prop to reset form when student changes
   watch(() => props.student, (newValue) => {
-    console.log('Student changed to:', newValue?.Id);
     if (newValue) {
       resetFormData();
       if (props.isVisible) {
@@ -58,7 +65,6 @@ export function useStudentGear(props: {
 
   // Watch for changes to form data and save to localStorage
   watch([equipmentLevels], () => {
-    console.log('equipmentLevels changed:', equipmentLevels.value);
     if (props.student && props.isVisible) {
       saveToLocalStorage();
       updateStudentData(props.student.Id);
@@ -70,11 +76,9 @@ export function useStudentGear(props: {
   function saveToLocalStorage() {
     if (!props.student) return;
     
-    console.log('Saving to localStorage for student:', props.student.Id);
     const dataToSave = {
       equipmentLevels: equipmentLevels.value
     };
-    console.log('Data to save:', dataToSave);
 
     saveFormData(props.student.Id, dataToSave);
   }
@@ -83,8 +87,6 @@ export function useStudentGear(props: {
   function loadFromLocalStorage() {
     if (!props.student) return;
 
-    console.log('Loading from localStorage for student:', props.student.Id);
-    
     // Define default values based on student's equipment
     const defaultValues = {
       equipmentLevels: props.student.Equipment.reduce((acc, type) => {
@@ -92,8 +94,6 @@ export function useStudentGear(props: {
         return acc;
       }, {} as EquipmentLevels)
     };
-    
-    console.log('Loading with default values:', defaultValues);
     
     // Load data from localStorage
     loadFormDataToRefs(props.student.Id, { equipmentLevels }, defaultValues);
@@ -114,20 +114,18 @@ export function useStudentGear(props: {
     
     // Update the ref with merged data
     equipmentLevels.value = mergedLevels;
-    
-    console.log('After loading, equipmentLevels:', equipmentLevels.value);
   }
 
   // Function to handle updates for equipment levels
   const handleEquipmentUpdate = (type: EquipmentType, current: number, target: number) => {
-    console.log('handleEquipmentUpdate called with:', { type, current, target });
-    if (current >= 1 && target >= current) {
+    const maxTier = getMaxTierForType(type);
+    
+    if (current >= 1 && current <= maxTier && target >= current && target <= maxTier) {
       // Update the specified equipment type
       if (equipmentLevels.value[type]) {
         equipmentLevels.value[type].current = current;
         equipmentLevels.value[type].target = target;
         
-        console.log('Updated equipmentLevels:', equipmentLevels.value);
         // Explicitly trigger localStorage save
         if (props.student && props.isVisible) {
           saveToLocalStorage();

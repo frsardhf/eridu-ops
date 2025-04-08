@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { StudentProps } from '../../../../types/student';
 import { useStudentGear } from '../../../../consumables/hooks/useStudentGear';
 import { EquipmentType } from '../../../../types/equipment';
+import { getEquipments } from '../../../../consumables/utils/studentStorage';
 
 const props = defineProps<{
   student: StudentProps | null;
@@ -14,10 +15,6 @@ const emit = defineEmits<{
 }>();
 
 const { equipmentLevels, handleEquipmentUpdate } = useStudentGear(props, emit);
-
-// Debug log for initial equipment levels
-console.log('Initial equipmentLevels:', equipmentLevels.value);
-console.log('Student Equipment:', props.student?.Equipment);
 
 // Equipment type mapping for display
 const equipmentTypes = {
@@ -37,17 +34,36 @@ function formatEquipmentType(type: string): string {
   return type.toLowerCase();
 }
 
+// Get equipment icon URL
+function getEquipmentIconUrl(type: string, tier: number): string {
+  const baseUrl = 'https://schaledb.com/images/equipment/icon';
+  const formattedType = formatEquipmentType(type);
+  return `${baseUrl}/equipment_icon_${formattedType}_tier${tier}.webp`;
+}
+
+// Function to get maximum tier for each equipment type
+function getMaxTierForType(type: string): number {
+  const equipments = getEquipments();
+  if (!equipments) return 10; // Default to 10 if data not found
+
+  // Find all equipment that matches the type and sort by ID in descending order
+  const matchingEquipments = Object.values(equipments)
+    .filter((item: any) => item.Category === type)
+    .sort((a: any, b: any) => b.Id - a.Id);
+
+  // Get the first item (highest tier) or default to 10
+  const highestTierEquipment = matchingEquipments[0];
+
+  return highestTierEquipment?.Tier || 10;
+}
+
 // Function to handle current level changes
 function updateEquipmentCurrent(type: string, value: number) {
-  console.log('updateEquipmentCurrent called with:', { type, value });
-  console.log('Current equipmentLevels:', equipmentLevels.value);
-  
-  if (value >= 1 && value <= 10) {
+  const maxTier = getMaxTierForType(type);
+  if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
-    console.log('Attempting to update:', equipmentType);
     
     if (!equipmentLevels.value[equipmentType]) {
-      console.error('Equipment type not found in levels:', equipmentType);
       return;
     }
     
@@ -58,7 +74,6 @@ function updateEquipmentCurrent(type: string, value: number) {
       equipmentLevels.value[equipmentType].target = value;
     }
     
-    console.log('Updated equipmentLevels:', equipmentLevels.value);
     // Emit the update event
     handleEquipmentUpdate(equipmentType, value, equipmentLevels.value[equipmentType].target);
   }
@@ -66,15 +81,11 @@ function updateEquipmentCurrent(type: string, value: number) {
 
 // Function to handle target level changes
 function updateEquipmentTarget(type: string, value: number) {
-  console.log('updateEquipmentTarget called with:', { type, value });
-  console.log('Current equipmentLevels:', equipmentLevels.value);
-  
-  if (value >= 1 && value <= 10) {
+  const maxTier = getMaxTierForType(type);
+  if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
-    console.log('Attempting to update:', equipmentType);
     
     if (!equipmentLevels.value[equipmentType]) {
-      console.error('Equipment type not found in levels:', equipmentType);
       return;
     }
     
@@ -91,14 +102,13 @@ function updateEquipmentTarget(type: string, value: number) {
       // Emit the update event for target only
       handleEquipmentUpdate(equipmentType, equipmentLevels.value[equipmentType].current, finalValue);
     }
-    
-    console.log('Updated equipmentLevels:', equipmentLevels.value);
   }
 }
 
-// Add this function to handle level display state
-function getLevelDisplayState(current: number, target: number) {
-  if (current === 10 && target === 10) { // Assuming max level is 10
+// Function to handle level display state
+function getLevelDisplayState(current: number, target: number, type: string) {
+  const maxTier = getMaxTierForType(type);
+  if (current === maxTier && target === maxTier) {
     return 'max';
   } else if (current === target) {
     return 'same';
@@ -107,9 +117,10 @@ function getLevelDisplayState(current: number, target: number) {
   }
 }
 
-// Add this function to check if target is at max level
-function isTargetMaxLevel(target: number) {
-  return target === 10; // Assuming max level is 10
+// Function to check if target is at max level
+function isTargetMaxLevel(target: number, type: string) {
+  const maxTier = getMaxTierForType(type);
+  return target === maxTier;
 }
 </script>
 
@@ -117,32 +128,123 @@ function isTargetMaxLevel(target: number) {
   <div class="equipment-growth-section">
     <div class="equipment-grid">
       <div v-for="type in props.student?.Equipment" :key="type" class="equipment-item">
-        <div class="level-inputs">
-          <input
-            type="number"
-            :value="equipmentLevels[type]?.current || 1"
-            @input="(e) => updateEquipmentCurrent(type, parseInt((e.target as HTMLInputElement).value))"
-            min="1"
-            max="10"
-            class="level-input current-level"
-            placeholder="Current"
-          />
-          <div class="equipment-icon">
-            <img 
-              :src="`https://schaledb.com/images/equipment/icon/equipment_icon_${formatEquipmentType(type)}_tier1.webp`" 
-              :alt="equipmentTypes[type]"
-              class="equipment-image"
+        <div class="level-control">
+          <div class="custom-number-input">
+            <button 
+              class="control-button min-button" 
+              :class="{ disabled: equipmentLevels[type]?.current <= 1 }"
+              @click="updateEquipmentCurrent(type, 1)"
+              :disabled="equipmentLevels[type]?.current <= 1"
+              aria-label="Set to minimum level"
+            >
+              <span>«</span>
+            </button>
+            <button 
+              class="control-button decrement-button" 
+              :class="{ disabled: equipmentLevels[type]?.current <= 1 }"
+              @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) - 1)"
+              :disabled="equipmentLevels[type]?.current <= 1"
+              aria-label="Decrease current level"
+            >
+              <span>−</span>
+            </button>
+            <input
+              type="number"
+              :name="`${type.toLowerCase()}-current`"
+              :value="equipmentLevels[type]?.current || 1"
+              @input="(e) => updateEquipmentCurrent(type, parseInt((e.target as HTMLInputElement).value))"
+              :min="1"
+              :max="getMaxTierForType(type)"
+              class="level-input current-level"
+              :aria-label="`Current ${equipmentTypes[type]} level`"
             />
+            <button 
+              class="control-button increment-button"
+              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForType(type) }"
+              @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) + 1)"
+              :disabled="equipmentLevels[type]?.current >= getMaxTierForType(type)"
+              aria-label="Increase current level"
+            >
+              <span>+</span>
+            </button>
+            <button 
+              class="control-button max-button"
+              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForType(type) }"
+              @click="updateEquipmentCurrent(type, getMaxTierForType(type))"
+              :disabled="equipmentLevels[type]?.current >= getMaxTierForType(type)"
+              aria-label="Set to maximum level"
+            >
+              <span>»</span>
+            </button>
           </div>
-          <input
-            type="number"
-            :value="equipmentLevels[type]?.target || 1"
-            @input="(e) => updateEquipmentTarget(type, parseInt((e.target as HTMLInputElement).value))"
-            min="1"
-            max="10"
-            class="level-input target-level"
-            placeholder="Target"
+        </div>
+        
+        <div class="equipment-icon">
+          <div class="equipment-type-badge">{{ equipmentTypes[type] }}</div>
+          <img 
+            :src="getEquipmentIconUrl(type, equipmentLevels[type]?.current || 1)"
+            :alt="`${equipmentTypes[type]} Tier ${equipmentLevels[type]?.current || 1}`"
+            class="equipment-image"
+            loading="lazy"
           />
+          <div class="tier-indicator">
+            T{{ equipmentLevels[type]?.current || 1 }}
+            <span class="tier-target" v-if="equipmentLevels[type]?.current !== equipmentLevels[type]?.target">
+              → T{{ equipmentLevels[type]?.target || 1 }}
+            </span>
+          </div>
+        </div>
+        
+        <div class="level-control">
+          <div class="custom-number-input">
+            <button 
+              class="control-button min-button"
+              :class="{ disabled: equipmentLevels[type]?.target <= 1 }"
+              @click="updateEquipmentTarget(type, 1)"
+              :disabled="equipmentLevels[type]?.target <= 1"
+              aria-label="Set to minimum level"
+            >
+              <span>«</span>
+            </button>
+            <button 
+              class="control-button decrement-button"
+              :class="{ disabled: equipmentLevels[type]?.target <= 1 }"
+              @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) - 1)"
+              :disabled="equipmentLevels[type]?.target <= 1"
+              aria-label="Decrease target level"
+            >
+              <span>−</span>
+            </button>
+            <input
+              type="number"
+              :name="`${type.toLowerCase()}-target`"
+              :value="equipmentLevels[type]?.target || 1"
+              @input="(e) => updateEquipmentTarget(type, parseInt((e.target as HTMLInputElement).value))"
+              :min="1"
+              :max="getMaxTierForType(type)"
+              class="level-input target-level"
+              :class="{ 'max-level': isTargetMaxLevel(equipmentLevels[type]?.target || 1, type) }"
+              :aria-label="`Target ${equipmentTypes[type]} level`"
+            />
+            <button 
+              class="control-button increment-button"
+              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForType(type) }"
+              @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) + 1)"
+              :disabled="equipmentLevels[type]?.target >= getMaxTierForType(type)"
+              aria-label="Increase target level"
+            >
+              <span>+</span>
+            </button>
+            <button 
+              class="control-button max-button"
+              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForType(type) }"
+              @click="updateEquipmentTarget(type, getMaxTierForType(type))"
+              :disabled="equipmentLevels[type]?.target >= getMaxTierForType(type)"
+              aria-label="Set to maximum level"
+            >
+              <span>»</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -151,71 +253,219 @@ function isTargetMaxLevel(target: number) {
 
 <style scoped>
 .equipment-growth-section {
-  padding: 20px;
-  background-color: var(--background-secondary);
-  border-radius: 8px;
+  padding: 0.5rem;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .equipment-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  justify-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
 }
 
 .equipment-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  position: relative;
 }
 
 .equipment-icon {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--background-primary);
-  border-radius: 8px;
-  padding: 10px;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  position: relative;
+  margin: 0.5rem 0;
+}
+
+.equipment-type-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--accent-color, #4a8af4);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .equipment-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  max-width: 85%;
+  max-height: 85%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.level-inputs {
+.equipment-icon:hover .equipment-image {
+  transform: scale(1.05);
+}
+
+.tier-indicator {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.tier-target {
+  color: var(--accent-color, #4a8af4);
+  font-weight: 700;
+}
+
+.level-control {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  width: 100%;
+  gap: 0.25rem;
+}
+
+.level-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: 0.25rem;
+  font-weight: 600;
+}
+
+.custom-number-input {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  height: 36px;
 }
 
 .level-input {
-  width: 100%;
-  padding: 5px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background-color: var(--background-primary);
+  flex: 1;
+  height: 100%;
+  padding: 0 0.5rem;
+  border: none;
+  background-color: transparent;
   color: var(--text-primary);
   text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  min-width: 0;
+}
+
+.level-input::-webkit-outer-spin-button,
+.level-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .level-input:focus {
   outline: none;
-  border-color: var(--accent-color);
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
-.current-level {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+.max-level {
+  color: var(--accent-color, #4a8af4);
 }
 
-.target-level {
-  border-top-right-radius: 0;
-  border-top-left-radius: 0;
+.control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.25rem;
+  transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
 }
-</style> 
+
+.control-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--accent-color, #4a8af4);
+}
+
+.control-button:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.control-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-button.disabled:hover {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.min-button,
+.max-button {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .equipment-grid {
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    gap: 1rem;
+  }
+  
+  .equipment-icon {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .equipment-type-badge,
+  .tier-indicator {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .equipment-growth-section {
+    padding: 1rem;
+  }
+  
+  .equipment-item {
+    padding: 0.75rem;
+  }
+  
+  .equipment-icon {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .control-button {
+    width: 24px;
+  }
+  
+  .min-button,
+  .max-button {
+    font-size: 0.875rem;
+  }
+}
+</style>
