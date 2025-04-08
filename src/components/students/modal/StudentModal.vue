@@ -5,6 +5,7 @@ import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
 import { useResourceCalculation } from '../../../consumables/hooks/useResourceCalculation';
+import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
@@ -15,6 +16,7 @@ import StudentSkillSection from './studentUpgrade/StudentSkillSection.vue';
 import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vue';
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
 import StudentResourceSummary from './studentMaterials/StudentResourceSummary.vue';
+import StudentEquipmentGrid from './studentMaterials/StudentEquipmentGrid.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
@@ -26,7 +28,7 @@ const props = defineProps<{
 type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
 const emit = defineEmits<EmitFn>();
 
-const activeTab = ref('upgrade'); // 'bond', 'upgrade', 'resources', or 'summary'
+const activeTab = ref('upgrade'); // 'bond', 'upgrade', 'resources', 'equipment', or 'summary'
 
 const {
   closeModal,
@@ -72,6 +74,12 @@ const {
   resourceFormData,
   handleResourceInput
 } = useStudentResources(props, emit);
+
+// Add equipment hook
+const {
+  equipmentFormData,
+  handleEquipmentInput
+} = useStudentEquipment(props, emit);
 
 // Get the refresh function from useResourceCalculation
 const { refreshData } = useResourceCalculation();
@@ -166,6 +174,12 @@ onUnmounted(() => {
           @click="activeTab = 'resources'"
         >
           Resources
+        </button>
+        <button 
+          :class="['tab-button', { active: activeTab === 'equipment' }]" 
+          @click="activeTab = 'equipment'"
+        >
+          Equipment
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'summary' }]" 
@@ -267,6 +281,17 @@ onUnmounted(() => {
               :student="student"
               :resource-form-data="resourceFormData"
               @update-resource="handleResourceInput"
+            />
+          </div>
+        </div>
+        
+        <!-- Equipment Tab -->
+        <div v-if="activeTab === 'equipment'">
+          <div class="resources-placeholder">
+            <StudentEquipmentGrid
+              :student="student"
+              :equipment-form-data="equipmentFormData"
+              @update-equipment="handleEquipmentInput"
             />
           </div>
         </div>

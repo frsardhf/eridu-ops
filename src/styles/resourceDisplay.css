@@ -10,7 +10,6 @@
 .resources-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-  gap: 4px;
   padding: 5px;
 }
 

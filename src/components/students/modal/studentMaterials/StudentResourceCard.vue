@@ -6,7 +6,8 @@ import '../../../../styles/resourceDisplay.css';
 const props = defineProps<{
   item: ResourceProps,
   value?: any,
-  formatQuantity?: (quantity: number) => string
+  formatQuantity?: (quantity: number) => string,
+  itemType?: 'resource' | 'equipment'
 }>();
 
 const emit = defineEmits<{
@@ -34,6 +35,12 @@ function forceInputFocus() {
   }
 }
 
+// Determine the correct icon path based on itemType
+function getIconPath(): string {
+  const type = props.itemType === 'equipment' ? 'equipment' : 'item';
+  return `https://schaledb.com/images/${type}/icon/${props.item.Icon}.webp`;
+}
+
 // Format the quantity value
 function formatValue(value: any): string {
   if (!value || value === '0') return '';
@@ -52,7 +59,7 @@ function formatValue(value: any): string {
   <div class="resource-item" @click="forceInputFocus">
     <div class="resource-content">
       <img 
-        :src="`https://schaledb.com/images/item/icon/${props.item.Icon}.webp`"
+        :src="getIconPath()"
         :alt="props.item.Name"
         class="resource-icon"
       />

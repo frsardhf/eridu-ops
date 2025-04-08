@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
 import { BoxDataProps, GiftDataProps } from '../../types/gift';
-import { saveResources, saveStudentData, getResources } from '../utils/studentStorage';
+import { saveResources, saveStudentData, getResources, getEquipments, saveEquipments } from '../utils/studentStorage';
+
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
 const GIFT_BOX_IDS = ['82', '100000', '100008', '100009'];
@@ -10,20 +11,37 @@ const GIFT_BOX_EXP_VALUES = {
   'SSR': 120
 };
 const MATERIAL = {
-  'category': "CharacterExpGrowth",
+  'category': ["CharacterExpGrowth"],
   'subcategory': ["Artifact", "CDItem", "BookItem"],
   'id': ['5', '2000', '2001', '2002', '9999']
-}
+};
+const EQUIPMENT = {
+  'tier': ['0'],
+  'recipecost': ['1500', '10000', '25000', '50000', 
+    '75000', '100000', '1250000', '150000', '175000']
+};
+
 
 // Define sort options
 export type SortOption = 'id' | 'name' | 'default';
 export type SortDirection = 'asc' | 'desc';
 
+// Add new type for data types
+type DataType = 'students' | 'items' | 'equipment';
+
+// Add new interface for fetched data
+interface FetchedData {
+  students: Record<string, StudentProps>;
+  items: Record<string, any>;
+  equipment: Record<string, any>;
+}
+
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
+  const materialData = ref<Record<string, any>>({});
+  const equipmentData = ref<Record<string, any>>({});
   const giftData = ref<Record<string, any>>({});
   const boxData = ref<Record<string, any>>({});
-  const materialData = ref<Record<string, any>>({});
   const favoredGift = ref<Record<string, any[]>>({});
   const giftBoxData = ref<Record<string, any[]>>({});
   const searchQuery = ref<string>('');
@@ -155,7 +173,7 @@ export function useStudentData() {
     const filteredItems = {};
     let valueArray: (string | number)[] = Array.isArray(value) ? value : [value];
     
-    if (type === 'id') {
+    if (type === 'id' || type === 'tier' || type === 'recipecost') {
       valueArray = valueArray.map(val => Number(val));
     }
     
@@ -177,6 +195,10 @@ export function useStudentData() {
         return valueArray.includes(item.SubCategory);
       case 'id':
         return valueArray.includes(item.Id);
+      case 'tier':
+        return valueArray.includes(item.Tier);
+      case 'recipecost':
+        return valueArray.includes(item.RecipeCost);
       default:
         return false;
     }
@@ -296,7 +318,7 @@ export function useStudentData() {
     return studentGifts;
   }
   
-  function getStudentGiftBoxInfo(studentId) {
+  function getStudentGiftBoxInfo(studentId: string) {
     let highestExpGift = 0;
     let highestGradeGift = 0;
     let isCollabStudent = false;
@@ -352,13 +374,43 @@ export function useStudentData() {
     return item.ExpValue * (1 + Math.min(tags.length, 3));
   }
 
-  // Usage in initialization
+  // Add new function to fetch all data in parallel
+  async function fetchAllData(): Promise<FetchedData> {
+    try {
+      const [students, items, equipment] = await Promise.all([
+        fetchData('students'),
+        fetchData('items'),
+        fetchData('equipment')
+      ]);
+
+      return {
+        students,
+        items,
+        equipment
+      };
+    } catch (error) {
+      console.error('Error fetching all data:', error);
+      return {
+        students: {},
+        items: {},
+        equipment: {}
+      };
+    }
+  }
+
+  // Update initializeData to use the new function
   async function initializeData() {
     // Load sort preferences first
     loadSortPreferences();
     
-    studentData.value = await fetchData('students');
-    const allItems = await fetchData('items');
+    // Fetch all data in parallel
+    const { students, items, equipment } = await fetchAllData();
+    
+    // Update reactive refs
+    studentData.value = students;
+    const allItems = items;
+    const allEquipments = equipment;
+    
     giftData.value = filterByProperty(allItems, 'category', 'Favor');
     boxData.value = filterByProperty(allItems, 'id', GIFT_BOX_IDS);
     
@@ -371,6 +423,7 @@ export function useStudentData() {
     
     // Handle resources initialization and credits
     const existingResources = getResources();
+    const existingEquipments = getEquipments();
 
     // Define credits object
     const creditsEntry = {
@@ -382,7 +435,7 @@ export function useStudentData() {
     };
 
     if (!existingResources) {
-      // If no resources exist, save all items including credits
+      // If no resources exist, save all items in resources including credits
       allItems[5] = creditsEntry;
       saveResources(allItems);
     } else if (!existingResources[5]) {
@@ -391,8 +444,15 @@ export function useStudentData() {
       saveResources(existingResources);
     }
 
+    if (!existingEquipments) {
+      saveEquipments(applyFilters(allEquipments, EQUIPMENT));
+    } else {
+      saveEquipments(existingEquipments);
+    }
+
     materialData.value = existingResources || applyFilters(allItems, MATERIAL);
-    
+    equipmentData.value = existingEquipments || applyFilters(allEquipments, EQUIPMENT);
+
     // Initialize the sorted students array
     updateSortedStudents();
   }
@@ -404,6 +464,7 @@ export function useStudentData() {
     giftData,
     boxData,
     materialData,
+    equipmentData,
     favoredGift,
     giftBoxData,
     searchQuery,

@@ -8,6 +8,7 @@ export interface StudentProps {
   Gifts: GiftDataProps[];
   Boxes: BoxDataProps[];
   Materials: ResourceProps[];
+  Equipments: ResourceProps[];
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];
   PotentialMaterial: number;

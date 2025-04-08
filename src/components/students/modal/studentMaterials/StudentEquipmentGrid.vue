@@ -6,11 +6,11 @@ import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
   student: StudentProps | null,
-  resourceFormData: Record<string, number>,
+  equipmentFormData: Record<string, number>,
 }>();
 
 type EmitFn = {
-  (e: 'update-resource', id: string, event: Event): void;
+  (e: 'update-equipment', id: string, event: Event): void;
 }
 const emit = defineEmits<EmitFn>();
 
@@ -21,17 +21,17 @@ const currentX = ref(0);
 const slideOffset = ref(0);
 const containerWidth = ref(0);
 
-const resources = computed(() => {
+const equipments = computed(() => {
   if (!props.student) return [];
-  return Object.values(props.student.Materials);
+  return Object.values(props.student.Equipments || {});
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(resources.value.length / 98); // Show 98 items per page
+  return Math.ceil(equipments.value.length / 98); // Show 98 items per page
 });
 
-function handleResourceInput(item: any, event: Event) {
-  emit('update-resource', item.Id.toString(), event);
+function handleEquipmentInput(item: any, event: Event) {
+  emit('update-equipment', item.Id.toString(), event);
 }
 
 function handleDragStart(event: MouseEvent | TouchEvent) {
@@ -109,7 +109,7 @@ function goToPage(pageIndex: number) {
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   // Initial container width
-  const container = document.querySelector('.resources-slider') as HTMLElement;
+  const container = document.querySelector('.equipment-slider') as HTMLElement;
   if (container) {
     containerWidth.value = container.offsetWidth;
   }
@@ -120,7 +120,7 @@ function handleResize() {
   // Reset any fixed heights and recalculate layout
   slideOffset.value = currentPage.value * -100;
   // Update container width
-  const container = document.querySelector('.resources-slider') as HTMLElement;
+  const container = document.querySelector('.equipment-slider') as HTMLElement;
   if (container) {
     containerWidth.value = container.offsetWidth;
   }
@@ -168,13 +168,13 @@ onUnmounted(() => {
         >
           <div class="resources-grid">
             <StudentResourceCard 
-              v-for="(item) in resources.slice((page - 1) * 98, page * 98)" 
-              :key="`resource-${item.Id}`"
+              v-for="(item) in equipments.slice((page - 1) * 98, page * 98)" 
+              :key="`equipment-${item.Id}`"
               :item="item"
-              :value="resourceFormData[item.Id]"
+              :value="equipmentFormData[item.Id]"
               :format-quantity="formatQuantity"
-              :item-type="'resource'"
-              @update:value="(e) => handleResourceInput(item, e)"
+              :item-type="'equipment'"
+              @update:value="(e) => handleEquipmentInput(item, e)"
             />
           </div>
         </div>
@@ -315,4 +315,4 @@ onUnmounted(() => {
     display: none;
   }
 }
-</style>
+</style> 

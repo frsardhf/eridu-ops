@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   STUDENTS: 'students',
   RESOURCES: 'resources',
   FORMS: 'forms',
+  EQUIPMENTS: 'equipments',
   // Add more keys as needed
 };
 
@@ -257,6 +258,98 @@ export function saveResourcesFromStudent(
     return saveResources(resourceData);
   } catch (error) {
     console.error('Error processing and saving resources to localStorage:', error);
+    return false;
+  }
+}
+
+/**
+ * Saves equipment data to localStorage
+ * @param equipments The equipment data to save, or a function to transform existing equipments
+ * @returns boolean indicating success or failure
+ */
+export function saveEquipments(
+  equipments: Record<string, any> | ((existing: Record<string, any>) => Record<string, any>)
+): boolean {
+  try {
+    // If equipments is a function, apply it to existing equipments
+    if (typeof equipments === 'function') {
+      const existingEquipments = getEquipments() || {};
+      const newEquipments = equipments(existingEquipments);
+      localStorage.setItem(STORAGE_KEYS.EQUIPMENTS, JSON.stringify(newEquipments));
+    } else {
+      // Otherwise, just save the provided equipments
+      localStorage.setItem(STORAGE_KEYS.EQUIPMENTS, JSON.stringify(equipments));
+    }
+    return true;
+  } catch (error) {
+    console.error('Error saving equipments to localStorage:', error);
+    return false;
+  }
+}
+
+/**
+ * Retrieves equipment data from localStorage
+ * @returns The equipment data or null if not found
+ */
+export function getEquipments(): Record<string, any> | null {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.EQUIPMENTS);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Error retrieving equipments from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Loads equipment data from localStorage into reactive refs
+ * @param refs Object containing reactive refs to update with keys matching equipment IDs
+ * @returns boolean indicating if data was successfully loaded
+ */
+export function loadEquipmentsToRefs(
+  refs: Record<string, { value: any }>
+): boolean {
+  try {
+    const equipments = getEquipments();
+    if (!equipments) return false;
+    
+    Object.entries(equipments).forEach(([id, equipment]) => {
+      if (id in refs) {
+        refs[id].value = equipment.QuantityOwned || 0;
+      }
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error loading equipments data to refs:', error);
+    return false;
+  }
+}
+
+/**
+ * Saves equipment data from student equipment
+ * @param student The student object containing equipment
+ * @param equipmentFormData The form data with updated quantities
+ * @returns boolean indicating success or failure
+ */
+export function saveEquipmentsFromStudent(
+  student: { Equipments?: Record<string, any> }, 
+  equipmentFormData: { value: Record<string, number> }
+): boolean {
+  try {
+    if (!student?.Equipments) return false;
+    
+    const equipmentData = Object.values(student.Equipments).reduce((acc, equipment: any) => {
+      acc[equipment.Id] = {
+        ...equipment,
+        QuantityOwned: equipmentFormData.value[equipment.Id] || 0
+      };
+      return acc;
+    }, {} as Record<string, any>);
+    
+    return saveEquipments(equipmentData);
+  } catch (error) {
+    console.error('Error processing and saving equipment to localStorage:', error);
     return false;
   }
 }

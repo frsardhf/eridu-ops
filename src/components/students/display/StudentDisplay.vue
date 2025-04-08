@@ -10,6 +10,7 @@ import { ResourceProps } from '../../../types/resource';
 // Use the composable to manage student data
 const {
   materialData,
+  equipmentData,
   favoredGift,
   giftBoxData,
   isDarkMode,
@@ -57,7 +58,8 @@ function prepareStudentForModal(student: StudentProps): StudentProps {
     ...student,
     Gifts: giftsObject,
     Boxes: boxesObject,
-    Materials: materialData.value as ResourceProps[]
+    Materials: materialData.value as ResourceProps[],
+    Equipments: equipmentData.value as ResourceProps[]
   };
 }
 
