@@ -7,8 +7,7 @@ export interface StudentProps {
   DefaultOrder: number;
   Gifts: GiftDataProps[];
   Boxes: BoxDataProps[];
-  Materials: ResourceProps[];
-  Equipments: ResourceProps[];
+  Equipment: string[];
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];
   PotentialMaterial: number;
@@ -16,4 +15,9 @@ export interface StudentProps {
   SkillMaterial: number[][];
   SkillExMaterialAmount: number[][];
   SkillMaterialAmount: number[][];
+}
+
+export interface ModalProps extends StudentProps {
+  Materials: ResourceProps[];
+  Equipments: ResourceProps[];
 }

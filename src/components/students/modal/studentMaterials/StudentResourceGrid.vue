@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, onMounted } from 'vue';
-import { StudentProps } from '../../../../types/student';
+import { StudentProps, ModalProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
-  student: StudentProps | null,
+  student: ModalProps | null,
   resourceFormData: Record<string, number>,
 }>();
 

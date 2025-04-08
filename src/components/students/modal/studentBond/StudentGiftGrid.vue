@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { StudentProps } from '../../../../types/student';
-import StudentItemCard from './StudentItemCard.vue';
+import StudentGiftCard from './StudentGiftCard.vue';
 
 const props = defineProps<{
   student: StudentProps | null,
@@ -32,7 +32,7 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
   <div class="gifts-grid">
     <!-- Regular Gifts Section -->
     <template v-if="hasGifts">
-      <StudentItemCard 
+      <StudentGiftCard 
         v-for="(item) in student!.Gifts" 
         :key="`gift-${item.gift.Id}`"
         :name="`gift-${item.gift.Id}`"
@@ -45,7 +45,7 @@ const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.studen
     
     <!-- Gift Boxes Section -->
     <template v-if="hasBoxes">
-      <StudentItemCard 
+      <StudentGiftCard 
         v-for="(item) in student!.Boxes" 
         :key="`box-${item.gift.Id}`"
         :name="`box-${item.gift.Id}`"

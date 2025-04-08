@@ -1,9 +1,9 @@
 import { ref, watch } from 'vue';
-import { StudentProps } from '../../types/student';
+import { ModalProps, StudentProps } from '../../types/student';
 import { getEquipments, saveEquipmentsFromStudent } from '../utils/studentStorage';
 
 export function useStudentEquipment(props: { 
-  student: StudentProps | null,
+  student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   const equipmentFormData = ref<Record<string, number>>({});

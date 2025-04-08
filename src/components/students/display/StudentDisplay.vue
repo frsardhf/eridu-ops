@@ -4,7 +4,7 @@ import StudentHeader from './StudentHeader.vue';
 import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../modal/StudentModal.vue'
 import { useStudentData, SortOption } from '../../../consumables/hooks/useStudentData';
-import { StudentProps } from '../../../types/student';
+import { ModalProps, StudentProps } from '../../../types/student';
 import { ResourceProps } from '../../../types/resource';
 
 // Use the composable to manage student data
@@ -25,11 +25,11 @@ const {
 } = useStudentData()
 
 // Modal state
-const selectedStudent = ref<StudentProps | null>(null)
+const selectedStudent = ref<ModalProps | null>(null)
 const isModalVisible = ref(false)
 
 // Prepare student for modal
-function prepareStudentForModal(student: StudentProps): StudentProps {
+function prepareStudentForModal(student: StudentProps): ModalProps {
   // Convert gifts and boxes arrays to ID-based objects if they're arrays
   const studentGifts = favoredGift.value[student.Id] || {};
   const studentBoxes = giftBoxData.value[student.Id] || {};

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
-import { StudentProps } from '../../../types/student';
+import { ModalProps, StudentProps } from '../../../types/student';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
@@ -17,10 +17,11 @@ import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vu
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
 import StudentResourceSummary from './studentMaterials/StudentResourceSummary.vue';
 import StudentEquipmentGrid from './studentMaterials/StudentEquipmentGrid.vue';
+import StudentEquipmentGrowth from './studentUpgrade/EquipmentGrowthSection.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
-  student: StudentProps | null,
+  student: ModalProps | null,
   isVisible?: boolean,
   studentsArray?: StudentProps[]
 }>();
@@ -170,10 +171,16 @@ onUnmounted(() => {
           Upgrade
         </button>
         <button 
+          :class="['tab-button', { active: activeTab === 'gear' }]" 
+          @click="activeTab = 'gear'"
+        >
+          Gear
+        </button>
+        <button 
           :class="['tab-button', { active: activeTab === 'resources' }]" 
           @click="activeTab = 'resources'"
         >
-          Resources
+          Items
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'equipment' }]" 
@@ -224,7 +231,7 @@ onUnmounted(() => {
           </div>
         </div>
         
-        <!-- Upgrade Materials Tab -->
+        <!-- Upgrade Level, Skills, Talent Tab -->
         <div v-if="activeTab === 'upgrade'" class="tab-content">
           <div class="left-column">
             <StudentModalHeader :student="student" />
@@ -270,6 +277,21 @@ onUnmounted(() => {
               :potential-materials="potentialMaterialsNeeded || []"
               :exp-materials="charExpMaterialsNeeded || []"
               :student="student"
+            />
+          </div>
+        </div>
+
+        <!-- Upgrade Gear and Unique Equipment Tab -->
+        <div v-if="activeTab === 'gear'" class="tab-content">
+          <div class="left-column">
+            <StudentModalHeader :student="student" />
+          </div>
+          
+          <div class="right-column">
+            <StudentEquipmentGrowth
+              :student="student"
+              :is-visible="isVisible"
+              @close="closeModal"
             />
           </div>
         </div>

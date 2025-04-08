@@ -1,9 +1,9 @@
 import { ref, watch } from 'vue';
-import { StudentProps } from '../../types/student';
+import { StudentProps, ModalProps } from '../../types/student';
 import { getResources, saveResourcesFromStudent } from '../utils/studentStorage';
 
 export function useStudentResources(props: { 
-  student: StudentProps | null,
+  student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   const resourceFormData = ref<Record<string, number>>({});

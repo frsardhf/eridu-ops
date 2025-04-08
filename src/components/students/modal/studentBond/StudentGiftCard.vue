@@ -3,10 +3,10 @@ import { GiftDataProps, BoxDataProps } from '../../../../types/gift';
 import { ref } from 'vue';
 import '../../../../styles/resourceDisplay.css';
 
-type ItemProps = GiftDataProps | BoxDataProps;
+type GiftProps = GiftDataProps | BoxDataProps;
 
 const props = defineProps<{
-  item: ItemProps,
+  item: GiftProps,
   value?: number | string,
   convertBox?: boolean,
   showGiftGrade?: boolean,
