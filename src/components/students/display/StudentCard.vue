@@ -3,11 +3,17 @@ import { StudentProps } from '../../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { getStudentData, updateStudentData } from '../../../consumables/stores/studentStore'
 import { EquipmentType } from '../../../types/equipment'
+import { isStudentPinned, togglePinnedStudent } from '../../../consumables/utils/studentStorage'
 
 const props = defineProps<{ student: StudentProps }>();
+const emit = defineEmits<{
+  (e: 'click', student: StudentProps): void;
+  (e: 'pin-toggled', studentId: string | number, isPinned: boolean): void;
+}>();
 
 const isMobile = ref(false);
 const studentData = computed(() => getStudentData(props.student.Id));
+const isPinned = ref(false);
 
 // Watch for changes in the store
 watch(() => studentData.value, () => {
@@ -23,6 +29,8 @@ onMounted(() => {
   checkScreenWidth();
   // Add resize listener
   window.addEventListener('resize', checkScreenWidth);
+  // Load initial pin status
+  isPinned.value = isStudentPinned(props.student.Id);
 });
 
 onUnmounted(() => {
@@ -126,11 +134,28 @@ const hasEquipmentData = computed(() => {
   return studentData.value?.equipmentLevels && 
     Object.keys(studentData.value.equipmentLevels).length > 0;
 });
+
+// Handle pin toggle
+function handlePinToggle(event: MouseEvent) {
+  event.stopPropagation(); // Prevent card click event
+  const newPinStatus = togglePinnedStudent(props.student.Id);
+  isPinned.value = newPinStatus;
+  emit('pin-toggled', props.student.Id, newPinStatus);
+}
 </script>
 
 <template>
-  <div class="student-card">
-    <a class="selection-grid-card" @click.prevent>
+  <div class="student-card" @click="emit('click', student)">
+    <!-- Pin icon - moved outside card-img -->
+    <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle">
+      <img 
+        src="/assets/push-pin.png" 
+        :class="['pin-img', { 'pinned': isPinned }]"
+        alt="Pin icon"
+      />
+    </div>
+    
+    <a class="selection-grid-card">
       <div class="card-img">
         <img 
           :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
@@ -230,6 +255,7 @@ const hasEquipmentData = computed(() => {
 <style scoped>
 .student-card {
   width: 150px;
+  position: relative;
 }
 
 .selection-grid-card {
@@ -243,10 +269,6 @@ const hasEquipmentData = computed(() => {
   box-shadow: 0 2px 4px var(--box-shadow);
   transition: transform 0.2s;
   cursor: pointer;
-}
-
-.selection-grid-card:hover {
-  transform: translateY(-5px);
 }
 
 .card-img {
@@ -267,7 +289,8 @@ const hasEquipmentData = computed(() => {
   inset: 0;
   display: grid;
   grid-template-areas: 
-    "bond level"
+    "empty bond"
+    "empty level"
     "bottom bottom";
   grid-template-rows: auto 1fr;
   padding: 4px;
@@ -283,7 +306,7 @@ const hasEquipmentData = computed(() => {
 
 .bond-container {
   grid-area: bond;
-  justify-self: start;
+  justify-self: end;
 }
 
 .bond-icon-container {
@@ -302,7 +325,7 @@ const hasEquipmentData = computed(() => {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -60%);
+  transform: translate(-50%, -50%);
   font-weight: bold;
   font-size: 14px;
   color: white;
@@ -315,6 +338,7 @@ const hasEquipmentData = computed(() => {
   justify-self: end;
   background: rgba(0, 0, 0, 0.6);
   padding: 2px 6px;
+  margin-right: 4px;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -479,5 +503,54 @@ const hasEquipmentData = computed(() => {
   .bottom-overlays {
     gap: 2px;
   }
+
+  .pin-icon {
+    width: 24px;
+    height: 24px;
+    top: -8px;
+    left: -8px;
+    padding: 5px;
+  }
+}
+
+/* Pin icon styles */
+.pin-icon {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 30px;
+  height: 30px;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #a6a6a6;
+  border-radius: 50%;
+  padding: 7px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.pin-icon:hover {
+  background-color: #edba2d;
+  color: black;
+}
+
+.pin-icon.pinned {
+  background-color: #edba2d;
+}
+
+.pin-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pin-img.pinned {
+  opacity: 1;
+  transform: scale(1.1);
 }
 </style>

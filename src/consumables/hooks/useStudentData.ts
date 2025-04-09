@@ -1,7 +1,14 @@
 import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
 import { BoxDataProps, GiftDataProps } from '../../types/gift';
-import { saveResources, saveStudentData, getResources, getEquipments, saveEquipments } from '../utils/studentStorage';
+import { 
+  saveResources, 
+  saveStudentData, 
+  getResources, 
+  getEquipments, 
+  saveEquipments, 
+  getPinnedStudents 
+} from '../utils/studentStorage';
 
 // Constants
 const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
@@ -56,6 +63,10 @@ export function useStudentData() {
   function updateSortedStudents() {
     // First filter by search query
     let filteredStudents = Object.values(studentData.value);
+    
+    // Get pinned students
+    const pinnedStudents: string[] = getPinnedStudents();
+    
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
       filteredStudents = filteredStudents.filter(
@@ -63,28 +74,42 @@ export function useStudentData() {
       );
     }
     
-    // Then sort according to the selected sort option
-    filteredStudents.sort((a, b) => {
-      let comparison = 0;
-      switch (currentSort.value) {
-        case 'name':
-          comparison = a.Name.localeCompare(b.Name);
-          break;
-        case 'default':
-          comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
-          break;
-        case 'id':
-        default:
-          comparison = Number(a.Id) - Number(b.Id);
-          break;
+    // Split into pinned and unpinned students for separate sorting
+    const pinnedStudentsList: StudentProps[] = [];
+    const unpinnedStudentsList: StudentProps[] = [];
+    
+    filteredStudents.forEach((student: StudentProps) => {
+      if (pinnedStudents.includes(student.Id.toString())) {
+        pinnedStudentsList.push(student);
+      } else {
+        unpinnedStudentsList.push(student);
       }
-      
-      // Apply sort direction
-      return sortDirection.value === 'asc' ? comparison : -comparison;
     });
     
-    // Create completely new array to ensure reactivity
-    sortedStudentsArray.value = [...filteredStudents];
+    // Sort each list separately
+    [pinnedStudentsList, unpinnedStudentsList].forEach((list) => {
+      list.sort((a, b) => {
+        let comparison = 0;
+        switch (currentSort.value) {
+          case 'name':
+            comparison = a.Name.localeCompare(b.Name);
+            break;
+          case 'default':
+            comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
+            break;
+          case 'id':
+          default:
+            comparison = Number(a.Id) - Number(b.Id);
+            break;
+        }
+        
+        // Apply sort direction
+        return sortDirection.value === 'asc' ? comparison : -comparison;
+      });
+    });
+    
+    // Combine the lists with pinned students first
+    sortedStudentsArray.value = [...pinnedStudentsList, ...unpinnedStudentsList];
   }
   
   // For backward compatibility with code expecting an object

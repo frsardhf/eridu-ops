@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   RESOURCES: 'resources',
   FORMS: 'forms',
   EQUIPMENTS: 'equipments',
+  PINNED_STUDENTS: 'pinned-students',
   // Add more keys as needed
 };
 
@@ -351,5 +352,64 @@ export function saveEquipmentsFromStudent(
   } catch (error) {
     console.error('Error processing and saving equipment to localStorage:', error);
     return false;
+  }
+}
+
+/**
+ * Toggle a student's pinned status
+ * @param studentId The ID of the student to toggle
+ * @returns The new pinned status (true if pinned, false if unpinned)
+ */
+export function togglePinnedStudent(studentId: string | number): boolean {
+  try {
+    // Get current pinned students
+    const pinnedStudents = getPinnedStudents();
+    
+    // Toggle the status
+    const isCurrentlyPinned = pinnedStudents.includes(studentId.toString());
+    
+    if (isCurrentlyPinned) {
+      // Remove from pinned if already pinned
+      const updatedPinned = pinnedStudents.filter(id => id !== studentId.toString());
+      localStorage.setItem(STORAGE_KEYS.PINNED_STUDENTS, JSON.stringify(updatedPinned));
+      return false;
+    } else {
+      // Add to pinned if not pinned
+      pinnedStudents.push(studentId.toString());
+      localStorage.setItem(STORAGE_KEYS.PINNED_STUDENTS, JSON.stringify(pinnedStudents));
+      return true;
+    }
+  } catch (error) {
+    console.error('Error toggling pinned student:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if a student is pinned
+ * @param studentId The ID of the student to check
+ * @returns boolean indicating if the student is pinned
+ */
+export function isStudentPinned(studentId: string | number): boolean {
+  try {
+    const pinnedStudents = getPinnedStudents();
+    return pinnedStudents.includes(studentId.toString());
+  } catch (error) {
+    console.error('Error checking if student is pinned:', error);
+    return false;
+  }
+}
+
+/**
+ * Get the list of pinned student IDs
+ * @returns Array of pinned student IDs
+ */
+export function getPinnedStudents(): string[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.PINNED_STUDENTS);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error retrieving pinned students from localStorage:', error);
+    return [];
   }
 }

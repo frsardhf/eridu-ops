@@ -90,6 +90,13 @@ function handleToggleDirection() {
   toggleDirection();
 }
 
+// Handle student pin toggling
+function handleStudentPinned() {
+  // Force a refresh of sortedStudentsArray by creating a new array reference
+  // This ensures the UI updates immediately after a pin/unpin action
+  sortedStudentsArray.value = [...sortedStudentsArray.value];
+}
+
 onMounted(() => {
   // Initialize theme from local storage
   const savedTheme = localStorage.getItem('theme')
@@ -118,6 +125,7 @@ onMounted(() => {
       :students-array="sortedStudentsArray"
       :key="`${currentSort}-${sortDirection}-${searchQuery}`"
       @open-modal="openModal"
+      @student-pinned="handleStudentPinned"
     />
 
     <StudentModal 
