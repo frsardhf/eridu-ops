@@ -325,7 +325,7 @@ function handlePinToggle(event: MouseEvent) {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -60%);
   font-weight: bold;
   font-size: 14px;
   color: white;
@@ -333,11 +333,11 @@ function handlePinToggle(event: MouseEvent) {
 }
 
 .level-container {
-  max-height: 25px;
+  max-height: 22px;
   grid-area: level;
   justify-self: end;
   background: rgba(0, 0, 0, 0.6);
-  padding: 2px 6px;
+  padding: 0px 5px;
   margin-right: 4px;
   border-radius: 4px;
   display: flex;
@@ -356,59 +356,47 @@ function handlePinToggle(event: MouseEvent) {
   font-size: 12px;
 }
 
-.skill-levels {
-  align-self: end;
-  display: flex;
-  flex-direction: column;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 4px;
-  margin-left: auto;
-}
-
-.skill-row {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%; 
-}
-
-.skill-value {
-  color: white;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 1px 0;
-  border-radius: 2px;
-  min-width: 20px; 
-  width: 20px; 
-  text-align: center;
-  display: inline-block; 
-  box-sizing: border-box;
-}
-
-/* New equipment styles */
+.skill-levels,
 .equipment-levels {
   align-self: end;
   display: flex;
   flex-direction: column;
   background: rgba(0, 0, 0, 0.6);
   border-radius: 4px;
-  margin-right: 4px;
 }
 
+.skill-levels {
+  margin-left: 2px;
+}
+
+.equipment-levels {
+  margin-right: 2px;
+}
+
+.skill-row,
 .equipment-row {
   display: flex;
-  justify-content: flex-start;
   width: 100%;
 }
 
+.skill-row {
+  justify-content: flex-end;
+}
+
+.equipment-row {
+  justify-content: flex-start;
+}
+
+.skill-value, 
 .equipment-value {
   color: white;
   font-size: 12px;
   background: rgba(0, 0, 0, 0.4);
-  padding: 1px 0px;
   border-radius: 2px;
-  min-width: 20px;
+  min-width: 20px; 
+  width: 20px; 
   text-align: center;
-  display: inline-block;
+  display: inline-block; 
   box-sizing: border-box;
 }
 
@@ -451,68 +439,6 @@ function handlePinToggle(event: MouseEvent) {
   font-size: 0.875rem;
 }
 
-@media screen and (max-width: 768px) {
-  .student-card {
-    width: 100px;
-  }
-
-  .card-img {
-    width: 100px;
-    height: 100px;
-  }
-
-  .bond-icon-container {
-    width: 24px;
-    height: 24px;
-  }
-
-  .bond-number {
-    font-size: 12px;
-  }
-
-  .level-container {
-    padding: 1px 4px;
-  }
-
-  .level-number {
-    font-size: 12px;
-  }
-
-  .level-max {
-    font-size: 10px;
-  }
-
-  .skill-levels, .equipment-levels {
-    gap: 1px;
-    padding: 1px;
-  }
-
-  .skill-value {
-    font-size: 10px;
-    padding: 0 2px;
-    min-width: 14px; 
-    width: 14px; 
-  }
-  
-  .equipment-value {
-    font-size: 8px;
-    min-width: 14px;
-    padding: 1px;
-  }
-  
-  .bottom-overlays {
-    gap: 2px;
-  }
-
-  .pin-icon {
-    width: 24px;
-    height: 24px;
-    top: -8px;
-    left: -8px;
-    padding: 5px;
-  }
-}
-
 /* Pin icon styles */
 .pin-icon {
   position: absolute;
@@ -551,6 +477,63 @@ function handlePinToggle(event: MouseEvent) {
 
 .pin-img.pinned {
   opacity: 1;
-  transform: scale(1.1);
+}
+
+@media screen and (max-width: 768px) {
+  .student-card {
+    width: 100px;
+  }
+
+  .card-img {
+    width: 100px;
+    height: 100px;
+  }
+
+  .bond-icon-container {
+    width: 24px;
+    height: 24px;
+  }
+
+  .bond-number {
+    font-size: 10px;
+  }
+
+  .level-container {
+    max-height: 18px;
+    padding: 1px 3px;
+  }
+
+  .level-number {
+    font-size: 10px;
+  }
+
+  .level-max {
+    font-size: 10px;
+  }
+
+  .skill-levels, 
+  .equipment-levels {
+    gap: 1px;
+    padding: 1px;
+  }
+
+  .skill-value,
+  .equipment-value {
+    font-size: 10px;
+    min-width: 10px; 
+    width: 10px; 
+  }
+  
+  .bottom-overlays {
+    gap: 2px;
+  }
+
+  .pin-icon {
+    width: 24px;
+    height: 24px;
+    top: -8px;
+    left: -8px;
+    padding: 5px;
+  }
 }
 </style>

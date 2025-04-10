@@ -28,15 +28,30 @@ const sortedStudents = computed(() => {
   const pinnedStudentsList: StudentProps[] = [];
   const unpinnedStudentsList: StudentProps[] = [];
   
+  // First collect all unpinned students (these will be sorted later)
   props.studentsArray.forEach(student => {
-    if (pinnedStudents.value.includes(student.Id.toString())) {
-      pinnedStudentsList.push(student);
-    } else {
+    if (!pinnedStudents.value.includes(student.Id.toString())) {
       unpinnedStudentsList.push(student);
     }
   });
   
-  // Return pinned students first, then unpinned
+  // Then collect pinned students in the exact order they appear in pinnedStudents
+  const pinnedStudentsMap = new Map<string, StudentProps>();
+  props.studentsArray.forEach(student => {
+    if (pinnedStudents.value.includes(student.Id.toString())) {
+      pinnedStudentsMap.set(student.Id.toString(), student);
+    }
+  });
+  
+  // Add pinned students to the list in the same order as pinnedStudents array
+  pinnedStudents.value.forEach(id => {
+    const student = pinnedStudentsMap.get(id);
+    if (student) {
+      pinnedStudentsList.push(student);
+    }
+  });
+  
+  // Return pinned students (in pin order) first, then unpinned (in sort order)
   return [...pinnedStudentsList, ...unpinnedStudentsList];
 });
 
@@ -49,7 +64,8 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
   const studentIdStr = studentId.toString();
   
   if (isPinned) {
-    // Add to pinned list if not already present
+    // Add newly pinned student to the end of the array
+    // This matches the storage utility's behavior
     if (!pinnedStudents.value.includes(studentIdStr)) {
       pinnedStudents.value = [...pinnedStudents.value, studentIdStr];
     }
@@ -98,7 +114,7 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
 /* Media Queries */
 @media screen and (max-width: 768px) {
   .student-grid-wrapper {
-    padding: 0 0 4rem 0;
+    padding: 1.5rem 0 4rem 0.5rem;
   }
   
   .student-grid {

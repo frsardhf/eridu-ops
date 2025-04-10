@@ -374,7 +374,8 @@ export function togglePinnedStudent(studentId: string | number): boolean {
       localStorage.setItem(STORAGE_KEYS.PINNED_STUDENTS, JSON.stringify(updatedPinned));
       return false;
     } else {
-      // Add to pinned if not pinned
+      // Add to end of pinned list if not pinned
+      // This preserves the original pin order (oldest first)
       pinnedStudents.push(studentId.toString());
       localStorage.setItem(STORAGE_KEYS.PINNED_STUDENTS, JSON.stringify(pinnedStudents));
       return true;
