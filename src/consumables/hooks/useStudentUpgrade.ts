@@ -30,7 +30,7 @@ export function useStudentUpgrade(props: {
   const targetCharacterLevel = ref(1);
   
   // Import resource calculation hook to use material data
-  const { getMaterialUsageByStudents, refreshData } = useResourceCalculation();
+  const { getMaterialUsageByStudents, refreshData, immediateRefresh } = useResourceCalculation();
   
   // Track all potential levels in one object
   const potentialLevels = ref<PotentialLevels>({
@@ -141,8 +141,12 @@ export function useStudentUpgrade(props: {
     // Target skills will also be maxed if checked
     targetSkillsMaxed.value = checked;
     
-    // Save changes to localStorage
+    // Save changes to localStorage and refresh immediately
     saveToLocalStorage();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+      immediateRefresh();
+    }
   };
   
   // Set just target skills to maximum or minimum levels
@@ -174,8 +178,12 @@ export function useStudentUpgrade(props: {
     // Update allSkillsMaxed as well (it depends on both current and target)
     allSkillsMaxed.value = checkAllSkillsMaxed();
     
-    // Save changes to localStorage
+    // Save changes to localStorage and refresh immediately
     saveToLocalStorage();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+      immediateRefresh();
+    }
   };
 
   // Update allSkillsMaxed and targetSkillsMaxed when skill levels change
@@ -301,11 +309,6 @@ export function useStudentUpgrade(props: {
   const charExpMaterialsNeeded = computed<ExpMaterial[]>(() => {
     const materialsNeeded: ExpMaterial[] = [];
 
-    if (currentCharacterLevel.value >= targetCharacterLevel.value) return materialsNeeded;
-
-    // Get credits information for display
-    const creditsData = getResourceDataById(CREDITS_ID);
-
     // Initialize before first access to ensure data is populated
     refreshData();
 
@@ -314,32 +317,36 @@ export function useStudentUpgrade(props: {
       // EXP Report IDs: 10, 11, 12, 13
       const expReportIds = [10, 11, 12, 13];
       
-      for (const expId of expReportIds) {
-        const usageData = getMaterialUsageByStudents(expId);
-        const studentUsage = usageData.find(usage => usage.student.Id === props.student?.Id);
-        
-        if (studentUsage && studentUsage.quantity > 0) {
-          // Get the resource data for the exp report
-          const expData = getResourceDataById(expId);
+      // Only include exp reports if character level is changing
+      if (currentCharacterLevel.value < targetCharacterLevel.value) {
+        for (const expId of expReportIds) {
+          const usageData = getMaterialUsageByStudents(expId);
+          const studentUsage = usageData.find(usage => usage.student.Id === props.student?.Id);
           
-          if (expData) {
-            materialsNeeded.push({
-              material: expData,
-              materialQuantity: studentUsage.quantity,
-              potentialType: 'level'
-            });
+          if (studentUsage && studentUsage.quantity > 0) {
+            // Get the resource data for the exp report
+            const expData = getResourceDataById(expId);
+            
+            if (expData) {
+              materialsNeeded.push({
+                material: expData,
+                materialQuantity: studentUsage.quantity,
+                potentialType: 'level'
+              });
+            }
           }
         }
       }
       
-      // Get credits usage for character level
+      // Always get credits usage for all upgrade types
       const creditsUsage = getMaterialUsageByStudents(CREDITS_ID)
-        .find(usage => usage.student.Id === props.student?.Id && usage.upgradeType === 'level');
+        .filter(usage => usage.student.Id === props.student?.Id)
+        .reduce((total, usage) => total + usage.quantity, 0);
       
-      if (creditsUsage && creditsUsage.quantity > 0 && creditsData) {
+      if (creditsUsage > 0 && creditsData) {
         materialsNeeded.push({
           material: creditsData,
-          materialQuantity: creditsUsage.quantity,
+          materialQuantity: creditsUsage,
           potentialType: 'level'
         });
       }
@@ -582,6 +589,13 @@ export function useStudentUpgrade(props: {
       if (potentialLevels.value[type].current > potentialLevels.value[type].target) {
         potentialLevels.value[type].target = potentialLevels.value[type].current;
       }
+      
+      // Save changes and update materials immediately
+      if (props.student && props.isVisible) {
+        saveToLocalStorage();
+        updateStudentData(props.student.Id);
+        immediateRefresh(); // Use immediate refresh for responsive UI
+      }
     }
   };
 
@@ -593,9 +607,11 @@ export function useStudentUpgrade(props: {
         skillLevels.value[type].current = current;
         skillLevels.value[type].target = target;
         
-        // Explicitly trigger localStorage save
+        // Explicitly trigger localStorage save and immediate refresh
         if (props.student && props.isVisible) {
           saveToLocalStorage();
+          updateStudentData(props.student.Id);
+          immediateRefresh(); // Use immediate refresh for responsive UI
         }
       }
     }

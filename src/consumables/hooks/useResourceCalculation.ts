@@ -558,7 +558,7 @@ export function useResourceCalculation() {
   // Add a timer ref to track the last refresh
   const lastRefreshTime = ref(Date.now());
   const refreshTimeout = ref<number | null>(null);
-  const COOLDOWN_DURATION = 5000; // 5 seconds cooldown
+  const COOLDOWN_DURATION = 1000;
 
   // Debounced refresh function
   const debouncedRefresh = () => {
@@ -583,6 +583,12 @@ export function useResourceCalculation() {
     }
   };
 
+  // Immediate refresh function for critical updates
+  const immediateRefresh = () => {
+    refreshData();
+    lastRefreshTime.value = Date.now();
+  };
+
   // Original refresh function
   const refreshData = () => {
     // This will trigger recomputation of all computed properties
@@ -601,6 +607,7 @@ export function useResourceCalculation() {
     totalMaterialsNeeded,
     materialsLeftover,
     refreshData: debouncedRefresh, // Return the debounced version
+    immediateRefresh, // Add immediate refresh option
     getMaterialUsageByStudents
   };
 } 
