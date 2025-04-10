@@ -121,6 +121,22 @@ export function getResourceDataById(id: string | number): Record<string, any> | 
 }
 
 /**
+ * Retrieves a single resource data from localStorage
+ * @param id The ID of the resource
+ * @returns The resource data or null if not found
+ */
+export function getEquipmentDataById(id: string | number): Record<string, any> | null {
+  try {
+    const resourcesData = getDataCollection(STORAGE_KEYS.EQUIPMENTS);
+    return resourcesData[id] || null;
+  } catch (error) {
+    console.error('Error retrieving materials collection from localStorage:', error);
+    return {};
+  }
+}
+
+
+/**
  * Retrieves a single student's data from localStorage
  * @param studentId The ID of the student
  * @returns The student data or null if not found

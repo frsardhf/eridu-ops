@@ -4,9 +4,9 @@ export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' |
 
 export interface EquipmentMaterial {
   material: Record<string, any> | null;
-  credits: Record<string, any> | null;
+  credits?: Record<string, any> | null;
   materialQuantity: number;
-  creditsQuantity: number;
+  creditsQuantity?: number;
   equipmentType: EquipmentType;
 }
 

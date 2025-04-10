@@ -1,9 +1,28 @@
 import { ref, computed, watch } from 'vue';
 import { ModalProps, StudentProps } from '../../types/student';
-import { loadFormDataToRefs, saveFormData, getEquipments } from '../utils/studentStorage';
-import { EquipmentLevels, EquipmentType } from '../../types/equipment';
+import dataTable from '../../data/data.json';
+import { 
+  loadFormDataToRefs, 
+  saveFormData, 
+  getEquipments,
+  getResourceDataById,
+  getEquipmentDataById
+ } from '../utils/studentStorage';
+import { EquipmentLevels, EquipmentMaterial, EquipmentType } from '../../types/equipment';
+import {
+  CREDITS_ID,
+} from '../../types/upgrade';
 import { useResourceCalculation } from './useResourceCalculation';
 import { updateStudentData } from '../stores/studentStore';
+
+// Add this type definition at the top of your file, near other type definitions
+interface EquipmentItem {
+  Id: number;
+  Category: string;
+  Tier: number;
+  MaxLevel: number;
+  Recipe: number[][];
+}
 
 // Function to get maximum tier for each equipment type
 function getMaxTierForType(type: string): number {
@@ -19,16 +38,21 @@ function getMaxTierForType(type: string): number {
 }
 
 export function useStudentGear(props: { 
-  student: StudentProps | null,
+  student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
 
-  
   // Import resource calculation hook to use material data
   const { getMaterialUsageByStudents, refreshData } = useResourceCalculation();
 
   // Track all equipment levels in one object
   const equipmentLevels = ref<EquipmentLevels>({});
+
+  
+  const levelCreditsIds = CREDITS_ID;
+  const creditsData = getResourceDataById(levelCreditsIds);
+
+  const equipmentCreditsTable = dataTable.equipment_credits;
 
   // Reset form data
   function resetFormData() {
@@ -116,6 +140,78 @@ export function useStudentGear(props: {
     equipmentLevels.value = mergedLevels;
   }
 
+  const equipmentMaterialsNeeded = computed<EquipmentMaterial[]>(() => {
+    const materialsNeeded: EquipmentMaterial[] = [];
+
+    Object.entries(equipmentLevels.value).forEach(([type, levels]) => {
+      const { current, target } = levels;
+      
+      // Skip if no upgrade needed for this type
+      if (current >= target) return;
+
+      // Get the correct material IDs and quantities based on equipment type
+      const equipments = props.student?.Equipments as unknown as Record<string, EquipmentItem>;
+      
+      // Calculate materials for each level from current to target-1
+      for (let level = current; level < target; level++) {
+        // Find the equipment item for the next tier
+        const nextTier = level + 1;
+        const equipmentItem = equipments ? 
+          Object.values(equipments).find(eq => 
+            eq.Category === type && eq.Tier === nextTier
+          ) : null;
+        
+        // Get the recipe from the equipment item
+        const recipes = equipmentItem?.Recipe || null;
+
+        // If no material data is available, skip this level
+        if (!recipes) {
+          console.warn(`No recipe found for ${type} tier ${nextTier}`);
+          continue;
+        }
+
+        // Process each recipe item
+        for (const recipe of recipes) {
+          const recipeId = recipe[0];
+          const quantity = recipe[1];
+          
+          if (!recipeId || !quantity) continue;
+          
+          // Convert equipment ID to material ID by removing first two digits
+          const materialId = parseInt(recipeId.toString().substring(2));
+          
+          // Get material data from ID
+          const materialData = getEquipmentDataById(materialId);
+          
+          // Check if this material type already exists
+          const existingMaterial = materialsNeeded.find(m => 
+            m.material?.Id === materialId && m.equipmentType === type
+          );
+          
+          if (existingMaterial) {
+            // Update quantity for existing material
+            existingMaterial.materialQuantity += quantity;
+          } else {
+            // Add new material entry
+            materialsNeeded.push({
+              material: materialData,
+              materialQuantity: quantity,
+              equipmentType: type as EquipmentType
+            });
+          }
+        }
+      }
+      // Add credits for this equipment level
+      materialsNeeded.push({
+        material: creditsData,
+        materialQuantity: equipmentCreditsTable[target-2],
+        equipmentType: type as EquipmentType
+      });
+    });
+
+    return materialsNeeded;
+  })
+
   // Function to handle updates for equipment levels
   const handleEquipmentUpdate = (type: EquipmentType, current: number, target: number) => {
     const maxTier = getMaxTierForType(type);
@@ -144,7 +240,7 @@ export function useStudentGear(props: {
 
   return {
     equipmentLevels,
-
+    equipmentMaterialsNeeded,
     closeModal,
     handleEquipmentUpdate
   };

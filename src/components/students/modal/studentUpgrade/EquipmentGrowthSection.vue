@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { StudentProps } from '../../../../types/student';
-import { useStudentGear } from '../../../../consumables/hooks/useStudentGear';
+import { ModalProps, StudentProps } from '../../../../types/student';
 import { EquipmentType } from '../../../../types/equipment';
 import { getEquipments } from '../../../../consumables/utils/studentStorage';
 
 const props = defineProps<{
-  student: StudentProps | null;
+  student: ModalProps | null;
   isVisible?: boolean;
+  equipmentLevels: Record<string, { current: number; target: number; }>;
+  equipmentMaterialsNeeded: any[];
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
+  (e: 'update-equipment', type: EquipmentType, current: number, target: number): void;
 }>();
-
-const { equipmentLevels, handleEquipmentUpdate } = useStudentGear(props, emit);
 
 // Equipment type mapping for display
 const equipmentTypes = {
@@ -63,19 +63,19 @@ function updateEquipmentCurrent(type: string, value: number) {
   if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
     
-    if (!equipmentLevels.value[equipmentType]) {
+    if (!props.equipmentLevels[equipmentType]) {
       return;
     }
     
-    equipmentLevels.value[equipmentType].current = value;
+    props.equipmentLevels[equipmentType].current = value;
     
     // Ensure target is always >= current
-    if (equipmentLevels.value[equipmentType].target < value) {
-      equipmentLevels.value[equipmentType].target = value;
+    if (props.equipmentLevels[equipmentType].target < value) {
+      props.equipmentLevels[equipmentType].target = value;
     }
     
     // Emit the update event
-    handleEquipmentUpdate(equipmentType, value, equipmentLevels.value[equipmentType].target);
+    emit('update-equipment', equipmentType, value, props.equipmentLevels[equipmentType].target);
   }
 }
 
@@ -85,22 +85,22 @@ function updateEquipmentTarget(type: string, value: number) {
   if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
     
-    if (!equipmentLevels.value[equipmentType]) {
+    if (!props.equipmentLevels[equipmentType]) {
       return;
     }
     
     const finalValue = Math.max(value, 1);
-    equipmentLevels.value[equipmentType].target = finalValue;
+    props.equipmentLevels[equipmentType].target = finalValue;
     
     // Ensure current is always <= target
-    if (equipmentLevels.value[equipmentType].current > finalValue) {
-      equipmentLevels.value[equipmentType].current = finalValue;
+    if (props.equipmentLevels[equipmentType].current > finalValue) {
+      props.equipmentLevels[equipmentType].current = finalValue;
       
       // Emit the update event for both current and target
-      handleEquipmentUpdate(equipmentType, finalValue, finalValue);
+      emit('update-equipment', equipmentType, finalValue, finalValue);
     } else {
       // Emit the update event for target only
-      handleEquipmentUpdate(equipmentType, equipmentLevels.value[equipmentType].current, finalValue);
+      emit('update-equipment', equipmentType, props.equipmentLevels[equipmentType].current, finalValue);
     }
   }
 }
@@ -127,7 +127,7 @@ function isTargetMaxLevel(target: number, type: string) {
 <template>
   <div class="equipment-growth-section">
     <div class="equipment-grid">
-      <div v-for="type in props.student?.Equipment" :key="type" class="equipment-item">
+      <div v-for="type in student?.Equipment" :key="type" class="equipment-item">
         <div class="level-control">
           <div class="custom-number-input">
             <button 

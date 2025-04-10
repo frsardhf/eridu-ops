@@ -6,6 +6,7 @@ import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade'
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
 import { useResourceCalculation } from '../../../consumables/hooks/useResourceCalculation';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
+import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
@@ -18,6 +19,7 @@ import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
 import StudentResourceSummary from './studentMaterials/StudentResourceSummary.vue';
 import StudentEquipmentGrid from './studentMaterials/StudentEquipmentGrid.vue';
 import StudentEquipmentGrowth from './studentUpgrade/EquipmentGrowthSection.vue';
+import EquipmentMaterialsSection from './studentUpgrade/EquipmentMaterialsSection.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
@@ -82,12 +84,19 @@ const {
   handleEquipmentInput
 } = useStudentEquipment(props, emit);
 
+// Add gear hook for equipment upgrades
+const {
+  equipmentLevels,
+  handleEquipmentUpdate,
+  equipmentMaterialsNeeded
+} = useStudentGear(props, emit);
+
 // Get the refresh function from useResourceCalculation
 const { refreshData } = useResourceCalculation();
 
 // Watch for tab changes to refresh data as needed
 watch(activeTab, (newTab) => {
-  if (newTab === 'upgrade' || newTab === 'summary') {
+  if (newTab === 'upgrade' || newTab === 'summary' || newTab === 'gear') {
     // Refresh data when switching to tabs that need updated calculation
     refreshData();
   }
@@ -291,7 +300,15 @@ onUnmounted(() => {
             <StudentEquipmentGrowth
               :student="student"
               :is-visible="isVisible"
+              :equipment-levels="equipmentLevels"
+              :equipment-materials-needed="equipmentMaterialsNeeded"
+              @update-equipment="handleEquipmentUpdate"
               @close="closeModal"
+            />
+            
+            <EquipmentMaterialsSection
+              :materials="equipmentMaterialsNeeded"
+              :student="student"
             />
           </div>
         </div>
