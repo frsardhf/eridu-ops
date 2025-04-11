@@ -238,9 +238,9 @@ export function useGearCalculation() {
     quantity: number,
     materialMap: Map<number, EquipmentMaterialSummary>
   ) => {
-    // Get all resources to find owned quantities
-    const resources = getResources() || {};
-    const resourceData = resources[materialId.toString()];
+    // Get all equipments to find owned quantities
+    const equipments = getEquipments() || {};
+    const equipmentData = equipments[materialId.toString()];
     
     if (materialMap.has(materialId)) {
       // Update existing entry
@@ -256,8 +256,8 @@ export function useGearCalculation() {
           Icon: materialId.toString()
         },
         materialQuantity: quantity,
-        owned: resourceData?.QuantityOwned || 0,
-        remaining: (resourceData?.QuantityOwned || 0) - quantity
+        owned: equipmentData?.QuantityOwned || 0,
+        remaining: (equipmentData?.QuantityOwned || 0) - quantity
       });
     }
   };

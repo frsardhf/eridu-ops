@@ -10,6 +10,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 
   /* Light theme default variables */
   --background-primary: #f3fcfd;
@@ -122,10 +126,16 @@ button:focus-visible {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-scrollbar-width: none;
 }
 
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -135,4 +145,11 @@ button:focus-visible {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
+}
+
+/* Fallback for browsers that don't support scrollbar-width */
+@supports not (scrollbar-width: none) {
+  .no-scrollbar {
+    overflow: -moz-scrollbars-none;
+  }
 }

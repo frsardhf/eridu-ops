@@ -302,7 +302,7 @@ onMounted(() => {
               v-else-if="activeView.includes('equipment') && 'equipmentType' in usage && String(usage.equipmentType) === 'All'"
               class="equipment-type all-type"
             >
-              All Gear
+              All
             </span>
           </div>
         </div>
