@@ -143,7 +143,7 @@ export function useGearCalculation() {
         }
 
         // Add credits for this target cumulative
-        const creditsQuantity = getCreditsForEquipmentTier(target);
+        const creditsQuantity = getCreditsForEquipmentTier(current, target);
         if (creditsQuantity > 0) {
           const creditsData = getEquipmentById(CREDITS_ID);
           
@@ -169,11 +169,18 @@ export function useGearCalculation() {
   };
 
   // Get credits required for a specific equipment tier
-  const getCreditsForEquipmentTier = (tier: number) => {
-    // Credits table for equipment tiers (this is simplified, adjust based on your data)
+  const getCreditsForEquipmentTier = (current: number, target: number) => {
+    // Credits table for equipment tiers
     const equipmentCreditsTable = dataTable.equipment_credits;
     
-    return equipmentCreditsTable[tier-2] || 0;
+    // When current is 1, we need the full amount for target
+    if (current === 1) {
+      return equipmentCreditsTable[target-2] || 0;
+    }
+    
+    // For other levels, calculate the difference
+    const creditsNeeded = equipmentCreditsTable[target-2] - equipmentCreditsTable[current-2];
+    return creditsNeeded || 0;
   };
 
   // Helper to track which students use which equipment materials
