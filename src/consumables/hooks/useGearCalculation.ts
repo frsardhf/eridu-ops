@@ -279,7 +279,7 @@ export function useGearCalculation() {
     );
     
     // Get all resources
-    const resources = getResources() || {};
+    const resources = getEquipments() || {};
     
     // Create a list of all unique equipment materials
     const allMaterialIds = new Set(Array.from(neededMap.keys()));
