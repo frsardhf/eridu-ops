@@ -240,7 +240,11 @@ export function useGearCalculation() {
   ) => {
     // Get all equipments to find owned quantities
     const equipments = getEquipments() || {};
-    const equipmentData = equipments[materialId.toString()];
+    
+    // Special case for credits which are in resources, not equipments
+    const owned = materialId === CREDITS_ID 
+      ? (getResourceDataById(CREDITS_ID)?.QuantityOwned || 0)
+      : (equipments[materialId.toString()]?.QuantityOwned || 0);
     
     if (materialMap.has(materialId)) {
       // Update existing entry
@@ -256,8 +260,8 @@ export function useGearCalculation() {
           Icon: materialId.toString()
         },
         materialQuantity: quantity,
-        owned: equipmentData?.QuantityOwned || 0,
-        remaining: (equipmentData?.QuantityOwned || 0) - quantity
+        owned: owned,
+        remaining: owned - quantity
       });
     }
   };
@@ -278,23 +282,33 @@ export function useGearCalculation() {
       totalEquipmentNeeded.value.map(item => [item.material?.Id, item])
     );
     
-    // Get all resources
-    const resources = getEquipments() || {};
+    // Get all equipment resources
+    const equipments = getEquipments() || {};
     
-    // Create a list of all unique equipment materials
-    const allMaterialIds = new Set(Array.from(neededMap.keys()));
+    // Create a list of all unique equipment materials (include both owned and needed materials)
+    const allMaterialIds = new Set([
+      ...Object.keys(equipments).map(id => parseInt(id)),
+      ...Array.from(neededMap.keys())
+    ]);
     
     // Calculate leftover for each material
     const leftoverList = Array.from(allMaterialIds).map(id => {
-      const resource = resources[id.toString()];
       const needed = neededMap.get(id);
       
-      const owned = resource?.QuantityOwned || 0;
+      // Special case for credits which are in resources, not equipments
+      let owned = 0;
+      if (id === CREDITS_ID) {
+        const resourceData = getResourceDataById(CREDITS_ID);
+        owned = resourceData?.QuantityOwned || 0;
+      } else {
+        owned = equipments[id.toString()]?.QuantityOwned || 0;
+      }
+      
       const neededQuantity = needed?.materialQuantity || 0;
       const remaining = owned - neededQuantity;
       
       return {
-        material: needed?.material || { 
+        material: needed?.material || equipments[id.toString()] || { 
           Id: id, 
           Name: `Unknown (${id})`,
           Icon: id.toString() 
