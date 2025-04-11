@@ -3,6 +3,7 @@ import { getDataCollection, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
 import { SECRET_TECH_NOTE_ID, WORKBOOK_ID, CREDITS_ID } from '../../types/upgrade';
 import dataTable from '../../data/data.json';
+import { useGearCalculation } from './useGearCalculation';
 
 interface MaterialSummary {
   material: Record<string, any> | null;
@@ -14,10 +15,13 @@ interface MaterialSummary {
 interface StudentMaterialUsage {
   student: StudentProps;
   quantity: number;
-  upgradeType: 'skill' | 'potential' | 'level';
+  upgradeType: 'skill' | 'potential' | 'level' | 'equipment';
 }
 
 export function useResourceCalculation() {
+  // Get equipment credits data from useGearCalculation
+  const { getEquipmentCredits, refreshData: refreshEquipmentData } = useGearCalculation();
+  
   // Track student-specific material usage
   const materialUsageByStudents = new Map<number, StudentMaterialUsage[]>();
 
@@ -82,6 +86,15 @@ export function useResourceCalculation() {
           student
         );
       }
+    });
+    
+    // Get equipment credits
+    const equipmentCredits = getEquipmentCredits();
+    totalCredits += equipmentCredits.totalCredits;
+    
+    // Add equipment credits usage to the material usage tracking
+    equipmentCredits.studentCredits.forEach(({ student, quantity }) => {
+      trackMaterialUsage(student, CREDITS_ID, quantity, 'equipment');
     });
     
     // Add skill and potential credits as a special material if needed
@@ -443,7 +456,7 @@ export function useResourceCalculation() {
     student: StudentProps,
     materialId: number,
     quantity: number,
-    upgradeType: 'skill' | 'potential' | 'level'
+    upgradeType: 'skill' | 'potential' | 'level' | 'equipment'
   ) => {
     if (!materialUsageByStudents.has(materialId)) {
       materialUsageByStudents.set(materialId, []);
@@ -594,6 +607,9 @@ export function useResourceCalculation() {
     // This will trigger recomputation of all computed properties
     const dummy = ref(Date.now());
     dummy.value = Date.now();
+    
+    // Also refresh equipment data to ensure we have the latest equipment credits
+    refreshEquipmentData();
     
     // Calculate total materials needed to ensure the materialUsageByStudents map is filled
     calculateTotalMaterialsNeeded();

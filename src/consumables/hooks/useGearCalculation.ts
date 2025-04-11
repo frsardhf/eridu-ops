@@ -21,6 +21,15 @@ interface StudentEquipmentUsage {
 export function useGearCalculation() {
   // Track student-specific equipment material usage
   const equipmentMaterialUsageByStudents = new Map<number, StudentEquipmentUsage[]>();
+  
+  // Track equipment credits separately
+  const equipmentCreditsNeeded = ref<{
+    totalCredits: number;
+    studentCredits: Map<number, { student: StudentProps; quantity: number }>;
+  }>({
+    totalCredits: 0,
+    studentCredits: new Map()
+  });
 
   // Get all students with their equipment data
   const getAllStudentsWithEquipment = () => {
@@ -109,8 +118,15 @@ export function useGearCalculation() {
   const calculateTotalEquipmentNeeded = () => {
     const studentsWithEquipment = getAllStudentsWithEquipment();
     const materialMap = new Map<number, EquipmentMaterialSummary>();
+    
     // Reset material usage tracking
     equipmentMaterialUsageByStudents.clear();
+    
+    // Reset equipment credits tracking
+    equipmentCreditsNeeded.value = {
+      totalCredits: 0,
+      studentCredits: new Map()
+    };
     
     // Process each student's equipment
     studentsWithEquipment.forEach(({ student, equipmentLevels }) => {
@@ -134,35 +150,29 @@ export function useGearCalculation() {
             const materialId = material.material?.Id;
             if (!materialId) return;
             
-            // Track usage by student
-            trackMaterialUsage(student, materialId, material.materialQuantity, type as EquipmentType);
-            
-            // Add to material map
-            updateMaterialMap(materialId, material.material, material.materialQuantity, materialMap);
+            // Skip credits handling here, we'll handle it separately
+            if (materialId !== CREDITS_ID) {
+              // Track usage by student
+              trackMaterialUsage(student, materialId, material.materialQuantity, type as EquipmentType);
+              
+              // Add to material map
+              updateMaterialMap(materialId, material.material, material.materialQuantity, materialMap);
+            }
           });
         }
 
-        // Add credits for this target cumulative
+        // Add credits for this target cumulative but track separately
         const creditsQuantity = getCreditsForEquipmentTier(current, target);
         if (creditsQuantity > 0) {
-          const creditsData = getEquipmentById(CREDITS_ID);
-          
-          // Track credits usage by student
-          trackMaterialUsage(student, CREDITS_ID, creditsQuantity, type as EquipmentType);
-          
-          // Add to material map
-          updateMaterialMap(CREDITS_ID, creditsData, creditsQuantity, materialMap);
+          // Track this student's equipment credit usage
+          trackEquipmentCreditsUsage(student, creditsQuantity);
         }
       });
     });
     
-    // Convert map to array and sort by ID with credits first
+    // Convert map to array and sort by ID
     return Array.from(materialMap.values())
       .sort((a, b) => {
-        // Always put credits first
-        if (a.material?.Id === CREDITS_ID) return -1;
-        if (b.material?.Id === CREDITS_ID) return 1;
-        
         // Then sort by ID
         return (a.material?.Id || 0) - (b.material?.Id || 0);
       });
@@ -228,6 +238,29 @@ export function useGearCalculation() {
           equipmentType
         });
       }
+    }
+  };
+
+  // Helper to track equipment credits usage by student
+  const trackEquipmentCreditsUsage = (
+    student: StudentProps,
+    quantity: number
+  ) => {
+    // Update total credits needed
+    equipmentCreditsNeeded.value.totalCredits += quantity;
+    
+    // Update student-specific credits
+    const studentId = student.Id;
+    if (equipmentCreditsNeeded.value.studentCredits.has(studentId)) {
+      // Update existing entry
+      const existingEntry = equipmentCreditsNeeded.value.studentCredits.get(studentId)!;
+      existingEntry.quantity += quantity;
+    } else {
+      // Add new entry
+      equipmentCreditsNeeded.value.studentCredits.set(studentId, {
+        student,
+        quantity
+      });
     }
   };
 
@@ -318,11 +351,7 @@ export function useGearCalculation() {
         remaining
       };
     }).sort((a, b) => {
-      // Always put credits first
-      if (a.material?.Id === CREDITS_ID) return -1;
-      if (b.material?.Id === CREDITS_ID) return 1;
-      
-      // Then sort by ID
+      // Sort by ID
       return (a.material?.Id || 0) - (b.material?.Id || 0);
     });
     
@@ -335,6 +364,14 @@ export function useGearCalculation() {
       .filter(item => item.remaining < 0)
       .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
   });
+
+  // Get the equipment credits data
+  const getEquipmentCredits = () => {
+    return {
+      totalCredits: equipmentCreditsNeeded.value.totalCredits,
+      studentCredits: Array.from(equipmentCreditsNeeded.value.studentCredits.values())
+    };
+  };
 
   // Add a timer ref to track the last refresh
   const lastRefreshTime = ref(Date.now());
@@ -389,6 +426,7 @@ export function useGearCalculation() {
     missingEquipment,
     refreshData: debouncedRefresh,
     immediateRefresh,
-    getEquipmentUsageByStudents
+    getEquipmentUsageByStudents,
+    getEquipmentCredits 
   };
 }

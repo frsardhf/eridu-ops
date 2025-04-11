@@ -54,10 +54,12 @@ const displayResources = computed(() => {
       resources = missingMaterials.value;
       break;
     case 'equipment-needed':
-      resources = totalEquipmentNeeded.value;
+      // Filter out credits from equipment needed
+      resources = totalEquipmentNeeded.value.filter(item => item.material?.Id !== 5);
       break;
     case 'equipment-missing':
-      resources = missingEquipment.value;
+      // Filter out credits from equipment missing
+      resources = missingEquipment.value.filter(item => item.material?.Id !== 5);
       break;
     default:
       resources = [];
@@ -292,18 +294,6 @@ onMounted(() => {
               class="student-icon"
             />
             <span class="usage-quantity">{{ formatLargeNumber(usage.quantity) }}</span>
-            <span 
-              v-if="activeView.includes('equipment') && 'equipmentType' in usage && String(usage.equipmentType) !== 'All'" 
-              class="equipment-type"
-            >
-              {{ usage.equipmentType }}
-            </span>
-            <span 
-              v-else-if="activeView.includes('equipment') && 'equipmentType' in usage && String(usage.equipmentType) === 'All'"
-              class="equipment-type all-type"
-            >
-              All
-            </span>
           </div>
         </div>
       </div>
@@ -390,8 +380,7 @@ onMounted(() => {
   border-radius: 8px;
   padding: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  max-width: 300px;
-  min-width: 180px;
+  min-width: 300px;
   pointer-events: none;
   backdrop-filter: blur(5px);
 }
@@ -433,23 +422,6 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-.equipment-type {
-  font-size: 0.7em;
-  color: var(--text-secondary);
-  background: rgba(0, 0, 0, 0.4);
-  padding: 1px 4px;
-  border-radius: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 45px;
-}
-
-.all-type {
-  background-color: rgba(var(--accent-color-rgb, 100, 108, 255), 0.7);
-  color: white;
-}
-
 @media (max-width: 768px) {
   .view-tabs {
     flex-wrap: wrap;
@@ -467,6 +439,10 @@ onMounted(() => {
   .student-icon {
     width: 30px;
     height: 30px;
+  }
+
+  .material-tooltip {
+    min-width: 200px;
   }
 }
 </style> 
