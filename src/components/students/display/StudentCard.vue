@@ -273,7 +273,7 @@ function handlePinToggle(event: MouseEvent) {
 
 .card-img {
   width: 150px;
-  height: 150px;
+  height: 170px;
   overflow: hidden;
   position: relative;
 }
@@ -486,7 +486,7 @@ function handlePinToggle(event: MouseEvent) {
 
   .card-img {
     width: 100px;
-    height: 100px;
+    height: 113px;
   }
 
   .bond-icon-container {

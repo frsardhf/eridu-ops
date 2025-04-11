@@ -5,6 +5,7 @@ import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
 import { useResourceCalculation } from '../../../consumables/hooks/useResourceCalculation';
+import { useGearCalculation } from '../../../consumables/hooks/useGearCalculation';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
 import StudentModalHeader from './StudentModalHeader.vue';
@@ -94,11 +95,19 @@ const {
 // Get the refresh function from useResourceCalculation
 const { refreshData } = useResourceCalculation();
 
+// Get the refresh function from useGearCalculation
+const { refreshData: refreshGearData } = useGearCalculation();
+
 // Watch for tab changes to refresh data as needed
 watch(activeTab, (newTab) => {
-  if (newTab === 'upgrade' || newTab === 'summary' || newTab === 'gear') {
+  if (newTab === 'upgrade' || newTab === 'summary') {
     // Refresh data when switching to tabs that need updated calculation
     refreshData();
+  }
+  
+  if (newTab === 'gear' || newTab === 'summary') {
+    // Refresh gear data when switching to tabs that need equipment calculation
+    refreshGearData();
   }
 });
 

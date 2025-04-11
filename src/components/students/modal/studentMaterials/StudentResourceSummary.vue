@@ -1,14 +1,29 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
+import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
 import '../../../../styles/resourceDisplay.css';
 
 // Define view options
-type ViewMode = 'needed' | 'missing';
+type ViewMode = 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing';
 
 // UI state
 const activeView = ref<ViewMode>('needed');
-const { totalMaterialsNeeded, materialsLeftover, refreshData, getMaterialUsageByStudents } = useResourceCalculation();
+const { 
+  totalMaterialsNeeded, 
+  materialsLeftover, 
+  refreshData, 
+  getMaterialUsageByStudents 
+} = useResourceCalculation();
+
+// Get equipment resource data
+const {
+  totalEquipmentNeeded,
+  equipmentLeftover,
+  missingEquipment,
+  refreshData: refreshEquipmentData,
+  getEquipmentUsageByStudents
+} = useGearCalculation();
 
 // Track the currently hovered item for tooltip
 const hoveredItemId = ref<number | null>(null);
@@ -38,6 +53,12 @@ const displayResources = computed(() => {
     case 'missing':
       resources = missingMaterials.value;
       break;
+    case 'equipment-needed':
+      resources = totalEquipmentNeeded.value;
+      break;
+    case 'equipment-missing':
+      resources = missingEquipment.value;
+      break;
     default:
       resources = [];
   }
@@ -64,8 +85,14 @@ const displayResources = computed(() => {
 const studentUsageForMaterial = computed(() => {
   if (hoveredItemId.value === null) return [];
   
-  return getMaterialUsageByStudents(hoveredItemId.value)
-    .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+  // Use different usage function based on the active view
+  if (activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing') {
+    return getEquipmentUsageByStudents(hoveredItemId.value)
+      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+  } else {
+    return getMaterialUsageByStudents(hoveredItemId.value)
+      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+  }
 });
 
 // Function to format quantity with 'K/M' for large numbers
@@ -88,9 +115,9 @@ const formatLargeNumber = (quantity: number): string => {
 // Format quantity based on the current view
 const formatQuantity = (item: any) => {
   let quantity = 0;
-  if (activeView.value === 'needed') {
+  if (activeView.value === 'needed' || activeView.value === 'equipment-needed') {
     quantity = item.materialQuantity || 0;
-  } else if (activeView.value === 'missing') {
+  } else if (activeView.value === 'missing' || activeView.value === 'equipment-missing') {
     // For missing materials, display the absolute value of the negative remaining
     quantity = Math.abs(item.remaining);
   }
@@ -105,7 +132,7 @@ const formatQuantity = (item: any) => {
 
 // Get CSS class for quantity 
 const getQuantityClass = (item: any) => {
-  if (activeView.value === 'missing') {
+  if (activeView.value === 'missing' || activeView.value === 'equipment-missing') {
     return 'negative'; // Always negative (missing materials)
   }
   return '';
@@ -150,9 +177,26 @@ const hideTooltip = () => {
   hoveredItemId.value = null;
 };
 
+// Determine source for the material icon based on material type
+const getMaterialIconSrc = (item: any): string => {
+  if (!item.material?.Icon) return '';
+  
+  const isEquipmentTab = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
+  const isCredits = item.material?.Id === 5;
+  
+  if (isCredits) {
+    return `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`;
+  } else if (isEquipmentTab) {
+    return `https://schaledb.com/images/equipment/icon/${item.material.Icon}_piece.webp`;
+  } else {
+    return `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`;
+  }
+};
+
 // Refresh the data initially
 onMounted(() => {
   refreshData();
+  refreshEquipmentData();
 });
 </script>
 
@@ -164,20 +208,34 @@ onMounted(() => {
         :class="{ active: activeView === 'needed' }"
         @click="setView('needed')"
       >
-        Total Needed
+        Items Needed
       </button>
       <button 
         class="view-tab" 
         :class="{ active: activeView === 'missing' }"
         @click="setView('missing')"
       >
-        Missing Materials
+        Missing Items
+      </button>
+      <button 
+        class="view-tab" 
+        :class="{ active: activeView === 'equipment-needed' }"
+        @click="setView('equipment-needed')"
+      >
+        Equipment Needed
+      </button>
+      <button 
+        class="view-tab" 
+        :class="{ active: activeView === 'equipment-missing' }"
+        @click="setView('equipment-missing')"
+      >
+        Missing Equipment
       </button>
     </div>
     
     <div class="resources-content">
       <div v-if="displayResources.length === 0" class="no-resources">
-        <span v-if="activeView === 'needed'">No resources needed for upgrades</span>
+        <span v-if="activeView === 'needed' || activeView === 'equipment-needed'">No resources needed for upgrades</span>
         <span v-else>You have all the materials you need! ✓</span>
       </div>
       
@@ -194,7 +252,7 @@ onMounted(() => {
           <div class="resource-content">
             <img 
               v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-              :src="`https://schaledb.com/images/item/icon/${item.material.Icon}.webp`" 
+              :src="getMaterialIconSrc(item)" 
               :alt="item.material?.Name || 'Unknown'"
               class="resource-icon"
             />
@@ -234,6 +292,18 @@ onMounted(() => {
               class="student-icon"
             />
             <span class="usage-quantity">{{ formatLargeNumber(usage.quantity) }}</span>
+            <span 
+              v-if="activeView.includes('equipment') && 'equipmentType' in usage && String(usage.equipmentType) !== 'All'" 
+              class="equipment-type"
+            >
+              {{ usage.equipmentType }}
+            </span>
+            <span 
+              v-else-if="activeView.includes('equipment') && 'equipmentType' in usage && String(usage.equipmentType) === 'All'"
+              class="equipment-type all-type"
+            >
+              All Gear
+            </span>
           </div>
         </div>
       </div>
@@ -252,6 +322,7 @@ onMounted(() => {
 
 .view-tabs {
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 15px;
 }
@@ -328,7 +399,7 @@ onMounted(() => {
 .tooltip-header {
   font-size: 0.9em;
   font-weight: bold;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   margin-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 4px;
@@ -360,5 +431,42 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.4);
   padding: 1px 4px;
   border-radius: 4px;
+}
+
+.equipment-type {
+  font-size: 0.7em;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45px;
+}
+
+.all-type {
+  background-color: rgba(var(--accent-color-rgb, 100, 108, 255), 0.7);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .view-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .view-tab {
+    font-size: 0.8em;
+    padding: 8px 10px;
+  }
+  
+  .student-icons-grid {
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  }
+  
+  .student-icon {
+    width: 30px;
+    height: 30px;
+  }
 }
 </style> 
