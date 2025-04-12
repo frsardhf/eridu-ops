@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { GiftDataProps, BoxDataProps } from '../../../../types/gift';
+import { GiftProps } from '../../../../types/gift';
 import { ref } from 'vue';
 import '../../../../styles/resourceDisplay.css';
-
-type GiftProps = GiftDataProps | BoxDataProps;
 
 const props = defineProps<{
   item: GiftProps,

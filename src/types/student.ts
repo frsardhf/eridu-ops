@@ -1,12 +1,12 @@
-import { GiftDataProps, BoxDataProps } from "./gift";
+import { GiftProps } from "./gift";
 import { ResourceProps } from "./resource";
 
 export interface StudentProps {
   Id: number;
   Name: string;
   DefaultOrder: number;
-  Gifts: GiftDataProps[];
-  Boxes: BoxDataProps[];
+  Gifts: GiftProps[];
+  Boxes: GiftProps[];
   Equipment: string[];
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];
@@ -20,4 +20,10 @@ export interface StudentProps {
 export interface ModalProps extends StudentProps {
   Materials: ResourceProps[];
   Equipments: ResourceProps[];
+}
+
+export interface FetchedData {
+  students: Record<string, StudentProps>;
+  items: Record<string, ResourceProps>;
+  equipment: Record<string, ResourceProps>;
 }

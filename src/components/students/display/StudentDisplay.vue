@@ -3,11 +3,12 @@ import { ref, onMounted } from 'vue'
 import StudentHeader from './StudentHeader.vue';
 import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../modal/StudentModal.vue'
-import { useStudentData, SortOption } from '../../../consumables/hooks/useStudentData';
+import { useStudentData } from '../../../consumables/hooks/useStudentData';
 import { ModalProps, StudentProps } from '../../../types/student';
 import { ResourceProps } from '../../../types/resource';
+import { SortOption } from '../../../types/header';
+import { GiftProps } from '../../../types/gift';
 
-// Use the composable to manage student data
 const {
   materialData,
   equipmentData,
@@ -24,17 +25,14 @@ const {
   toggleDirection
 } = useStudentData()
 
-// Modal state
 const selectedStudent = ref<ModalProps | null>(null)
 const isModalVisible = ref(false)
 
 // Prepare student for modal
 function prepareStudentForModal(student: StudentProps): ModalProps {
-  // Convert gifts and boxes arrays to ID-based objects if they're arrays
   const studentGifts = favoredGift.value[student.Id] || {};
   const studentBoxes = giftBoxData.value[student.Id] || {};
   
-  // Create objects with gift IDs as keys if they're arrays
   const giftsObject = Array.isArray(studentGifts) 
     ? studentGifts.reduce((acc, gift) => {
         if (gift.gift && gift.gift.Id) {
@@ -53,13 +51,12 @@ function prepareStudentForModal(student: StudentProps): ModalProps {
       }, {})
     : studentBoxes;
   
-  // Return the prepared student object
   return {
     ...student,
-    Gifts: giftsObject,
-    Boxes: boxesObject,
-    Materials: materialData.value as ResourceProps[],
-    Equipments: equipmentData.value as ResourceProps[]
+    Gifts: Object.values(giftsObject) as GiftProps[],
+    Boxes: Object.values(boxesObject) as GiftProps[],
+    Materials: Object.values(materialData.value) as ResourceProps[],
+    Equipments: Object.values(equipmentData.value) as ResourceProps[]
   };
 }
 
@@ -78,7 +75,7 @@ function handleNavigate(student: StudentProps) {
   selectedStudent.value = prepareStudentForModal(student);
 }
 
-function handleSearchUpdate(value) {
+function handleSearchUpdate(value: string) {
   updateSearchQuery(value);
 }
 
@@ -90,22 +87,17 @@ function handleToggleDirection() {
   toggleDirection();
 }
 
-// Handle student pin toggling
 function handleStudentPinned() {
-  // Force a refresh of sortedStudentsArray by creating a new array reference
-  // This ensures the UI updates immediately after a pin/unpin action
   sortedStudentsArray.value = [...sortedStudentsArray.value];
 }
 
 onMounted(() => {
-  // Initialize theme from local storage
   const savedTheme = localStorage.getItem('theme')
   if (savedTheme) {
     isDarkMode.value = savedTheme === 'dark'
     document.documentElement.setAttribute('data-theme', savedTheme)
   }
 })
-
 </script>
 
 <template>

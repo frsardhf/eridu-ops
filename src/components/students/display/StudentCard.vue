@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { StudentProps } from '../../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { getStudentData, updateStudentData } from '../../../consumables/stores/studentStore'
+import { getStudentData } from '../../../consumables/stores/studentStore'
 import { EquipmentType } from '../../../types/equipment'
 import { isStudentPinned, togglePinnedStudent } from '../../../consumables/utils/studentStorage'
 

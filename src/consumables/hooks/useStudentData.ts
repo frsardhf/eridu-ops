@@ -1,6 +1,16 @@
 import { ref, computed } from 'vue'
 import { StudentProps } from '../../types/student';
-import { BoxDataProps, GiftDataProps } from '../../types/gift';
+import { SortOption, SortDirection } from '../../types/header';
+import { GiftProps } from '../../types/gift';
+import { FetchedData } from '../../types/student';
+import { 
+  MATERIAL,
+  EQUIPMENT,
+  GENERIC_GIFT_TAGS,
+  GIFT_BOX_IDS,
+  GIFT_BOX_EXP_VALUES,
+  creditsEntry
+} from '../../types/resource';
 import { 
   saveResources, 
   saveStudentData, 
@@ -9,63 +19,28 @@ import {
   saveEquipments, 
   getPinnedStudents 
 } from '../utils/studentStorage';
-
-// Constants
-const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
-const GIFT_BOX_IDS = ['82', '100000', '100008', '100009'];
-const GIFT_BOX_EXP_VALUES = {
-  'SR': 20,
-  'SSR': 120
-};
-const MATERIAL = {
-  'category': ["CharacterExpGrowth"],
-  'subcategory': ["Artifact", "CDItem", "BookItem"],
-  'id': ['5', '2000', '2001', '2002', '9999']
-};
-const EQUIPMENT = {
-  'tier': ['0'],
-  'recipecost': ['1500', '10000', '25000', '50000', 
-    '75000', '100000', '125000', '150000', '175000']
-};
-
-
-// Define sort options
-export type SortOption = 'id' | 'name' | 'default';
-export type SortDirection = 'asc' | 'desc';
-
-// Add new type for data types
-type DataType = 'students' | 'items' | 'equipment';
-
-// Add new interface for fetched data
-interface FetchedData {
-  students: Record<string, StudentProps>;
-  items: Record<string, any>;
-  equipment: Record<string, any>;
-}
+import { ResourceProps } from '../../types/resource';
 
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
-  const materialData = ref<Record<string, any>>({});
-  const equipmentData = ref<Record<string, any>>({});
-  const giftData = ref<Record<string, any>>({});
-  const boxData = ref<Record<string, any>>({});
-  const favoredGift = ref<Record<string, any[]>>({});
-  const giftBoxData = ref<Record<string, any[]>>({});
+  const materialData = ref<Record<string, ResourceProps>>({});
+  const equipmentData = ref<Record<string, ResourceProps>>({});
+  const giftData = ref<Record<string, ResourceProps>>({});
+  const boxData = ref<Record<string, ResourceProps>>({});
+  const favoredGift = ref<Record<string, GiftProps[]>>({});
+  const giftBoxData = ref<Record<string, GiftProps[]>>({});
   const searchQuery = ref<string>('');
   const isDarkMode = ref<boolean>(false);
   const currentSort = ref<SortOption>('id');
   const sortDirection = ref<SortDirection>('asc');
-  
-  // Store the sorted students array directly
   const sortedStudentsArray = ref<StudentProps[]>([]);
 
   // Function to update the sorted students array
   function updateSortedStudents() {
-    // First filter by search query
     let filteredStudents = Object.values(studentData.value);
-    
-    // Get pinned students
     const pinnedStudents: string[] = getPinnedStudents();
+    const pinnedStudentsList: StudentProps[] = [];
+    const unpinnedStudentsList: StudentProps[] = [];
     
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
@@ -73,10 +48,6 @@ export function useStudentData() {
         (student: StudentProps) => student.Name.toLowerCase().includes(query)
       );
     }
-    
-    // Split into pinned and unpinned students for separate sorting
-    const pinnedStudentsList: StudentProps[] = [];
-    const unpinnedStudentsList: StudentProps[] = [];
     
     filteredStudents.forEach((student: StudentProps) => {
       if (pinnedStudents.includes(student.Id.toString())) {
@@ -86,7 +57,6 @@ export function useStudentData() {
       }
     });
     
-    // Sort each list separately
     [pinnedStudentsList, unpinnedStudentsList].forEach((list) => {
       list.sort((a, b) => {
         let comparison = 0;
@@ -102,19 +72,19 @@ export function useStudentData() {
             comparison = Number(a.Id) - Number(b.Id);
             break;
         }
-        
-        // Apply sort direction
+
         return sortDirection.value === 'asc' ? comparison : -comparison;
       });
     });
-    
-    // Combine the lists with pinned students first
+
     sortedStudentsArray.value = [...pinnedStudentsList, ...unpinnedStudentsList];
   }
   
   // For backward compatibility with code expecting an object
   const filteredStudents = computed<Record<string, StudentProps>>(() => {
-    return Object.fromEntries(sortedStudentsArray.value.map(student => [student.Id, student]));
+    return Object.fromEntries(sortedStudentsArray.value.map(student => 
+      [student.Id, student]
+    ));
   });
   
   // Load saved sort preferences
@@ -139,29 +109,25 @@ export function useStudentData() {
 
   // Change the sort option
   function setSortOption(option: SortOption) {
-    // If the same option is selected, toggle the direction
     if (currentSort.value === option) {
       sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
     } else {
-      // If a new option is selected, reset to ascending
       currentSort.value = option;
       sortDirection.value = 'asc';
     }
-    
-    // Save preferences
+
     saveSortPreferences();
-    
-    // Update the sorted array
     updateSortedStudents();
   }
   
-  // Toggle sort direction explicitly
+  // Toggle sort direction
   function toggleDirection() {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
     saveSortPreferences();
     updateSortedStudents();
   }
 
+  // Toggle theme
   function toggleTheme() {
     isDarkMode.value = !isDarkMode.value
     const theme = isDarkMode.value ? 'dark' : 'light';
@@ -175,6 +141,7 @@ export function useStudentData() {
     updateSortedStudents();
   }
 
+  // Fetch data from SchaleDB
   async function fetchData(type: string) {
     try {
       const url = `https://schaledb.com/data/en/${type}.json`;
@@ -195,8 +162,8 @@ export function useStudentData() {
   // Utility functions
   function filterByProperty(
     items: Record<string, any>, type: string, value: string | string[]) {
-    const filteredItems = {};
     let valueArray: (string | number)[] = Array.isArray(value) ? value : [value];
+    const filteredItems = {};
     
     if (type === 'id' || type === 'tier' || type === 'recipecost') {
       valueArray = valueArray.map(val => Number(val));
@@ -257,9 +224,9 @@ export function useStudentData() {
 
   function getGiftsByStudent(
     students: Record<string, StudentProps>, 
-    items: Record<string, any>, 
-    isGiftBox: boolean): Record<string, (GiftDataProps | BoxDataProps)[]> {
-    const result: Record<string, (GiftDataProps | BoxDataProps)[]> = {};
+    items: Record<string, ResourceProps>, 
+    isGiftBox: boolean): Record<string, GiftProps[]> {
+    const result: Record<string, GiftProps[]> = {};
     
     for (const studentId in students) {
       const student = students[studentId];
@@ -281,8 +248,8 @@ export function useStudentData() {
   }
   
   function processRegularGiftItems(
-    items: Record<string, any>, allTags: string[]) {
-    const studentGifts: (GiftDataProps | BoxDataProps)[] = [];
+    items: Record<string, ResourceProps>, allTags: string[]) {
+    const studentGifts: GiftProps[] = [];
     
     for (const itemId in items) {
       const item = items[itemId];
@@ -300,7 +267,7 @@ export function useStudentData() {
     return studentGifts;
   }
   
-  function evaluateRegularGift(item: any, allTags: string[]) {
+  function evaluateRegularGift(item: ResourceProps, allTags: string[]) {
     const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
     const favorGrade = Math.min(commonTags.length, 3);
     const genericTagCount = countGenericTags(item);
@@ -313,8 +280,8 @@ export function useStudentData() {
   }
   
   function processGiftBoxItems(
-    studentId: string, items: Record<string, any>, allTags: string[]) {
-    const studentGifts: (GiftDataProps | BoxDataProps)[] = [];
+    studentId: string, items: Record<string, ResourceProps>, allTags: string[]) {
+    const studentGifts: GiftProps[] = [];
     const { 
       highestExpGift, 
       highestGradeGift, 
@@ -364,7 +331,7 @@ export function useStudentData() {
   }
   
   function evaluateGiftBoxItem(
-    item: any, allTags: string[], highestExpGift: number, 
+    item: ResourceProps, allTags: string[], highestExpGift: number, 
     highestGradeGift: number, isCollabStudent: boolean) {
     const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
     const favorGrade = Math.min(commonTags.length, 3);
@@ -391,12 +358,12 @@ export function useStudentData() {
     return { shouldGift, expValue, newFavorGrade };
   }
   
-  function countGenericTags(item: any) {
+  function countGenericTags(item: ResourceProps) {
     return item.Tags.filter((tag: string) => GENERIC_GIFT_TAGS.includes(tag)).length;
   }
   
-  function calculateGiftExp(item: any, tags: string[]) {
-    return item.ExpValue * (1 + Math.min(tags.length, 3));
+  function calculateGiftExp(item: ResourceProps, tags: string[]) {
+    return (item.ExpValue ?? 0) * (1 + Math.min(tags.length, 3));
   }
 
   // Add new function to fetch all data in parallel
@@ -423,15 +390,12 @@ export function useStudentData() {
     }
   }
 
-  // Update initializeData to use the new function
   async function initializeData() {
-    // Load sort preferences first
     loadSortPreferences();
     
-    // Fetch all data in parallel
+    // Fetch and update reactive refs
     const { students, items, equipment } = await fetchAllData();
     
-    // Update reactive refs
     studentData.value = students;
     const allItems = items;
     const allEquipments = equipment;
@@ -439,32 +403,19 @@ export function useStudentData() {
     giftData.value = filterByProperty(allItems, 'category', 'Favor');
     boxData.value = filterByProperty(allItems, 'id', GIFT_BOX_IDS);
     
-    // Use the new combined function
     favoredGift.value = getGiftsByStudent(studentData.value, giftData.value, false);
     giftBoxData.value = getGiftsByStudent(studentData.value, boxData.value, true);
     
-    // Save the combined data to localStorage as initial data
     saveStudentData(studentData.value, favoredGift.value, giftBoxData.value);
     
     // Handle resources initialization and credits
     const existingResources = getResources();
     const existingEquipments = getEquipments();
 
-    // Define credits object
-    const creditsEntry = {
-      Id: 5,
-      Name: 'Credits',
-      Icon: 'currency_icon_gold',
-      Description: 'In-game currency used for various upgrades',
-      QuantityOwned: 0
-    };
-
     if (!existingResources) {
-      // If no resources exist, save all items in resources including credits
       allItems[5] = creditsEntry;
       saveResources(allItems);
     } else if (!existingResources[5]) {
-      // If resources exist but don't include credits, add just the credits
       existingResources[5] = creditsEntry;
       saveResources(existingResources);
     }
@@ -478,7 +429,6 @@ export function useStudentData() {
     materialData.value = existingResources || applyFilters(allItems, MATERIAL);
     equipmentData.value = existingEquipments || applyFilters(allEquipments, EQUIPMENT);
 
-    // Initialize the sorted students array
     updateSortedStudents();
   }
 

@@ -1,5 +1,5 @@
-// Define potential types
 export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
+
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 
 export interface Material {
@@ -7,6 +7,7 @@ export interface Material {
   materialQuantity: number;
   type?: SkillType | PotentialType | 'level';
 }
+
 export interface SkillLevels {
   Ex: {
     current: number;
@@ -52,7 +53,6 @@ export interface PotentialSettings {
   name: string;
 }
 
-// Constants
 export const CREDITS_ID = 5;
 
 export const EXP_REPORT_ID = [10, 11, 12, 13];

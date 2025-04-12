@@ -1,4 +1,6 @@
-import { SortOption, SortDirection } from '../consumables/hooks/useStudentData';
+export type SortOption = 'id' | 'name' | 'default';
+
+export type SortDirection = 'asc' | 'desc';
 
 export interface HeaderProps {
   searchQuery: string;

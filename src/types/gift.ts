@@ -1,11 +1,4 @@
-export interface GiftDataProps {
-  gift: any;
-  exp: number;
-  grade: number;
-  quantity?: number;
-}
-
-export interface BoxDataProps {
+export interface GiftProps {
   gift: any;
   exp: number;
   grade: number;
