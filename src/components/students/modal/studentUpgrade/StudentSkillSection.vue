@@ -2,24 +2,15 @@
 import { ref, watch, onMounted } from 'vue';
 import {
   SkillType,
-  SkillSettings
+  SkillSettings,
+  Material
 } from '../../../../types/upgrade';
 import '../../../../styles/studentUpgrade.css';
-
-// Modify this interface to match our component needs
-interface SkillMaterial {
-  material: Record<string, any> | null;
-  materialQuantity: number;
-  level?: number;
-  blockStart?: number;
-  blockEnd?: number;
-  potentialType: string; // This is to handle compatibility with hook data
-}
 
 const props = defineProps<{
   student: Record<string, any> | null,
   skillLevels: Record<string, { current: number; target: number; }>,
-  materials: SkillMaterial[];
+  materials: Material[];
   allSkillsMaxed: boolean;
   targetSkillsMaxed: boolean;
 }>();

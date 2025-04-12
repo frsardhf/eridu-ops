@@ -1,7 +1,11 @@
 import { computed, ref } from 'vue';
 import { getDataCollection, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
-import { SECRET_TECH_NOTE_ID, WORKBOOK_ID, CREDITS_ID } from '../../types/upgrade';
+import { 
+  CREDITS_ID,
+  EXP_REPORT_ID, 
+  SECRET_TECH_NOTE_ID, 
+  WORKBOOK_ID  } from '../../types/upgrade';
 import dataTable from '../../data/data.json';
 import { useGearCalculation } from './useGearCalculation';
 

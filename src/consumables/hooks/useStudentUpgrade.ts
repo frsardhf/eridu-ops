@@ -7,16 +7,15 @@ import {
   saveFormData 
 } from '../utils/studentStorage';
 import {
+  Material,
   PotentialType,
-  PotentialMaterial,
   PotentialLevels,
   SkillType,
-  SkillMaterial,
   SkillLevels,
+  CREDITS_ID,
+  EXP_REPORT_ID,
   WORKBOOK_ID,
   SECRET_TECH_NOTE_ID,
-  CREDITS_ID,
-  ExpMaterial
 } from '../../types/upgrade';
 import { useResourceCalculation } from './useResourceCalculation';
 import { updateStudentData } from '../stores/studentStore';
@@ -242,13 +241,6 @@ export function useStudentUpgrade(props: {
     }
   }, { deep: true });
 
-  // Additionally refresh resource calculations when target character level changes
-  watch(targetCharacterLevel, () => {
-    if (props.student && props.isVisible) {
-      refreshData(); // This will now use the debounced version
-    }
-  });
-
   // Save current form data to localStorage
   function saveToLocalStorage() {
     if (!props.student) return;
@@ -267,7 +259,6 @@ export function useStudentUpgrade(props: {
   function loadFromLocalStorage() {
     if (!props.student) return;
 
-    // Define the refs and their default values
     const refs = {
       currentCharacterLevel,
       targetCharacterLevel,
@@ -306,8 +297,8 @@ export function useStudentUpgrade(props: {
     return totalCumulativeExp.value;
   });
 
-  const charExpMaterialsNeeded = computed<ExpMaterial[]>(() => {
-    const materialsNeeded: ExpMaterial[] = [];
+  const charExpMaterialsNeeded = computed<Material[]>(() => {
+    const materialsNeeded: Material[] = [];
 
     // Initialize before first access to ensure data is populated
     refreshData();
@@ -315,7 +306,7 @@ export function useStudentUpgrade(props: {
     // Get exp materials from resource calculation based on student ID
     if (props.student?.Id) {
       // EXP Report IDs: 10, 11, 12, 13
-      const expReportIds = [10, 11, 12, 13];
+      const expReportIds = EXP_REPORT_ID;
       
       // Only include exp reports if character level is changing
       if (currentCharacterLevel.value < targetCharacterLevel.value) {
@@ -331,7 +322,7 @@ export function useStudentUpgrade(props: {
               materialsNeeded.push({
                 material: expData,
                 materialQuantity: studentUsage.quantity,
-                potentialType: 'level'
+                type: 'level'
               });
             }
           }
@@ -347,7 +338,7 @@ export function useStudentUpgrade(props: {
         materialsNeeded.push({
           material: creditsData,
           materialQuantity: creditsUsage,
-          potentialType: 'level'
+          type: 'level'
         });
       }
     }
@@ -355,8 +346,8 @@ export function useStudentUpgrade(props: {
     return materialsNeeded;
   })
 
-  const skillMaterialsNeeded = computed<SkillMaterial[]>(() => {
-    const materialsNeeded: SkillMaterial[] = [];
+  const skillMaterialsNeeded = computed<Material[]>(() => {
+    const materialsNeeded: Material[] = [];
    
     Object.entries(skillLevels.value).forEach(([type, levels]) => {
       const { current, target } = levels;
@@ -394,8 +385,7 @@ export function useStudentUpgrade(props: {
             materialsNeeded.push({
               material: secretTechData,
               materialQuantity: 1,
-              level,
-              potentialType: type as SkillType
+              type: type as SkillType
             });
           }
 
@@ -403,8 +393,7 @@ export function useStudentUpgrade(props: {
           materialsNeeded.push({
             material: creditsData,
             materialQuantity: 4000000,
-            level,
-            potentialType: type as SkillType
+            type: type as SkillType
           });
         }
         
@@ -431,8 +420,7 @@ export function useStudentUpgrade(props: {
           materialsNeeded.push({
             material: materialData,
             materialQuantity: quantity,
-            level,
-            potentialType: type as SkillType
+            type: type as SkillType
           });
         }
 
@@ -440,8 +428,7 @@ export function useStudentUpgrade(props: {
         materialsNeeded.push({
           material: creditsData,
           materialQuantity: levelCreditsQuantities,
-          level,
-          potentialType: type as SkillType
+          type: type as SkillType
         });
       }
     });
@@ -450,12 +437,12 @@ export function useStudentUpgrade(props: {
   });
 
   // Calculate materials needed for potential upgrade
-  const potentialMaterialsNeeded = computed<PotentialMaterial[]>(() => {
+  const potentialMaterialsNeeded = computed<Material[]>(() => {
     if (!potentialMaterials) {
       return [];
     }
     
-    const materialsNeeded: PotentialMaterial[] = [];
+    const materialsNeeded: Material[] = [];
     
     // Calculate materials for each potential type
     Object.entries(potentialLevels.value).forEach(([type, levels]) => {
@@ -506,26 +493,31 @@ export function useStudentUpgrade(props: {
         } else {
           materialId = (props.student?.PotentialMaterial ?? 0) + 1;
         }
+
+        const materialData = getResourceDataById(materialId);
+        const workbookData = getResourceDataById(workbookId);
+        const creditsData = getResourceDataById(CREDITS_ID);
  
         materialQuantity = Math.ceil(materialQuantity * levelsInBlock);
         workbookQuantity = Math.ceil(workbookQuantity * levelsInBlock);
         creditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
 
-        const materialData = getResourceDataById(materialId);
-        const workbookData = getResourceDataById(workbookId);
-        const creditsData = getResourceDataById(CREDITS_ID);
-
         materialsNeeded.push({
           material: materialData,
-          workbook: workbookData,
-          credits: creditsData,
-          workbookQuantity,
-          materialQuantity,
-          creditsQuantity,
-          levelsInBlock,
-          blockStart: block * 5,
-          blockEnd: block * 5 + levelsInBlock,
-          potentialType: type as PotentialType
+          materialQuantity: materialQuantity,
+          type: type as PotentialType
+        });
+
+        materialsNeeded.push({
+          material: workbookData,
+          materialQuantity: workbookQuantity,
+          type: type as PotentialType
+        });
+
+        materialsNeeded.push({
+          material: creditsData,
+          materialQuantity: creditsQuantity,
+          type: type as PotentialType
         });
       }
     });

@@ -1,53 +1,12 @@
 // Define potential types
+export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 
-export interface PotentialMaterial {
-  material: Record<string, any> | null;
-  workbook: Record<string, any> | null;
-  credits: Record<string, any> | null;
-  materialQuantity: number;
-  workbookQuantity: number;
-  creditsQuantity: number;
-  levelsInBlock: number;
-  blockStart: number;
-  blockEnd: number;
-  potentialType: PotentialType;
-}
-
-export interface PotentialLevels {
-  attack: {
-    current: number;
-    target: number;
-  };
-  maxhp: {
-    current: number;
-    target: number;
-  };
-  healpower: {
-    current: number;
-    target: number;
-  };
-}
-
-export interface PotentialSettings {
-  current: number;
-  target: number;
-  icon: string;
-  name: string;
-}
-
-// Define skill types
-export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
-
-export interface SkillMaterial {
+export interface Material {
   material: Record<string, any> | null;
   materialQuantity: number;
-  level: number;
-  blockStart?: number;
-  blockEnd?: number;
-  potentialType: PotentialType | SkillType;
+  type?: SkillType | PotentialType | 'level';
 }
-
 export interface SkillLevels {
   Ex: {
     current: number;
@@ -67,22 +26,36 @@ export interface SkillLevels {
   };
 }
 
-export interface SkillSettings {
+export interface PotentialLevels {
+  attack: {
+    current: number;
+    target: number;
+  };
+  maxhp: {
+    current: number;
+    target: number;
+  };
+  healpower: {
+    current: number;
+    target: number;
+  };
+}
+
+export interface SkillSettings extends PotentialSettings {
+  maxLevel: number;
+}
+
+export interface PotentialSettings {
   current: number;
   target: number;
   icon: string;
   name: string;
-  maxLevel: number;
-}
-
-export interface ExpMaterial {
-  material: Record<string, any> | null;
-  materialQuantity: number;
-  potentialType?: string;
 }
 
 // Constants
 export const CREDITS_ID = 5;
+
+export const EXP_REPORT_ID = [10, 11, 12, 13];
 
 export const WORKBOOK_ID = [2000, 2001, 2002];
 

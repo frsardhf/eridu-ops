@@ -201,12 +201,6 @@ export function useStudentGear(props: {
           }
         }
       }
-      // Add credits for this equipment level
-      materialsNeeded.push({
-        material: creditsData,
-        materialQuantity: equipmentCreditsTable[target-2],
-        equipmentType: type as EquipmentType
-      });
     });
 
     return materialsNeeded;

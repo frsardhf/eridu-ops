@@ -2,37 +2,12 @@
 import { computed, onMounted } from 'vue';
 import '../../../../styles/resourceDisplay.css';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
-
-// Define interfaces for material items
-interface BaseMaterial {
-  material: Record<string, any> | null;
-  credits?: Record<string, any> | null;
-  materialQuantity: number;
-  creditsQuantity?: number;
-}
-
-interface SkillMaterial extends BaseMaterial {
-  level?: number;
-  potentialType: string;
-}
-
-interface PotentialMaterial extends BaseMaterial {
-  workbook?: Record<string, any> | null;
-  workbookQuantity?: number;
-  levelsInBlock?: number;
-  blockStart?: number;
-  blockEnd?: number;
-  potentialType: string;
-}
-
-interface ExpMaterial extends BaseMaterial {
-  potentialType?: string;
-}
+import { Material } from '../../../../types/upgrade';
 
 const props = defineProps<{
-  skillMaterials: SkillMaterial[];
-  potentialMaterials: PotentialMaterial[];
-  expMaterials?: ExpMaterial[];
+  skillMaterials: Material[];
+  potentialMaterials: Material[];
+  expMaterials?: Material[];
   student?: Record<string, any> | null;
 }>();
 
@@ -68,7 +43,7 @@ const isExpReport = (materialId: number | undefined): boolean => {
 
 // Get exp materials and credits directly from props (already synchronized with resource calculation)
 const studentExpMaterials = computed(() => {
-  const result: ExpMaterial[] = [];
+  const result: Material[] = [];
   
   // Process exp materials from props (these are specific to this student)
   if (props.expMaterials && props.expMaterials.length > 0) {
@@ -82,7 +57,7 @@ const studentExpMaterials = computed(() => {
         result.push({
           material: item.material,
           materialQuantity: item.materialQuantity,
-          potentialType: item.potentialType || 'level'
+          type: 'level'
         });
       }
     }
@@ -136,20 +111,6 @@ const cumulativeMaterials = computed(() => {
         materialMap.set(materialId, {
           material: item.material,
           materialQuantity: item.materialQuantity,
-        });
-      }
-    }
-
-    // Process workbook
-    const workbookId = item.workbook?.Id;
-    if (workbookId) {
-      if (materialMap.has(workbookId)) {
-        const existingEntry = materialMap.get(workbookId);
-        existingEntry.materialQuantity += item.workbookQuantity || 0;
-      } else {
-        materialMap.set(workbookId, {
-          material: item.workbook,
-          materialQuantity: item.workbookQuantity || 0
         });
       }
     }

@@ -3,18 +3,14 @@ import { ref, watch } from 'vue';
 import { 
   PotentialType, 
   PotentialSettings,
-  PotentialMaterial
+  Material
 } from '../../../../types/upgrade';
 import '../../../../styles/studentUpgrade.css';
-
-interface MaterialItem extends Omit<PotentialMaterial, 'potentialType'> {
-  potentialType?: PotentialType;
-}
 
 const props = defineProps<{
   currentPotential: number;
   targetPotential: number;
-  materials: MaterialItem[];
+  materials: Material[];
   potentialLevels?: Record<PotentialType, { current: number; target: number }>;
 }>();
 
@@ -168,7 +164,7 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
   <div class="upgrade-section">
     <h3 class="section-title collapsible-header" @click="toggleExpand">
       <div class="collapsible-title">
-        <span>Potential</span>
+        <span>Talent</span>
         <div class="material-summary" v-if="!isExpanded">
       
         </div>
