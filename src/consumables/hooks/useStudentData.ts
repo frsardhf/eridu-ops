@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { StudentProps } from '../../types/student';
 import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
@@ -17,7 +17,10 @@ import {
   getResources, 
   getEquipments, 
   saveEquipments, 
-  getPinnedStudents 
+  getPinnedStudents,
+  setStorageData,
+  getStorageData,
+  STORAGE_KEYS
 } from '../utils/studentStorage';
 import { ResourceProps } from '../../types/resource';
 
@@ -89,8 +92,8 @@ export function useStudentData() {
   
   // Load saved sort preferences
   function loadSortPreferences() {
-    const savedSort = localStorage.getItem('sort-option') as SortOption;
-    const savedDirection = localStorage.getItem('sort-direction') as SortDirection;
+    const savedSort = getStorageData<SortOption>(STORAGE_KEYS.SORT_OPTION);
+    const savedDirection = getStorageData<SortDirection>(STORAGE_KEYS.SORT_DIRECTION);
     
     if (savedSort && ['id', 'name', 'default'].includes(savedSort)) {
       currentSort.value = savedSort;
@@ -103,8 +106,8 @@ export function useStudentData() {
 
   // Save sort preferences
   function saveSortPreferences() {
-    localStorage.setItem('sort-option', currentSort.value);
-    localStorage.setItem('sort-direction', sortDirection.value);
+    setStorageData(STORAGE_KEYS.SORT_OPTION, currentSort.value);
+    setStorageData(STORAGE_KEYS.SORT_DIRECTION, sortDirection.value);
   }
 
   // Change the sort option
@@ -132,7 +135,7 @@ export function useStudentData() {
     isDarkMode.value = !isDarkMode.value
     const theme = isDarkMode.value ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+    setStorageData(STORAGE_KEYS.THEME, theme);
   }
   
   // Update search query
@@ -432,7 +435,15 @@ export function useStudentData() {
     updateSortedStudents();
   }
 
-  initializeData()
+  onMounted(() => {
+    const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
+    if (savedTheme) {
+      isDarkMode.value = savedTheme === 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  });
+
+  initializeData();
 
   return {
     studentData,

@@ -8,6 +8,7 @@ import { ModalProps, StudentProps } from '../../../types/student';
 import { ResourceProps } from '../../../types/resource';
 import { SortOption } from '../../../types/header';
 import { GiftProps } from '../../../types/gift';
+import { getStorageData, STORAGE_KEYS } from '../../../consumables/utils/studentStorage';
 
 const {
   materialData,
@@ -92,10 +93,10 @@ function handleStudentPinned() {
 }
 
 onMounted(() => {
-  const savedTheme = localStorage.getItem('theme')
+  const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
   if (savedTheme) {
-    isDarkMode.value = savedTheme === 'dark'
-    document.documentElement.setAttribute('data-theme', savedTheme)
+    isDarkMode.value = savedTheme === 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
   }
 })
 </script>

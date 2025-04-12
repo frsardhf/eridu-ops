@@ -9,6 +9,9 @@ export const STORAGE_KEYS = {
   FORMS: 'forms',
   EQUIPMENTS: 'equipments',
   PINNED_STUDENTS: 'pinned-students',
+  THEME: 'theme',
+  SORT_OPTION: 'sort-option',
+  SORT_DIRECTION: 'sort-direction',
   // Add more keys as needed
 };
 
@@ -31,7 +34,6 @@ export function saveStudentData(
 
     // Add Gifts and Boxes to each student's data
     for (const studentId in updatedStudentData) {
-      // Convert arrays to objects with item IDs as keys
       const giftsObject = (favoredGift[studentId] || []).reduce((acc, item) => {
         acc[item.gift.Id] = item;
         return acc;
@@ -50,8 +52,7 @@ export function saveStudentData(
     }
 
     // Save entire students collection back to localStorage
-    localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(updatedStudentData));
-    return true;
+    return setStorageData(STORAGE_KEYS.STUDENTS, updatedStudentData);
   } catch (error) {
     console.error('Error saving student data to localStorage:', error);
     return false;
@@ -70,7 +71,6 @@ export function saveFormData(studentId: string | number, data: Record<string, an
   try {
     // Get all students data
     let studentsData = getDataCollection(STORAGE_KEYS.FORMS);
-    if (!studentsData) studentsData = {};
     
     // Get existing data for this student
     const existingStudentData = studentsData[studentId] || {};
@@ -83,8 +83,7 @@ export function saveFormData(studentId: string | number, data: Record<string, an
     };
     
     // Save entire students collection back to localStorage
-    localStorage.setItem(STORAGE_KEYS.FORMS, JSON.stringify(studentsData));
-    return true;
+    return setStorageData(STORAGE_KEYS.FORMS, studentsData);
   } catch (error) {
     console.error('Error saving student data to localStorage:', error);
     return false;
@@ -97,44 +96,54 @@ export function saveFormData(studentId: string | number, data: Record<string, an
  */
 export function getDataCollection(key: string): Record<string | number, any> {
   try {
+    const data = getStorageData(key);
+    return data || {};
+  } catch (error) {
+    console.error(`Error retrieving collection ${key} from localStorage:`, error);
+    return {};
+  }
+}
+
+/**
+ * Generic function to retrieve data from localStorage by key
+ * @param key The storage key to retrieve data from
+ * @returns The parsed data or null if not found
+ */
+export function getStorageData<T = Record<string, any>>(key: string): T | null {
+  try {
     const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : {};
+    if (!data) return null;
+    
+    // Check if the data is a plain string that shouldn't be parsed
+    if (key === STORAGE_KEYS.THEME || 
+        key === STORAGE_KEYS.SORT_OPTION || 
+        key === STORAGE_KEYS.SORT_DIRECTION) {
+      return data as unknown as T;
+    }
+    
+    // Otherwise parse as JSON
+    return JSON.parse(data);
   } catch (error) {
-    console.error('Error retrieving students collection from localStorage:', error);
-    return {};
+    console.error(`Error retrieving data from localStorage key ${key}:`, error);
+    return null;
   }
 }
 
 /**
- * Retrieves a single resource data from localStorage
- * @param id The ID of the resource
- * @returns The resource data or null if not found
+ * Retrieves resources data from localStorage
+ * @returns The resources data or null if not found
  */
-export function getResourceDataById(id: string | number): Record<string, any> | null {
-  try {
-    const resourcesData = getDataCollection(STORAGE_KEYS.RESOURCES);
-    return resourcesData[id] || null;
-  } catch (error) {
-    console.error('Error retrieving materials collection from localStorage:', error);
-    return {};
-  }
+export function getResources(): Record<string, any> | null {
+  return getStorageData(STORAGE_KEYS.RESOURCES);
 }
 
 /**
- * Retrieves a single resource data from localStorage
- * @param id The ID of the resource
- * @returns The resource data or null if not found
+ * Retrieves equipment data from localStorage
+ * @returns The equipment data or null if not found
  */
-export function getEquipmentDataById(id: string | number): Record<string, any> | null {
-  try {
-    const resourcesData = getDataCollection(STORAGE_KEYS.EQUIPMENTS);
-    return resourcesData[id] || null;
-  } catch (error) {
-    console.error('Error retrieving materials collection from localStorage:', error);
-    return {};
-  }
+export function getEquipments(): Record<string, any> | null {
+  return getStorageData(STORAGE_KEYS.EQUIPMENTS);
 }
-
 
 /**
  * Retrieves a single student's data from localStorage
@@ -200,29 +209,14 @@ export function saveResources(
     if (typeof resources === 'function') {
       const existingResources = getResources() || {};
       const newResources = resources(existingResources);
-      localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(newResources));
+      return setStorageData(STORAGE_KEYS.RESOURCES, newResources);
     } else {
       // Otherwise, just save the provided resources
-      localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(resources));
+      return setStorageData(STORAGE_KEYS.RESOURCES, resources);
     }
-    return true;
   } catch (error) {
     console.error('Error saving resources to localStorage:', error);
     return false;
-  }
-}
-
-/**
- * Retrieves resources data from localStorage
- * @returns The resources data or null if not found
- */
-export function getResources(): Record<string, any> | null {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.RESOURCES);
-    return data ? JSON.parse(data) : null;
-  } catch (error) {
-    console.error('Error retrieving resources from localStorage:', error);
-    return null;
   }
 }
 
@@ -292,29 +286,14 @@ export function saveEquipments(
     if (typeof equipments === 'function') {
       const existingEquipments = getEquipments() || {};
       const newEquipments = equipments(existingEquipments);
-      localStorage.setItem(STORAGE_KEYS.EQUIPMENTS, JSON.stringify(newEquipments));
+      return setStorageData(STORAGE_KEYS.EQUIPMENTS, newEquipments);
     } else {
       // Otherwise, just save the provided equipments
-      localStorage.setItem(STORAGE_KEYS.EQUIPMENTS, JSON.stringify(equipments));
+      return setStorageData(STORAGE_KEYS.EQUIPMENTS, equipments);
     }
-    return true;
   } catch (error) {
     console.error('Error saving equipments to localStorage:', error);
     return false;
-  }
-}
-
-/**
- * Retrieves equipment data from localStorage
- * @returns The equipment data or null if not found
- */
-export function getEquipments(): Record<string, any> | null {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.EQUIPMENTS);
-    return data ? JSON.parse(data) : null;
-  } catch (error) {
-    console.error('Error retrieving equipments from localStorage:', error);
-    return null;
   }
 }
 
@@ -387,14 +366,12 @@ export function togglePinnedStudent(studentId: string | number): boolean {
     if (isCurrentlyPinned) {
       // Remove from pinned if already pinned
       const updatedPinned = pinnedStudents.filter(id => id !== studentId.toString());
-      localStorage.setItem(STORAGE_KEYS.PINNED_STUDENTS, JSON.stringify(updatedPinned));
-      return false;
+      return setStorageData(STORAGE_KEYS.PINNED_STUDENTS, updatedPinned);
     } else {
       // Add to end of pinned list if not pinned
       // This preserves the original pin order (oldest first)
       pinnedStudents.push(studentId.toString());
-      localStorage.setItem(STORAGE_KEYS.PINNED_STUDENTS, JSON.stringify(pinnedStudents));
-      return true;
+      return setStorageData(STORAGE_KEYS.PINNED_STUDENTS, pinnedStudents);
     }
   } catch (error) {
     console.error('Error toggling pinned student:', error);
@@ -423,10 +400,73 @@ export function isStudentPinned(studentId: string | number): boolean {
  */
 export function getPinnedStudents(): string[] {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.PINNED_STUDENTS);
-    return data ? JSON.parse(data) : [];
+    const data = getStorageData<string[]>(STORAGE_KEYS.PINNED_STUDENTS);
+    return data || [];
   } catch (error) {
     console.error('Error retrieving pinned students from localStorage:', error);
     return [];
   }
+}
+
+/**
+ * Retrieves a single resource data from localStorage
+ * @param id The ID of the resource
+ * @returns The resource data or null if not found
+ */
+export function getResourceDataById(id: string | number): Record<string, any> | null {
+  try {
+    const resourcesData = getStorageData(STORAGE_KEYS.RESOURCES);
+    return resourcesData?.[id] || null;
+  } catch (error) {
+    console.error('Error retrieving resource by ID from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Retrieves a single equipment data from localStorage
+ * @param id The ID of the equipment
+ * @returns The equipment data or null if not found
+ */
+export function getEquipmentDataById(id: string | number): Record<string, any> | null {
+  try {
+    const equipmentData = getStorageData(STORAGE_KEYS.EQUIPMENTS);
+    return equipmentData?.[id] || null;
+  } catch (error) {
+    console.error('Error retrieving equipment by ID from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Generic function to set data in localStorage by key
+ * @param key The storage key to store data in
+ * @param data The data to store
+ * @returns True if successful, false otherwise
+ */
+export function setStorageData<T>(key: string, data: T): boolean {
+  try {
+    // Handle special cases for plain string values
+    if (key === STORAGE_KEYS.THEME || 
+        key === STORAGE_KEYS.SORT_OPTION || 
+        key === STORAGE_KEYS.SORT_DIRECTION) {
+      localStorage.setItem(key, data as unknown as string);
+    } else {
+      // For other data, stringify as JSON
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error storing data in localStorage key ${key}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Save the pinned students to localStorage
+ * @param studentIds List of student IDs to pin
+ * @returns True if successful, false otherwise
+ */
+export function savePinnedStudents(studentIds: string[]): boolean {
+  return setStorageData(STORAGE_KEYS.PINNED_STUDENTS, studentIds);
 }
