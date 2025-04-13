@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, computed, ref } from 'vue';
 import { StudentProps } from '../../../types/student'
-import StudentCard from './StudentCard.vue';
 import { getPinnedStudents } from '../../../consumables/utils/studentStorage';
+import StudentCard from './StudentCard.vue';
 
-// Update props to accept the array directly
 const props = defineProps<{ 
   studentsArray: StudentProps[]
 }>();
@@ -16,15 +15,11 @@ type EmitEvents = {
 
 const emit = defineEmits<EmitEvents>();
 
-// Use a reactive ref to track pinned students
 const pinnedStudents = ref<string[]>([]);
-
-// Initialize with data from localStorage
 pinnedStudents.value = getPinnedStudents();
 
 // Sort students with pinned ones first
 const sortedStudents = computed(() => {
-  // Split students into pinned and unpinned
   const pinnedStudentsList: StudentProps[] = [];
   const unpinnedStudentsList: StudentProps[] = [];
   

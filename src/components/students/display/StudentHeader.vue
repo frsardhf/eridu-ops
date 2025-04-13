@@ -4,6 +4,7 @@ import { HeaderProps, SortOption } from '../../../types/header';
 
 const props = defineProps<HeaderProps>();
 const dropdownOpen = ref(false);
+const mobileMenuOpen = ref(false);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
@@ -36,10 +37,22 @@ function toggleDropdown(event: Event) {
   dropdownOpen.value = !dropdownOpen.value;
 }
 
+function toggleMobileMenu() {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+}
+
 function handleClickOutside(event: MouseEvent) {
   const dropdown = document.getElementById('sort-dropdown');
+  const mobileMenu = document.getElementById('mobile-menu');
+  
   if (dropdown && !dropdown.contains(event.target as Node) && dropdownOpen.value) {
     dropdownOpen.value = false;
+  }
+  
+  if (mobileMenu && !mobileMenu.contains(event.target as Node) && 
+      !document.getElementById('mobile-menu-toggle')?.contains(event.target as Node) && 
+      mobileMenuOpen.value) {
+    mobileMenuOpen.value = false;
   }
 }
 
@@ -56,7 +69,7 @@ onBeforeUnmount(() => {
   <header class="page-header">
     <div class="header-content">
       <div class="header-main">
-        <div class="header-title-section">
+        <div class="header-title-section mobile-hidden">
           <h1 class="header-title">Students</h1>
           <div class="header-divider"></div>
         </div>
@@ -80,13 +93,12 @@ onBeforeUnmount(() => {
             </svg>
           </div>
           
-          <div class="sort-container" id="sort-dropdown">
+          <div class="sort-container desktop-only" id="sort-dropdown">
             <button 
               class="sort-button"
               :class="{ 'active': dropdownOpen }"
               type="button"
             >
-              <!-- Make sort direction icon clickable -->
               <span 
                 class="sort-icon" 
                 @click="toggleDirection"
@@ -102,7 +114,6 @@ onBeforeUnmount(() => {
                   <path d="M12 19V5M5 12l7 7 7-7"/>
                 </svg>
               </span>
-              <!-- Make the text part clickable for dropdown -->
               <span 
                 class="sort-text"
                 @click="toggleDropdown"
@@ -137,18 +148,104 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="theme-toggle">
-          <label class="switch" for="theme-toggle">
-            <input 
-              id="theme-toggle"
-              name="theme-toggle"
-              type="checkbox" 
-              :checked="isDarkMode"
-              @change="onToggleTheme"
-              aria-label="Toggle dark mode"
+        <div class="right-controls">
+          <div class="theme-toggle">
+            <label class="switch" for="theme-toggle">
+              <input 
+                id="theme-toggle"
+                name="theme-toggle"
+                type="checkbox" 
+                :checked="isDarkMode"
+                @change="onToggleTheme"
+                aria-label="Toggle dark mode"
+              >
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <button 
+            id="mobile-menu-toggle"
+            class="hamburger-button"
+            @click="toggleMobileMenu"
+            aria-label="Menu"
+          >
+            <div class="hamburger-icon" :class="{ 'open': mobileMenuOpen }">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="mobile-menu" class="mobile-menu" :class="{ 'open': mobileMenuOpen }">
+      <div class="mobile-menu-container">
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-heading">Sort by</h3>
+          <div class="mobile-menu-options">
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentSort === 'id' }"
+              @click="updateSortOption('id')"
             >
-            <span class="slider"></span>
-          </label>
+              ID
+            </button>
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentSort === 'name' }"
+              @click="updateSortOption('name')"
+            >
+              Name
+            </button>
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentSort === 'default' }"
+              @click="updateSortOption('default')"
+            >
+              Default
+            </button>
+          </div>
+          
+          <div class="mobile-menu-direction">
+            <span class="direction-label">Direction:</span>
+            <button 
+              class="direction-button"
+              @click="toggleDirection($event)"
+            >
+              {{ sortDirection === 'asc' ? 'Ascending' : 'Descending' }}
+              <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                stroke-width="2">
+                <path d="M12 5v14M19 12l-7-7-7 7"/>
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 19V5M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-heading">Data</h3>
+          <div class="mobile-menu-options">
+            <button class="mobile-menu-option">
+              Export Data
+            </button>
+            <button class="mobile-menu-option">
+              Import Data
+            </button>
+          </div>
+        </div>
+        
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-heading">App</h3>
+          <div class="mobile-menu-options">
+            <button class="mobile-menu-option">
+              Credits
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -164,6 +261,7 @@ onBeforeUnmount(() => {
     var(--header-gradient-end)
   );
   border-bottom: 1px solid var(--border-color);
+  position: relative;
 }
 
 .header-content {
@@ -175,7 +273,7 @@ onBeforeUnmount(() => {
 .header-main {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .header-title-section {
@@ -199,26 +297,38 @@ onBeforeUnmount(() => {
   border-radius: 2px;
 }
 
+.search-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+  justify-content: center;
+  max-width: 600px;
+  margin: 0 1rem;
+}
+
 .search-container {
   position: relative;
+  width: 100%;
+  max-width: 400px;
 }
 
 .search-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
   padding-right: 2.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  color: black;
-  background: white;
+  color: var(--text-primary);
+  background: var(--input-background);
   transition: all 0.2s;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #a0a5ff;
-  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
 }
 
 .search-icon {
@@ -228,14 +338,8 @@ onBeforeUnmount(() => {
   transform: translateY(-50%);
   width: 1.25rem;
   height: 1.25rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   pointer-events: none;
-}
-
-.search-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .sort-container {
@@ -319,9 +423,13 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
-/* Theme toggle styles */
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .theme-toggle {
-  margin-left: 1rem;
   display: flex;
   align-items: center;
 }
@@ -376,35 +484,211 @@ input:checked + .slider:before {
   transform: translateX(18px);
 }
 
-/* Media Queries */
+.hamburger-button {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  transition: background-color 0.2s;
+  border-radius: 50%;
+}
+
+.hamburger-button:hover {
+  background-color: rgba(var(--background-hover-rgb), 0.1);
+}
+
+.hamburger-icon {
+  width: 24px;
+  height: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger-icon span {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background-color: var(--text-primary);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-icon.open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-icon.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-icon.open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+.mobile-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 100%;
+  max-width: 300px;
+  background-color: var(--background-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 0 10px;
+  z-index: 1000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+.mobile-menu.open {
+  transform: translateX(0);
+}
+
+.mobile-menu-container {
+  padding: 1rem;
+}
+
+.mobile-menu-section {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.mobile-menu-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.mobile-menu-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: var(--text-primary);
+}
+
+.mobile-menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-menu-option {
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobile-menu-option:hover {
+  background-color: rgba(var(--background-hover-rgb), 0.1);
+}
+
+.mobile-menu-option.active {
+  background-color: rgba(var(--accent-color-rgb), 0.1);
+  font-weight: 500;
+}
+
+.mobile-menu-direction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 0 12px;
+}
+
+.direction-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.direction-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.direction-button:hover {
+  background-color: rgba(var(--background-hover-rgb), 0.1);
+}
+
+.desktop-only {
+  display: none;
+}
+
+.mobile-hidden {
+  display: block;
+}
+
+@media screen and (min-width: 769px) {
+  .desktop-only {
+    display: block;
+  }
+}
+
 @media screen and (max-width: 768px) {
   .page-header {
     padding: 1rem;
   }
-
+  
   .header-main {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.3rem;
+    align-items: center;
   }
-
+  
+  .mobile-hidden {
+    display: none;
+  }
+  
   .header-title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
-
+  
+  .header-divider {
+    width: 40px;
+  }
+  
   .search-section {
     max-width: none;
-    margin-bottom: 0;
+    gap: 5px;
   }
-
-  .theme-toggle {
-    margin-left: 0;
+  
+  .mobile-menu {
+    max-width: 100%;
+  }
+  
+  .search-container {
+    max-width: 100%;
   }
 }
 
-@media screen and (min-width: 1600px) {
-  .student-grid {
-    gap: 1.5rem;
+@media screen and (max-width: 480px) {
+  .search-section {
+    flex-grow: 1;
+  }
+  
+  .search-container {
+    max-width: none;
   }
 }
 </style>

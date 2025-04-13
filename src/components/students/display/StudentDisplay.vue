@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import StudentHeader from './StudentHeader.vue';
-import StudentGrid from './StudentGrid.vue';
-import StudentModal from '../modal/StudentModal.vue'
-import { useStudentData } from '../../../consumables/hooks/useStudentData';
 import { ModalProps, StudentProps } from '../../../types/student';
 import { ResourceProps } from '../../../types/resource';
 import { SortOption } from '../../../types/header';
 import { GiftProps } from '../../../types/gift';
+import { useStudentData } from '../../../consumables/hooks/useStudentData';
 import { getStorageData, STORAGE_KEYS } from '../../../consumables/utils/studentStorage';
+import StudentHeader from './StudentHeader.vue';
+import StudentGrid from './StudentGrid.vue';
+import StudentModal from '../modal/StudentModal.vue'
 
 const {
   materialData,
