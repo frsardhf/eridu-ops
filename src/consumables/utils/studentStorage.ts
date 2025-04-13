@@ -357,21 +357,18 @@ export function saveEquipmentsFromStudent(
  */
 export function togglePinnedStudent(studentId: string | number): boolean {
   try {
-    // Get current pinned students
     const pinnedStudents = getPinnedStudents();
     
-    // Toggle the status
     const isCurrentlyPinned = pinnedStudents.includes(studentId.toString());
     
     if (isCurrentlyPinned) {
-      // Remove from pinned if already pinned
       const updatedPinned = pinnedStudents.filter(id => id !== studentId.toString());
-      return setStorageData(STORAGE_KEYS.PINNED_STUDENTS, updatedPinned);
+      setStorageData(STORAGE_KEYS.PINNED_STUDENTS, updatedPinned);
+      return false;
     } else {
-      // Add to end of pinned list if not pinned
-      // This preserves the original pin order (oldest first)
       pinnedStudents.push(studentId.toString());
-      return setStorageData(STORAGE_KEYS.PINNED_STUDENTS, pinnedStudents);
+      setStorageData(STORAGE_KEYS.PINNED_STUDENTS, pinnedStudents);
+      return true;
     }
   } catch (error) {
     console.error('Error toggling pinned student:', error);

@@ -59,22 +59,10 @@ function handleOpenModal(student: StudentProps) {
   emit('openModal', student);
 }
 
+// Handle pin toggle by refresh from storage and re-render
 function handlePinToggled(studentId: string | number, isPinned: boolean) {
-  // Update our local pinnedStudents ref for immediate reactivity
-  const studentIdStr = studentId.toString();
-  
-  if (isPinned) {
-    // Add newly pinned student to the end of the array
-    // This matches the storage utility's behavior
-    if (!pinnedStudents.value.includes(studentIdStr)) {
-      pinnedStudents.value = [...pinnedStudents.value, studentIdStr];
-    }
-  } else {
-    // Remove from pinned list
-    pinnedStudents.value = pinnedStudents.value.filter(id => id !== studentIdStr);
-  }
-  
-  // Emit the event to parent
+  pinnedStudents.value = getPinnedStudents();
+  pinnedStudents.value = [...pinnedStudents.value];
   emit('studentPinned', studentId, isPinned);
 }
 </script>

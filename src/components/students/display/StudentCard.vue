@@ -13,7 +13,11 @@ const emit = defineEmits<{
 
 const isMobile = ref(false);
 const studentData = computed(() => getStudentData(props.student.Id));
-const isPinned = ref(false);
+const forceUpdate = ref(0);
+const isPinned = computed(() => {
+  const _ = forceUpdate.value;
+  return isStudentPinned(props.student.Id);
+});
 
 // Watch for changes in the store
 watch(() => studentData.value, () => {
@@ -29,8 +33,6 @@ onMounted(() => {
   checkScreenWidth();
   // Add resize listener
   window.addEventListener('resize', checkScreenWidth);
-  // Load initial pin status
-  isPinned.value = isStudentPinned(props.student.Id);
 });
 
 onUnmounted(() => {
@@ -139,15 +141,16 @@ const hasEquipmentData = computed(() => {
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation(); // Prevent card click event
   const newPinStatus = togglePinnedStudent(props.student.Id);
-  isPinned.value = newPinStatus;
+  forceUpdate.value++;
   emit('pin-toggled', props.student.Id, newPinStatus);
 }
 </script>
 
 <template>
-  <div class="student-card" @click="emit('click', student)">
-    <!-- Pin icon - moved outside card-img -->
-    <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle">
+  <div class="student-card" @click="emit('click', student)" :key="`card-${student.Id}-${isPinned}`">
+    <!-- Pin icon -->
+    <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle"
+      :key="`pin-${student.Id}-${isPinned}`">
       <img 
         src="/assets/push-pin.png" 
         :class="['pin-img', { 'pinned': isPinned }]"
@@ -455,7 +458,7 @@ function handlePinToggle(event: MouseEvent) {
   border-radius: 50%;
   padding: 7px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease;
+  transition: background-color 0.1s ease;
 }
 
 .pin-icon:hover {
@@ -472,7 +475,7 @@ function handlePinToggle(event: MouseEvent) {
   height: 100%;
   object-fit: contain;
   opacity: 0.7;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.1s ease;
 }
 
 .pin-img.pinned {
