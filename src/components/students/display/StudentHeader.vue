@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue';
-import { HeaderProps } from '../../../types/header';
-import { SortOption } from '../../../consumables/hooks/useStudentData';
+import { HeaderProps, SortOption } from '../../../types/header';
 
 const props = defineProps<HeaderProps>();
 const dropdownOpen = ref(false);
@@ -28,7 +27,7 @@ function updateSortOption(option: SortOption) {
 }
 
 function toggleDirection(event: Event) {
-  event.stopPropagation(); // Prevent the dropdown from toggling
+  event.stopPropagation();
   emit('toggleDirection');
 }
 
@@ -37,7 +36,6 @@ function toggleDropdown(event: Event) {
   dropdownOpen.value = !dropdownOpen.value;
 }
 
-// Close dropdown when clicking outside
 function handleClickOutside(event: MouseEvent) {
   const dropdown = document.getElementById('sort-dropdown');
   if (dropdown && !dropdown.contains(event.target as Node) && dropdownOpen.value) {
@@ -45,7 +43,6 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-// Use proper lifecycle hooks
 onMounted(() => {
   window.addEventListener('click', handleClickOutside);
 });
@@ -75,7 +72,9 @@ onBeforeUnmount(() => {
               class="search-input"
               placeholder="Search students..."
             />
-            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+              stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
@@ -93,10 +92,13 @@ onBeforeUnmount(() => {
                 @click="toggleDirection"
                 title="Toggle sort direction"
               >
-                <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                  stroke-width="2">
                   <path d="M12 5v14M19 12l-7-7-7 7"/>
                 </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 19V5M5 12l7 7 7-7"/>
                 </svg>
               </span>

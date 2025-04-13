@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { getDataCollection, getResources, getEquipments, getResourceDataById } from '../utils/studentStorage';
+import { getDataCollection, getEquipments, getResourceDataById } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
 import { EquipmentType } from '../../types/equipment';
 import { CREDITS_ID } from '../../types/upgrade';
@@ -38,7 +38,7 @@ export function useGearCalculation() {
     
     // Filter out students that don't have equipment data
     return Object.values(studentsData).filter(student => {
-      return formsData[student.Id] && formsData[student.Id].equipmentLevels;
+      return formsData[student.Id]?.equipmentLevels;
     }).map(student => {
       return {
         student,

@@ -1,9 +1,9 @@
 import { ref, computed, onMounted } from 'vue'
-import { StudentProps } from '../../types/student';
+import { StudentProps, FetchedData } from '../../types/student';
 import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
-import { FetchedData } from '../../types/student';
 import { 
+  ResourceProps,
   MATERIAL,
   EQUIPMENT,
   GENERIC_GIFT_TAGS,
@@ -22,7 +22,6 @@ import {
   getStorageData,
   STORAGE_KEYS
 } from '../utils/studentStorage';
-import { ResourceProps } from '../../types/resource';
 
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});

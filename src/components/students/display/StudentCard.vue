@@ -2,8 +2,12 @@
 import { StudentProps } from '../../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { getStudentData } from '../../../consumables/stores/studentStore'
+import { SkillType } from '../../../types/upgrade'
 import { EquipmentType } from '../../../types/equipment'
-import { isStudentPinned, togglePinnedStudent } from '../../../consumables/utils/studentStorage'
+import { 
+  isStudentPinned, 
+  togglePinnedStudent 
+} from '../../../consumables/utils/studentStorage'
 
 const props = defineProps<{ student: StudentProps }>();
 const emit = defineEmits<{
@@ -18,10 +22,10 @@ const isPinned = computed(() => {
   const _ = forceUpdate.value;
   return isStudentPinned(props.student.Id);
 });
+const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 
 // Watch for changes in the store
 watch(() => studentData.value, () => {
-  // This will trigger a re-render when the data changes
 }, { deep: true });
 
 function checkScreenWidth() {
@@ -29,91 +33,81 @@ function checkScreenWidth() {
 }
 
 onMounted(() => {
-  // Initial check
   checkScreenWidth();
-  // Add resize listener
   window.addEventListener('resize', checkScreenWidth);
 });
 
 onUnmounted(() => {
-  // Clean up listener
   window.removeEventListener('resize', checkScreenWidth);
 });
 
 function getFontSizeClass(name: string): string {
-  // For mobile screens (max-width: 768px)
   if (isMobile.value) {
-    if (name.length < 10) {
-      return 'text-lg'; 
-    } else {
-      return 'text-sm'; 
-    }
+    return name.length < 10 ? 'text-lg' : 'text-sm';
   }
   
-  // For desktop screens (normal sizing)
-  if (name.length < 10) {
-    return 'text-xl'; 
-  } else if (name.length < 13) {
-    return 'text-lg'; 
-  } else if (name.length < 17) {
-    return 'text-normal';
-  } else {
-    return 'text-sm';
+  switch (true) {
+    case name.length < 10:
+      return 'text-xl';
+    case name.length < 13:
+      return 'text-lg';
+    case name.length < 17:
+      return 'text-normal';
+    default:
+      return 'text-sm';
   }
 }
 
-// New function to determine if we should show target value
-function shouldShowTarget(current: number | undefined, target: number | undefined): boolean {
+function shouldShowTarget(
+  current: number | undefined, target: number | undefined
+): boolean {
   if (!current || !target) return false;
   return current !== target;
 }
 
-// New function to format skill values
-function formatSkillValue(value: number | undefined, isEx: boolean): string {
+function formatSkillValue(
+  value: number | undefined, isEx: boolean
+): string {
   if (!value) return '1';
-  
-  // For Ex skills, 5 is displayed as 'M'
   if (isEx && value === 5) return 'M';
-  
-  // For other skills, 10 is displayed as 'M'
   if (!isEx && value === 10) return 'M';
-  
   return value.toString();
 }
 
-// Computed property to determine if any skill has a different current and target value
 const hasAnySkillDifference = computed(() => {
   if (!studentData.value?.skillLevels) return false;
   
-  const skillLevels = studentData.value.skillLevels;
+  const skills = studentData.value.skillLevels;
   
-  // Check if any skill has a different current and target value
   return (
-    (skillLevels.Ex?.current !== skillLevels.Ex?.target && skillLevels.Ex?.current !== undefined && skillLevels.Ex?.target !== undefined) ||
-    (skillLevels.Public?.current !== skillLevels.Public?.target && skillLevels.Public?.current !== undefined && skillLevels.Public?.target !== undefined) ||
-    (skillLevels.Passive?.current !== skillLevels.Passive?.target && skillLevels.Passive?.current !== undefined && skillLevels.Passive?.target !== undefined) ||
-    (skillLevels.ExtraPassive?.current !== skillLevels.ExtraPassive?.target && skillLevels.ExtraPassive?.current !== undefined && skillLevels.ExtraPassive?.target !== undefined)
+    isDifferent(skills.Ex) ||
+    isDifferent(skills.Public) ||
+    isDifferent(skills.Passive) ||
+    isDifferent(skills.ExtraPassive)
   );
 });
 
-// New computed property to get equipment types for this student
+function isDifferent(
+  skill: { current?: number, target?: number } | undefined
+): boolean {
+  if (!skill?.current || !skill?.target) return false;
+  return skill.current !== skill.target;
+}
+
 const studentEquipment = computed(() => {
   return props.student.Equipment || [];
 });
 
-// Format equipment tier value
 function formatEquipmentTier(value: number | undefined): string {
   if (!value) return '1';
   return value.toString();
 }
 
-// Check if any equipment has different current and target values
 const hasAnyEquipmentDifference = computed(() => {
   if (!studentData.value?.equipmentLevels) return false;
   
   const equipmentLevels = studentData.value.equipmentLevels;
   
-  // Check each equipment type
   for (const type of studentEquipment.value) {
     const equipment = equipmentLevels[type as EquipmentType];
     if (equipment?.current !== equipment?.target && 
@@ -126,20 +120,17 @@ const hasAnyEquipmentDifference = computed(() => {
   return false;
 });
 
-// Get equipment items to display (limit to prevent overflow)
 const displayEquipment = computed(() => {
   return studentEquipment.value;
 });
 
-// Check if we have equipment data
 const hasEquipmentData = computed(() => {
   return studentData.value?.equipmentLevels && 
     Object.keys(studentData.value.equipmentLevels).length > 0;
 });
 
-// Handle pin toggle
 function handlePinToggle(event: MouseEvent) {
-  event.stopPropagation(); // Prevent card click event
+  event.stopPropagation();
   const newPinStatus = togglePinnedStudent(props.student.Id);
   forceUpdate.value++;
   emit('pin-toggled', props.student.Id, newPinStatus);
@@ -147,7 +138,8 @@ function handlePinToggle(event: MouseEvent) {
 </script>
 
 <template>
-  <div class="student-card" @click="emit('click', student)" :key="`card-${student.Id}-${isPinned}`">
+  <div class="student-card" @click="emit('click', student)" 
+    :key="`card-${student.Id}-${isPinned}`">
     <!-- Pin icon -->
     <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle"
       :key="`pin-${student.Id}-${isPinned}`">
@@ -179,9 +171,11 @@ function handlePinToggle(event: MouseEvent) {
           </div>
           
           <!-- Character Level -->
-          <div class="level-container" v-if="studentData?.currentCharacterLevel">
+          <div class="level-container" 
+            v-if="studentData?.currentCharacterLevel">
             <span class="level-number">{{ studentData.currentCharacterLevel }}</span>
-            <span class="level-max" v-if="shouldShowTarget(studentData.currentCharacterLevel,
+            <span class="level-max" 
+              v-if="shouldShowTarget(studentData.currentCharacterLevel,
               studentData.targetCharacterLevel
             )">/{{ studentData.targetCharacterLevel }}</span>
           </div>
@@ -189,7 +183,8 @@ function handlePinToggle(event: MouseEvent) {
           <!-- Bottom overlays container -->
           <div class="bottom-overlays">
             <!-- Equipment Levels -->
-            <div class="equipment-levels" v-if="hasEquipmentData && displayEquipment.length > 0">
+            <div class="equipment-levels" 
+              v-if="hasEquipmentData && displayEquipment.length > 0">
               <div class="equipment-row">
                 <span 
                   v-for="type in displayEquipment" 
@@ -215,31 +210,27 @@ function handlePinToggle(event: MouseEvent) {
             <!-- Skill Levels -->
             <div class="skill-levels" v-if="studentData?.skillLevels">
               <div class="skill-row">
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.Ex?.current, true) }}
-                </span>
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.Public?.current, false) }}
-                </span>
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.Passive?.current, false) }}
-                </span>
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.ExtraPassive?.current, false) }}
+                <span 
+                  v-for="skillType in skillTypes" 
+                  :key="skillType"
+                  class="skill-value"
+                >
+                  {{ formatSkillValue(
+                    studentData.skillLevels[skillType]?.current, 
+                    skillType === 'Ex'
+                  ) }}
                 </span>
               </div>
               <div class="skill-row" v-if="hasAnySkillDifference">
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.Ex?.target, true) }}
-                </span>
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.Public?.target, false) }}
-                </span>
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.Passive?.target, false) }}
-                </span>
-                <span class="skill-value">
-                  {{ formatSkillValue(studentData.skillLevels.ExtraPassive?.target, false) }}
+                <span 
+                  v-for="skillType in skillTypes" 
+                  :key="`target-${skillType}`"
+                  class="skill-value"
+                >
+                  {{ formatSkillValue(
+                    studentData.skillLevels[skillType]?.target, 
+                    skillType === 'Ex'
+                  ) }}
                 </span>
               </div>
             </div>
