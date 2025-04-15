@@ -12,6 +12,7 @@ import { useResourceCalculation } from '../../../consumables/hooks/useResourceCa
 import { useGearCalculation } from '../../../consumables/hooks/useGearCalculation';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
+import { debounce } from '../../../utils/debounce';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
@@ -39,18 +40,14 @@ const emit = defineEmits<EmitFn>();
 // 'bond', 'upgrade', 'gear', 'resources', 'equipment', or 'summary'
 const activeTab = ref('upgrade'); 
 
-// Get the resource calculation functions to manage refresh centrally
 const { refreshData: refreshResourceData, immediateRefresh: immediateResourceRefresh } = useResourceCalculation();
-// Get the gear calculation refresh function
 const { refreshData: refreshGearData } = useGearCalculation();
 
-// Function to refresh all data
 const refreshAllData = () => {
   refreshResourceData();
   refreshGearData();
 };
 
-// Central refresh function that can be called whenever data needs to be updated
 const refreshCalculations = (immediate = false) => {
   if (immediate) {
     immediateResourceRefresh();
@@ -58,6 +55,14 @@ const refreshCalculations = (immediate = false) => {
     refreshResourceData();
   }
 };
+
+const debouncedRefreshCalculations = debounce(() => {
+  refreshCalculations();
+}, 300);
+
+const debouncedRefreshAllData = debounce(() => {
+  refreshAllData();
+}, 300);
 
 const {
   closeModal,
@@ -113,21 +118,19 @@ const {
   equipmentMaterialsNeeded
 } = useStudentGear(props, emit);
 
-// Watch for visibility changes to load data when modal opens
+// Modify the watchers to use debounced functions
 watch(() => props.isVisible, (newValue) => {
   if (newValue && props.student) {
-    refreshAllData();
+    debouncedRefreshAllData();
   }
 }, { immediate: true });
 
-// Watch for student changes to refresh calculations
 watch(() => props.student, () => {
   if (props.isVisible) {
-    refreshAllData();
+    debouncedRefreshAllData();
   }
 });
 
-// Watch for tab changes to refresh data as needed
 watch(activeTab, (newTab) => {
   if (newTab === 'upgrade' || newTab === 'summary') {
     refreshResourceData();
@@ -138,14 +141,9 @@ watch(activeTab, (newTab) => {
   }
 });
 
-// Watch for changes in levels, potential, and skills to refresh calculations
 watch(
   [currentCharacterLevel, targetCharacterLevel, potentialLevels, skillLevels], 
-  () => {
-    if (props.isVisible) {
-      refreshCalculations();
-    }
-  }, 
+  debouncedRefreshCalculations,
   { deep: true }
 );
 

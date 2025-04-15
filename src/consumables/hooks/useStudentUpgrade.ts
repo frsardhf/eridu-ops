@@ -353,7 +353,12 @@ export function useStudentUpgrade(props: {
         // Extract material data
         const [workbookQuantity, materialQuality, materialQuantity, creditsQuantity] = blockData;
         
-        const workbookId = WORKBOOK_ID[type === 'maxhp' ? 0 : type === 'attack' ? 1 : 2];
+        const workbookTypeMap = {
+          'maxhp': 0,
+          'attack': 1,
+          'healpower': 2
+        };
+        const workbookId = WORKBOOK_ID[workbookTypeMap[type]];
         const materialId = props.student?.PotentialMaterial ?? 0;
         const actualMaterialId = materialQuality === 1 ? materialId : materialId + 1;
         
@@ -416,7 +421,6 @@ export function useStudentUpgrade(props: {
     if (value >= 0 && value <= 25) {
       potentialLevels.value.attack.current = value;
       
-      // Ensure target is always >= current
       if (potentialLevels.value.attack.target < value) {
         potentialLevels.value.attack.target = value;
       }
@@ -427,7 +431,6 @@ export function useStudentUpgrade(props: {
     if (value >= 0 && value <= 25) {
       potentialLevels.value.attack.target = value;
       
-      // Ensure current is always <= target
       if (potentialLevels.value.attack.current > value) {
         potentialLevels.value.attack.current = value;
       }
@@ -437,20 +440,17 @@ export function useStudentUpgrade(props: {
   // Function to handle updates from all potential types
   const handlePotentialUpdate = (type: PotentialType, current: number, target: number) => {
     if (current >= 0 && current <= 25 && target >= 0 && target <= 25) {
-      // Update the specified potential type
       potentialLevels.value[type].current = current;
       potentialLevels.value[type].target = target;
       
-      // Ensure current <= target
       if (potentialLevels.value[type].current > potentialLevels.value[type].target) {
         potentialLevels.value[type].target = potentialLevels.value[type].current;
       }
       
-      // Save changes and update materials immediately
       if (props.student && props.isVisible) {
         saveToLocalStorage();
         updateStudentData(props.student.Id);
-        immediateRefresh(); // Use immediate refresh for responsive UI
+        immediateRefresh(); 
       }
     }
   };
@@ -458,23 +458,20 @@ export function useStudentUpgrade(props: {
   // Function to handle updates for skill levels
   const handleSkillUpdate = (type: SkillType, current: number, target: number) => {
     if (current >= 1 && target >= current) {
-      // Update the specified skill type
       if (skillLevels.value[type]) {
         skillLevels.value[type].current = current;
         skillLevels.value[type].target = target;
         
-        // Explicitly trigger localStorage save and immediate refresh
         if (props.student && props.isVisible) {
           saveToLocalStorage();
           updateStudentData(props.student.Id);
-          immediateRefresh(); // Use immediate refresh for responsive UI
+          immediateRefresh(); 
         }
       }
     }
   };
 
   function closeModal() {
-    // Save the current state before closing
     saveToLocalStorage();
     emit('close');
   }
