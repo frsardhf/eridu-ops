@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { ModalProps, StudentProps } from '../../../types/student';
+import { 
+  PotentialType, 
+  SkillType 
+} from '../../../types/upgrade';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
@@ -32,7 +36,28 @@ const props = defineProps<{
 type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
 const emit = defineEmits<EmitFn>();
 
-const activeTab = ref('upgrade'); // 'bond', 'upgrade', 'resources', 'equipment', or 'summary'
+// 'bond', 'upgrade', 'gear', 'resources', 'equipment', or 'summary'
+const activeTab = ref('upgrade'); 
+
+// Get the resource calculation functions to manage refresh centrally
+const { refreshData: refreshResourceData, immediateRefresh: immediateResourceRefresh } = useResourceCalculation();
+// Get the gear calculation refresh function
+const { refreshData: refreshGearData } = useGearCalculation();
+
+// Function to refresh all data
+const refreshAllData = () => {
+  refreshResourceData();
+  refreshGearData();
+};
+
+// Central refresh function that can be called whenever data needs to be updated
+const refreshCalculations = (immediate = false) => {
+  if (immediate) {
+    immediateResourceRefresh();
+  } else {
+    refreshResourceData();
+  }
+};
 
 const {
   closeModal,
@@ -53,16 +78,12 @@ const {
 const {
   currentCharacterLevel,
   targetCharacterLevel,
-  currentPotentialLevel,
-  targetPotentialLevel,
   potentialLevels,
   skillLevels,
   potentialMaterialsNeeded,
   skillMaterialsNeeded,
   handleCharacterLevelInput,
   handleTargetCharacterLevelInput,
-  handleCurrentPotentialInput,
-  handleTargetPotentialInput,
   handlePotentialUpdate,
   handleSkillUpdate,
   remainingXp: characterRemainingXp,
@@ -92,24 +113,62 @@ const {
   equipmentMaterialsNeeded
 } = useStudentGear(props, emit);
 
-// Get the refresh function from useResourceCalculation
-const { refreshData } = useResourceCalculation();
+// Watch for visibility changes to load data when modal opens
+watch(() => props.isVisible, (newValue) => {
+  if (newValue && props.student) {
+    refreshAllData();
+  }
+}, { immediate: true });
 
-// Get the refresh function from useGearCalculation
-const { refreshData: refreshGearData } = useGearCalculation();
+// Watch for student changes to refresh calculations
+watch(() => props.student, () => {
+  if (props.isVisible) {
+    refreshAllData();
+  }
+});
 
 // Watch for tab changes to refresh data as needed
 watch(activeTab, (newTab) => {
   if (newTab === 'upgrade' || newTab === 'summary') {
-    // Refresh data when switching to tabs that need updated calculation
-    refreshData();
+    refreshResourceData();
   }
   
   if (newTab === 'gear' || newTab === 'summary') {
-    // Refresh gear data when switching to tabs that need equipment calculation
     refreshGearData();
   }
 });
+
+// Watch for changes in levels, potential, and skills to refresh calculations
+watch(
+  [currentCharacterLevel, targetCharacterLevel, potentialLevels, skillLevels], 
+  () => {
+    if (props.isVisible) {
+      refreshCalculations();
+    }
+  }, 
+  { deep: true }
+);
+
+// Add wrapper functions for handling UI updates that need immediate refresh
+const handleImmediatePotentialUpdate = (type: PotentialType, current: number, target: number) => {
+  handlePotentialUpdate(type, current, target);
+  refreshCalculations(true);
+};
+
+const handleImmediateSkillUpdate = (type: SkillType, current: number, target: number) => {
+  handleSkillUpdate(type, current, target);
+  refreshCalculations(true);
+};
+
+const handleImmediateMaxAllSkills = (checked: boolean) => {
+  toggleMaxAllSkills(checked);
+  refreshCalculations(true);
+};
+
+const handleImmediateMaxTargetSkills = (checked: boolean) => {
+  toggleMaxTargetSkills(checked);
+  refreshCalculations(true);
+};
 
 // Navigation functions
 function navigateToPrevious() {
@@ -151,6 +210,11 @@ function handleKeyDown(event: KeyboardEvent) {
 // Setup event listeners
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
+  
+  // Initial data refresh when component mounts
+  if (props.isVisible) {
+    refreshAllData();
+  }
 });
 
 onUnmounted(() => {
@@ -266,34 +330,25 @@ onUnmounted(() => {
           <div class="right-column">
             <StudentSkillSection
               :student="student"
-              :skill-levels="skillLevels || {
-                Ex: { current: 1, target: 1 },
-                Public: { current: 1, target: 1 },
-                Passive: { current: 1, target: 1 },
-                ExtraPassive: { current: 1, target: 1 }
-              }"
-              :materials="skillMaterialsNeeded || []"
+              :skill-levels="skillLevels"
+              :materials="skillMaterialsNeeded"
               :all-skills-maxed="allSkillsMaxed"
               :target-skills-maxed="targetSkillsMaxed"
-              @update-skill="handleSkillUpdate"
-              @toggle-max-skills="toggleMaxAllSkills"
-              @toggle-max-target="toggleMaxTargetSkills"
+              @update-skill="handleImmediateSkillUpdate"
+              @toggle-max-skills="handleImmediateMaxAllSkills"
+              @toggle-max-target="handleImmediateMaxTargetSkills"
             />
             
             <StudentPotentialSection
-              :current-potential="currentPotentialLevel"
-              :target-potential="targetPotentialLevel"
-              :materials="potentialMaterialsNeeded"
               :potential-levels="potentialLevels"
-              @update-current-potential="handleCurrentPotentialInput"
-              @update-target-potential="handleTargetPotentialInput"
-              @update-potential="handlePotentialUpdate"
+              :materials="potentialMaterialsNeeded"
+              @update-potential="handleImmediatePotentialUpdate"
             />
             
             <StudentMaterialsSection
-              :skill-materials="skillMaterialsNeeded || []"
-              :potential-materials="potentialMaterialsNeeded || []"
-              :exp-materials="charExpMaterialsNeeded || []"
+              :skill-materials="skillMaterialsNeeded"
+              :potential-materials="potentialMaterialsNeeded"
+              :exp-materials="charExpMaterialsNeeded"
               :student="student"
             />
           </div>

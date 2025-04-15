@@ -8,15 +8,11 @@ import {
 import '../../../../styles/studentUpgrade.css';
 
 const props = defineProps<{
-  currentPotential: number;
-  targetPotential: number;
   materials: Material[];
-  potentialLevels?: Record<PotentialType, { current: number; target: number }>;
+  potentialLevels: Record<PotentialType, { current: number; target: number }>;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update-current-potential', value: number): void;
-  (e: 'update-target-potential', value: number): void;
   (e: 'update-potential', type: PotentialType, current: number, target: number): void;
 }>();
 
@@ -31,47 +27,36 @@ const toggleExpand = () => {
 // Create potential settings for each type
 const potentialTypes = ref<Record<PotentialType, PotentialSettings>>({
   attack: {
-    current: props.currentPotential,
-    target: props.targetPotential,
+    current: props.potentialLevels.attack.current,
+    target: props.potentialLevels.attack.target,
     icon: 'item_icon_workbook_potentialattack',
     name: 'Attack'
   },
   maxhp: {
-    current: 0,
-    target: 0,
+    current: props.potentialLevels.maxhp.current,
+    target: props.potentialLevels.maxhp.target,
     icon: 'item_icon_workbook_potentialmaxhp',
     name: 'Max HP'
   },
   healpower: {
-    current: 0,
-    target: 0,
+    current: props.potentialLevels.healpower.current,
+    target: props.potentialLevels.healpower.target,
     icon: 'item_icon_workbook_potentialhealpower',
     name: 'Heal Power'
   }
 });
 
-// Watch for prop changes to update attack potential directly
-watch(() => props.currentPotential, (newVal) => {
-  potentialTypes.value.attack.current = newVal;
-}, { immediate: true });
-
-watch(() => props.targetPotential, (newVal) => {
-  potentialTypes.value.attack.target = newVal;
-}, { immediate: true });
-
-// Watch for changes to potentialLevels to update maxhp and healpower
+// Watch for changes to potentialLevels to update all potential types
 watch(() => props.potentialLevels, (newVal) => {
   if (newVal) {
-    // Update maxhp and healpower from potentialLevels prop
-    if (newVal.maxhp) {
-      potentialTypes.value.maxhp.current = newVal.maxhp.current;
-      potentialTypes.value.maxhp.target = newVal.maxhp.target;
-    }
-    
-    if (newVal.healpower) {
-      potentialTypes.value.healpower.current = newVal.healpower.current;
-      potentialTypes.value.healpower.target = newVal.healpower.target;
-    }
+    // Update all potential types from potentialLevels prop
+    Object.entries(newVal).forEach(([type, levels]) => {
+      const potType = type as PotentialType;
+      if (potentialTypes.value[potType]) {
+        potentialTypes.value[potType].current = levels.current;
+        potentialTypes.value[potType].target = levels.target;
+      }
+    });
   }
 }, { deep: true, immediate: true });
 
@@ -104,15 +89,7 @@ const updatePotentialCurrent = (type: PotentialType, value: number) => {
       potentialTypes.value[type].target = value;
     }
     
-    if (type === 'attack') {
-      emit('update-current-potential', value);
-      // Also update target if needed
-      if (potentialTypes.value[type].target < value) {
-        emit('update-target-potential', value);
-      }
-    }
-    
-    // For future enhancement
+    // Emit the update event
     emit('update-potential', type, value, potentialTypes.value[type].target);
   }
 };
@@ -127,20 +104,11 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
     if (potentialTypes.value[type].current > finalValue) {
       potentialTypes.value[type].current = finalValue;
       
-      // If this is attack type, also update the main values
-      if (type === 'attack') {
-        emit('update-current-potential', finalValue);
-      }
-      
       // Emit the update event for current as well
       emit('update-potential', type, finalValue, finalValue);
     } else {
       // Only emit target update
       emit('update-potential', type, potentialTypes.value[type].current, finalValue);
-    }
-    
-    if (type === 'attack') {
-      emit('update-target-potential', finalValue);
     }
   }
 };
