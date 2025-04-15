@@ -7,12 +7,19 @@ import '../../../../styles/resourceDisplay.css';
 // Define view options
 type ViewMode = 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing';
 
+// Define types for material items with remaining property
+interface MaterialWithRemaining {
+  material: Record<string, any> | null;
+  materialQuantity: number;
+  remaining: number;
+  type?: string;
+}
+
 // UI state
 const activeView = ref<ViewMode>('needed');
 const { 
   totalMaterialsNeeded, 
   materialsLeftover, 
-  refreshData, 
   getMaterialUsageByStudents 
 } = useResourceCalculation();
 
@@ -30,10 +37,10 @@ const hoveredItemId = ref<number | null>(null);
 const tooltipPosition = ref({ x: 0, y: 0 });
 
 // Materials that are missing (negative leftover)
-const missingMaterials = computed(() => {
+const missingMaterials = computed<MaterialWithRemaining[]>(() => {
   return materialsLeftover.value
-    .filter(item => item.remaining < 0)
-    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
+    .filter(item => (item as any).remaining < 0)
+    .sort((a, b) => (a as any).remaining - (b as any).remaining) as MaterialWithRemaining[]; // Sort by most negative first
 });
 
 // Check if the material is an exp report
@@ -197,7 +204,9 @@ const getMaterialIconSrc = (item: any): string => {
 
 // Refresh the data initially
 onMounted(() => {
-  refreshData();
+  // Both useResourceCalculation and useGearCalculation hooks 
+  // should now have access to persisted data by default.
+  // We're just refreshing the equipment data which might need recalculation
   refreshEquipmentData();
 });
 </script>

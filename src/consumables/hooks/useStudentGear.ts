@@ -12,7 +12,6 @@ import { EquipmentLevels, EquipmentMaterial, EquipmentType } from '../../types/e
 import {
   CREDITS_ID,
 } from '../../types/upgrade';
-import { useResourceCalculation } from './useResourceCalculation';
 import { updateStudentData } from '../stores/studentStore';
 
 // Add this type definition at the top of your file, near other type definitions
@@ -41,17 +40,11 @@ export function useStudentGear(props: {
   student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
-
-  // Import resource calculation hook to use material data
-  const { getMaterialUsageByStudents, refreshData } = useResourceCalculation();
-
   // Track all equipment levels in one object
   const equipmentLevels = ref<EquipmentLevels>({});
-
   
   const levelCreditsIds = CREDITS_ID;
   const creditsData = getResourceDataById(levelCreditsIds);
-
   const equipmentCreditsTable = dataTable.equipment_credits;
 
   // Reset form data
@@ -71,7 +64,6 @@ export function useStudentGear(props: {
     if (newValue && props.student) {
       setTimeout(() => {
         loadFromLocalStorage();
-        refreshData();
       }, 50);
     }
   }, { immediate: true });
@@ -82,7 +74,6 @@ export function useStudentGear(props: {
       resetFormData();
       if (props.isVisible) {
         loadFromLocalStorage();
-        refreshData();
       }
     }
   });
@@ -92,7 +83,6 @@ export function useStudentGear(props: {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
       updateStudentData(props.student.Id);
-      refreshData();
     }
   }, { deep: true });
 

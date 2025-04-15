@@ -16,10 +16,11 @@ import {
 import { 
   getResourceDataById, 
   loadFormDataToRefs, 
-  saveFormData 
+  saveFormData,
+  getResources
 } from '../utils/studentStorage';
 import dataTable from '../../data/data.json';
-import { useResourceCalculation } from './useResourceCalculation';
+import { updateMaterialsData } from '../stores/resourceStore';
 import { updateStudentData } from '../stores/studentStore';
 
 export function useStudentUpgrade(props: {
@@ -33,9 +34,6 @@ export function useStudentUpgrade(props: {
   const potentialLevels = ref<PotentialLevels>({...DEFAULT_POTENTIAL_LEVELS});
   const allSkillsMaxed = ref(false);
   const targetSkillsMaxed = ref(false);
-  
-  // Import resource calculation hook to use material data
-  const { getMaterialUsageByStudents, refreshData, immediateRefresh } = useResourceCalculation();
   
   const levelCreditsIds = CREDITS_ID;
   const creditsData = getResourceDataById(levelCreditsIds);
@@ -82,7 +80,7 @@ export function useStudentUpgrade(props: {
     saveToLocalStorage();
     if (props.student) {
       updateStudentData(props.student.Id);
-      immediateRefresh();
+      calculateAndStoreStudentMaterials();
     }
   };
   
@@ -108,7 +106,7 @@ export function useStudentUpgrade(props: {
     saveToLocalStorage();
     if (props.student) {
       updateStudentData(props.student.Id);
-      immediateRefresh();
+      calculateAndStoreStudentMaterials();
     }
   };
 
@@ -124,7 +122,7 @@ export function useStudentUpgrade(props: {
     if (newValue && props.student) {
       setTimeout(() => {
         loadFromLocalStorage();
-        refreshData();
+        calculateAndStoreStudentMaterials();
       }, 50);
     }
   }, { immediate: true });
@@ -135,7 +133,7 @@ export function useStudentUpgrade(props: {
       resetFormData();
       if (props.isVisible) {
         loadFromLocalStorage();
-        refreshData();
+        calculateAndStoreStudentMaterials();
       }
     }
   });
@@ -145,7 +143,6 @@ export function useStudentUpgrade(props: {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
       updateStudentData(props.student.Id);
-      refreshData();
     }
   }, { deep: true });
 
@@ -199,40 +196,90 @@ export function useStudentUpgrade(props: {
 
   const charExpMaterialsNeeded = computed<Material[]>(() => {
     const materialsNeeded: Material[] = [];
-    const expReportIds = EXP_REPORT_ID;
 
     if (!props.student?.Id) return materialsNeeded;
+    if (currentCharacterLevel.value >= targetCharacterLevel.value) return materialsNeeded;
 
-    if (currentCharacterLevel.value < targetCharacterLevel.value) {
-      for (const expId of expReportIds) {
-        const usageData = getMaterialUsageByStudents(expId);
-        const studentUsage = usageData.find(usage => usage.student.Id === props.student?.Id);
-        
-        if (studentUsage && studentUsage.quantity > 0) {
-          const expData = getResourceDataById(expId);
+    // Get the resources to access exp values
+    const resources = getResources() || {};
+    
+    // Calculate total XP needed
+    const currentXp = characterXpTable[currentCharacterLevel.value - 1] ?? 0;
+    const targetXp = characterXpTable[targetCharacterLevel.value - 1] ?? 0;
+    const totalXpNeeded = Math.max(0, targetXp - currentXp);
+    
+    if (totalXpNeeded <= 0) return materialsNeeded;
+
+    // Add credits for level upgrade
+    if (creditsData) {
+      // Get appropriate credits cost from the table if available
+      const characterXpCreditsTable = dataTable.character_credits ?? [];
+      let creditsCost = 50000;
+      
+      if (characterXpCreditsTable.length > 0) {
+        const currentLevelCreditCost = currentCharacterLevel.value > 0 ? 
+          characterXpCreditsTable[currentCharacterLevel.value - 1] : 0;
+        const targetLevelCreditCost = targetCharacterLevel.value > 0 ? 
+          characterXpCreditsTable[targetCharacterLevel.value - 1] : 0;
           
-          if (expData) {
-            materialsNeeded.push({
-              material: expData,
-              materialQuantity: studentUsage.quantity,
-              type: 'level'
-            });
-          }
+        creditsCost = targetLevelCreditCost - currentLevelCreditCost;
+      }
+      
+      if (creditsCost > 0) {
+        materialsNeeded.push({
+          material: creditsData,
+          materialQuantity: creditsCost,
+          type: 'level'
+        });
+      }
+    }
+
+    // Create an array of exp items in descending order of exp value
+    const expItems = [
+      { id: 13, value: resources['13']?.ExpValue || 400000 }, // Superior
+      { id: 12, value: resources['12']?.ExpValue || 100000 }, // Advanced
+      { id: 11, value: resources['11']?.ExpValue || 20000 },  // Normal
+      { id: 10, value: resources['10']?.ExpValue || 4000 }    // Novice
+    ].filter(item => item.value > 0);
+
+    let remainingXpNeeded = totalXpNeeded;
+    
+    // Calculate how many of each report we need based on an optimal distribution
+    // First try to use larger reports to minimize the total number of reports needed
+    for (const item of expItems) {
+      if (remainingXpNeeded <= 0) break;
+      
+      const expValue = item.value;
+      // How many of this report do we need
+      const neededCount = Math.floor(remainingXpNeeded / expValue);
+      
+      if (neededCount > 0) {
+        const expData = getResourceDataById(item.id);
+        if (expData) {
+          materialsNeeded.push({
+            material: expData,
+            materialQuantity: neededCount,
+            type: 'level'
+          });
         }
+        
+        // Update remaining XP needed
+        remainingXpNeeded -= neededCount * expValue;
       }
     }
     
-    // Always get credits usage for all upgrade types
-    const creditsUsage = getMaterialUsageByStudents(CREDITS_ID)
-      .filter(usage => usage.student.Id === props.student?.Id)
-      .reduce((total, usage) => total + usage.quantity, 0);
-    
-    if (creditsUsage > 0 && creditsData) {
-      materialsNeeded.push({
-        material: creditsData,
-        materialQuantity: creditsUsage,
-        type: 'level'
-      });
+    // Handle any remaining XP with the smallest report (round up)
+    if (remainingXpNeeded > 0 && expItems.length > 0) {
+      const smallestExp = expItems[expItems.length - 1];
+      const expData = getResourceDataById(smallestExp.id);
+      
+      if (expData) {
+        materialsNeeded.push({
+          material: expData,
+          materialQuantity: 1,
+          type: 'level'
+        });
+      }
     }
 
     return materialsNeeded;
@@ -271,8 +318,6 @@ export function useStudentUpgrade(props: {
         const levelMaterialIds = materialIds[level-1];
         const levelMaterialQuantities = materialQuantities[level-1];
         const levelCreditsQuantities = creditsQuantities[level-1];
-        
-        if (!levelMaterialIds || !levelMaterialQuantities) continue;
 
         // Special case: Add SECRET_TECH_NOTE for level 9 to 10 for non-Ex skills
         if (level === 9 && type !== 'Ex') {
@@ -289,6 +334,10 @@ export function useStudentUpgrade(props: {
             type: type as SkillType
           });
         }
+
+        // Needs to be placed after special case since 
+        // levelMaterialIds.length === N-1, Ex max length is 5, Non Ex max length is 10
+        if (!levelMaterialIds || !levelMaterialQuantities) continue;
         
         // Each level may need multiple materials, process each one
         for (let i = 0; i < levelMaterialIds.length; i++) {
@@ -353,12 +402,7 @@ export function useStudentUpgrade(props: {
         // Extract material data
         const [workbookQuantity, materialQuality, materialQuantity, creditsQuantity] = blockData;
         
-        const workbookTypeMap = {
-          'maxhp': 0,
-          'attack': 1,
-          'healpower': 2
-        };
-        const workbookId = WORKBOOK_ID[workbookTypeMap[type]];
+        const workbookId = WORKBOOK_ID[type === 'maxhp' ? 0 : type === 'attack' ? 1 : 2];
         const materialId = props.student?.PotentialMaterial ?? 0;
         const actualMaterialId = materialQuality === 1 ? materialId : materialId + 1;
         
@@ -421,6 +465,7 @@ export function useStudentUpgrade(props: {
     if (value >= 0 && value <= 25) {
       potentialLevels.value.attack.current = value;
       
+      // Ensure target is always >= current
       if (potentialLevels.value.attack.target < value) {
         potentialLevels.value.attack.target = value;
       }
@@ -431,6 +476,7 @@ export function useStudentUpgrade(props: {
     if (value >= 0 && value <= 25) {
       potentialLevels.value.attack.target = value;
       
+      // Ensure current is always <= target
       if (potentialLevels.value.attack.current > value) {
         potentialLevels.value.attack.current = value;
       }
@@ -440,17 +486,19 @@ export function useStudentUpgrade(props: {
   // Function to handle updates from all potential types
   const handlePotentialUpdate = (type: PotentialType, current: number, target: number) => {
     if (current >= 0 && current <= 25 && target >= 0 && target <= 25) {
+      // Update the specified potential type
       potentialLevels.value[type].current = current;
       potentialLevels.value[type].target = target;
       
+      // Ensure current <= target
       if (potentialLevels.value[type].current > potentialLevels.value[type].target) {
         potentialLevels.value[type].target = potentialLevels.value[type].current;
       }
       
+      // Save changes and update materials immediately
       if (props.student && props.isVisible) {
         saveToLocalStorage();
         updateStudentData(props.student.Id);
-        immediateRefresh(); 
       }
     }
   };
@@ -458,22 +506,108 @@ export function useStudentUpgrade(props: {
   // Function to handle updates for skill levels
   const handleSkillUpdate = (type: SkillType, current: number, target: number) => {
     if (current >= 1 && target >= current) {
+      // Update the specified skill type
       if (skillLevels.value[type]) {
         skillLevels.value[type].current = current;
         skillLevels.value[type].target = target;
         
+        // Explicitly trigger localStorage save and immediate refresh
         if (props.student && props.isVisible) {
           saveToLocalStorage();
           updateStudentData(props.student.Id);
-          immediateRefresh(); 
         }
       }
     }
   };
 
   function closeModal() {
+    // Save the current state before closing
     saveToLocalStorage();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+      calculateAndStoreStudentMaterials();
+    }
     emit('close');
+  }
+
+  // Add this function to calculate and store materials for a single student
+  const calculateAndStoreStudentMaterials = () => {
+    if (!props.student) return [];
+
+    // Simply use the allMaterialsNeeded computed property which already updates the store
+    return allMaterialsNeeded.value;
+  };
+
+  // Create a computed property for all materials needed for this student
+  const allMaterialsNeeded = computed<Material[]>(() => {
+    if (!props.student) return [];
+    
+    // Collect all materials
+    const materials: Material[] = [];
+    materials.push(...charExpMaterialsNeeded.value);
+    materials.push(...skillMaterialsNeeded.value);
+    materials.push(...potentialMaterialsNeeded.value);
+    
+    // Consolidate materials by ID
+    const materialMap = new Map<number, Material>();
+    
+    materials.forEach(item => {
+      const materialId = item.material?.Id;
+      if (!materialId) return;
+      
+      if (materialMap.has(materialId)) {
+        // Update quantity for existing material
+        const existing = materialMap.get(materialId)!;
+        existing.materialQuantity += item.materialQuantity;
+      } else {
+        // Create a new entry with a copy of the item
+        materialMap.set(materialId, { ...item });
+      }
+    });
+    
+    // Convert map to array and sort by ID
+    const sortedMaterials = Array.from(materialMap.values())
+      .sort((a, b) => {
+        const aId = a.material?.Id || 0;
+        const bId = b.material?.Id || 0;
+        
+        // Always put credits (ID: 5) first
+        if (aId === 5) return -1;
+        if (bId === 5) return 1;
+        
+        // Put exp reports next (IDs: 10, 11, 12, 13)
+        const isExpReport = (id: number) => [10, 11, 12, 13].includes(id);
+        const isExpReportA = isExpReport(aId);
+        const isExpReportB = isExpReport(bId);
+        
+        if (isExpReportA && !isExpReportB) return -1;
+        if (!isExpReportA && isExpReportB) return 1;
+        
+        // For all other materials, sort by ID
+        return aId - bId;
+      });
+    
+    // Update the resource store directly from this computed property
+    updateMaterialsData(props.student.Id, sortedMaterials);
+    
+    return sortedMaterials;
+  });
+
+  // Watch for changes that affect materials and update the store
+  watch([
+    currentCharacterLevel,
+    targetCharacterLevel,
+    skillLevels,
+    potentialLevels
+  ], () => {
+    if (props.student) {
+      calculateAndStoreStudentMaterials();
+    }
+  }, { deep: true });
+
+  // Run initial calculation
+  if (props.student) {
+    calculateAndStoreStudentMaterials();
   }
 
   return {
@@ -490,6 +624,7 @@ export function useStudentUpgrade(props: {
     potentialMaterialsNeeded,
     skillMaterialsNeeded,
     charExpMaterialsNeeded,
+    allMaterialsNeeded,
 
     // Methods
     closeModal,

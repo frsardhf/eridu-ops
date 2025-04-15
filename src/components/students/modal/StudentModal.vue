@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { ModalProps, StudentProps } from '../../../types/student';
-import { 
-  PotentialType, 
-  SkillType 
-} from '../../../types/upgrade';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
@@ -12,7 +8,6 @@ import { useResourceCalculation } from '../../../consumables/hooks/useResourceCa
 import { useGearCalculation } from '../../../consumables/hooks/useGearCalculation';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
-import { debounce } from '../../../utils/debounce';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentConvertBox.vue';
@@ -39,30 +34,6 @@ const emit = defineEmits<EmitFn>();
 
 // 'bond', 'upgrade', 'gear', 'resources', 'equipment', or 'summary'
 const activeTab = ref('upgrade'); 
-
-const { refreshData: refreshResourceData, immediateRefresh: immediateResourceRefresh } = useResourceCalculation();
-const { refreshData: refreshGearData } = useGearCalculation();
-
-const refreshAllData = () => {
-  refreshResourceData();
-  refreshGearData();
-};
-
-const refreshCalculations = (immediate = false) => {
-  if (immediate) {
-    immediateResourceRefresh();
-  } else {
-    refreshResourceData();
-  }
-};
-
-const debouncedRefreshCalculations = debounce(() => {
-  refreshCalculations();
-}, 300);
-
-const debouncedRefreshAllData = debounce(() => {
-  refreshAllData();
-}, 300);
 
 const {
   closeModal,
@@ -97,7 +68,8 @@ const {
   toggleMaxAllSkills,
   targetSkillsMaxed,
   toggleMaxTargetSkills,
-  charExpMaterialsNeeded
+  charExpMaterialsNeeded,
+  allMaterialsNeeded
 } = useStudentUpgrade(props, emit);
 
 const {
@@ -118,55 +90,24 @@ const {
   equipmentMaterialsNeeded
 } = useStudentGear(props, emit);
 
-// Modify the watchers to use debounced functions
-watch(() => props.isVisible, (newValue) => {
-  if (newValue && props.student) {
-    debouncedRefreshAllData();
-  }
-}, { immediate: true });
+// Update the hook references - remove ownedResources since it's not returned by the hook
+const {
+  totalMaterialsNeeded,
+  materialsLeftover,
+  getMaterialUsageByStudents,
+  getStudentMaterials
+} = useResourceCalculation();
 
-watch(() => props.student, () => {
-  if (props.isVisible) {
-    debouncedRefreshAllData();
-  }
-});
+// Keep the gear calculation refresh function
+const { refreshData: refreshGearData } = useGearCalculation();
 
+// Add a computed property to reactive get all students data from stores
 watch(activeTab, (newTab) => {
-  if (newTab === 'upgrade' || newTab === 'summary') {
-    refreshResourceData();
-  }
-  
+  // Only refresh gear data when needed
   if (newTab === 'gear' || newTab === 'summary') {
     refreshGearData();
   }
 });
-
-watch(
-  [currentCharacterLevel, targetCharacterLevel, potentialLevels, skillLevels], 
-  debouncedRefreshCalculations,
-  { deep: true }
-);
-
-// Add wrapper functions for handling UI updates that need immediate refresh
-const handleImmediatePotentialUpdate = (type: PotentialType, current: number, target: number) => {
-  handlePotentialUpdate(type, current, target);
-  refreshCalculations(true);
-};
-
-const handleImmediateSkillUpdate = (type: SkillType, current: number, target: number) => {
-  handleSkillUpdate(type, current, target);
-  refreshCalculations(true);
-};
-
-const handleImmediateMaxAllSkills = (checked: boolean) => {
-  toggleMaxAllSkills(checked);
-  refreshCalculations(true);
-};
-
-const handleImmediateMaxTargetSkills = (checked: boolean) => {
-  toggleMaxTargetSkills(checked);
-  refreshCalculations(true);
-};
 
 // Navigation functions
 function navigateToPrevious() {
@@ -208,11 +149,6 @@ function handleKeyDown(event: KeyboardEvent) {
 // Setup event listeners
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
-  
-  // Initial data refresh when component mounts
-  if (props.isVisible) {
-    refreshAllData();
-  }
 });
 
 onUnmounted(() => {
@@ -332,21 +268,22 @@ onUnmounted(() => {
               :materials="skillMaterialsNeeded"
               :all-skills-maxed="allSkillsMaxed"
               :target-skills-maxed="targetSkillsMaxed"
-              @update-skill="handleImmediateSkillUpdate"
-              @toggle-max-skills="handleImmediateMaxAllSkills"
-              @toggle-max-target="handleImmediateMaxTargetSkills"
+              @update-skill="handleSkillUpdate"
+              @toggle-max-skills="toggleMaxAllSkills"
+              @toggle-max-target="toggleMaxTargetSkills"
             />
             
             <StudentPotentialSection
               :potential-levels="potentialLevels"
               :materials="potentialMaterialsNeeded"
-              @update-potential="handleImmediatePotentialUpdate"
+              @update-potential="handlePotentialUpdate"
             />
             
             <StudentMaterialsSection
               :skill-materials="skillMaterialsNeeded"
               :potential-materials="potentialMaterialsNeeded"
               :exp-materials="charExpMaterialsNeeded"
+              :all-materials="allMaterialsNeeded"
               :student="student"
             />
           </div>

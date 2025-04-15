@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   THEME: 'theme',
   SORT_OPTION: 'sort-option',
   SORT_DIRECTION: 'sort-direction',
+  MATERIALS: 'materials',
   // Add more keys as needed
 };
 
@@ -155,7 +156,7 @@ export function getFormData(studentId: string | number): Record<string, any> | n
   
   try {
     const studentsData = getDataCollection(STORAGE_KEYS.FORMS)
-    return studentsData[studentId] || null;
+    return studentsData[studentId] ?? null;
   } catch (error) {
     console.error('Error retrieving form data from localStorage:', error);
     return null;
@@ -466,4 +467,54 @@ export function setStorageData<T>(key: string, data: T): boolean {
  */
 export function savePinnedStudents(studentIds: string[]): boolean {
   return setStorageData(STORAGE_KEYS.PINNED_STUDENTS, studentIds);
+}
+
+/**
+ * Saves materials data to localStorage
+ * @param studentId The ID of the student
+ * @param materials The materials data to save
+ * @returns boolean indicating success or failure
+ */
+export function saveMaterialsData(studentId: string | number, materials: any[]): boolean {
+  try {
+    // Get all materials data
+    let materialsData = getDataCollection(STORAGE_KEYS.MATERIALS);
+    
+    // Update the materials for this student
+    materialsData[studentId] = materials;
+    
+    // Save entire materials collection back to localStorage
+    return setStorageData(STORAGE_KEYS.MATERIALS, materialsData);
+  } catch (error) {
+    console.error('Error saving materials data to localStorage:', error);
+    return false;
+  }
+}
+
+/**
+ * Retrieves materials data for a specific student from localStorage
+ * @param studentId The ID of the student
+ * @returns The materials data or null if not found
+ */
+export function getMaterialsData(studentId: string | number): any[] | null {
+  try {
+    const materialsData = getDataCollection(STORAGE_KEYS.MATERIALS);
+    return materialsData[studentId] ?? null;
+  } catch (error) {
+    console.error('Error retrieving materials data from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Retrieves all materials data from localStorage
+ * @returns All materials data or empty object if not found
+ */
+export function getAllMaterialsData(): Record<string, any[]> {
+  try {
+    return getDataCollection(STORAGE_KEYS.MATERIALS);
+  } catch (error) {
+    console.error('Error retrieving all materials data from localStorage:', error);
+    return {};
+  }
 }
