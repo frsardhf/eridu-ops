@@ -7,40 +7,276 @@ import {
   PotentialType,
   PotentialLevels,
   CREDITS_ID,
-  EXP_REPORT_ID,
   WORKBOOK_ID,
   SECRET_TECH_NOTE_ID,
   DEFAULT_SKILL_LEVELS,
-  DEFAULT_POTENTIAL_LEVELS
+  DEFAULT_POTENTIAL_LEVELS,
+  DEFAULT_CHARACTER_LEVELS,
+  CharacterLevels
 } from '../../types/upgrade';
 import { 
   getResourceDataById, 
   loadFormDataToRefs, 
-  saveFormData,
-  getResources
+  saveFormData
 } from '../utils/studentStorage';
+import { consolidateAndSortMaterials } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
-import { updateMaterialsData } from '../stores/resourceStore';
+import { updateMaterialsData } from '../stores/materialsStore';
 import { updateStudentData } from '../stores/studentStore';
+
+export function calculateLevelMaterials(
+  student: StudentProps | null,
+  characterLevels: CharacterLevels
+): Material[] {
+  const materialsNeeded: Material[] = [];
+
+  if (!student?.Id) return materialsNeeded;
+  if (characterLevels.current >= characterLevels.target) return materialsNeeded;
+
+  const creditsData = getResourceDataById(CREDITS_ID);
+  const characterXpTable = dataTable.character_xp;
+  
+  const currentXp = characterXpTable[characterLevels.current - 1] ?? 0;
+  const targetXp = characterXpTable[characterLevels.target - 1] ?? 0;
+  const totalXpNeeded = Math.max(0, targetXp - currentXp);
+  
+  if (totalXpNeeded <= 0) return materialsNeeded;
+
+  // Add credits for level upgrade
+  if (creditsData) {
+    const characterXpCreditsTable = dataTable.character_credits ?? [];
+    let creditsCost = 0;
+    
+    if (characterXpCreditsTable.length > 0) {
+      const currentLevelCreditCost = characterLevels.current > 0 ? 
+        characterXpCreditsTable[characterLevels.current - 1] : 0;
+      const targetLevelCreditCost = characterLevels.target > 0 ? 
+        characterXpCreditsTable[characterLevels.target - 1] : 0;
+        
+      creditsCost = targetLevelCreditCost - currentLevelCreditCost;
+    }
+    
+    if (creditsCost > 0) {
+      materialsNeeded.push({
+        material: creditsData,
+        materialQuantity: creditsCost,
+        type: 'credits'
+      });
+    }
+  }
+
+  return materialsNeeded;
+}
+
+export function calculateSkillMaterials(
+  student: StudentProps | null,
+  skillLevels: SkillLevels
+): Material[] {
+  const materialsNeeded: Material[] = [];
+ 
+  if (!student?.Id) return materialsNeeded;
+
+  const creditsData = getResourceDataById(CREDITS_ID);
+  const exskillCreditsTable = dataTable.exskill_credits;
+  const skillCreditsTable = dataTable.skill_credits;
+
+  Object.entries(skillLevels).forEach(([type, levels]) => {
+    const { current, target } = levels;
+    
+    if (current >= target) return;
+
+    let materialIds: number[][] | null = null;
+    let materialQuantities: number[][] | null = null;
+    let creditsQuantities: number[] | null = null;
+
+    // Determine which material data to use based on skill type
+    if (type === 'Ex') {
+      materialIds = student?.SkillExMaterial ?? null;
+      materialQuantities = student?.SkillExMaterialAmount ?? null;
+      creditsQuantities = exskillCreditsTable;
+    } else {
+      materialIds = student?.SkillMaterial ?? null;
+      materialQuantities = student?.SkillMaterialAmount ?? null;
+      creditsQuantities = skillCreditsTable;
+    }
+
+    if (!materialIds || !materialQuantities) return;
+
+    // Calculate materials for each level
+    for (let level = current; level < target; level++) {
+
+      const levelMaterialIds = materialIds[level-1];
+      const levelMaterialQuantities = materialQuantities[level-1];
+      const levelCreditsQuantities = creditsQuantities[level-1];
+
+      // Special case: Add SECRET_TECH_NOTE for level 9 to 10 for non-Ex skills
+      if (level === 9 && type !== 'Ex') {
+        const secretTechData = getResourceDataById(SECRET_TECH_NOTE_ID);
+        materialsNeeded.push({
+          material: secretTechData,
+          materialQuantity: 1,
+          type: 'special'
+        });
+
+        materialsNeeded.push({
+          material: creditsData,
+          materialQuantity: 4000000,
+          type: 'credits'
+        });
+      }
+
+      // Needs to be placed after special case since 
+      // levelMaterialIds.length === N-1, Ex max length is 5, Non Ex max length is 10
+      if (!levelMaterialIds || !levelMaterialQuantities) continue;
+      
+      // Each level may need multiple materials, process each one
+      for (let i = 0; i < levelMaterialIds.length; i++) {
+        const materialId = levelMaterialIds[i];
+        const quantity = levelMaterialQuantities[i];
+        
+        if (!materialId || !quantity) continue;
+        
+        const materialData = getResourceDataById(materialId);
+        
+        materialsNeeded.push({
+          material: materialData,
+          materialQuantity: quantity,
+          type: 'materials'
+        });
+      }
+
+      materialsNeeded.push({
+        material: creditsData,
+        materialQuantity: levelCreditsQuantities,
+        type: 'credits'
+      });
+    }
+  });
+  
+  return materialsNeeded;
+}
+
+export function calculatePotentialMaterials(
+  student: StudentProps | null,
+  potentialLevels: PotentialLevels
+): Material[] {
+  const materialsNeeded: Material[] = [];
+
+  if (!student?.Id || !dataTable.potential) return materialsNeeded;
+
+  const potentialMaterials = dataTable.potential;
+  const creditsData = getResourceDataById(CREDITS_ID);
+
+  function processPotentialBlock(
+    type: string,
+    block: number,
+    current: number,
+    target: number
+  ): Material[] {
+    const result: Material[] = [];
+    if (block >= potentialMaterials.length) return result;
+
+    const blockData = potentialMaterials[block];
+    if (!blockData) return result;
+
+    let levelsInBlock = 5;
+    if (block === Math.floor(current / 5)) {
+      levelsInBlock = 5 - (current % 5);
+    }
+    if (block === Math.floor((target - 1) / 5)) {
+      const remainder = target % 5;
+      if (remainder > 0) {
+        levelsInBlock = remainder;
+      }
+    }
+
+    const [workbookQuantity, materialQuality, materialQuantity, creditsQuantity] = blockData;
+
+    let workbookIndex: number;
+    if (type === 'maxhp') {
+      workbookIndex = 0;
+    } else if (type === 'attack') {
+      workbookIndex = 1;
+    } else {
+      workbookIndex = 2;
+    }
+    const workbookId = WORKBOOK_ID[workbookIndex];
+    const materialId = student?.PotentialMaterial ?? 0;
+    const actualMaterialId = materialQuality === 1 ? materialId : materialId + 1;
+
+    const materialData = getResourceDataById(actualMaterialId);
+    const workbookData = getResourceDataById(workbookId);
+
+    const scaledMaterialQuantity = Math.ceil(materialQuantity * levelsInBlock);
+    const scaledWorkbookQuantity = Math.ceil(workbookQuantity * levelsInBlock);
+    const scaledCreditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
+
+    result.push(
+      {
+        material: materialData,
+        materialQuantity: scaledMaterialQuantity,
+        type: 'materials'
+      },
+      {
+        material: workbookData,
+        materialQuantity: scaledWorkbookQuantity,
+        type: 'materials'
+      },
+      {
+        material: creditsData,
+        materialQuantity: scaledCreditsQuantity,
+        type: 'credits'
+      }
+    );
+    return result;
+  }
+
+  Object.entries(potentialLevels).forEach(([type, levels]) => {
+    const { current, target } = levels;
+    if (current >= target) return;
+
+    const startBlock = Math.floor(current / 5);
+    const endBlock = Math.floor((target - 1) / 5);
+
+    for (let block = startBlock; block <= endBlock; block++) {
+      const blockMaterials = processPotentialBlock(type, block, current, target);
+      materialsNeeded.push(...blockMaterials);
+    }
+  });
+
+  return materialsNeeded;
+}
+
+export function calculateAllMaterials(
+  student: StudentProps | null,
+  characterLevels: CharacterLevels,
+  skillLevels: SkillLevels,
+  potentialLevels: PotentialLevels,
+): Material[] {
+  if (!student) return [];
+  
+  // Collect all materials
+  const materials: Material[] = [];
+  materials.push(...calculateLevelMaterials(student, characterLevels));
+  materials.push(...calculateSkillMaterials(student, skillLevels));
+  materials.push(...calculatePotentialMaterials(student, potentialLevels));
+  
+  // Consolidate and sort materials
+  return consolidateAndSortMaterials(materials);
+}
 
 export function useStudentUpgrade(props: {
   student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
 
-  const currentCharacterLevel = ref(1);
-  const targetCharacterLevel = ref(1);
+  const characterLevels = ref<CharacterLevels>({...DEFAULT_CHARACTER_LEVELS});
   const skillLevels = ref<SkillLevels>({...DEFAULT_SKILL_LEVELS});
   const potentialLevels = ref<PotentialLevels>({...DEFAULT_POTENTIAL_LEVELS});
   const allSkillsMaxed = ref(false);
   const targetSkillsMaxed = ref(false);
   
-  const levelCreditsIds = CREDITS_ID;
-  const creditsData = getResourceDataById(levelCreditsIds);
-
   const characterXpTable = dataTable.character_xp;
-  const exskillCreditsTable = dataTable.exskill_credits;
-  const skillCreditsTable = dataTable.skill_credits;
   const potentialMaterials = dataTable.potential;
 
   const checkAllSkillsMaxed = () => {
@@ -111,8 +347,7 @@ export function useStudentUpgrade(props: {
   };
 
   function resetFormData() {
-    currentCharacterLevel.value = 1;
-    targetCharacterLevel.value = 1;
+    characterLevels.value = {...DEFAULT_CHARACTER_LEVELS};
     potentialLevels.value = {...DEFAULT_POTENTIAL_LEVELS};
     skillLevels.value = {...DEFAULT_SKILL_LEVELS};
   }
@@ -139,7 +374,7 @@ export function useStudentUpgrade(props: {
   });
 
   // Watch for changes to form data and save to localStorage
-  watch([currentCharacterLevel, targetCharacterLevel, skillLevels, potentialLevels], () => {
+  watch([characterLevels, skillLevels, potentialLevels], () => {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
       updateStudentData(props.student.Id);
@@ -155,8 +390,7 @@ export function useStudentUpgrade(props: {
     if (!props.student) return;
     
     const dataToSave = {
-      currentCharacterLevel: currentCharacterLevel.value,
-      targetCharacterLevel: targetCharacterLevel.value,
+      characterLevels: characterLevels.value,
       potentialLevels: potentialLevels.value,
       skillLevels: skillLevels.value
     };
@@ -168,15 +402,13 @@ export function useStudentUpgrade(props: {
     if (!props.student) return;
 
     const refs = {
-      currentCharacterLevel,
-      targetCharacterLevel,
+      characterLevels,
       potentialLevels,
       skillLevels
     };
     
     const defaultValues = {
-      currentCharacterLevel: 1,
-      targetCharacterLevel: 1,
+      characterLevels: DEFAULT_CHARACTER_LEVELS,
       potentialLevels: DEFAULT_POTENTIAL_LEVELS,
       skillLevels: DEFAULT_SKILL_LEVELS
     };
@@ -185,8 +417,8 @@ export function useStudentUpgrade(props: {
   }
 
   const totalCumulativeExp = computed(() => {
-    const currentXp = characterXpTable[currentCharacterLevel.value - 1] || 0;
-    const targetXp = characterXpTable[targetCharacterLevel.value - 1] || 0;
+    const currentXp = characterXpTable[characterLevels.value.current - 1] ?? 0;
+    const targetXp = characterXpTable[characterLevels.value.target - 1] ?? 0;
     return Math.max(0, targetXp - currentXp);
   });
 
@@ -194,248 +426,32 @@ export function useStudentUpgrade(props: {
     return totalCumulativeExp.value;
   });
 
-  const charExpMaterialsNeeded = computed<Material[]>(() => {
-    const materialsNeeded: Material[] = [];
-
-    if (!props.student?.Id) return materialsNeeded;
-    if (currentCharacterLevel.value >= targetCharacterLevel.value) return materialsNeeded;
-
-    // Get the resources to access exp values
-    const resources = getResources() || {};
-    
-    // Calculate total XP needed
-    const currentXp = characterXpTable[currentCharacterLevel.value - 1] ?? 0;
-    const targetXp = characterXpTable[targetCharacterLevel.value - 1] ?? 0;
-    const totalXpNeeded = Math.max(0, targetXp - currentXp);
-    
-    if (totalXpNeeded <= 0) return materialsNeeded;
-
-    // Add credits for level upgrade
-    if (creditsData) {
-      // Get appropriate credits cost from the table if available
-      const characterXpCreditsTable = dataTable.character_credits ?? [];
-      let creditsCost = 50000;
-      
-      if (characterXpCreditsTable.length > 0) {
-        const currentLevelCreditCost = currentCharacterLevel.value > 0 ? 
-          characterXpCreditsTable[currentCharacterLevel.value - 1] : 0;
-        const targetLevelCreditCost = targetCharacterLevel.value > 0 ? 
-          characterXpCreditsTable[targetCharacterLevel.value - 1] : 0;
-          
-        creditsCost = targetLevelCreditCost - currentLevelCreditCost;
-      }
-      
-      if (creditsCost > 0) {
-        materialsNeeded.push({
-          material: creditsData,
-          materialQuantity: creditsCost,
-          type: 'level'
-        });
-      }
-    }
-
-    // Create an array of exp items in descending order of exp value
-    const expItems = [
-      { id: 13, value: resources['13']?.ExpValue || 400000 }, // Superior
-      { id: 12, value: resources['12']?.ExpValue || 100000 }, // Advanced
-      { id: 11, value: resources['11']?.ExpValue || 20000 },  // Normal
-      { id: 10, value: resources['10']?.ExpValue || 4000 }    // Novice
-    ].filter(item => item.value > 0);
-
-    let remainingXpNeeded = totalXpNeeded;
-    
-    // Calculate how many of each report we need based on an optimal distribution
-    // First try to use larger reports to minimize the total number of reports needed
-    for (const item of expItems) {
-      if (remainingXpNeeded <= 0) break;
-      
-      const expValue = item.value;
-      // How many of this report do we need
-      const neededCount = Math.floor(remainingXpNeeded / expValue);
-      
-      if (neededCount > 0) {
-        const expData = getResourceDataById(item.id);
-        if (expData) {
-          materialsNeeded.push({
-            material: expData,
-            materialQuantity: neededCount,
-            type: 'level'
-          });
-        }
-        
-        // Update remaining XP needed
-        remainingXpNeeded -= neededCount * expValue;
-      }
-    }
-    
-    // Handle any remaining XP with the smallest report (round up)
-    if (remainingXpNeeded > 0 && expItems.length > 0) {
-      const smallestExp = expItems[expItems.length - 1];
-      const expData = getResourceDataById(smallestExp.id);
-      
-      if (expData) {
-        materialsNeeded.push({
-          material: expData,
-          materialQuantity: 1,
-          type: 'level'
-        });
-      }
-    }
-
-    return materialsNeeded;
+  const levelMaterialsNeeded = computed<Material[]>(() => {
+    return calculateLevelMaterials(props.student, characterLevels.value);
   });
 
   const skillMaterialsNeeded = computed<Material[]>(() => {
-    const materialsNeeded: Material[] = [];
-   
-    if (!props.student?.Id) return materialsNeeded;
-
-    Object.entries(skillLevels.value).forEach(([type, levels]) => {
-      const { current, target } = levels;
-      
-      if (current >= target) return;
-
-      let materialIds: number[][] | null = null;
-      let materialQuantities: number[][] | null = null;
-      let creditsQuantities: number[] | null = null;
-
-      // Determine which material data to use based on skill type
-      if (type === 'Ex') {
-        materialIds = props.student?.SkillExMaterial ?? null;
-        materialQuantities = props.student?.SkillExMaterialAmount ?? null;
-        creditsQuantities = exskillCreditsTable;
-      } else {
-        materialIds = props.student?.SkillMaterial ?? null;
-        materialQuantities = props.student?.SkillMaterialAmount ?? null;
-        creditsQuantities = skillCreditsTable;
-      }
-
-      if (!materialIds || !materialQuantities) return;
-
-      // Calculate materials for each level
-      for (let level = current; level < target; level++) {
-
-        const levelMaterialIds = materialIds[level-1];
-        const levelMaterialQuantities = materialQuantities[level-1];
-        const levelCreditsQuantities = creditsQuantities[level-1];
-
-        // Special case: Add SECRET_TECH_NOTE for level 9 to 10 for non-Ex skills
-        if (level === 9 && type !== 'Ex') {
-          const secretTechData = getResourceDataById(SECRET_TECH_NOTE_ID);
-          materialsNeeded.push({
-            material: secretTechData,
-            materialQuantity: 1,
-            type: type as SkillType
-          });
-
-          materialsNeeded.push({
-            material: creditsData,
-            materialQuantity: 4000000,
-            type: type as SkillType
-          });
-        }
-
-        // Needs to be placed after special case since 
-        // levelMaterialIds.length === N-1, Ex max length is 5, Non Ex max length is 10
-        if (!levelMaterialIds || !levelMaterialQuantities) continue;
-        
-        // Each level may need multiple materials, process each one
-        for (let i = 0; i < levelMaterialIds.length; i++) {
-          const materialId = levelMaterialIds[i];
-          const quantity = levelMaterialQuantities[i];
-          
-          if (!materialId || !quantity) continue;
-          
-          const materialData = getResourceDataById(materialId);
-          
-          materialsNeeded.push({
-            material: materialData,
-            materialQuantity: quantity,
-            type: type as SkillType
-          });
-        }
-
-        materialsNeeded.push({
-          material: creditsData,
-          materialQuantity: levelCreditsQuantities,
-          type: type as SkillType
-        });
-      }
-    });
-    
-    return materialsNeeded;
+    return calculateSkillMaterials(props.student, skillLevels.value);
   });
 
-  // Calculate materials needed for potential upgrade
   const potentialMaterialsNeeded = computed<Material[]>(() => {
-    const materialsNeeded: Material[] = [];
+    return calculatePotentialMaterials(props.student, potentialLevels.value);
+  });
+
+  // Create a computed property for all materials needed for this student
+  const allMaterialsNeeded = computed<Material[]>(() => {
+    if (!props.student) return [];
     
-    if (!props.student?.Id || !potentialMaterials) return materialsNeeded;
+    const sortedMaterials = calculateAllMaterials(
+      props.student,
+      characterLevels.value,
+      skillLevels.value,
+      potentialLevels.value,
+    );
     
-    Object.entries(potentialLevels.value).forEach(([type, levels]) => {
-      const { current, target } = levels;
-      
-      if (current >= target) return;
-      
-      const startBlock = Math.floor(current / 5);
-      const endBlock = Math.floor((target - 1) / 5);
-      
-      for (let block = startBlock; block <= endBlock; block++) {
-        if (block >= potentialMaterials.length) break;
-        
-        const blockData = potentialMaterials[block];
-        if (!blockData) continue;
-        
-        let levelsInBlock = 5;
-        
-        if (block === startBlock) {
-          levelsInBlock = 5 - (current % 5);
-        }
-        
-        if (block === endBlock) {
-          const remainder = target % 5;
-          if (remainder > 0) {
-            levelsInBlock = remainder;
-          }
-        }
-        
-        // Extract material data
-        const [workbookQuantity, materialQuality, materialQuantity, creditsQuantity] = blockData;
-        
-        const workbookId = WORKBOOK_ID[type === 'maxhp' ? 0 : type === 'attack' ? 1 : 2];
-        const materialId = props.student?.PotentialMaterial ?? 0;
-        const actualMaterialId = materialQuality === 1 ? materialId : materialId + 1;
-        
-        const materialData = getResourceDataById(actualMaterialId);
-        const workbookData = getResourceDataById(workbookId);
-        const creditsData = getResourceDataById(CREDITS_ID);
-        
-        const scaledMaterialQuantity = Math.ceil(materialQuantity * levelsInBlock);
-        const scaledWorkbookQuantity = Math.ceil(workbookQuantity * levelsInBlock);
-        const scaledCreditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
-        
-        // Add materials to the list
-        materialsNeeded.push(
-          {
-            material: materialData,
-            materialQuantity: scaledMaterialQuantity,
-            type: type as PotentialType
-          },
-          {
-            material: workbookData,
-            materialQuantity: scaledWorkbookQuantity,
-            type: type as PotentialType
-          },
-          {
-            material: creditsData,
-            materialQuantity: scaledCreditsQuantity,
-            type: type as PotentialType
-          }
-        );
-      }
-    });
+    updateMaterialsData(props.student.Id, sortedMaterials);
     
-    return materialsNeeded;
+    return sortedMaterials;
   });
 
   const removeLeadingZeros = (event: Event) => {
@@ -443,62 +459,30 @@ export function useStudentUpgrade(props: {
     input.value = input.value.replace(/^0+(?=\d)/, '');
   };
 
-  const handleCharacterLevelInput = (event: Event) => {
-    removeLeadingZeros(event);
-    const input = event.target as HTMLInputElement;
-    const value = parseInt(input.value);
-    if (!isNaN(value) && value >= 1 && value <= 90) {
-      currentCharacterLevel.value = value;
-    }
-  };
-
-  const handleTargetCharacterLevelInput = (event: Event) => {
-    removeLeadingZeros(event);
-    const input = event.target as HTMLInputElement;
-    const value = parseInt(input.value);
-    if (!isNaN(value) && value >= 1 && value <= 90) {
-      targetCharacterLevel.value = value;
-    }
-  };
-
-  const handleCurrentPotentialInput = (value: number) => {
-    if (value >= 0 && value <= 25) {
-      potentialLevels.value.attack.current = value;
+  // Function to handle both current and target level updates
+  const handleLevelUpdate = (current: number, target: number) => {
+    if (current >= 1 && target >= current) {
+      characterLevels.value.current = current;
+      characterLevels.value.target = target;
       
-      // Ensure target is always >= current
-      if (potentialLevels.value.attack.target < value) {
-        potentialLevels.value.attack.target = value;
-      }
-    }
-  };
-
-  const handleTargetPotentialInput = (value: number) => {
-    if (value >= 0 && value <= 25) {
-      potentialLevels.value.attack.target = value;
-      
-      // Ensure current is always <= target
-      if (potentialLevels.value.attack.current > value) {
-        potentialLevels.value.attack.current = value;
+      if (props.student && props.isVisible) {
+        saveToLocalStorage();
+        updateStudentData(props.student.Id);
       }
     }
   };
   
   // Function to handle updates from all potential types
   const handlePotentialUpdate = (type: PotentialType, current: number, target: number) => {
-    if (current >= 0 && current <= 25 && target >= 0 && target <= 25) {
-      // Update the specified potential type
-      potentialLevels.value[type].current = current;
-      potentialLevels.value[type].target = target;
-      
-      // Ensure current <= target
-      if (potentialLevels.value[type].current > potentialLevels.value[type].target) {
-        potentialLevels.value[type].target = potentialLevels.value[type].current;
-      }
-      
-      // Save changes and update materials immediately
-      if (props.student && props.isVisible) {
-        saveToLocalStorage();
-        updateStudentData(props.student.Id);
+    if (current >= 0 && target >= current) {
+      if (potentialLevels.value[type]) {
+        potentialLevels.value[type].current = current;
+        potentialLevels.value[type].target = target;
+        
+        if (props.student && props.isVisible) {
+          saveToLocalStorage();
+          updateStudentData(props.student.Id);
+        }
       }
     }
   };
@@ -506,12 +490,10 @@ export function useStudentUpgrade(props: {
   // Function to handle updates for skill levels
   const handleSkillUpdate = (type: SkillType, current: number, target: number) => {
     if (current >= 1 && target >= current) {
-      // Update the specified skill type
       if (skillLevels.value[type]) {
         skillLevels.value[type].current = current;
         skillLevels.value[type].target = target;
         
-        // Explicitly trigger localStorage save and immediate refresh
         if (props.student && props.isVisible) {
           saveToLocalStorage();
           updateStudentData(props.student.Id);
@@ -521,7 +503,6 @@ export function useStudentUpgrade(props: {
   };
 
   function closeModal() {
-    // Save the current state before closing
     saveToLocalStorage();
     if (props.student) {
       updateStudentData(props.student.Id);
@@ -530,73 +511,15 @@ export function useStudentUpgrade(props: {
     emit('close');
   }
 
-  // Add this function to calculate and store materials for a single student
   const calculateAndStoreStudentMaterials = () => {
     if (!props.student) return [];
 
-    // Simply use the allMaterialsNeeded computed property which already updates the store
     return allMaterialsNeeded.value;
   };
 
-  // Create a computed property for all materials needed for this student
-  const allMaterialsNeeded = computed<Material[]>(() => {
-    if (!props.student) return [];
-    
-    // Collect all materials
-    const materials: Material[] = [];
-    materials.push(...charExpMaterialsNeeded.value);
-    materials.push(...skillMaterialsNeeded.value);
-    materials.push(...potentialMaterialsNeeded.value);
-    
-    // Consolidate materials by ID
-    const materialMap = new Map<number, Material>();
-    
-    materials.forEach(item => {
-      const materialId = item.material?.Id;
-      if (!materialId) return;
-      
-      if (materialMap.has(materialId)) {
-        // Update quantity for existing material
-        const existing = materialMap.get(materialId)!;
-        existing.materialQuantity += item.materialQuantity;
-      } else {
-        // Create a new entry with a copy of the item
-        materialMap.set(materialId, { ...item });
-      }
-    });
-    
-    // Convert map to array and sort by ID
-    const sortedMaterials = Array.from(materialMap.values())
-      .sort((a, b) => {
-        const aId = a.material?.Id || 0;
-        const bId = b.material?.Id || 0;
-        
-        // Always put credits (ID: 5) first
-        if (aId === 5) return -1;
-        if (bId === 5) return 1;
-        
-        // Put exp reports next (IDs: 10, 11, 12, 13)
-        const isExpReport = (id: number) => [10, 11, 12, 13].includes(id);
-        const isExpReportA = isExpReport(aId);
-        const isExpReportB = isExpReport(bId);
-        
-        if (isExpReportA && !isExpReportB) return -1;
-        if (!isExpReportA && isExpReportB) return 1;
-        
-        // For all other materials, sort by ID
-        return aId - bId;
-      });
-    
-    // Update the resource store directly from this computed property
-    updateMaterialsData(props.student.Id, sortedMaterials);
-    
-    return sortedMaterials;
-  });
-
   // Watch for changes that affect materials and update the store
   watch([
-    currentCharacterLevel,
-    targetCharacterLevel,
+    characterLevels,
     skillLevels,
     potentialLevels
   ], () => {
@@ -612,8 +535,7 @@ export function useStudentUpgrade(props: {
 
   return {
     // State
-    currentCharacterLevel,
-    targetCharacterLevel,
+    characterLevels,
     potentialLevels,
     skillLevels,
     potentialMaterials,
@@ -623,7 +545,7 @@ export function useStudentUpgrade(props: {
     remainingXp,
     potentialMaterialsNeeded,
     skillMaterialsNeeded,
-    charExpMaterialsNeeded,
+    levelMaterialsNeeded,
     allMaterialsNeeded,
 
     // Methods
@@ -631,10 +553,7 @@ export function useStudentUpgrade(props: {
     resetFormData,
     saveToLocalStorage,
     loadFromLocalStorage,
-    handleCharacterLevelInput,
-    handleTargetCharacterLevelInput,
-    handleCurrentPotentialInput,
-    handleTargetPotentialInput,
+    handleLevelUpdate,
     handlePotentialUpdate,
     handleSkillUpdate,
     allSkillsMaxed,

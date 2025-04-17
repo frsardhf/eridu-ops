@@ -2,15 +2,13 @@
 import { ref, watch, onMounted } from 'vue';
 import {
   SkillType,
-  SkillSettings,
-  Material
+  SkillSettings
 } from '../../../../types/upgrade';
 import '../../../../styles/studentUpgrade.css';
 
 const props = defineProps<{
   student: Record<string, any> | null,
   skillLevels: Record<string, { current: number; target: number; }>,
-  materials: Material[];
   allSkillsMaxed: boolean;
   targetSkillsMaxed: boolean;
 }>();
@@ -87,7 +85,7 @@ watch(() => props.student, (student) => {
       skillTypes.value.Passive.maxLevel = student.Skills.Passive.Parameters?.[0]?.length;
     }
     
-    // Update Extra Passive skill if available
+    // Update Extra Passive skill
     if (student.Skills.ExtraPassive) {
       skillTypes.value.ExtraPassive.icon = student.Skills.ExtraPassive.Icon;
       skillTypes.value.ExtraPassive.name = student.Skills.ExtraPassive.Name;

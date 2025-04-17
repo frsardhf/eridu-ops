@@ -518,3 +518,100 @@ export function getAllMaterialsData(): Record<string, any[]> {
     return {};
   }
 }
+
+/**
+ * Retrieves all students form data from localStorage
+ * @returns Record of all students form data or empty object if not found
+ */
+export function getAllFormData(): Record<string | number, any> {
+  try {
+    return getDataCollection(STORAGE_KEYS.FORMS);
+  } catch (error) {
+    console.error('Error retrieving all form data from localStorage:', error);
+    return {};
+  }
+}
+
+/**
+ * Migrates student form data from old format to new format
+ * Old: { currentCharacterLevel, targetCharacterLevel }
+ * New: { characterLevels: { current, target } }
+ */
+export function migrateFormData() {
+  try {
+    // Get the forms data from localStorage
+    const formsData = localStorage.getItem('forms');
+    
+    if (!formsData) {
+      console.log('No forms data found to migrate');
+      return;
+    }
+    
+    // Parse the forms data
+    const forms = JSON.parse(formsData);
+    
+    // Track if we've made any changes
+    let hasChanges = false;
+    
+    // Iterate through each student ID in the forms object
+    Object.keys(forms).forEach(studentId => {
+      const studentData = forms[studentId];
+      
+      // Check if this student data needs migration
+      if (studentData && 
+          (studentData.currentCharacterLevel !== undefined || 
+           studentData.targetCharacterLevel !== undefined) && 
+          !studentData.characterLevels) {
+        
+        // Create new characterLevels object
+        studentData.characterLevels = {
+          current: studentData.currentCharacterLevel ?? 1,
+          target: studentData.targetCharacterLevel ?? 1
+        };
+        
+        // Remove old properties
+        delete studentData.currentCharacterLevel;
+        delete studentData.targetCharacterLevel;
+        delete studentData.currentPotentialLevel;
+        delete studentData.targetPotentialLevel;
+        
+        hasChanges = true;
+        console.log(`Migrated data for student ${studentId}`);
+      }
+    });
+    
+    // Save the updated forms data if changes were made
+    if (hasChanges) {
+      localStorage.setItem('forms', JSON.stringify(forms));
+      console.log('Migration completed and saved');
+    } else {
+      console.log('No data needed migration');
+    }
+    
+    // Return the migrated data
+    return forms;
+  } catch (error) {
+    console.error('Migration failed:', error);
+    return null;
+  }
+}
+
+// Function to check if migration is needed and run it if so
+export function checkAndMigrateFormData() {
+  // Check if migration has been run already
+  const migrationVersion = localStorage.getItem('forms_migration_version');
+  
+  // If we haven't run migration version 1 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 1) {
+    const migratedData = migrateFormData();
+    
+    if (migratedData) {
+      // Mark migration as complete
+      localStorage.setItem('forms_migration_version', '1');
+    }
+    
+    return migratedData;
+  }
+  
+  return null;
+}

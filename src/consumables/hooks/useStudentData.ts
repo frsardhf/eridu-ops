@@ -20,7 +20,8 @@ import {
   getPinnedStudents,
   setStorageData,
   getStorageData,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  checkAndMigrateFormData
 } from '../utils/studentStorage';
 
 export function useStudentData() {
@@ -393,6 +394,8 @@ export function useStudentData() {
   }
 
   async function initializeData() {
+    checkAndMigrateFormData();
+
     loadSortPreferences();
     
     // Fetch and update reactive refs

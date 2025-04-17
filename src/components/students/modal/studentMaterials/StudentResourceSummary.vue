@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
+import { getResources } from '../../../../consumables/utils/studentStorage';
 import '../../../../styles/resourceDisplay.css';
 
 // Define view options
@@ -38,9 +39,40 @@ const tooltipPosition = ref({ x: 0, y: 0 });
 
 // Materials that are missing (negative leftover)
 const missingMaterials = computed<MaterialWithRemaining[]>(() => {
-  return materialsLeftover.value
-    .filter(item => (item as any).remaining < 0)
-    .sort((a, b) => (a as any).remaining - (b as any).remaining) as MaterialWithRemaining[]; // Sort by most negative first
+  // Get resources directly to ensure we have latest data
+  const resources = getResources() || {};
+  
+  // Generate materials that are missing
+  return totalMaterialsNeeded.value
+    .filter(item => {
+      // Get the material ID and check if we have it
+      const materialId = item.material?.Id;
+      if (!materialId) return false;
+      
+      // Get resource for this material
+      const resource = resources[materialId.toString()];
+      if (!resource) return true; // If resource doesn't exist, consider it missing
+      
+      // Get owned quantity
+      const owned = resource.QuantityOwned || 0;
+      
+      // Consider missing if owned < needed
+      return owned < item.materialQuantity;
+    })
+    .map(item => {
+      const materialId = item.material?.Id;
+      const resource = resources[materialId?.toString() || ''];
+      const owned = resource?.QuantityOwned || 0;
+      const remaining = owned - item.materialQuantity;
+      
+      return {
+        material: item.material,
+        materialQuantity: item.materialQuantity,
+        remaining: remaining,
+        type: item.type
+      };
+    })
+    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
 });
 
 // Check if the material is an exp report
@@ -127,8 +159,8 @@ const formatQuantity = (item: any) => {
   if (activeView.value === 'needed' || activeView.value === 'equipment-needed') {
     quantity = item.materialQuantity || 0;
   } else if (activeView.value === 'missing' || activeView.value === 'equipment-missing') {
-    // For missing materials, display the absolute value of the negative remaining
-    quantity = Math.abs(item.remaining);
+    // For missing materials, display the absolute remaining value (how many are short)
+    quantity = Math.abs(item.remaining || 0);
   }
   
   // Use special formatting for large numbers
@@ -156,13 +188,16 @@ const setView = (view: ViewMode) => {
 const showTooltip = (event: MouseEvent, materialId: number) => {
   hoveredItemId.value = materialId;
   
-  // Position the tooltip near the cursor but not directly under it
-  tooltipPosition.value = {
-    x: event.clientX + 10,
-    y: event.clientY + 10
+  // Initial position based on event
+  const initialPosition = {
+    x: event.clientX + 20,
+    y: event.clientY + 20
   };
   
-  // Adjust tooltip position if it would go off screen
+  // Set initial position
+  tooltipPosition.value = initialPosition;
+  
+  // Adjust tooltip position after it's rendered
   setTimeout(() => {
     const tooltip = document.querySelector('.material-tooltip') as HTMLElement;
     if (tooltip) {
@@ -170,12 +205,25 @@ const showTooltip = (event: MouseEvent, materialId: number) => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       
-      if (rect.right > viewportWidth) {
-        tooltipPosition.value.x = event.clientX - rect.width - 10;
+      let adjustedX = initialPosition.x;
+      let adjustedY = initialPosition.y;
+      
+      // Check if off-screen right
+      if (rect.right > viewportWidth - 20) {
+        adjustedX = Math.max(20, event.clientX - rect.width - 20);
       }
       
-      if (rect.bottom > viewportHeight) {
-        tooltipPosition.value.y = event.clientY - rect.height - 10;
+      // Check if off-screen bottom
+      if (rect.bottom > viewportHeight - 20) {
+        adjustedY = Math.max(20, event.clientY - rect.height - 20);
+      }
+      
+      // Update position if changed
+      if (adjustedX !== tooltipPosition.value.x || adjustedY !== tooltipPosition.value.y) {
+        tooltipPosition.value = {
+          x: adjustedX,
+          y: adjustedY
+        };
       }
     }
   }, 0);
@@ -201,6 +249,15 @@ const getMaterialIconSrc = (item: any): string => {
     return `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`;
   }
 };
+
+// Add a computed property to determine the appropriate grid width based on student count
+const tooltipGridColumns = computed(() => {
+  const count = studentUsageForMaterial.value.length;
+  if (count <= 3) return count.toString();
+  if (count <= 8) return Math.min(4, count).toString();
+  if (count <= 16) return Math.min(8, count).toString();
+  return Math.min(10, count).toString();
+});
 
 // Refresh the data initially
 onMounted(() => {
@@ -286,11 +343,12 @@ onMounted(() => {
       <div 
         v-if="hoveredItemId !== null && studentUsageForMaterial.length > 0" 
         class="material-tooltip"
-        :style="{ left: `${tooltipPosition.x}px`, top: `${tooltipPosition.y}px` }"
+        :style="{ 
+          left: `${tooltipPosition.x}px`, 
+          top: `${tooltipPosition.y}px`,
+          '--grid-columns': tooltipGridColumns
+        }"
       >
-        <div class="tooltip-header">
-          <span>Used By</span>
-        </div>
         <div class="student-icons-grid">
           <div 
             v-for="(usage, i) in studentUsageForMaterial" 
@@ -389,24 +447,18 @@ onMounted(() => {
   border-radius: 8px;
   padding: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  min-width: 300px;
   pointer-events: none;
   backdrop-filter: blur(5px);
-}
-
-.tooltip-header {
-  font-size: 0.9em;
-  font-weight: bold;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 4px;
+  width: auto;
 }
 
 .student-icons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  grid-template-columns: repeat(var(--grid-columns, 3), minmax(40px, 1fr));
+  gap: 8px;
   overflow-y: auto;
+  max-height: 300px;
+  padding: 4px;
 }
 
 .student-usage-item {
@@ -414,6 +466,13 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  padding: 3px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.student-usage-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .student-icon {
@@ -421,6 +480,11 @@ onMounted(() => {
   height: 40px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.2s;
+}
+
+.student-usage-item:hover .student-icon {
+  transform: scale(1.05);
 }
 
 .usage-quantity {

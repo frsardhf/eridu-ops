@@ -3,12 +3,10 @@ import { ref, watch } from 'vue';
 import { 
   PotentialType, 
   PotentialSettings,
-  Material
 } from '../../../../types/upgrade';
 import '../../../../styles/studentUpgrade.css';
 
 const props = defineProps<{
-  materials: Material[];
   potentialLevels: Record<PotentialType, { current: number; target: number }>;
 }>();
 
@@ -133,10 +131,14 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
     <h3 class="section-title collapsible-header" @click="toggleExpand">
       <div class="collapsible-title">
         <span>Talent</span>
-        <div class="material-summary" v-if="!isExpanded">
-      
+        <div 
+          class="material-summary" 
+          v-if="!isExpanded">
         </div>
-        <span class="collapsible-hint" v-else>(Click to {{ isExpanded ? 'collapse' : 'expand' }})</span>
+        <span 
+          class="collapsible-hint" 
+          v-else>(Click to {{ isExpanded ? 'collapse' : 'expand' }})
+        </span>
       </div>
       <div class="expand-icon" :class="{ 'rotated': isExpanded }">
         <svg 

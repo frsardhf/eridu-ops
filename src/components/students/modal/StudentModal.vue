@@ -39,7 +39,7 @@ const {
   closeModal,
   currentBond,
   newBondLevel,
-  remainingXp,
+  remainingXp: bondRemainingXp,
   totalCumulativeExp,
   convertBox,
   convertBoxes,
@@ -52,24 +52,21 @@ const {
 } = useStudentGifts(props, emit);
 
 const {
-  currentCharacterLevel,
-  targetCharacterLevel,
+  characterLevels,
   potentialLevels,
   skillLevels,
   potentialMaterialsNeeded,
   skillMaterialsNeeded,
-  handleCharacterLevelInput,
-  handleTargetCharacterLevelInput,
+  levelMaterialsNeeded,
+  allMaterialsNeeded,
+  remainingXp: characterRemainingXp,
+  allSkillsMaxed,
+  targetSkillsMaxed,
+  handleLevelUpdate,
   handlePotentialUpdate,
   handleSkillUpdate,
-  remainingXp: characterRemainingXp,
-  totalCumulativeExp: characterTotalXp,
-  allSkillsMaxed,
   toggleMaxAllSkills,
-  targetSkillsMaxed,
   toggleMaxTargetSkills,
-  charExpMaterialsNeeded,
-  allMaterialsNeeded
 } = useStudentUpgrade(props, emit);
 
 const {
@@ -77,13 +74,11 @@ const {
   handleResourceInput
 } = useStudentResources(props, emit);
 
-// Add equipment hook
 const {
   equipmentFormData,
   handleEquipmentInput
 } = useStudentEquipment(props, emit);
 
-// Add gear hook for equipment upgrades
 const {
   equipmentLevels,
   handleEquipmentUpdate,
@@ -221,7 +216,7 @@ onUnmounted(() => {
             <StudentBondSection
               :current-bond="currentBond"
               :new-bond-level="newBondLevel"
-              :remaining-xp="remainingXp"
+              :remaining-xp="bondRemainingXp"
               :total-exp="totalCumulativeExp"
               @update-bond="handleBondInput"
             />
@@ -253,11 +248,9 @@ onUnmounted(() => {
             <StudentModalHeader :student="student" />
 
             <StudentLevelSection
-              :current-level="currentCharacterLevel"
-              :target-level="targetCharacterLevel"
+              :character-levels="characterLevels"
               :total-xp-needed="characterRemainingXp"
-              @update-level="handleCharacterLevelInput"
-              @update-target-level="handleTargetCharacterLevelInput"
+              @update-level="handleLevelUpdate"
             />
           </div>
           
@@ -265,7 +258,6 @@ onUnmounted(() => {
             <StudentSkillSection
               :student="student"
               :skill-levels="skillLevels"
-              :materials="skillMaterialsNeeded"
               :all-skills-maxed="allSkillsMaxed"
               :target-skills-maxed="targetSkillsMaxed"
               @update-skill="handleSkillUpdate"
@@ -275,14 +267,13 @@ onUnmounted(() => {
             
             <StudentPotentialSection
               :potential-levels="potentialLevels"
-              :materials="potentialMaterialsNeeded"
               @update-potential="handlePotentialUpdate"
             />
             
             <StudentMaterialsSection
               :skill-materials="skillMaterialsNeeded"
               :potential-materials="potentialMaterialsNeeded"
-              :exp-materials="charExpMaterialsNeeded"
+              :exp-materials="levelMaterialsNeeded"
               :all-materials="allMaterialsNeeded"
               :student="student"
             />

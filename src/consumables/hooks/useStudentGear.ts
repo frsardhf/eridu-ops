@@ -33,7 +33,7 @@ function getMaxTierForType(type: string): number {
     (item: any) => item.Category === type
   );
 
-  return equipment?.Tier || 10; // Return the tier if found, otherwise default to 10
+  return equipment?.Tier ?? 10; // Return the tier if found, otherwise default to 10
 }
 
 export function useStudentGear(props: { 

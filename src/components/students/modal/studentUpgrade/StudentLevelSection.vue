@@ -1,48 +1,57 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
-  currentLevel: number,
-  targetLevel: number,
+  characterLevels: { current: number; target: number; },
   totalXpNeeded: number
 }>();
 
-// Import the useResourceCalculation hook to get consistent data
-const { refreshData } = useResourceCalculation();
+const emit = defineEmits<{
+  (e: 'update-level', current: number, target: number): void;
+}>();
 
-const emit = defineEmits(['update-level', 'update-target-level']);
+// Create potential settings for each type
+const levelState = ref({
+  current: props.characterLevels.current,
+  target: props.characterLevels.target,
+});
 
-function handleLevelInput(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const value = parseInt(input.value);
-  if (!isNaN(value) && value >= 1 && value <= 90) {
-    emit('update-level', event);
-    // If current level is higher than target level, update target level
-    const targetInput = document.getElementById('target-level-input') as HTMLInputElement;
-    if (targetInput && value > parseInt(targetInput.value)) {
-      targetInput.value = value.toString();
-      emit('update-target-level', { target: { value: value.toString() } } as any);
-    }
+// Watch for prop changes to update local state
+watch(() => props.characterLevels, (newVal) => {
+  if (newVal) {
+    levelState.value.current = newVal.current;
+    levelState.value.target = newVal.target;
   }
-}
+}, { deep: true, immediate: true });
 
-function handleTargetLevelInput(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const value = parseInt(input.value);
-  if (!isNaN(value) && value >= 1 && value <= 90) {
-    // If target level is lower than current level, update current level
-    const currentInput = document.getElementById('current-level-input') as HTMLInputElement;
-    if (currentInput && value < parseInt(currentInput.value)) {
-      currentInput.value = value.toString();
-      emit('update-level', { target: { value: value.toString() } } as any);
+// Handle level changes
+const updateLevelCurrent = (value: number) => {
+  if (value >= 1 && value <= 90) {
+    props.characterLevels.current = value;
+    
+    // Ensure target is always >= current
+    if (levelState.value.target < value) {
+      levelState.value.target = value;
     }
-    emit('update-target-level', event);
+    
+    // Emit the update event
+    emit('update-level', value, levelState.value.target);
   }
-}
+};
+
+const updateLevelTarget = (value: number) => {
+  if (value >= 1 && value <= 90) {
+    // Ensure target is always >= current
+    const finalValue = Math.max(value, levelState.value.current);
+    levelState.value.target = finalValue;
+    
+    // Emit the update event
+    emit('update-level', levelState.value.current, finalValue);
+  }
+};
 
 // Add computed property to check if level is maxed
-const isMaxLevel = computed(() => props.currentLevel === 90);
+const isMaxLevel = computed(() => props.characterLevels.current === 90);
 </script>
 
 <template>
@@ -56,8 +65,9 @@ const isMaxLevel = computed(() => props.currentLevel === 90);
         id="current-level-input"
         name="current-level-input"
         type="number"
-        :value="currentLevel"
-        @input="handleLevelInput"
+        :value="levelState.current"
+        @input="(e) => 
+          updateLevelCurrent(parseInt((e.target as HTMLInputElement).value))"
         class="level-input"
         min="1"
         max="90"
@@ -68,7 +78,7 @@ const isMaxLevel = computed(() => props.currentLevel === 90);
       <div class="level-display">
         <div class="level-icon-container">
           <div class="level-badge">
-            <span class="level-number">{{ currentLevel }}</span>
+            <span class="level-number">{{ levelState.current }}</span>
           </div>
         </div>
       </div>
@@ -80,7 +90,7 @@ const isMaxLevel = computed(() => props.currentLevel === 90);
         <div class="level-display">
           <div class="level-icon-container">
             <div class="level-badge">
-              <span class="level-number">{{ targetLevel }}</span>
+              <span class="level-number">{{ levelState.target }}</span>
             </div>
           </div>
         </div>
@@ -94,8 +104,9 @@ const isMaxLevel = computed(() => props.currentLevel === 90);
         id="target-level-input"
         name="target-level-input"
         type="number"
-        :value="targetLevel"
-        @input="handleTargetLevelInput"
+        :value="levelState.target"
+        @input="(e) => 
+          updateLevelTarget(parseInt((e.target as HTMLInputElement).value))"
         class="level-input"
         min="1"
         max="90"

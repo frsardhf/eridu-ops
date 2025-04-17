@@ -1,16 +1,21 @@
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { Material } from '../../types/upgrade';
 import { saveMaterialsData, getAllMaterialsData as getStoredMaterialsData } from '../utils/studentStorage';
+import { preloadAllStudentsMaterials } from '../utils/materialUtils';
 
 // Create a reactive store for materials data
 const materialsDataStore = ref<Record<string, Material[]>>({});
 
 // Initialize the store from localStorage
 const initializeStore = () => {
+  // Load the saved materials data
   const storedMaterials = getStoredMaterialsData();
   if (storedMaterials && Object.keys(storedMaterials).length) {
     materialsDataStore.value = storedMaterials;
   }
+  
+  // Preload materials for all students with target upgrades
+  preloadAllStudentsMaterials();
 };
 
 // Initialize the store on mount
@@ -21,8 +26,6 @@ if (typeof window !== 'undefined') {
 // Function to update materials data in the store
 export function updateMaterialsData(studentId: string | number, materials: Material[]) {
   materialsDataStore.value[studentId] = materials;
-  
-  // Save to localStorage
   saveMaterialsData(studentId, materials);
 }
 
@@ -34,8 +37,6 @@ export function getMaterialsData(studentId: string | number): Material[] {
 // Function to clear materials data from the store
 export function clearMaterialsData(studentId: string | number) {
   delete materialsDataStore.value[studentId];
-  
-  // Save to localStorage (empty array to represent cleared data)
   saveMaterialsData(studentId, []);
 }
 
@@ -47,8 +48,7 @@ export function getAllMaterialsData(): Record<string, Material[]> {
 // Function to clear all materials data
 export function clearAllMaterialsData() {
   materialsDataStore.value = {};
-  
-  // Save empty object to localStorage
+  // Clear all in localStorage
   Object.keys(materialsDataStore.value).forEach(studentId => {
     saveMaterialsData(studentId, []);
   });
