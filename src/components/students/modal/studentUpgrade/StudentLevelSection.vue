@@ -6,9 +6,9 @@ const props = defineProps<{
   totalXpNeeded: number
 }>();
 
-const emit = defineEmits<{
-  (e: 'update-level', current: number, target: number): void;
-}>();
+const emit = defineEmits<(
+  e: 'update-level', current: number, target: number
+) => void>();
 
 // Create potential settings for each type
 const levelState = ref({
@@ -24,35 +24,40 @@ watch(() => props.characterLevels, (newVal) => {
   }
 }, { deep: true, immediate: true });
 
-// Handle level changes
-const updateLevelCurrent = (value: number) => {
-  if (value >= 1 && value <= 90) {
-    props.characterLevels.current = value;
-    
-    // Ensure target is always >= current
+// Single function to handle both current and target level updates
+const updateLevel = (event: Event, isTarget: boolean) => {
+  const input = event.target as HTMLInputElement;
+
+  // If the input is empty or just a dash, don't process yet
+  if (input.value === '' || input.value === '-') {
+    return;
+  }
+  
+  // Remove leading zeros and parse the value
+  input.value = input.value.replace(/^0+(?=\d)/, '');
+  let value = parseInt(input.value);
+  
+  // Handle NaN case
+  if (isNaN(value)) {
+    input.value = isTarget ? levelState.value.target.toString() 
+      : levelState.value.current.toString();
+    return;
+  }
+  
+  // Clamp the value based on whether it's for target or current
+  if (isTarget) {
+    value = Math.max(levelState.value.current, Math.min(90, value));
+    levelState.value.target = value;
+  } else {
+    value = Math.max(1, Math.min(90, value));
+    levelState.value.current = value;
     if (levelState.value.target < value) {
       levelState.value.target = value;
     }
-    
-    // Emit the update event
-    emit('update-level', value, levelState.value.target);
   }
-};
-
-const updateLevelTarget = (value: number) => {
-  if (value >= 1 && value <= 90) {
-    // Ensure target is always >= current
-    const finalValue = Math.max(value, levelState.value.current);
-    levelState.value.target = finalValue;
-    
-    // Emit the update event
-    emit('update-level', levelState.value.current, finalValue);
-  }
-};
-
-const removeLeadingZeros = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  input.value = input.value.replace(/^0+(?=\d)/, '');
+  
+  input.value = value.toString();
+  emit('update-level', levelState.value.current, levelState.value.target);
 };
 
 // Add computed property to check if level is maxed
@@ -71,8 +76,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
         name="current-level-input"
         type="number"
         :value="levelState.current"
-        @input="(e) => 
-          updateLevelCurrent(parseInt((e.target as HTMLInputElement).value))"
+        @input="(e) => updateLevel(e, false)"
         class="level-input"
         min="1"
         max="90"
@@ -110,8 +114,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
         name="target-level-input"
         type="number"
         :value="levelState.target"
-        @input="(e) => 
-          updateLevelTarget(parseInt((e.target as HTMLInputElement).value))"
+        @input="(e) => updateLevel(e, true)"
         class="level-input"
         min="1"
         max="90"
