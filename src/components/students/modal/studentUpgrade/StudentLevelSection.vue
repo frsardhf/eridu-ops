@@ -50,6 +50,11 @@ const updateLevelTarget = (value: number) => {
   }
 };
 
+const removeLeadingZeros = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  input.value = input.value.replace(/^0+(?=\d)/, '');
+};
+
 // Add computed property to check if level is maxed
 const isMaxLevel = computed(() => props.characterLevels.current === 90);
 </script>

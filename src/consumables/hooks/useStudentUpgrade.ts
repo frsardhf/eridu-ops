@@ -316,7 +316,6 @@ export function useStudentUpgrade(props: {
     saveToLocalStorage();
     if (props.student) {
       updateStudentData(props.student.Id);
-      calculateAndStoreStudentMaterials();
     }
   };
   
@@ -342,14 +341,13 @@ export function useStudentUpgrade(props: {
     saveToLocalStorage();
     if (props.student) {
       updateStudentData(props.student.Id);
-      calculateAndStoreStudentMaterials();
     }
   };
 
   function resetFormData() {
     characterLevels.value = {...DEFAULT_CHARACTER_LEVELS};
-    potentialLevels.value = {...DEFAULT_POTENTIAL_LEVELS};
     skillLevels.value = {...DEFAULT_SKILL_LEVELS};
+    potentialLevels.value = {...DEFAULT_POTENTIAL_LEVELS};
   }
 
   // Watch for changes to isVisible to load data when modal opens
@@ -357,7 +355,6 @@ export function useStudentUpgrade(props: {
     if (newValue && props.student) {
       setTimeout(() => {
         loadFromLocalStorage();
-        calculateAndStoreStudentMaterials();
       }, 50);
     }
   }, { immediate: true });
@@ -368,7 +365,6 @@ export function useStudentUpgrade(props: {
       resetFormData();
       if (props.isVisible) {
         loadFromLocalStorage();
-        calculateAndStoreStudentMaterials();
       }
     }
   });
@@ -391,8 +387,8 @@ export function useStudentUpgrade(props: {
     
     const dataToSave = {
       characterLevels: characterLevels.value,
-      potentialLevels: potentialLevels.value,
-      skillLevels: skillLevels.value
+      skillLevels: skillLevels.value,
+      potentialLevels: potentialLevels.value
     };
 
     saveFormData(props.student.Id, dataToSave);
@@ -403,14 +399,14 @@ export function useStudentUpgrade(props: {
 
     const refs = {
       characterLevels,
-      potentialLevels,
-      skillLevels
+      skillLevels,
+      potentialLevels
     };
     
     const defaultValues = {
       characterLevels: DEFAULT_CHARACTER_LEVELS,
-      potentialLevels: DEFAULT_POTENTIAL_LEVELS,
-      skillLevels: DEFAULT_SKILL_LEVELS
+      skillLevels: DEFAULT_SKILL_LEVELS,
+      potentialLevels: DEFAULT_POTENTIAL_LEVELS
     };
     
     loadFormDataToRefs(props.student.Id, refs, defaultValues);
@@ -454,11 +450,6 @@ export function useStudentUpgrade(props: {
     return sortedMaterials;
   });
 
-  const removeLeadingZeros = (event: Event) => {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.replace(/^0+(?=\d)/, '');
-  };
-
   // Function to handle both current and target level updates
   const handleLevelUpdate = (current: number, target: number) => {
     if (current >= 1 && target >= current) {
@@ -468,21 +459,6 @@ export function useStudentUpgrade(props: {
       if (props.student && props.isVisible) {
         saveToLocalStorage();
         updateStudentData(props.student.Id);
-      }
-    }
-  };
-  
-  // Function to handle updates from all potential types
-  const handlePotentialUpdate = (type: PotentialType, current: number, target: number) => {
-    if (current >= 0 && target >= current) {
-      if (potentialLevels.value[type]) {
-        potentialLevels.value[type].current = current;
-        potentialLevels.value[type].target = target;
-        
-        if (props.student && props.isVisible) {
-          saveToLocalStorage();
-          updateStudentData(props.student.Id);
-        }
       }
     }
   };
@@ -502,35 +478,27 @@ export function useStudentUpgrade(props: {
     }
   };
 
+  // Function to handle updates from all potential types
+  const handlePotentialUpdate = (type: PotentialType, current: number, target: number) => {
+    if (current >= 0 && target >= current) {
+      if (potentialLevels.value[type]) {
+        potentialLevels.value[type].current = current;
+        potentialLevels.value[type].target = target;
+        
+        if (props.student && props.isVisible) {
+          saveToLocalStorage();
+          updateStudentData(props.student.Id);
+        }
+      }
+    }
+  };
+
   function closeModal() {
     saveToLocalStorage();
     if (props.student) {
       updateStudentData(props.student.Id);
-      calculateAndStoreStudentMaterials();
     }
     emit('close');
-  }
-
-  const calculateAndStoreStudentMaterials = () => {
-    if (!props.student) return [];
-
-    return allMaterialsNeeded.value;
-  };
-
-  // Watch for changes that affect materials and update the store
-  watch([
-    characterLevels,
-    skillLevels,
-    potentialLevels
-  ], () => {
-    if (props.student) {
-      calculateAndStoreStudentMaterials();
-    }
-  }, { deep: true });
-
-  // Run initial calculation
-  if (props.student) {
-    calculateAndStoreStudentMaterials();
   }
 
   return {
