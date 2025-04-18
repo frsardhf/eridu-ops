@@ -31,8 +31,8 @@ function calculateExpNeeds() {
     const form = getDataCollection('forms')[studentId];
     if (!form) return;
     
-    const currentLevel = form.currentCharacterLevel || 1;
-    const targetLevel = form.targetCharacterLevel || currentLevel;
+    const currentLevel = form.characterLevels.current ?? 1;
+    const targetLevel = form.characterLevels.target ?? currentLevel;
     
     if (currentLevel >= targetLevel || !characterXpTable.length) return;
     

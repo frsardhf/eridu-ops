@@ -172,12 +172,12 @@ function handlePinToggle(event: MouseEvent) {
           
           <!-- Character Level -->
           <div class="level-container" 
-            v-if="studentData?.currentCharacterLevel">
-            <span class="level-number">{{ studentData.currentCharacterLevel }}</span>
+            v-if="studentData?.characterLevels.current">
+            <span class="level-number">{{ studentData.characterLevels.current }}</span>
             <span class="level-max" 
-              v-if="shouldShowTarget(studentData.currentCharacterLevel,
-              studentData.targetCharacterLevel
-            )">/{{ studentData.targetCharacterLevel }}</span>
+              v-if="shouldShowTarget(studentData.characterLevels.current,
+              studentData.characterLevels.target
+            )">/{{ studentData.characterLevels.target }}</span>
           </div>
           
           <!-- Bottom overlays container -->
