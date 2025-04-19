@@ -54,8 +54,8 @@ function prepareStudentForModal(student: StudentProps): ModalProps {
   
   return {
     ...student,
-    Gifts: Object.values(giftsObject) as GiftProps[],
-    Boxes: Object.values(boxesObject) as GiftProps[],
+    Gifts: giftsObject as GiftProps[],
+    Boxes: boxesObject as GiftProps[],
     Materials: Object.values(materialData.value) as ResourceProps[],
     Equipments: Object.values(equipmentData.value) as ResourceProps[]
   };

@@ -190,7 +190,7 @@ export function useStudentGifts(props: {
     if (totalCumulativeExp.value <= 0) return currentBond.value;
     
     // Calculate total XP including current level's cumulative XP and gift XP
-    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] || 0;
+    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] ?? 0;
     const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
     
     // Find the highest level we can reach with this total XP
@@ -212,7 +212,7 @@ export function useStudentGifts(props: {
     if (newBondLevel.value >= 100) return 0;
     
     // Calculate total XP including current level's cumulative XP and gift XP
-    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] || 0;
+    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] ?? 0;
     const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
     
     // Get the XP needed for the next level
