@@ -534,6 +534,7 @@ export function getAllFormData(): Record<string | number, any> {
 
 /**
  * Migrates student form data from old format to new format
+ * example:
  * Old: { currentCharacterLevel, targetCharacterLevel }
  * New: { characterLevels: { current, target } }
  */
@@ -559,21 +560,24 @@ export function migrateFormData() {
       
       // Check if this student data needs migration
       if (studentData && 
-          (studentData.currentCharacterLevel !== undefined || 
-           studentData.targetCharacterLevel !== undefined) && 
-          !studentData.characterLevels) {
+          (studentData.convertBox !== undefined || 
+           studentData.currentBond !== undefined)) {
         
-        // Create new characterLevels object
-        studentData.characterLevels = {
-          current: studentData.currentCharacterLevel ?? 1,
-          target: studentData.targetCharacterLevel ?? 1
+        // Create new bondDetailData object
+        studentData.bondDetailData = {
+          convertBox: studentData.convertBox ?? false,
+          currentBond: studentData.currentBond ?? 1,
+          originalSelectorBoxQuantity: studentData.originalSelectorBoxQuantity ?? 0,
+          originalSrGiftQuantity: studentData.originalSrGiftQuantity ?? 0,
+          originalYellowStoneQuantity: studentData.originalYellowStoneQuantity ?? 0,
         };
         
         // Remove old properties
-        delete studentData.currentCharacterLevel;
-        delete studentData.targetCharacterLevel;
-        delete studentData.currentPotentialLevel;
-        delete studentData.targetPotentialLevel;
+        delete studentData.convertBox;
+        delete studentData.currentBond;
+        delete studentData.originalSelectorBoxQuantity;
+        delete studentData.originalSrGiftQuantity;
+        delete studentData.originalYellowStoneQuantity;
         
         hasChanges = true;
         console.log(`Migrated data for student ${studentId}`);
@@ -601,13 +605,13 @@ export function checkAndMigrateFormData() {
   // Check if migration has been run already
   const migrationVersion = localStorage.getItem('forms_migration_version');
   
-  // If we haven't run migration version 1 yet
-  if (!migrationVersion || parseInt(migrationVersion) < 1) {
+  // If we haven't run migration version 2 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 2) {
     const migratedData = migrateFormData();
     
     if (migratedData) {
       // Mark migration as complete
-      localStorage.setItem('forms_migration_version', '1');
+      localStorage.setItem('forms_migration_version', '2');
     }
     
     return migratedData;

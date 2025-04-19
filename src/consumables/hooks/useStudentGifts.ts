@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue';
 import { StudentProps } from '../../types/student';
+import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import bondData from '../../data/data.json';
 import { updateStudentData } from '../stores/studentStore';
@@ -8,25 +9,17 @@ export function useStudentGifts(props: {
   student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
-  // State
+
   const giftFormData = ref<Record<string, number>>({});
   const boxFormData = ref<Record<string, number>>({});
-  const currentBond = ref(1);
-  const convertBox = ref(false);
-  const originalYellowStoneQuantity = ref(0);
-  const originalSrGiftQuantity = ref(0);
-  const originalSelectorBoxQuantity = ref(0);
+  const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
+
   const bondXpTable = bondData.bond_xp;
 
-  // Reset form data
   function resetFormData() {
     giftFormData.value = {};
     boxFormData.value = {};
-    currentBond.value = 1;
-    convertBox.value = false;
-    originalYellowStoneQuantity.value = 0;
-    originalSrGiftQuantity.value = 0;
-    originalSelectorBoxQuantity.value = 0;
+    bondDetailData.value = {...DEFAULT_BOND_DETAIL};
   }
 
   // Watch for changes to isVisible to load data when modal opens
@@ -49,7 +42,7 @@ export function useStudentGifts(props: {
   });
 
   // Watch for changes to form data and save to localStorage
-  watch([giftFormData, boxFormData, currentBond, convertBox], () => {
+  watch([giftFormData, boxFormData, bondDetailData], () => {
     if (props.student && props.isVisible) {
       saveToLocalStorage();
       updateStudentData(props.student.Id);
@@ -62,11 +55,7 @@ export function useStudentGifts(props: {
     const dataToSave = {
       giftFormData: giftFormData.value,
       boxFormData: boxFormData.value,
-      currentBond: currentBond.value,
-      convertBox: convertBox.value,
-      originalYellowStoneQuantity: originalYellowStoneQuantity.value,
-      originalSrGiftQuantity: originalSrGiftQuantity.value,
-      originalSelectorBoxQuantity: originalSelectorBoxQuantity.value
+      bondDetailData: bondDetailData.value
     }
 
     saveFormData(props.student.Id, dataToSave);
@@ -79,28 +68,16 @@ export function useStudentGifts(props: {
     const refs = {
       giftFormData,
       boxFormData,
-      currentBond,
-      convertBox,
-      originalYellowStoneQuantity,
-      originalSrGiftQuantity,
-      originalSelectorBoxQuantity
+      bondDetailData
     };
     
     const defaultValues = {
       giftFormData: {},
       boxFormData: {},
-      currentBond: 1,
-      convertBox: false,
-      originalYellowStoneQuantity: 0,
-      originalSrGiftQuantity: 0,
-      originalSelectorBoxQuantity: 0
+      bondDetailData: DEFAULT_BOND_DETAIL
     };
 
-    const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
-    
-    if (!success) {
-      resetFormData();
-    }
+    loadFormDataToRefs(props.student.Id, refs, defaultValues);
   }
 
   // Calculate individual item EXP
@@ -184,18 +161,18 @@ export function useStudentGifts(props: {
   // Compute new bond level based on current bond and cumulative EXP
   const newBondLevel = computed(() => {
     // Return early if we're already at max level
-    if (currentBond.value >= 100) return 100;
+    if (bondDetailData.value.currentBond >= 100) return 100;
     
     // No gifts added, stay at current level
-    if (totalCumulativeExp.value <= 0) return currentBond.value;
+    if (totalCumulativeExp.value <= 0) return bondDetailData.value.currentBond;
     
     // Calculate total XP including current level's cumulative XP and gift XP
-    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] ?? 0;
+    const currentLevelCumulativeXp = bondXpTable[bondDetailData.value.currentBond - 1] ?? 0;
     const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
     
     // Find the highest level we can reach with this total XP
-    let newLevel = currentBond.value;
-    for (let i = currentBond.value; i < 100; i++) {
+    let newLevel = bondDetailData.value.currentBond;
+    for (let i = bondDetailData.value.currentBond; i < 100; i++) {
       if (totalXp >= bondXpTable[i]) {
         newLevel = i + 1;
       } else {
@@ -212,7 +189,7 @@ export function useStudentGifts(props: {
     if (newBondLevel.value >= 100) return 0;
     
     // Calculate total XP including current level's cumulative XP and gift XP
-    const currentLevelCumulativeXp = bondXpTable[currentBond.value - 1] ?? 0;
+    const currentLevelCumulativeXp = bondXpTable[bondDetailData.value.currentBond - 1] ?? 0;
     const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
     
     // Get the XP needed for the next level
@@ -241,17 +218,17 @@ export function useStudentGifts(props: {
     boxFormData.value[boxId] = parseInt(input.value) || 0;
 
     // Update original quantities when not in convert mode
-    if (!convertBox.value) {
+    if (!bondDetailData.value.convertBox) {
       // Find the box by ID
       const box = props.student?.Boxes[boxId];
       if (box) {
         // Store original values based on the gift ID
         if (box.gift.Id === 82) { // Yellow stone
-          originalYellowStoneQuantity.value = parseInt(input.value) || 0;
+          bondDetailData.value.originalYellowStoneQuantity = parseInt(input.value) || 0;
         } else if (box.gift.Id === 100000) { // SR gift material
-          originalSrGiftQuantity.value = parseInt(input.value) || 0;
+          bondDetailData.value.originalSrGiftQuantity = parseInt(input.value) || 0;
         } else if (box.gift.Id === 100008) { // Selector box
-          originalSelectorBoxQuantity.value = parseInt(input.value) || 0;
+          bondDetailData.value.originalSelectorBoxQuantity = parseInt(input.value) || 0;
         }
       }
     }
@@ -262,13 +239,13 @@ export function useStudentGifts(props: {
     const input = event.target as HTMLInputElement;
     const value = parseInt(input.value);
     if (!isNaN(value) && value >= 1 && value <= 100) {
-      currentBond.value = value;
+      bondDetailData.value.currentBond = value;
     }
   };
 
   const convertBoxes = () => {
     // Toggle the convertBox value first
-    convertBox.value = !convertBox.value;
+    bondDetailData.value.convertBox = !bondDetailData.value.convertBox;
 
     if (!props.student?.Boxes || Object.keys(props.student.Boxes).length === 0) {
       return;
@@ -280,20 +257,20 @@ export function useStudentGifts(props: {
     const SELECTOR_BOX_ID = 100008;
     
     // Apply conversion logic for quantities
-    const yellowStoneQuantity = originalYellowStoneQuantity.value;
-    const srGiftMaterialQuantity = originalSrGiftQuantity.value;
-    const selectorBoxQuantity = originalSelectorBoxQuantity.value;
+    const yellowStoneQuantity = bondDetailData.value.originalYellowStoneQuantity;
+    const srGiftMaterialQuantity = bondDetailData.value.originalSrGiftQuantity;
+    const selectorBoxQuantity = bondDetailData.value.originalSelectorBoxQuantity;
 
-    if (convertBox.value) {
+    if (bondDetailData.value.convertBox) {
       // Save original values only when first checked
-      if (originalYellowStoneQuantity.value === 0 || 
-        originalSrGiftQuantity.value === 0) {
+      if (bondDetailData.value.originalYellowStoneQuantity === 0 || 
+        bondDetailData.value.originalSrGiftQuantity === 0) {
         // Store the original quantities directly by ID
-        originalYellowStoneQuantity.value = 
+        bondDetailData.value.originalYellowStoneQuantity = 
           parseInt(boxFormData.value[YELLOW_STONE_ID] as unknown as string) || 0;
-        originalSrGiftQuantity.value = 
+        bondDetailData.value.originalSrGiftQuantity = 
           parseInt(boxFormData.value[SR_GIFT_MATERIAL_ID] as unknown as string) || 0;
-        originalSelectorBoxQuantity.value = 
+        bondDetailData.value.originalSelectorBoxQuantity = 
           parseInt(boxFormData.value[SELECTOR_BOX_ID] as unknown as string) || 0;
       }
       
@@ -311,9 +288,9 @@ export function useStudentGifts(props: {
       boxFormData.value[SELECTOR_BOX_ID] = selectorBoxQuantity + convertedQuantity; // Number of selector boxes
     } else {
       // Restore original values when unchecked
-      boxFormData.value[YELLOW_STONE_ID] = originalYellowStoneQuantity.value;
-      boxFormData.value[SR_GIFT_MATERIAL_ID] = originalSrGiftQuantity.value;
-      boxFormData.value[SELECTOR_BOX_ID] = originalSelectorBoxQuantity.value;
+      boxFormData.value[YELLOW_STONE_ID] = bondDetailData.value.originalYellowStoneQuantity;
+      boxFormData.value[SR_GIFT_MATERIAL_ID] = bondDetailData.value.originalSrGiftQuantity;
+      boxFormData.value[SELECTOR_BOX_ID] = bondDetailData.value.originalSelectorBoxQuantity;
     }
   };
 
@@ -327,10 +304,10 @@ export function useStudentGifts(props: {
     return (id: number): boolean => {
       return (
         // Only show grades for non-keystones or when converted boxes have quantities
-        (!convertBox.value && id !== YELLOW_STONE_ID) || 
-        (convertBox.value && id === SR_GIFT_MATERIAL_ID && boxFormData.value[SR_GIFT_MATERIAL_ID] > 0) ||
-        (convertBox.value && id === SELECTOR_BOX_ID && boxFormData.value[SELECTOR_BOX_ID] > 0) ||
-        (convertBox.value && id === SELECTOR_KEYSTONE_ID && boxFormData.value[SELECTOR_KEYSTONE_ID] > 0)
+        (!bondDetailData.value.convertBox && id !== YELLOW_STONE_ID) || 
+        (bondDetailData.value.convertBox && id === SR_GIFT_MATERIAL_ID && boxFormData.value[SR_GIFT_MATERIAL_ID] > 0) ||
+        (bondDetailData.value.convertBox && id === SELECTOR_BOX_ID && boxFormData.value[SELECTOR_BOX_ID] > 0) ||
+        (bondDetailData.value.convertBox && id === SELECTOR_KEYSTONE_ID && boxFormData.value[SELECTOR_KEYSTONE_ID] > 0)
       );
     };
   });
@@ -341,15 +318,24 @@ export function useStudentGifts(props: {
     emit('close');
   }
 
+  // Create computed properties to expose the nested properties for compatibility
+  const currentBond = computed({
+    get: () => bondDetailData.value.currentBond,
+    set: (value) => { bondDetailData.value.currentBond = value; }
+  });
+
+  const convertBox = computed({
+    get: () => bondDetailData.value.convertBox,
+    set: (value) => { bondDetailData.value.convertBox = value; }
+  });
+
   return {
     // State
     giftFormData,
     boxFormData,
-    currentBond,
-    convertBox,
-    originalYellowStoneQuantity,
-    originalSrGiftQuantity,
-    originalSelectorBoxQuantity,
+    bondDetailData,
+    currentBond, // Computed getter/setter for compatibility
+    convertBox,  // Computed getter/setter for compatibility
     
     // Computed
     totalCumulativeExp,

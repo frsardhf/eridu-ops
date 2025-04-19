@@ -129,6 +129,18 @@ const hasEquipmentData = computed(() => {
     Object.keys(studentData.value.equipmentLevels).length > 0;
 });
 
+const bondLevel = computed(() => {
+  return studentData.value?.bondDetailData?.currentBond || 0;
+});
+
+const characterCurrentLevel = computed(() => {
+  return studentData.value?.characterLevels?.current || 0;
+});
+
+const characterTargetLevel = computed(() => {
+  return studentData.value?.characterLevels?.target || 0;
+});
+
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
   const newPinStatus = togglePinnedStudent(props.student.Id);
@@ -159,25 +171,25 @@ function handlePinToggle(event: MouseEvent) {
         <!-- Stats overlay -->
         <div class="stats-overlay">
           <!-- Bond Level -->
-          <div class="bond-container" v-if="studentData?.currentBond">
+          <div class="bond-container" v-if="bondLevel > 0">
             <div class="bond-icon-container">
               <img 
                 src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
                 alt="Bond Level"
                 class="bond-icon"
               />
-              <span class="bond-number">{{ studentData.currentBond }}</span>
+              <span class="bond-number">{{ bondLevel }}</span>
             </div>
           </div>
           
           <!-- Character Level -->
           <div class="level-container" 
-            v-if="studentData?.characterLevels.current">
-            <span class="level-number">{{ studentData.characterLevels.current }}</span>
+          v-if="characterCurrentLevel > 0">
+            <span class="level-number">{{ characterCurrentLevel }}</span>
             <span class="level-max" 
-              v-if="shouldShowTarget(studentData.characterLevels.current,
-              studentData.characterLevels.target
-            )">/{{ studentData.characterLevels.target }}</span>
+              v-if="shouldShowTarget(characterCurrentLevel,
+              characterTargetLevel
+            )">/{{ characterTargetLevel }}</span>
           </div>
           
           <!-- Bottom overlays container -->
