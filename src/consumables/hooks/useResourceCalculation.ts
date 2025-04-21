@@ -4,9 +4,7 @@ import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/equipmentsStore';
-import { useGearCalculation } from './useGearCalculation';
 import dataTable from '../../data/data.json';
-import { useStudentGear } from './useStudentGear';
 
 // Helper function to calculate XP needs and report allocations
 function calculateExpNeeds() {
@@ -36,8 +34,8 @@ function calculateExpNeeds() {
     
     if (currentLevel >= targetLevel || !characterXpTable.length) return;
     
-    const currentXp = characterXpTable[currentLevel - 1] || 0;
-    const targetXp = characterXpTable[targetLevel - 1] || 0;
+    const currentXp = characterXpTable[currentLevel - 1] ?? 0;
+    const targetXp = characterXpTable[targetLevel - 1] ?? 0;
     const studentXpNeeded = Math.max(0, targetXp - currentXp);
     
     if (studentXpNeeded > 0) {
@@ -219,6 +217,8 @@ const isExpReport = (materialId: number) => {
   return [10, 11, 12, 13].includes(materialId);
 };
 
+let hasCreditsBeenCombined = false;
+
 export function useResourceCalculation() {
   // Get all materials data from the store
   const allMaterialsData = computed(() => {
@@ -233,22 +233,28 @@ export function useResourceCalculation() {
   const totalMaterialsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();
 
-    // Combine credits from gears to materials
-    Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
-      const gearCredits = (gears as any[]).find(item => item.type === 'credits');
-      
-      if (gearCredits && allMaterialsData.value[studentId]) {
-        const materialCredits = allMaterialsData.value[studentId].find(
-          item => item.type === 'credits'
-        );
+
+    // Combine credits from gears to materials only once
+    if (!hasCreditsBeenCombined) {
+      Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
+        const gearCredits = (gears as any[]).find(item => item.type === 'credits');
         
-        if (materialCredits) {
-          materialCredits.materialQuantity += gearCredits.materialQuantity;
-        } else {
-          allMaterialsData.value[studentId].push({...gearCredits});
+        if (gearCredits && allMaterialsData.value[studentId]) {
+          const materialCredits = allMaterialsData.value[studentId].find(
+            item => item.type === 'credits'
+          );
+          
+          if (materialCredits) {
+            materialCredits.materialQuantity += gearCredits.materialQuantity;
+          } else {
+            allMaterialsData.value[studentId].push({...gearCredits});
+          }
         }
-      }
-    });
+      });
+      
+      // Set the flag to true after combining once
+      hasCreditsBeenCombined  = true;
+    }
     
     Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {

@@ -263,8 +263,7 @@ export function useStudentGear(props: {
       equipmentLevels.value
     );
 
-    const credits = materials.filter(m => m.type === 'credits')
-    updateGearsData(props.student.Id, credits);
+    updateGearsData(props.student.Id, materials);
     
     return materials;
   });
@@ -279,9 +278,9 @@ export function useStudentGear(props: {
         equipmentLevels.value[type].current = current;
         equipmentLevels.value[type].target = target;
         
-        // Explicitly trigger localStorage save
         if (props.student && props.isVisible) {
           saveToLocalStorage();
+          updateStudentData(props.student.Id);
         }
       } else {
         console.error('Equipment type not found in levels:', type);

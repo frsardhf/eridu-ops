@@ -85,7 +85,6 @@ const {
   equipmentMaterialsNeeded
 } = useStudentGear(props, emit);
 
-// Update the hook references - remove ownedResources since it's not returned by the hook
 const {
   totalMaterialsNeeded,
   materialsLeftover,
@@ -93,16 +92,6 @@ const {
   getStudentMaterials
 } = useResourceCalculation();
 
-// Keep the gear calculation refresh function
-const { refreshData: refreshGearData } = useGearCalculation();
-
-// Add a computed property to reactive get all students data from stores
-watch(activeTab, (newTab) => {
-  // Only refresh gear data when needed
-  if (newTab === 'gear' || newTab === 'summary') {
-    refreshGearData();
-  }
-});
 
 // Navigation functions
 function navigateToPrevious() {

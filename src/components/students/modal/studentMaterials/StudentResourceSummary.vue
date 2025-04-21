@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
-import { getResources } from '../../../../consumables/utils/studentStorage';
+import { getEquipments, getResources } from '../../../../consumables/utils/studentStorage';
 import '../../../../styles/resourceDisplay.css';
 
 // Define view options
@@ -26,11 +26,9 @@ const {
 
 // Get equipment resource data
 const {
-  totalEquipmentNeeded,
-  equipmentLeftover,
-  missingEquipment,
-  refreshData: refreshEquipmentData,
-  getEquipmentUsageByStudents
+  totalEquipmentsNeeded, 
+  equipmentsLeftover, 
+  getEquipmentUsageByStudents 
 } = useGearCalculation();
 
 // Track the currently hovered item for tooltip
@@ -75,6 +73,44 @@ const missingMaterials = computed<MaterialWithRemaining[]>(() => {
     .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
 });
 
+// Equipments that are missing (negative leftover)
+const missingEquipments = computed<MaterialWithRemaining[]>(() => {
+  // Get equipments directly to ensure we have latest data
+  const equipments = getEquipments() || {};
+  
+  // Generate materials that are missing
+  return totalEquipmentsNeeded.value
+    .filter(item => {
+      // Get the material ID and check if we have it
+      const materialId = item.material?.Id;
+      if (!materialId) return false;
+      
+      // Get resource for this material
+      const resource = equipments[materialId.toString()];
+      if (!resource) return true; // If resource doesn't exist, consider it missing
+      
+      // Get owned quantity
+      const owned = resource.QuantityOwned || 0;
+      
+      // Consider missing if owned < needed
+      return owned < item.materialQuantity;
+    })
+    .map(item => {
+      const materialId = item.material?.Id;
+      const resource = equipments[materialId?.toString() || ''];
+      const owned = resource?.QuantityOwned || 0;
+      const remaining = owned - item.materialQuantity;
+      
+      return {
+        material: item.material,
+        materialQuantity: item.materialQuantity,
+        remaining: remaining,
+        type: item.type
+      };
+    })
+    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
+});
+
 // Check if the material is an exp report
 const isExpReport = (materialId: number) => {
   // Exp report IDs: Novice (10), Normal (11), Advanced (12), Superior (13)
@@ -93,12 +129,10 @@ const displayResources = computed(() => {
       resources = missingMaterials.value;
       break;
     case 'equipment-needed':
-      // Filter out credits from equipment needed
-      resources = totalEquipmentNeeded.value.filter(item => item.material?.Id !== 5);
+      resources = totalEquipmentsNeeded.value;
       break;
     case 'equipment-missing':
-      // Filter out credits from equipment missing
-      resources = missingEquipment.value.filter(item => item.material?.Id !== 5);
+      resources = missingEquipments.value;
       break;
     default:
       resources = [];
@@ -257,14 +291,6 @@ const tooltipGridColumns = computed(() => {
   if (count <= 8) return Math.min(4, count).toString();
   if (count <= 16) return Math.min(8, count).toString();
   return Math.min(10, count).toString();
-});
-
-// Refresh the data initially
-onMounted(() => {
-  // Both useResourceCalculation and useGearCalculation hooks 
-  // should now have access to persisted data by default.
-  // We're just refreshing the equipment data which might need recalculation
-  refreshEquipmentData();
 });
 </script>
 
