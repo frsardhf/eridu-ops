@@ -6,6 +6,24 @@ import { preloadAllStudentsData } from '../utils/materialUtils';
 // Create a reactive store for gears data
 const gearsDataStore = ref<Record<string, Material[]>>({});
 
+// Initialize the store from localStorage
+const initializeStore = () => {
+  // Load the saved gears data
+  const storedGears = getStoredGearsData();
+  if (storedGears && Object.keys(storedGears).length) {
+    gearsDataStore.value = storedGears;
+  }
+  
+  // Preload gears for all students with target upgrades
+  preloadAllStudentsData();
+};
+
+// Initialize the store on mount
+if (typeof window !== 'undefined') {
+  initializeStore();
+}
+
+
 // Function to update gears data in the store
 export function updateGearsData(studentId: string | number, gears: Material[]) {
   gearsDataStore.value[studentId] = gears;
