@@ -1,8 +1,8 @@
-import { computed, ref, onMounted } from 'vue';
+import { computed } from 'vue';
 import { getDataCollection, getResourceDataById, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID } from '../../types/upgrade';
-import { getAllMaterialsData, updateMaterialsData } from '../stores/materialsStore';
+import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/equipmentsStore';
 import dataTable from '../../data/data.json';
 
@@ -22,13 +22,26 @@ function calculateExpNeeds() {
   
   // Get all students that need XP and their XP requirements
   const studentXpDetails: { studentId: string; xpNeeded: number; name: string }[] = [];
+
+  // Create a set of all student IDs from both data sources
+  const allStudentIds = new Set<string>();
+  
+  // Add all students from materials data
+  Object.keys(getAllMaterialsData()).forEach(studentId => {
+    allStudentIds.add(studentId);
+  });
+  
+  // Add all students from gear data
+  Object.keys(getAllGearsData()).forEach(studentId => {
+    allStudentIds.add(studentId);
+  });
   
   // Calculate XP needed for each student and build the array
-  Object.entries(allMaterialsData).forEach(([studentId, materials]) => {
+  allStudentIds.forEach(studentId => {
     // Get the form data directly, which contains level info
     const form = getDataCollection('forms')[studentId];
-    if (!form) return;
-    
+    if (!form.characterLevels) return;
+
     const currentLevel = form.characterLevels.current ?? 1;
     const targetLevel = form.characterLevels.target ?? currentLevel;
     
@@ -43,7 +56,7 @@ function calculateExpNeeds() {
       studentXpDetails.push({
         studentId,
         xpNeeded: studentXpNeeded,
-        name: student?.Name || studentId
+        name: student?.Name ?? studentId
       });
     }
   });
@@ -218,7 +231,6 @@ const isExpReport = (materialId: number) => {
 };
 
 export function useResourceCalculation() {
-  // Get all materials data from the store
   const allMaterialsData = computed(() => {
     return getAllMaterialsData();
   });
@@ -290,7 +302,7 @@ export function useResourceCalculation() {
       const resource = resources[materialId.toString()];
       if (!resource) return;
 
-      const owned = resource.QuantityOwned || 0;
+      const owned = resource.QuantityOwned ?? 0;
       const remaining = owned - needed.materialQuantity;
 
       leftover.push({
@@ -309,32 +321,32 @@ export function useResourceCalculation() {
   };
 
   // Get students using a specific material
-const getMaterialUsageByStudents = (materialId: number) => {
-  const usage: { student: StudentProps; quantity: number }[] = [];
-  const isCredits = materialId === CREDITS_ID;
-  
-  // Handle EXP reports differently
-  if (isExpReport(materialId)) {
-    // Get all students from the collection
-    const studentsCollection = getDataCollection('students') || {};
+  const getMaterialUsageByStudents = (materialId: number) => {
+    const usage: { student: StudentProps; quantity: number }[] = [];
+    const isCredits = materialId === CREDITS_ID;
     
-    // Get the optimal allocation of reports per student
-    const { studentReportAllocations } = calculateExpNeeds();
-    
-    // Add each student that needs this report type
-    studentReportAllocations.forEach((reportAllocations, studentId) => {
-      const student = studentsCollection[studentId];
-      if (!student) return;
+    // Handle EXP reports differently
+    if (isExpReport(materialId)) {
+      // Get all students from the collection
+      const studentsCollection = getDataCollection('students') || {};
       
-      const reportsNeeded = reportAllocations.get(materialId) || 0;
-      if (reportsNeeded > 0) {
-        usage.push({
-          student,
-          quantity: reportsNeeded
-        });
-      }
-    });
-  } else {
+      // Get the optimal allocation of reports per student
+      const { studentReportAllocations } = calculateExpNeeds();
+      
+      // Add each student that needs this report type
+      studentReportAllocations.forEach((reportAllocations, studentId) => {
+        const student = studentsCollection[studentId];
+        if (!student) return;
+        
+        const reportsNeeded = reportAllocations.get(materialId) ?? 0;
+        if (reportsNeeded > 0) {
+          usage.push({
+            student,
+            quantity: reportsNeeded
+          });
+        }
+      });
+    } else {
       // Create a set of all student IDs from both data sources
       const allStudentIds = new Set<string>();
       
