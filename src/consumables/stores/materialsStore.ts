@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import { Material } from '../../types/upgrade';
 import { saveMaterialsData, getAllMaterialsData as getStoredMaterialsData } from '../utils/studentStorage';
-import { preloadAllStudentsMaterials } from '../utils/materialUtils';
+import { preloadAllStudentsData } from '../utils/materialUtils';
 
 // Create a reactive store for materials data
 const materialsDataStore = ref<Record<string, Material[]>>({});
@@ -15,7 +15,7 @@ const initializeStore = () => {
   }
   
   // Preload materials for all students with target upgrades
-  preloadAllStudentsMaterials();
+  preloadAllStudentsData();
 };
 
 // Initialize the store on mount

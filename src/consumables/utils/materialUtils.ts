@@ -59,16 +59,17 @@ export function consolidateAndSortMaterials(materials: Material[]): Material[] {
 }
 
 /**
- * Function to preload all student materials during initialization
- * This will calculate materials for all students that have form data
+ * Function to preload all student materials and gears during initialization
+ * This will calculate materials and gears for all students that have form data
  */
-export function preloadAllStudentsMaterials() {
+export function preloadAllStudentsData() {
   try {
     // Get all students form data
     const allFormData = getAllFormData();
     
     // Get all students data
     const allStudentsData = getDataCollection('students');
+    const allGearsData = getDataCollection('equipments');
     
     // Process each student's form data
     Object.entries(allFormData).forEach(([studentId, formData]) => {
@@ -77,78 +78,47 @@ export function preloadAllStudentsMaterials() {
       const student = allStudentsData[studentId];
       if (!student) return;
       
-      // Get skill levels, potential levels, and character levels from form data
+      // Get all levels from form data
       const skillLevels = formData.skillLevels ?? DEFAULT_SKILL_LEVELS;
       const potentialLevels = formData.potentialLevels ?? DEFAULT_POTENTIAL_LEVELS;
       const characterLevels = formData.characterLevels ?? DEFAULT_CHARACTER_LEVELS;
-      
-      // Skip if no upgrades are targeted
-      if (!hasTargetUpgrades(characterLevels) && 
-          !hasTargetUpgrades(skillLevels) && 
-          !hasTargetUpgrades(potentialLevels)) {
-        return;
-      }
-      
-      // Calculate materials for this student using the exported function
-      const materials = calculateAllMaterials(
-        student,
-        characterLevels, 
-        skillLevels, 
-        potentialLevels
-      );
-      
-      // Add to store
-      if (materials.length > 0) {
-        updateMaterialsData(studentId, materials);
-      }
-    });
-  } catch (error) {
-    console.error('Error preloading materials data:', error);
-  }
-}
-
-/**
- * Function to preload all student gears during initialization
- * This will calculate gears for all students that have form data
- */
-export function preloadAllStudentsGears() {
-  try {
-    // Get all students form data
-    const allFormData = getAllFormData();
-    
-    // Get all students data
-    const allStudentsData = getDataCollection('students');
-
-    const allGearsData = getDataCollection('equipments');
-
-    // Process each student's form data
-    Object.entries(allFormData).forEach(([studentId, formData]) => {
-      if (!formData) return;
-      
-      const student = allStudentsData[studentId];
-      if (!student) return;
-      
-      // Get skill levels, potential levels, and character levels from form data
       const equipmentLevels = formData.equipmentLevels ?? {};
       
-      // Skip if no upgrades are targeted
-      if (!hasTargetUpgrades(equipmentLevels)) {
-        return;
+      // Process student materials
+      if (hasTargetUpgrades(characterLevels) || 
+          hasTargetUpgrades(skillLevels) || 
+          hasTargetUpgrades(potentialLevels)) {
+        
+        // Calculate materials for this student
+        const materials = calculateAllMaterials(
+          student,
+          characterLevels, 
+          skillLevels, 
+          potentialLevels
+        );
+        
+        // Add to store
+        if (materials.length > 0) {
+          updateMaterialsData(studentId, materials);
+        }
       }
       
-      // Calculate materials for this student using the exported function
-      const materials = calculateAllGears(
-        allGearsData,
-        equipmentLevels
-      );
-      
-      // Add to store
-      if (materials.length > 0) {
-        updateGearsData(studentId, materials);
+      // Process student gears
+      if (hasTargetUpgrades(equipmentLevels)) {
+        // Calculate gears for this student
+        const gears = calculateAllGears(
+          allGearsData,
+          equipmentLevels
+        );
+        
+        // Add to store
+        if (gears.length > 0) {
+          updateGearsData(studentId, gears);
+        }
       }
     });
   } catch (error) {
-    console.error('Error preloading materials data:', error);
+    console.error('Error preloading students data:', error);
   }
 }
 
