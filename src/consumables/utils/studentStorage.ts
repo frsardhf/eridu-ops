@@ -6,13 +6,14 @@
 export const STORAGE_KEYS = {
   STUDENTS: 'students',
   RESOURCES: 'resources',
-  FORMS: 'forms',
   EQUIPMENTS: 'equipments',
+  FORMS: 'forms',
   PINNED_STUDENTS: 'pinned-students',
   THEME: 'theme',
   SORT_OPTION: 'sort-option',
   SORT_DIRECTION: 'sort-direction',
   MATERIALS: 'materials',
+  GEARS: 'gears',
   // Add more keys as needed
 };
 
@@ -515,6 +516,56 @@ export function getAllMaterialsData(): Record<string, any[]> {
     return getDataCollection(STORAGE_KEYS.MATERIALS);
   } catch (error) {
     console.error('Error retrieving all materials data from localStorage:', error);
+    return {};
+  }
+}
+
+/**
+ * Saves gears data to localStorage
+ * @param studentId The ID of the student
+ * @param gears The gears data to save
+ * @returns boolean indicating success or failure
+ */
+export function saveGearsData(studentId: string | number, gears: any[]): boolean {
+  try {
+    // Get all gears data
+    let gearsData = getDataCollection(STORAGE_KEYS.GEARS);
+    
+    // Update the gears for this student
+    gearsData[studentId] = gears;
+    
+    // Save entire gears collection back to localStorage
+    return setStorageData(STORAGE_KEYS.GEARS, gearsData);
+  } catch (error) {
+    console.error('Error saving gears data to localStorage:', error);
+    return false;
+  }
+}
+
+/**
+ * Retrieves gears data for a specific student from localStorage
+ * @param studentId The ID of the student
+ * @returns The gears data or null if not found
+ */
+export function getGearsData(studentId: string | number): any[] | null {
+  try {
+    const gearsData = getDataCollection(STORAGE_KEYS.GEARS);
+    return gearsData[studentId] ?? null;
+  } catch (error) {
+    console.error('Error retrieving gears data from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Retrieves all gears data from localStorage
+ * @returns All gears data or empty object if not found
+ */
+export function getAllGearsData(): Record<string, any[]> {
+  try {
+    return getDataCollection(STORAGE_KEYS.GEARS);
+  } catch (error) {
+    console.error('Error retrieving all gears data from localStorage:', error);
     return {};
   }
 }

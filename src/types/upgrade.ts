@@ -5,7 +5,7 @@ export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 export interface Material {
   material: Record<string, any> | null;
   materialQuantity: number;
-  type?: 'materials' | 'special' | 'credits';
+  type?: 'materials' | 'special' | 'equipments' | 'credits';
 }
 
 export interface CharacterLevels {

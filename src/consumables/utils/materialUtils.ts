@@ -9,7 +9,9 @@ import {
   DEFAULT_CHARACTER_LEVELS
 } from '../../types/upgrade';
 import { updateMaterialsData } from '../stores/materialsStore';
+import { updateGearsData } from '../stores/equipmentsStore';
 import { calculateAllMaterials } from '../hooks/useStudentUpgrade';
+import { calculateAllGears } from '../hooks/useStudentGear';
 
 /**
  * Utility function to consolidate and sort materials
@@ -98,6 +100,51 @@ export function preloadAllStudentsMaterials() {
       // Add to store
       if (materials.length > 0) {
         updateMaterialsData(studentId, materials);
+      }
+    });
+  } catch (error) {
+    console.error('Error preloading materials data:', error);
+  }
+}
+
+/**
+ * Function to preload all student gears during initialization
+ * This will calculate gears for all students that have form data
+ */
+export function preloadAllStudentsGears() {
+  try {
+    // Get all students form data
+    const allFormData = getAllFormData();
+    
+    // Get all students data
+    const allStudentsData = getDataCollection('students');
+
+    const allGearsData = getDataCollection('equipments');
+
+    // Process each student's form data
+    Object.entries(allFormData).forEach(([studentId, formData]) => {
+      if (!formData) return;
+      
+      const student = allStudentsData[studentId];
+      if (!student) return;
+      
+      // Get skill levels, potential levels, and character levels from form data
+      const equipmentLevels = formData.equipmentLevels ?? {};
+      
+      // Skip if no upgrades are targeted
+      if (!hasTargetUpgrades(equipmentLevels)) {
+        return;
+      }
+      
+      // Calculate materials for this student using the exported function
+      const materials = calculateAllGears(
+        allGearsData,
+        equipmentLevels
+      );
+      
+      // Add to store
+      if (materials.length > 0) {
+        updateGearsData(studentId, materials);
       }
     });
   } catch (error) {

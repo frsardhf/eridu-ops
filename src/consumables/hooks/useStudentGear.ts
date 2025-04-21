@@ -8,20 +8,20 @@ import {
   getResourceDataById,
   getEquipmentDataById
  } from '../utils/studentStorage';
-import { EquipmentLevels, EquipmentMaterial, EquipmentType } from '../../types/equipment';
+import { 
+  EquipmentItem,
+  EquipmentLevels, 
+  EquipmentType 
+} from '../../types/equipment';
 import {
   CREDITS_ID,
+  Material,
 } from '../../types/upgrade';
+import { consolidateAndSortMaterials } from '../utils/materialUtils';
+import { updateMaterialsData } from '../stores/materialsStore';
 import { updateStudentData } from '../stores/studentStore';
-
-// Add this type definition at the top of your file, near other type definitions
-interface EquipmentItem {
-  Id: number;
-  Category: string;
-  Tier: number;
-  MaxLevel: number;
-  Recipe: number[][];
-}
+import { ResourceProps } from '../../types/resource';
+import { updateGearsData } from '../stores/equipmentsStore';
 
 // Function to get maximum tier for each equipment type
 function getMaxTierForType(type: string): number {
@@ -36,16 +36,140 @@ function getMaxTierForType(type: string): number {
   return equipment?.Tier ?? 10; // Return the tier if found, otherwise default to 10
 }
 
+// Get credits required for a specific equipment tier
+export function getCreditsForEquipmentTier(current: number, target: number) {
+  // Credits table for equipment tiers
+  const equipmentCreditsTable = dataTable.equipment_credits;
+  
+  // When current is 1, we need the full amount for target
+  if (current === 1) {
+    return equipmentCreditsTable[target-2] ?? 0;
+  }
+  
+  // For other levels, calculate the difference
+  const creditsNeeded = equipmentCreditsTable[target-2] - equipmentCreditsTable[current-2];
+  return creditsNeeded || 0;
+}
+
+// Exported function to calculate equipment materials needed
+export function calculateEquipmentMaterialsNeeded(
+  studentEquipments: Record<string | number, any>,
+  equipmentLevels: EquipmentLevels
+): Material[] {
+  const materialsNeeded: Material[] = [];
+  if (!studentEquipments || !equipmentLevels) return materialsNeeded;
+
+  Object.entries(equipmentLevels).forEach(([type, levels]) => {
+    const { current, target } = levels;
+    
+    // Skip if no upgrade needed for this type
+    if (current >= target) return;
+
+    // Calculate materials for each level from current to target-1
+    for (let level = current; level < target; level++) {
+      // Find the equipment item for the next tier
+      const nextTier = level + 1;
+      const equipmentItem = studentEquipments ? 
+        Object.values(studentEquipments).find(eq => 
+          eq.Category === type && eq.Tier === nextTier
+        ) : null;
+
+      // Get the recipe from the equipment item
+      const recipes = equipmentItem?.Recipe ?? null;
+
+      // If no recipe data is available, skip this level
+      if (!recipes) {
+        console.warn(`No recipe found for ${type} tier ${nextTier}`);
+        continue;
+      }
+
+      // Process each recipe item
+      for (const recipe of recipes) {
+        const recipeId = recipe[0];
+        const quantity = recipe[1];
+        
+        if (!recipeId || !quantity) continue;
+        
+        // Convert equipment ID to material ID by removing first two digits
+        const materialId = parseInt(recipeId.toString().substring(2));
+        
+        // Get material data from ID
+        const materialData = getEquipmentDataById(materialId);
+        
+        // Check if this material type already exists
+        const existingMaterial = materialsNeeded.find(m => 
+          m.material?.Id === materialId && m.type === type
+        );
+        
+        if (existingMaterial) {
+          // Update quantity for existing material
+          existingMaterial.materialQuantity += quantity;
+        } else {
+          // Add new material entry
+          materialsNeeded.push({
+            material: materialData,
+            materialQuantity: quantity,
+            type: 'equipments'
+          });
+        }
+      }
+    }
+  });
+
+  return materialsNeeded;
+}
+
+// Calculate credits needed for equipment upgrades
+export function calculateEquipmentCreditsNeeded(
+  equipmentLevels: EquipmentLevels
+): Material[] {
+  const materialsNeeded: Material[] = [];
+  const creditsData = getResourceDataById(CREDITS_ID);
+  
+  Object.entries(equipmentLevels).forEach(([type, levels]) => {
+    const { current, target } = levels;
+    
+    // Skip if no upgrade needed for this type
+    if (current >= target) return;
+    
+    const creditsQuantity = getCreditsForEquipmentTier(current, target);
+    
+    // Only add if credits are needed
+    if (creditsQuantity > 0) {
+      materialsNeeded.push({
+        material: creditsData,
+        materialQuantity: creditsQuantity,
+        type: 'credits'
+      });
+    }
+  });
+  
+  return materialsNeeded;
+}
+
+export function calculateAllGears(
+  student: Record<string | number, any>,
+  equipmentLevels: EquipmentLevels
+): Material[] {
+  // Collect all materials
+  const materials: Material[] = [];
+  
+  materials.push(...calculateEquipmentCreditsNeeded(equipmentLevels));
+  materials.push(...calculateEquipmentMaterialsNeeded(student?.Equipments, equipmentLevels));
+  if (!student?.Equipments) {
+    materials.push(...calculateEquipmentMaterialsNeeded(student, equipmentLevels));
+  }
+  
+  // Consolidate and sort materials
+  return consolidateAndSortMaterials(materials);
+}
+
 export function useStudentGear(props: { 
   student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   // Track all equipment levels in one object
   const equipmentLevels = ref<EquipmentLevels>({});
-  
-  const levelCreditsIds = CREDITS_ID;
-  const creditsData = getResourceDataById(levelCreditsIds);
-  const equipmentCreditsTable = dataTable.equipment_credits;
 
   // Reset form data
   function resetFormData() {
@@ -120,8 +244,8 @@ export function useStudentGear(props: {
     Object.keys(mergedLevels).forEach(type => {
       if (loadedLevels[type]) {
         mergedLevels[type] = {
-          current: loadedLevels[type].current || 1,
-          target: loadedLevels[type].target || 1
+          current: loadedLevels[type].current ?? 1,
+          target: loadedLevels[type].target ?? 1
         };
       }
     });
@@ -130,71 +254,20 @@ export function useStudentGear(props: {
     equipmentLevels.value = mergedLevels;
   }
 
-  const equipmentMaterialsNeeded = computed<EquipmentMaterial[]>(() => {
-    const materialsNeeded: EquipmentMaterial[] = [];
+  // Use the external calculation function for the computed property
+  const equipmentMaterialsNeeded = computed<Material[]>(() => {
+    if (!props.student) return [];
+    
+    const materials = calculateAllGears(
+      props.student ?? undefined,
+      equipmentLevels.value
+    );
 
-    Object.entries(equipmentLevels.value).forEach(([type, levels]) => {
-      const { current, target } = levels;
-      
-      // Skip if no upgrade needed for this type
-      if (current >= target) return;
-
-      // Get the correct material IDs and quantities based on equipment type
-      const equipments = props.student?.Equipments as unknown as Record<string, EquipmentItem>;
-      
-      // Calculate materials for each level from current to target-1
-      for (let level = current; level < target; level++) {
-        // Find the equipment item for the next tier
-        const nextTier = level + 1;
-        const equipmentItem = equipments ? 
-          Object.values(equipments).find(eq => 
-            eq.Category === type && eq.Tier === nextTier
-          ) : null;
-        
-        // Get the recipe from the equipment item
-        const recipes = equipmentItem?.Recipe || null;
-
-        // If no material data is available, skip this level
-        if (!recipes) {
-          console.warn(`No recipe found for ${type} tier ${nextTier}`);
-          continue;
-        }
-
-        // Process each recipe item
-        for (const recipe of recipes) {
-          const recipeId = recipe[0];
-          const quantity = recipe[1];
-          
-          if (!recipeId || !quantity) continue;
-          
-          // Convert equipment ID to material ID by removing first two digits
-          const materialId = parseInt(recipeId.toString().substring(2));
-          
-          // Get material data from ID
-          const materialData = getEquipmentDataById(materialId);
-          
-          // Check if this material type already exists
-          const existingMaterial = materialsNeeded.find(m => 
-            m.material?.Id === materialId && m.equipmentType === type
-          );
-          
-          if (existingMaterial) {
-            // Update quantity for existing material
-            existingMaterial.materialQuantity += quantity;
-          } else {
-            // Add new material entry
-            materialsNeeded.push({
-              material: materialData,
-              materialQuantity: quantity,
-              equipmentType: type as EquipmentType
-            });
-          }
-        }
-      }
-    });
-
-    return materialsNeeded;
-  })
+    const credits = materials.filter(m => m.type === 'credits')
+    updateGearsData(props.student.Id, credits);
+    
+    return materials;
+  });
 
   // Function to handle updates for equipment levels
   const handleEquipmentUpdate = (type: EquipmentType, current: number, target: number) => {
@@ -217,7 +290,6 @@ export function useStudentGear(props: {
   };
 
   function closeModal() {
-    // Save the current state before closing
     saveToLocalStorage();
     emit('close');
   }
@@ -228,4 +300,4 @@ export function useStudentGear(props: {
     closeModal,
     handleEquipmentUpdate
   };
-} 
+}

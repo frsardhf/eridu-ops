@@ -1,33 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { EquipmentMaterial } from '../../../../types/equipment';
+import { formatQuantity } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
-
-// Define interface for equipment material items
-interface EquipmentMaterial {
-  material: Record<string, any> | null;
-  materialQuantity: number;
-  equipmentType: string;
-}
+import { Material } from '../../../../types/upgrade';
 
 const props = defineProps<{
-  materials: EquipmentMaterial[];
+  materials: Material[];
   student?: Record<string, any> | null;
 }>();
-
-// Function to format quantity with 'k' for large numbers
-const formatQuantity = (quantity: number): string => {
-  if (!quantity || quantity <= 0) return '';
-  
-  // Format large numbers with 'k' suffix
-  if (quantity >= 1000000) {
-    return `×${Math.floor(quantity / 1000000)}M`;
-  } else if (quantity >= 10000) {
-    return `×${Math.floor(quantity / 1000)}K`;
-  } 
-  
-  // Keep normal display for smaller numbers
-  return `×${quantity}`;
-};
 
 // Calculate cumulative materials needed by combining all equipment types
 const cumulativeMaterials = computed(() => {

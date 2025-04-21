@@ -2,11 +2,17 @@
 export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' | 
   'Hairpin' | 'Charm' | 'Watch' | 'Necklace';
 
+export interface EquipmentItem {
+  Id: number;
+  Category: string;
+  Tier: number;
+  MaxLevel: number;
+  Recipe: number[][];
+}
+
 export interface EquipmentMaterial {
   material: Record<string, any> | null;
-  credits?: Record<string, any> | null;
   materialQuantity: number;
-  creditsQuantity?: number;
   equipmentType: EquipmentType;
 }
 

@@ -3,10 +3,10 @@ import { getDataCollection, getResourceDataById, getResources } from '../utils/s
 import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
+import { getAllGearsData } from '../stores/equipmentsStore';
 import { useGearCalculation } from './useGearCalculation';
 import dataTable from '../../data/data.json';
-
-const { getEquipmentCredits, refreshData: refreshEquipmentData } = useGearCalculation();
+import { useStudentGear } from './useStudentGear';
 
 // Helper function to calculate XP needs and report allocations
 function calculateExpNeeds() {
@@ -225,20 +225,36 @@ export function useResourceCalculation() {
     return getAllMaterialsData();
   });
 
-  const equipmentMaterialsData = computed(() => {
-    return getEquipmentCredits();
+  const allGearsData = computed(() => {
+    return getAllGearsData();
   });
 
   // Calculate total materials needed across all students
   const totalMaterialsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();
+
+    // Combine credits from gears to materials
+    Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
+      const gearCredits = (gears as any[]).find(item => item.type === 'credits');
+      
+      if (gearCredits && allMaterialsData.value[studentId]) {
+        const materialCredits = allMaterialsData.value[studentId].find(
+          item => item.type === 'credits'
+        );
+        
+        if (materialCredits) {
+          materialCredits.materialQuantity += gearCredits.materialQuantity;
+        } else {
+          allMaterialsData.value[studentId].push({...gearCredits});
+        }
+      }
+    });
     
-    // Aggregate materials from all students
     Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
         if (!materialId) return;
-
+        
         if (materialMap.has(materialId)) {
           const existing = materialMap.get(materialId)!;
           existing.materialQuantity += material.materialQuantity;

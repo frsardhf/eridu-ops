@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted, onMounted } from 'vue';
 import { ModalProps, StudentProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
+import { formatQuantity } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
@@ -125,21 +126,6 @@ function handleResize() {
     containerWidth.value = container.offsetWidth;
   }
 }
-
-// Function to format quantity with 'k' for large numbers
-const formatQuantity = (quantity: number): string => {
-  if (!quantity || quantity <= 0) return '';
-  
-  // Format large numbers with 'k' suffix
-  if (quantity >= 1000000) {
-    return `×${Math.floor(quantity / 1000000)}M`;
-  } else if (quantity >= 10000) {
-    return `×${Math.floor(quantity / 1000)}K`;
-  } 
-  
-  // Keep normal display for smaller numbers
-  return `×${quantity}`;
-};
 
 // Clean up event listeners when component is unmounted
 onUnmounted(() => {
