@@ -2,7 +2,7 @@ import { computed, ref, onMounted } from 'vue';
 import { getDataCollection, getResourceDataById, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID } from '../../types/upgrade';
-import { getAllMaterialsData } from '../stores/materialsStore';
+import { getAllMaterialsData, updateMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/equipmentsStore';
 import dataTable from '../../data/data.json';
 
@@ -240,15 +240,25 @@ export function useResourceCalculation() {
         const gearCredits = (gears as any[]).find(item => item.type === 'credits');
         
         if (gearCredits && allMaterialsData.value[studentId]) {
-          const materialCredits = allMaterialsData.value[studentId].find(
+          const materialsForStudent = [...allMaterialsData.value[studentId]];
+          const materialCreditsIndex = materialsForStudent.findIndex(
             item => item.type === 'credits'
           );
           
-          if (materialCredits) {
-            materialCredits.materialQuantity += gearCredits.materialQuantity;
+          if (materialCreditsIndex >= 0) {
+            // Update the existing credits
+            materialsForStudent[materialCreditsIndex] = {
+              ...materialsForStudent[materialCreditsIndex],
+              materialQuantity: materialsForStudent[materialCreditsIndex].materialQuantity 
+                + gearCredits.materialQuantity
+            };
           } else {
-            allMaterialsData.value[studentId].push({...gearCredits});
+            // Add new credits entry
+            materialsForStudent.push({...gearCredits});
           }
+
+          // Update the materialsDataStore with the combined values
+          updateMaterialsData(studentId, materialsForStudent);
         }
       });
       
@@ -353,6 +363,10 @@ export function useResourceCalculation() {
     }
 
     return usage;
+  };
+
+  const resetCombinedCredits = () => {
+    hasCreditsBeenCombined = false;
   };
 
   return {
