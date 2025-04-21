@@ -233,18 +233,6 @@ export function useResourceCalculation() {
     let creditsMaterial = getResourceDataById(CREDITS_ID);
     let creditsQuantity = 0;
 
-    // Combine credits from gears to materials
-    Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
-      (materials as Material[]).forEach(material => {
-        const materialId = material.material?.Id;
-        if (!materialId) return;
-
-        if (material.type === 'credits') {
-          creditsQuantity += material.materialQuantity;
-        }
-      });
-    });
-    
     Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
@@ -264,6 +252,15 @@ export function useResourceCalculation() {
       });
     });
 
+    // Combine credits from gears to materials
+    Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
+      (materials as Material[]).forEach(material => {
+        if (material.type === 'credits') {
+          creditsQuantity += material.materialQuantity;
+        }
+      });
+    });
+    
     materialMap.set(CREDITS_ID, { 
       material: creditsMaterial, 
       materialQuantity: creditsQuantity, 
@@ -312,47 +309,62 @@ export function useResourceCalculation() {
   };
 
   // Get students using a specific material
-  const getMaterialUsageByStudents = (materialId: number) => {
-    const usage: { student: StudentProps; quantity: number }[] = [];
-    const isCredits = materialId === CREDITS_ID;
+const getMaterialUsageByStudents = (materialId: number) => {
+  const usage: { student: StudentProps; quantity: number }[] = [];
+  const isCredits = materialId === CREDITS_ID;
+  
+  // Handle EXP reports differently
+  if (isExpReport(materialId)) {
+    // Get all students from the collection
+    const studentsCollection = getDataCollection('students') || {};
     
-    // Handle EXP reports differently
-    if (isExpReport(materialId)) {
-      // Get all students from the collection
-      const studentsCollection = getDataCollection('students') || {};
+    // Get the optimal allocation of reports per student
+    const { studentReportAllocations } = calculateExpNeeds();
+    
+    // Add each student that needs this report type
+    studentReportAllocations.forEach((reportAllocations, studentId) => {
+      const student = studentsCollection[studentId];
+      if (!student) return;
       
-      // Get the optimal allocation of reports per student
-      const { studentReportAllocations } = calculateExpNeeds();
+      const reportsNeeded = reportAllocations.get(materialId) || 0;
+      if (reportsNeeded > 0) {
+        usage.push({
+          student,
+          quantity: reportsNeeded
+        });
+      }
+    });
+  } else {
+      // Create a set of all student IDs from both data sources
+      const allStudentIds = new Set<string>();
       
-      // Add each student that needs this report type
-      studentReportAllocations.forEach((reportAllocations, studentId) => {
-        const student = studentsCollection[studentId];
-        if (!student) return;
-        
-        const reportsNeeded = reportAllocations.get(materialId) || 0;
-        if (reportsNeeded > 0) {
-          usage.push({
-            student,
-            quantity: reportsNeeded
-          });
-        }
+      // Add all students from materials data
+      Object.keys(allMaterialsData.value).forEach(studentId => {
+        allStudentIds.add(studentId);
       });
-    } else {
-      // Handle regular materials as before
-      Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
+      
+      // Add all students from gear data
+      Object.keys(allGearsData.value).forEach(studentId => {
+        allStudentIds.add(studentId);
+      });
+      
+      // Now process each student
+      allStudentIds.forEach(studentId => {
         const student = getDataCollection('students')[studentId] as StudentProps;
         if (!student) return;
         let quantity = 0;
-
-        // Count from materials
-        materials.forEach(material => {
-          if ((isCredits && material.type === 'credits') || 
-              (!isCredits && material.material?.Id === materialId)) {
-            quantity += material.materialQuantity;
-          }
-        });
         
-        // Also count from gear/equipment if this is credits
+        // Count from materials if this student has materials data
+        if (allMaterialsData.value[studentId]) {
+          allMaterialsData.value[studentId].forEach(material => {
+            if ((isCredits && material.type === 'credits') ||
+                (!isCredits && material.material?.Id === materialId)) {
+              quantity += material.materialQuantity;
+            }
+          });
+        }
+        
+        // Count from gear/equipment if this is credits and student has gear data
         if (isCredits && allGearsData.value[studentId]) {
           allGearsData.value[studentId].forEach(gear => {
             if (gear.type === 'credits') {
@@ -367,7 +379,7 @@ export function useResourceCalculation() {
         }
       });
     }
-
+    
     return usage;
   };
 
