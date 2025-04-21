@@ -217,8 +217,6 @@ const isExpReport = (materialId: number) => {
   return [10, 11, 12, 13].includes(materialId);
 };
 
-let hasCreditsBeenCombined = false;
-
 export function useResourceCalculation() {
   // Get all materials data from the store
   const allMaterialsData = computed(() => {
@@ -232,45 +230,31 @@ export function useResourceCalculation() {
   // Calculate total materials needed across all students
   const totalMaterialsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();
+    let creditsMaterial = getResourceDataById(CREDITS_ID);
+    let creditsQuantity = 0;
 
+    // Combine credits from gears to materials
+    Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
+      (materials as Material[]).forEach(material => {
+        const materialId = material.material?.Id;
+        if (!materialId) return;
 
-    // Combine credits from gears to materials only once
-    if (!hasCreditsBeenCombined) {
-      Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
-        const gearCredits = (gears as any[]).find(item => item.type === 'credits');
-        
-        if (gearCredits && allMaterialsData.value[studentId]) {
-          const materialsForStudent = [...allMaterialsData.value[studentId]];
-          const materialCreditsIndex = materialsForStudent.findIndex(
-            item => item.type === 'credits'
-          );
-          
-          if (materialCreditsIndex >= 0) {
-            // Update the existing credits
-            materialsForStudent[materialCreditsIndex] = {
-              ...materialsForStudent[materialCreditsIndex],
-              materialQuantity: materialsForStudent[materialCreditsIndex].materialQuantity 
-                + gearCredits.materialQuantity
-            };
-          } else {
-            // Add new credits entry
-            materialsForStudent.push({...gearCredits});
-          }
-
-          // Update the materialsDataStore with the combined values
-          updateMaterialsData(studentId, materialsForStudent);
+        if (material.type === 'credits') {
+          creditsQuantity += material.materialQuantity;
         }
       });
-      
-      // Set the flag to true after combining once
-      hasCreditsBeenCombined  = true;
-    }
+    });
     
     Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
         if (!materialId) return;
-        
+
+        if (material.type === 'credits') {
+          creditsQuantity += material.materialQuantity;
+          return;
+        }
+
         if (materialMap.has(materialId)) {
           const existing = materialMap.get(materialId)!;
           existing.materialQuantity += material.materialQuantity;
@@ -279,7 +263,13 @@ export function useResourceCalculation() {
         }
       });
     });
-    
+
+    materialMap.set(CREDITS_ID, { 
+      material: creditsMaterial, 
+      materialQuantity: creditsQuantity, 
+      type: 'credits'}
+    );
+
     // Add EXP materials from helper function
     const { allocatedMaterials } = calculateExpNeeds();
     
@@ -324,6 +314,7 @@ export function useResourceCalculation() {
   // Get students using a specific material
   const getMaterialUsageByStudents = (materialId: number) => {
     const usage: { student: StudentProps; quantity: number }[] = [];
+    const isCredits = materialId === CREDITS_ID;
     
     // Handle EXP reports differently
     if (isExpReport(materialId)) {
@@ -351,22 +342,33 @@ export function useResourceCalculation() {
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
         const student = getDataCollection('students')[studentId] as StudentProps;
         if (!student) return;
+        let quantity = 0;
 
-        const material = (materials as Material[]).find(m => m.material?.Id === materialId);
-        if (material) {
-          usage.push({
-            student,
-            quantity: material.materialQuantity
+        // Count from materials
+        materials.forEach(material => {
+          if ((isCredits && material.type === 'credits') || 
+              (!isCredits && material.material?.Id === materialId)) {
+            quantity += material.materialQuantity;
+          }
+        });
+        
+        // Also count from gear/equipment if this is credits
+        if (isCredits && allGearsData.value[studentId]) {
+          allGearsData.value[studentId].forEach(gear => {
+            if (gear.type === 'credits') {
+              quantity += gear.materialQuantity;
+            }
           });
+        }
+        
+        // Only add students who actually use this material
+        if (quantity > 0) {
+          usage.push({ student, quantity });
         }
       });
     }
 
     return usage;
-  };
-
-  const resetCombinedCredits = () => {
-    hasCreditsBeenCombined = false;
   };
 
   return {
