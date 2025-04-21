@@ -165,7 +165,7 @@ export function getFormData(studentId: string | number): Record<string, any> | n
 }
 
 /**
- * Loads stored values into reactive refs for a student
+ * Loads stored values into reactive refs for a student with proper deep merging
  * @param studentId The ID of the student
  * @param refs Object containing reactive refs to update with keys matching storage keys
  * @param defaultValues Default values to use if stored values don't exist
@@ -182,12 +182,56 @@ export function loadFormDataToRefs(
     const studentData = getFormData(studentId);
     if (!studentData) return false;
     
-    // Update each ref if the corresponding data exists
+    // Update each ref with proper deep merging
     Object.keys(refs).forEach(key => {
+      // Create a properly merged value
+      let mergedValue;
+      
       if (key in studentData) {
-        refs[key].value = studentData[key];
+        const storedValue = studentData[key];
+        const defaultValue = defaultValues[key];
+        
+        if (typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
+          // For objects, do a deep merge
+          mergedValue = { ...defaultValue };
+          
+          // Handle nested objects (like equipment types, skill types, etc.)
+          Object.keys(mergedValue).forEach(nestedKey => {
+            if (storedValue && storedValue[nestedKey]) {
+              // If the stored value has this nested key, use it
+              if (typeof mergedValue[nestedKey] === 'object' && mergedValue[nestedKey] !== null) {
+                // For nested objects like { current: 1, target: 1 }
+                mergedValue[nestedKey] = {
+                  ...mergedValue[nestedKey],
+                  ...storedValue[nestedKey]
+                };
+              } else {
+                // For primitive values
+                mergedValue[nestedKey] = storedValue[nestedKey];
+              }
+            }
+          });
+          
+          // Also include any extra keys from stored value that aren't in default
+          if (storedValue) {
+            Object.keys(storedValue).forEach(storedKey => {
+              if (!(storedKey in mergedValue)) {
+                mergedValue[storedKey] = storedValue[storedKey];
+              }
+            });
+          }
+        } else {
+          // For primitives or arrays, just use the stored value
+          mergedValue = storedValue;
+        }
       } else if (key in defaultValues) {
-        refs[key].value = defaultValues[key];
+        // If no stored value exists, use the default
+        mergedValue = structuredClone(defaultValues[key]);
+      }
+      
+      // Explicitly set the ref's value to trigger reactivity
+      if (mergedValue !== undefined) {
+        refs[key].value = mergedValue;
       }
     });
     
@@ -197,7 +241,6 @@ export function loadFormDataToRefs(
     return false;
   }
 }
-
 /**
  * Saves resources data to localStorage
  * @param resources The resources data to save, or a function to transform existing resources

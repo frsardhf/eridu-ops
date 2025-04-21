@@ -409,7 +409,11 @@ export function useStudentUpgrade(props: {
       potentialLevels: DEFAULT_POTENTIAL_LEVELS
     };
     
-    loadFormDataToRefs(props.student.Id, refs, defaultValues);
+    const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
+    
+    if (success && props.student) {
+      updateStudentData(props.student.Id);
+    }
   }
 
   const totalCumulativeExp = computed(() => {

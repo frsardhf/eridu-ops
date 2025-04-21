@@ -233,25 +233,12 @@ export function useStudentGear(props: {
       }, {} as EquipmentLevels)
     };
     
-    // Load data from localStorage
-    loadFormDataToRefs(props.student.Id, { equipmentLevels }, defaultValues);
+    // Load data with improved deep merging
+    const success = loadFormDataToRefs(props.student.Id, { equipmentLevels }, defaultValues);
     
-    // Ensure all student's equipment types exist in the loaded data
-    const loadedLevels = equipmentLevels.value;
-    const mergedLevels = { ...defaultValues.equipmentLevels };
-    
-    // Merge loaded data with defaults
-    Object.keys(mergedLevels).forEach(type => {
-      if (loadedLevels[type]) {
-        mergedLevels[type] = {
-          current: loadedLevels[type].current ?? 1,
-          target: loadedLevels[type].target ?? 1
-        };
-      }
-    });
-    
-    // Update the ref with merged data
-    equipmentLevels.value = mergedLevels;
+    if (success && props.student) {
+      updateStudentData(props.student.Id);
+    }
   }
 
   // Use the external calculation function for the computed property
