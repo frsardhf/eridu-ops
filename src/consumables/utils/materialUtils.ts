@@ -111,3 +111,22 @@ export function preloadAllStudentsMaterials() {
 function hasTargetUpgrades(levels: Record<string, { current: number, target: number }>) {
   return Object.values(levels).some(level => level.target > level.current);
 } 
+
+
+/**
+ * Function to format material quantity for display
+ * This function formats the quantity of materials for display in the UI
+ * It handles large numbers by using 'k' for thousands and 'M' for millions
+ */
+export function formatQuantity(quantity: number): string {
+  if (!quantity || quantity <= 0) return '';
+  
+  // Format large numbers with 'k' suffix
+  if (quantity >= 1000000) {
+    return `×${Math.floor(quantity / 1000000)}M`;
+  } else if (quantity >= 10000) {
+    return `×${Math.floor(quantity / 1000)}K`;
+  } 
+  
+  return `×${quantity}`;
+};

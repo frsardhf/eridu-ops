@@ -1,30 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import '../../../../styles/resourceDisplay.css';
 import { Material } from '../../../../types/upgrade';
+import { formatQuantity } from '../../../../consumables/utils/materialUtils';
 
 const props = defineProps<{
-  skillMaterials: Material[];
-  potentialMaterials: Material[];
-  expMaterials: Material[];
   allMaterials?: Material[];
   student?: Record<string, any> | null;
 }>();
-
-// Function to format quantity with 'k' for large numbers
-const formatQuantity = (quantity: number): string => {
-  if (!quantity || quantity <= 0) return '';
-  
-  // Format large numbers with 'k' suffix
-  if (quantity >= 1000000) {
-    return `×${Math.floor(quantity / 1000000)}M`;
-  } else if (quantity >= 10000) {
-    return `×${Math.floor(quantity / 1000)}K`;
-  } 
-  
-  // Keep normal display for smaller numbers
-  return `×${quantity}`;
-};
 
 // Function to check if a material is an exp report
 const isExpReport = (materialId: number | undefined): boolean => {

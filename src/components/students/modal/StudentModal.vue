@@ -271,9 +271,6 @@ onUnmounted(() => {
             />
             
             <StudentMaterialsSection
-              :skill-materials="skillMaterialsNeeded"
-              :potential-materials="potentialMaterialsNeeded"
-              :exp-materials="levelMaterialsNeeded"
               :all-materials="allMaterialsNeeded"
               :student="student"
             />

@@ -10,9 +10,9 @@ const props = defineProps<{
   potentialLevels: Record<PotentialType, { current: number; target: number }>;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update-potential', type: PotentialType, current: number, target: number): void;
-}>();
+const emit = defineEmits<(
+  e: 'update-potential', type: PotentialType, current: number, target: number
+) => void>();
 
 // State for collapsible section
 const isExpanded = ref(false);
