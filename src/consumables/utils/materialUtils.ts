@@ -135,7 +135,7 @@ function hasTargetUpgrades(levels: Record<string, { current: number, target: num
  * This function formats the quantity of materials for display in the UI
  * It handles large numbers by using 'k' for thousands and 'M' for millions
  */
-export function formatQuantity(quantity: number): string {
+export function formatLargeNumber(quantity: number): string {
   if (!quantity || quantity <= 0) return '';
   
   // Format large numbers with 'k' suffix

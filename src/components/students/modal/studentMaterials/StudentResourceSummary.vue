@@ -1,23 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
+import { Material } from '../../../../types/upgrade';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
 import { getEquipments, getResources } from '../../../../consumables/utils/studentStorage';
+import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
-import { Material } from '../../../../types/upgrade';
 
 // Define view options
 type ViewMode = 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing';
 
-// Define types for material with remaining property
+// Define types for material items with remaining property
 interface MaterialWithRemaining extends Material {
   remaining: number;
-}
-
-// Type for the precomputed material usage data
-interface StudentUsage {
-  student: any;
-  quantity: number;
 }
 
 // UI state
@@ -34,20 +29,6 @@ const {
   equipmentsLeftover, 
   getEquipmentUsageByStudents 
 } = useGearCalculation();
-
-// Track computation state
-const isComputingData = ref(false);
-const computedViews = ref(new Set<ViewMode>());
-
-// Add these for progress tracking
-const computationProgress = ref(0); // 0-100 percentage
-const totalItems = ref(0);
-const processedItems = ref(0);
-const progressAnimation = ref<number | null>(null);
-
-// Precomputed material usage data cache
-const materialUsageCache = ref<Record<number, StudentUsage[]>>({});
-const equipmentUsageCache = ref<Record<number, StudentUsage[]>>({});
 
 // Track the currently hovered item for tooltip
 const hoveredItemId = ref<number | null>(null);
@@ -174,141 +155,19 @@ const displayResources = computed(() => {
   });
 });
 
-// More accurate progress tracking
-const startComputation = () => {
-  if (progressAnimation.value) {
-    clearInterval(progressAnimation.value);
-  }
-  
-  computationProgress.value = 0;
-  // Start with a quick jump to show activity
-  setTimeout(() => {
-    computationProgress.value = 5;
-  }, 100);
-  
-  // Simulate continuous progress with slight acceleration
-  progressAnimation.value = setInterval(() => {
-    // Accelerate slowly at the beginning, slow down as we approach 90%
-    const increment = computationProgress.value < 30 ? 2 : 
-      computationProgress.value < 60 ? 1 : 0.5;
-                     
-    // Cap at 90% until complete
-    if (computationProgress.value < 90) {
-      computationProgress.value = Math.min(90, computationProgress.value + increment);
-    }
-  }, 200);
-};
-
-// Modified computation function with better progress tracking
-const computeDataForCurrentView = async () => {
-  if (computedViews.value.has(activeView.value) || isComputingData.value) return;
-  
-  console.time(`Computing data for ${activeView.value}`);
-  isComputingData.value = true;
-  
-  // Start progress animation
-  startComputation();
-  
-  // Determine which cache and data to process
-  const isEquipmentView = activeView.value.startsWith('equipment');
-  const itemsToProcess = isEquipmentView ? totalEquipmentsNeeded.value : totalMaterialsNeeded.value;
-  const cacheToUpdate = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
-  const usageFunction = isEquipmentView ? getEquipmentUsageByStudents : getMaterialUsageByStudents;
-  
-  // Set total items for progress tracking
-  totalItems.value = itemsToProcess.length;
-  processedItems.value = 0;
-  
-  // Process in batches
-  const batchSize = 5;
-  
-  for (let i = 0; i < itemsToProcess.length; i += batchSize) {
-    const batch = itemsToProcess.slice(i, i + batchSize);
-    
-    // Process this batch
-    await new Promise(resolve => {
-      setTimeout(() => {
-        batch.forEach(item => {
-          if (item.material?.Id) {
-            cacheToUpdate[item.material.Id] = usageFunction(item.material.Id)
-              .sort((a, b) => b.quantity - a.quantity);
-          }
-          processedItems.value++;
-        });
-        resolve(undefined);
-      }, 0);
-    });
-  }
-  
-  // Complete the progress
-  if (progressAnimation.value) {
-    clearInterval(progressAnimation.value);
-    progressAnimation.value = null;
-  }
-  computationProgress.value = 100;
-  
-  // Small delay before hiding the progress bar
-  setTimeout(() => {
-    computedViews.value.add(activeView.value);
-    isComputingData.value = false;
-  }, 300);
-};
-
-// Modified studentUsageForMaterial computed property
+// Student usage data for the hovered material
 const studentUsageForMaterial = computed(() => {
   if (hoveredItemId.value === null) return [];
   
-  const isEquipmentView = activeView.value.startsWith('equipment');
-  const cache = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
-  const usageFunction = isEquipmentView ? getEquipmentUsageByStudents : getMaterialUsageByStudents;
-  
-  // If we have cached data, use it
-  if (cache[hoveredItemId.value]) {
-    return cache[hoveredItemId.value];
-  }
-  
-  // If we don't have cached data yet, compute it on demand for this specific item
-  if (hoveredItemId.value) {
-    // Compute and cache the data for this specific item
-    cache[hoveredItemId.value] = usageFunction(hoveredItemId.value)
-      .sort((a, b) => b.quantity - a.quantity);
-    return cache[hoveredItemId.value];
-  }
-  
-  return [];
-});
-
-// Initial computation after mount
-onMounted(() => {
-  // Allow component to render first, then start computing
-  setTimeout(() => {
-    computeDataForCurrentView();
-  }, 0);
-});
-
-// Clean up on component unmount
-onUnmounted(() => {
-  if (progressAnimation.value) {
-    clearInterval(progressAnimation.value);
+  // Use different usage function based on the active view
+  if (activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing') {
+    return getEquipmentUsageByStudents(hoveredItemId.value)
+      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+  } else {
+    return getMaterialUsageByStudents(hoveredItemId.value)
+      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
   }
 });
-
-// Function to format quantity with 'K/M' for large numbers
-const formatLargeNumber = (quantity: number): string => {
-  if (!quantity || quantity <= 0) return '';
-  
-  // Format large numbers with 'M' suffix for millions
-  if (quantity >= 1000000) {
-    return `×${Math.floor(quantity / 1000000)}M`;
-  } 
-  // Format large numbers with 'K' suffix for thousands
-  else if (quantity >= 10000) {
-    return `×${Math.floor(quantity / 1000)}K`;
-  } 
-  
-  // Keep normal display for smaller numbers
-  return `×${quantity}`;
-};
 
 // Format quantity based on the current view
 const formatQuantity = (item: any) => {
@@ -451,12 +310,6 @@ const tooltipGridColumns = computed(() => {
     </div>
     
     <div class="resources-content">
-      <!-- Loading Progress Bar -->
-      <div v-if="isComputingData" class="loading-progress-container">
-        <div class="loading-progress-bar" :style="{  width: `${computationProgress}%` }"></div>
-        <div class="loading-progress-pulse" :style="{ left: `${computationProgress - 3}%` }"></div>
-      </div>
-
       <div v-if="displayResources.length === 0" class="no-resources">
         <span v-if="activeView === 'needed' || activeView === 'equipment-needed'">No resources needed for upgrades</span>
         <span v-else>You have all the materials you need! ✓</span>
@@ -524,43 +377,6 @@ const tooltipGridColumns = computed(() => {
 </template>
 
 <style scoped>
-/* Enhanced progress bar styles */
-.loading-progress-container {
-  position: relative;
-  width: 100%;
-  height: 5px;
-  background-color: rgba(var(--border-color-rgb, 40, 40, 50), 0.3);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 15px;
-}
-
-.loading-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, 
-              var(--accent-color, #646cff) 0%, 
-              rgba(var(--accent-color-rgb, 100, 108, 255), 0.8) 100%);
-  border-radius: 3px;
-  transition: width 0.3s ease-out;
-  position: relative;
-}
-
-.loading-progress-pulse {
-  position: absolute;
-  height: 100%;
-  width: 6px;
-  background-color: rgba(255, 255, 255, 0.7);
-  filter: blur(2px);
-  border-radius: 3px;
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.2; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.2; }
-}
-
 /* Only keep component-specific styles */
 .resource-summary {
   display: flex;

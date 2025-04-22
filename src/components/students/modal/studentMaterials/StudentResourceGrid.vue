@@ -2,7 +2,7 @@
 import { ref, computed, onUnmounted, onMounted } from 'vue';
 import { StudentProps, ModalProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
-import { formatQuantity } from '../../../../consumables/utils/materialUtils';
+import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
@@ -158,7 +158,7 @@ onUnmounted(() => {
               :key="`resource-${item.Id}`"
               :item="item"
               :value="resourceFormData[item.Id]"
-              :format-quantity="formatQuantity"
+              :format-quantity="formatLargeNumber"
               :item-type="'resource'"
               @update:value="(e) => handleResourceInput(item, e)"
             />

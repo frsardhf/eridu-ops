@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { EquipmentMaterial } from '../../../../types/equipment';
-import { formatQuantity } from '../../../../consumables/utils/materialUtils';
+import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
 import { Material } from '../../../../types/upgrade';
 
@@ -78,7 +78,7 @@ const hasMaterials = computed(() => {
               class="resource-icon"
             />
             <div class="resource-quantity">
-              {{ formatQuantity(item.materialQuantity) }}
+              {{ formatLargeNumber(item.materialQuantity) }}
             </div>
           </div>
         </div>

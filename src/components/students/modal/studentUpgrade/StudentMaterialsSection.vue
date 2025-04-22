@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import '../../../../styles/resourceDisplay.css';
 import { Material } from '../../../../types/upgrade';
-import { formatQuantity } from '../../../../consumables/utils/materialUtils';
+import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 
 const props = defineProps<{
   allMaterials?: Material[];
@@ -59,7 +59,7 @@ const hasMaterials = computed(() => {
               class="resource-icon"
             />
             <div class="resource-quantity">
-              {{ formatQuantity(item.materialQuantity) }}
+              {{ formatLargeNumber(item.materialQuantity) }}
             </div>
           </div>
         </div>
