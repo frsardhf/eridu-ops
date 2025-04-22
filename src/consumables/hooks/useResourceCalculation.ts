@@ -8,9 +8,8 @@ import dataTable from '../../data/data.json';
 
 // Helper function to calculate XP needs and report allocations
 function calculateExpNeeds() {
-  const allMaterialsData = getAllMaterialsData();
   const resources = getResources() || {};
-  const characterXpTable = dataTable.character_xp || [];
+  const characterXpTable = dataTable.character_xp ?? [];
   
   // Create exp item info array sorted by value (highest first)
   const expItemInfo = [
@@ -111,7 +110,7 @@ function calculateExpNeeds() {
         const studentAllocation = studentReportAllocations.get(student.studentId)!;
         studentAllocation.set(
           expItem.id, 
-          (studentAllocation.get(expItem.id) || 0) + reportsToUse
+          (studentAllocation.get(expItem.id) ?? 0) + reportsToUse
         );
         
         // Update the student's remaining XP
@@ -152,7 +151,7 @@ function calculateExpNeeds() {
           const studentAllocation = studentReportAllocations.get(student.studentId)!;
           studentAllocation.set(
             expItem.id, 
-            (studentAllocation.get(expItem.id) || 0) + additionalReportsNeeded
+            (studentAllocation.get(expItem.id) ?? 0) + additionalReportsNeeded
           );
           
           // Update the student's remaining XP
@@ -190,11 +189,11 @@ function calculateExpNeeds() {
         
         if (allocatedReportIds.length > 0) {
           const smallestReportId = allocatedReportIds[0];
-          const expItemValue = resources[smallestReportId.toString()]?.ExpValue || 0;
+          const expItemValue = resources[smallestReportId.toString()]?.ExpValue ?? 0;
           
           if (expItemValue > 0) {
             const excess = Math.ceil(Math.abs(student.remainingXp) / expItemValue);
-            const currentAllocation = studentAllocation.get(smallestReportId) || 0;
+            const currentAllocation = studentAllocation.get(smallestReportId) ?? 0;
             
             // Reduce this student's allocation of the smallest report
             const newAllocation = Math.max(0, currentAllocation - excess);
