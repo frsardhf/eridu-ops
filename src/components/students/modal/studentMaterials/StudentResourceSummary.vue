@@ -34,6 +34,10 @@ const {
 const hoveredItemId = ref<number | null>(null);
 const tooltipPosition = ref({ x: 0, y: 0 });
 
+// Add a cache for material usage data
+const materialUsageCache = ref<Map<number, any[]>>(new Map());
+const equipmentUsageCache = ref<Map<number, any[]>>(new Map());
+
 // Materials that are missing (negative leftover)
 const missingMaterials = computed<MaterialWithRemaining[]>(() => {
   // Get resources directly to ensure we have latest data
@@ -159,14 +163,30 @@ const displayResources = computed(() => {
 const studentUsageForMaterial = computed(() => {
   if (hoveredItemId.value === null) return [];
   
-  // Use different usage function based on the active view
-  if (activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing') {
-    return getEquipmentUsageByStudents(hoveredItemId.value)
-      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
-  } else {
-    return getMaterialUsageByStudents(hoveredItemId.value)
-      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+  const materialId = hoveredItemId.value;
+  
+  // Use different cache based on the active view
+  const isEquipmentView = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
+  const cache = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
+  
+  // Check if we already have cached data for this material
+  if (cache.has(materialId)) {
+    return cache.get(materialId)!;
   }
+  
+  // If not in cache, calculate and store in cache
+  let usage: any[] = [];
+  if (isEquipmentView) {
+    usage = getEquipmentUsageByStudents(materialId)
+      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+    equipmentUsageCache.value.set(materialId, usage);
+  } else {
+    usage = getMaterialUsageByStudents(materialId)
+      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
+    materialUsageCache.value.set(materialId, usage);
+  }
+  
+  return usage;
 });
 
 // Format quantity based on the current view
@@ -195,8 +215,17 @@ const getQuantityClass = (item: any) => {
   return '';
 };
 
-// Change the current view
+// Function to reset cache when view changes
 const setView = (view: ViewMode) => {
+  // Only clear cache if we're switching between equipment and materials views
+  const wasEquipmentView = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
+  const isEquipmentView = view === 'equipment-needed' || view === 'equipment-missing';
+  
+  if (wasEquipmentView !== isEquipmentView) {
+    // Clear hover state
+    hoveredItemId.value = null;
+  }
+  
   activeView.value = view;
 };
 
