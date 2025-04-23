@@ -241,6 +241,7 @@ export function loadFormDataToRefs(
     return false;
   }
 }
+
 /**
  * Saves resources data to localStorage
  * @param resources The resources data to save, or a function to transform existing resources

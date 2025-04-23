@@ -39,7 +39,7 @@ function calculateExpNeeds() {
   allStudentIds.forEach(studentId => {
     // Get the form data directly, which contains level info
     const form = getDataCollection('forms')[studentId];
-    if (!form.characterLevels) return;
+    if (!form) return;
 
     const currentLevel = form.characterLevels.current ?? 1;
     const targetLevel = form.characterLevels.target ?? currentLevel;

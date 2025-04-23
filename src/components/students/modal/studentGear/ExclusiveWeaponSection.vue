@@ -230,7 +230,6 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
 }
 
 .weapon-showcase {
-  padding: 10px 5px;
   display: flex;
   justify-content: center;
   background: var(--background-primary);
@@ -238,14 +237,15 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
 
 .weapon-preview {
   width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .weapon-icon {
-  max-width: 100%;
-  max-height: 100%;
+  min-width: 100%;
+  min-height: 100%;
   object-fit: contain;
 }
 

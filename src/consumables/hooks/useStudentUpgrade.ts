@@ -410,8 +410,16 @@ export function useStudentUpgrade(props: {
     };
     
     const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
+
+    if (!success || Object.keys(skillLevels.value).length === 0) {
+      characterLevels.value = defaultValues.characterLevels;
+      skillLevels.value = defaultValues.skillLevels;
+      potentialLevels.value = defaultValues.potentialLevels;
+      
+      saveToLocalStorage();
+    }
     
-    if (success && props.student) {
+    if (props.student) {
       updateStudentData(props.student.Id);
     }
   }

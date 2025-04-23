@@ -278,19 +278,26 @@
         gradeLevels
       }
 
-      // Define default values based on student's equipment
+      const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
+        acc[type] = { current: 1, target: 1 };
+        return acc;
+      }, {} as EquipmentLevels);
+
       const defaultValues = {
-        equipmentLevels: props.student.Equipment.reduce((acc, type) => {
-          acc[type] = { current: 1, target: 1 };
-          return acc;
-        }, {} as EquipmentLevels),
+        equipmentLevels: defaultEquipmentLevels,
         gradeLevels: { current: 1, target: 1 }
       };
-      
-      // Load data with improved deep merging
+
       const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
+
+      if (!success || Object.keys(equipmentLevels.value).length === 0) {
+        equipmentLevels.value = defaultEquipmentLevels;
+        gradeLevels.value = defaultValues.gradeLevels;
+        
+        saveToLocalStorage();
+      }
       
-      if (success && props.student) {
+      if (props.student) {
         updateStudentData(props.student.Id);
       }
     }
