@@ -150,6 +150,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   margin-bottom: 15px;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border-color);
+  text-align: center;
 }
 
 .level-input-container, .input-container {

@@ -83,6 +83,7 @@ export function preloadAllStudentsData() {
       const potentialLevels = formData.potentialLevels ?? DEFAULT_POTENTIAL_LEVELS;
       const characterLevels = formData.characterLevels ?? DEFAULT_CHARACTER_LEVELS;
       const equipmentLevels = formData.equipmentLevels ?? {};
+      const gradeLevels = formData.gradeLevels ?? {};
       
       // Process student materials
       if (hasTargetUpgrades(characterLevels) || 
@@ -108,7 +109,8 @@ export function preloadAllStudentsData() {
         // Calculate gears for this student
         const gears = calculateAllGears(
           allGearsData,
-          equipmentLevels
+          equipmentLevels,
+          gradeLevels
         );
         
         // Add to store

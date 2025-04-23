@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
 import { ModalProps, StudentProps } from '../../../../types/student';
-import { EquipmentType } from '../../../../types/equipment';
+import { EquipmentType } from '../../../../types/gear';
 import { getEquipments } from '../../../../consumables/utils/studentStorage';
 
 const props = defineProps<{
   student: ModalProps | null;
-  isVisible?: boolean;
   equipmentLevels: Record<string, { current: number; target: number; }>;
-  equipmentMaterialsNeeded: any[];
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'update-equipment', type: EquipmentType, current: number, target: number): void;
 }>();
 
@@ -102,18 +98,6 @@ function updateEquipmentTarget(type: string, value: number) {
       // Emit the update event for target only
       emit('update-equipment', equipmentType, props.equipmentLevels[equipmentType].current, finalValue);
     }
-  }
-}
-
-// Function to handle level display state
-function getLevelDisplayState(current: number, target: number, type: string) {
-  const maxTier = getMaxTierForType(type);
-  if (current === maxTier && target === maxTier) {
-    return 'max';
-  } else if (current === target) {
-    return 'same';
-  } else {
-    return 'different';
   }
 }
 

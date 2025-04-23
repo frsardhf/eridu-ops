@@ -5,6 +5,7 @@ export interface StudentProps {
   Id: number;
   Name: string;
   DefaultOrder: number;
+  WeaponImg: string;
   Gifts: GiftProps[];
   Boxes: GiftProps[];
   Equipment: string[];

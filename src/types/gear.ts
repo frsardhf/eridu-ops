@@ -21,6 +21,11 @@ export interface EquipmentLevel {
   target: number;
 }
 
+export interface GradeLevels {
+  current?: number;
+  target?: number;
+}
+
 export type EquipmentLevels = {
   [key in EquipmentType]?: EquipmentLevel;
 };

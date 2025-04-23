@@ -4,8 +4,6 @@ import { ModalProps, StudentProps } from '../../../types/student';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
-import { useResourceCalculation } from '../../../consumables/hooks/useResourceCalculation';
-import { useGearCalculation } from '../../../consumables/hooks/useGearCalculation';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
 import StudentModalHeader from './StudentModalHeader.vue';
@@ -19,8 +17,9 @@ import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vu
 import StudentResourceGrid from './studentMaterials/StudentResourceGrid.vue';
 import StudentResourceSummary from './studentMaterials/StudentResourceSummary.vue';
 import StudentEquipmentGrid from './studentMaterials/StudentEquipmentGrid.vue';
-import StudentEquipmentGrowth from './studentUpgrade/EquipmentGrowthSection.vue';
-import EquipmentMaterialsSection from './studentUpgrade/EquipmentMaterialsSection.vue';
+import StudentEquipmentGrowth from './studentGear/EquipmentGrowthSection.vue';
+import StudentGradeGrowth from './studentGear/ExclusiveWeaponSection.vue';
+import EquipmentMaterialsSection from './studentGear/EquipmentMaterialsSection.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
@@ -55,9 +54,6 @@ const {
   characterLevels,
   potentialLevels,
   skillLevels,
-  potentialMaterialsNeeded,
-  skillMaterialsNeeded,
-  levelMaterialsNeeded,
   allMaterialsNeeded,
   remainingXp: characterRemainingXp,
   allSkillsMaxed,
@@ -81,17 +77,11 @@ const {
 
 const {
   equipmentLevels,
+  gradeLevels,
   handleEquipmentUpdate,
+  handleGradeUpdate,
   equipmentMaterialsNeeded
 } = useStudentGear(props, emit);
-
-const {
-  totalMaterialsNeeded,
-  materialsLeftover,
-  getMaterialUsageByStudents,
-  getStudentMaterials
-} = useResourceCalculation();
-
 
 // Navigation functions
 function navigateToPrevious() {
@@ -275,11 +265,14 @@ onUnmounted(() => {
           <div class="right-column">
             <StudentEquipmentGrowth
               :student="student"
-              :is-visible="isVisible"
               :equipment-levels="equipmentLevels"
-              :equipment-materials-needed="equipmentMaterialsNeeded"
               @update-equipment="handleEquipmentUpdate"
-              @close="closeModal"
+            />
+
+            <StudentGradeGrowth
+              :student="student"
+              :grade-levels="gradeLevels"
+              @update-grade="handleGradeUpdate"
             />
             
             <EquipmentMaterialsSection

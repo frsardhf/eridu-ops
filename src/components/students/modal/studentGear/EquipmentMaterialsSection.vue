@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { EquipmentMaterial } from '../../../../types/equipment';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
 import { Material } from '../../../../types/upgrade';
@@ -99,7 +98,6 @@ const hasMaterials = computed(() => {
 .section-title {
   font-size: 1.1em;
   font-weight: bold;
-  margin-bottom: 15px;
   color: var(--text-primary);
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border-color);
