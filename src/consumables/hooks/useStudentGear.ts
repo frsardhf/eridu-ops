@@ -227,7 +227,9 @@
         });
         equipmentLevels.value = newLevels;
       } 
-      gradeLevels.value = { current: 1, target: 1 };
+
+      const starGrade = props.student?.StarGrade ?? 1;
+      gradeLevels.value = { current: starGrade, target: starGrade };
     }
 
     // Watch for changes to isVisible to load data when modal opens
@@ -283,9 +285,11 @@
         return acc;
       }, {} as EquipmentLevels);
 
+      const starGrade = props.student?.StarGrade ?? 1;
+
       const defaultValues = {
         equipmentLevels: defaultEquipmentLevels,
-        gradeLevels: { current: 1, target: 1 }
+        gradeLevels: { current: starGrade, target: starGrade }
       };
 
       const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);

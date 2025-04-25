@@ -3,7 +3,7 @@ import { StudentProps } from '../../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { getStudentData } from '../../../consumables/stores/studentStore'
 import { SkillType } from '../../../types/upgrade'
-import { EquipmentType } from '../../../types/equipment'
+import { EquipmentType } from '../../../types/gear'
 import { 
   isStudentPinned, 
   togglePinnedStudent 

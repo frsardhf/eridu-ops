@@ -630,49 +630,55 @@ export function getAllFormData(): Record<string | number, any> {
 /**
  * Migrates student form data from old format to new format
  * example:
- * Old: { currentCharacterLevel, targetCharacterLevel }
- * New: { characterLevels: { current, target } }
+ * Old: gradeLevels: { current: 1, target: 1 }
+ * New: gradeLevels: { current: starGrade, target: starGrade },
  */
 export function migrateFormData() {
   try {
     // Get the forms data from localStorage
     const formsData = localStorage.getItem('forms');
+    const studentsData = localStorage.getItem('students');
     
     if (!formsData) {
       console.log('No forms data found to migrate');
       return;
     }
+
+    if (!studentsData) {
+      console.log('No students data found to migrate');
+      return;
+    }
     
+    console.log(studentsData[10000]);
+
     // Parse the forms data
     const forms = JSON.parse(formsData);
+    const students = JSON.parse(studentsData);
     
     // Track if we've made any changes
     let hasChanges = false;
     
     // Iterate through each student ID in the forms object
     Object.keys(forms).forEach(studentId => {
-      const studentData = forms[studentId];
+      const formData = forms[studentId];
+      const studentData = students[studentId];
       
       // Check if this student data needs migration
-      if (studentData && 
-          (studentData.convertBox !== undefined || 
-           studentData.currentBond !== undefined)) {
+      if (formData && 
+          (formData.gradeLevels.current === 1 && 
+           formData.gradeLevels.target === 1) || 
+           formData.gradeLevels !== undefined) {
         
-        // Create new bondDetailData object
-        studentData.bondDetailData = {
-          convertBox: studentData.convertBox ?? false,
-          currentBond: studentData.currentBond ?? 1,
-          originalSelectorBoxQuantity: studentData.originalSelectorBoxQuantity ?? 0,
-          originalSrGiftQuantity: studentData.originalSrGiftQuantity ?? 0,
-          originalYellowStoneQuantity: studentData.originalYellowStoneQuantity ?? 0,
+        const starGrade = studentData.StarGrade;
+
+        // Replace the old gradeLevels with the new format
+        formData.gradeLevels = {
+          current: starGrade,
+          target: starGrade,
         };
         
         // Remove old properties
-        delete studentData.convertBox;
-        delete studentData.currentBond;
-        delete studentData.originalSelectorBoxQuantity;
-        delete studentData.originalSrGiftQuantity;
-        delete studentData.originalYellowStoneQuantity;
+        // delete studentData.convertBox;
         
         hasChanges = true;
         console.log(`Migrated data for student ${studentId}`);
@@ -700,13 +706,13 @@ export function checkAndMigrateFormData() {
   // Check if migration has been run already
   const migrationVersion = localStorage.getItem('forms_migration_version');
   
-  // If we haven't run migration version 2 yet
-  if (!migrationVersion || parseInt(migrationVersion) < 2) {
+  // If we haven't run migration version 3 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 3) {
     const migratedData = migrateFormData();
     
     if (migratedData) {
       // Mark migration as complete
-      localStorage.setItem('forms_migration_version', '2');
+      localStorage.setItem('forms_migration_version', '3');
     }
     
     return migratedData;
