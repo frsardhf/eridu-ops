@@ -665,9 +665,7 @@ export function migrateFormData() {
       
       // Check if this student data needs migration
       if (formData && 
-          (formData.gradeLevels.current === 1 && 
-           formData.gradeLevels.target === 1) || 
-           formData.gradeLevels !== undefined) {
+          formData.gradeLevels !== undefined) {
         
         const starGrade = studentData.StarGrade;
 
