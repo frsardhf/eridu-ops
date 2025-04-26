@@ -649,8 +649,6 @@ export function migrateFormData() {
       return;
     }
     
-    console.log(studentsData[10000]);
-
     // Parse the forms data
     const forms = JSON.parse(formsData);
     const students = JSON.parse(studentsData);

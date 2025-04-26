@@ -28,7 +28,7 @@ const resources = computed(() => {
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(resources.value.length / 98); // Show 98 items per page
+  return Math.ceil(resources.value.length / 112); // Show 112 items per page
 });
 
 function handleResourceInput(item: any, event: Event) {
@@ -154,7 +154,7 @@ onUnmounted(() => {
         >
           <div class="resources-grid">
             <StudentResourceCard 
-              v-for="(item) in resources.slice((page - 1) * 98, page * 98)" 
+              v-for="(item) in resources.slice((page - 1) * 112, page * 112)" 
               :key="`resource-${item.Id}`"
               :item="item"
               :value="resourceFormData[item.Id]"
