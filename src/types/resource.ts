@@ -13,7 +13,7 @@ export interface ResourceProps {
 }
 
 export const MATERIAL = {
-  'category': ["CharacterExpGrowth"],
+  'category': ["CharacterExpGrowth", "Favor"],
   'subcategory': ["Artifact", "CDItem", "BookItem"],
   'id': ['5', '2000', '2001', '2002', '9999']
 };

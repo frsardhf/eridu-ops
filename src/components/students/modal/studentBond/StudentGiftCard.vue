@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { GiftProps } from '../../../../types/gift';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
@@ -44,7 +44,7 @@ function formatValue(value: any): string {
 
 const gift = props.item.gift;
 
-const isInputDisabled = props.isBox && props.convertBox;
+const isInputDisabled = computed(() => props.isBox && props.convertBox);
 </script>
 
 <template>

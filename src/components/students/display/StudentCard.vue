@@ -141,6 +141,10 @@ const characterTargetLevel = computed(() => {
   return studentData.value?.characterLevels?.target || 0;
 });
 
+const gradeLevel = computed(() => {
+  return studentData.value?.bondDetailData?.currentBond || 0;
+});
+
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
   const newPinStatus = togglePinnedStudent(props.student.Id);

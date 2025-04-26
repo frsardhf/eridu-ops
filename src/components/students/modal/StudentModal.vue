@@ -8,7 +8,7 @@ import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipm
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
-import StudentConvertBox from './studentBond/StudentConvertBox.vue';
+import StudentConvertBox from './studentBond/StudentGiftOption.vue';
 import StudentGiftGrid from './studentBond/StudentGiftGrid.vue';
 import StudentLevelSection from './studentUpgrade/StudentLevelSection.vue';
 import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vue';
@@ -47,7 +47,8 @@ const {
   boxFormData,
   handleGiftInput,
   handleBoxInput,
-  shouldShowGiftGrade
+  shouldShowGiftGrade,
+  autoFillGifts
 } = useStudentGifts(props, emit);
 
 const {
@@ -206,6 +207,7 @@ onUnmounted(() => {
               <StudentConvertBox
                 :convert-box="convertBox"
                 @toggle-convert="convertBoxes"
+                @auto-fill-gift="autoFillGifts"
               />
               
               <StudentGiftGrid

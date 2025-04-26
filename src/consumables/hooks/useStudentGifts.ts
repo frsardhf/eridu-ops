@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue';
 import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
-import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
+import { getResources, loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import bondData from '../../data/data.json';
 import { updateStudentData } from '../stores/studentStore';
 
@@ -312,6 +312,56 @@ export function useStudentGifts(props: {
     };
   });
 
+  const autoFillGifts = () => {
+    const resources = getResources();
+
+    // Filter out gifts from the resources
+    const gifts = Object.values(resources ?? {}).filter(resource => 
+      resource && resource.Category === 'Favor'
+    );
+
+    if (!giftFormData.value) {
+      giftFormData.value = {};
+    }
+
+    let nonFavorGiftsSr = 0;
+    let nonFavorGiftsSsr = 0;
+    const blackListIds = [5996, 5997, 5998, 5999];
+
+    // Check if student has gifts
+    if (props.student?.Gifts) {
+      // Loop through all gifts from resources
+      gifts.forEach(gift => {
+        if (gift.Id) {
+          // Check if this gift ID exists in the student's Gifts
+          // This depends on the structure of student.Gifts
+          const isStudentGift = props.student?.Gifts
+            ? Object.keys(props.student.Gifts).some(
+                giftKey => props.student?.Gifts[giftKey].gift.Id === gift.Id
+              )
+            : false;
+          
+          if (isStudentGift) {
+            // Set the quantity in giftFormData based on what's owned
+            giftFormData.value[gift.Id] = gift.QuantityOwned ?? 0;
+          } else {
+            if (gift.Rarity === 'SR') {
+              nonFavorGiftsSr += gift.QuantityOwned ?? 0;
+            }
+            if (gift.Rarity === 'SSR' && !blackListIds.includes(gift.Id)) {
+              // Exclude specific IDs from SSR count
+              nonFavorGiftsSsr += gift.QuantityOwned ?? 0;
+            }
+          }
+        }
+      });
+    }
+
+    // Set the quantities for non-favor gifts in boxFormData
+    boxFormData.value[100000] = nonFavorGiftsSr;
+    boxFormData.value[100009] = nonFavorGiftsSsr;
+  }
+
   function closeModal() {
     // Save the current state (including conversion state) before closing
     saveToLocalStorage();
@@ -349,6 +399,7 @@ export function useStudentGifts(props: {
     handleGiftInput,
     handleBoxInput,
     handleBondInput,
-    convertBoxes
+    convertBoxes,
+    autoFillGifts,
   };
 }

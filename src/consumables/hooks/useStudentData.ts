@@ -419,7 +419,7 @@ export function useStudentData() {
 
     if (!existingResources) {
       allItems[5] = creditsEntry;
-      saveResources(allItems);
+      saveResources(applyFilters(allItems, MATERIAL));
     } else if (!existingResources[5]) {
       existingResources[5] = creditsEntry;
       saveResources(existingResources);
