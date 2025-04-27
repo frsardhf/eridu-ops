@@ -423,6 +423,8 @@ export function useStudentData() {
     } else if (!existingResources[5]) {
       existingResources[5] = creditsEntry;
       saveResources(existingResources);
+    } else if (!existingResources[5000]) {
+      saveResources(applyFilters(allItems, MATERIAL));
     }
 
     if (!existingEquipments) {

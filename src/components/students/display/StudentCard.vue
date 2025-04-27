@@ -142,7 +142,7 @@ const characterTargetLevel = computed(() => {
 });
 
 const gradeLevel = computed(() => {
-  return studentData.value?.bondDetailData?.currentBond || 0;
+  return studentData.value?.gradeLevels?.current || props.student.StarGrade;
 });
 
 function handlePinToggle(event: MouseEvent) {
@@ -183,6 +183,49 @@ function handlePinToggle(event: MouseEvent) {
                 class="bond-icon"
               />
               <span class="bond-number">{{ bondLevel }}</span>
+            </div>
+          </div>
+
+          <!-- Grade Level -->
+          <div class="grade-container" v-if="gradeLevel > 0">
+            <div class="grade-stars-row">
+              <!-- Gold stars only for grades 1-5 -->
+              <template v-if="gradeLevel <= 5">
+                <template v-for="i in gradeLevel" :key="`gold-star-${i}`">
+                  <svg class="small-star gold-star"
+                      aria-hidden="true"
+                      focusable="false"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 576 512">
+                    <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 
+                      0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 
+                      21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 
+                      31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 
+                      33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 
+                      11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z">
+                    </path>
+                  </svg>
+                </template>
+              </template>
+              
+              <!-- Blue stars only for grades 6-8 -->
+              <template v-else>
+                <template v-for="i in gradeLevel - 5" :key="`blue-star-${i}`">
+                  <svg class="small-star blue-star"
+                      aria-hidden="true"
+                      focusable="false"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 576 512">
+                      <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 
+                        0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 
+                        21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 
+                        31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 
+                        33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 
+                        11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z">
+                      </path>
+                  </svg>
+                </template>
+              </template>
             </div>
           </div>
           
@@ -299,11 +342,13 @@ function handlePinToggle(event: MouseEvent) {
   inset: 0;
   display: grid;
   grid-template-areas: 
-    "empty bond"
+    "grade bond"
     "empty level"
     "bottom bottom";
   grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr auto;
   padding: 4px;
+  gap: 0;
 }
 
 .bottom-overlays {
@@ -335,11 +380,41 @@ function handlePinToggle(event: MouseEvent) {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -60%);
+  transform: translate(-50%, -55%);
   font-weight: bold;
   font-size: 14px;
   color: white;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.grade-container {
+  grid-area: grade;
+  justify-self: flex-end;
+  margin-top: 7px;
+  margin-right: 2px;
+}
+
+.grade-stars-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 4px;
+  border-radius: 4px;
+}
+
+.small-star {
+  width: 16px;
+  height: 16px;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
+}
+
+.gold-star {
+  color: rgb(255, 201, 51);
+}
+
+.blue-star {
+  color: hsl(192, 100%, 60%);
 }
 
 .level-container {
@@ -347,7 +422,7 @@ function handlePinToggle(event: MouseEvent) {
   grid-area: level;
   justify-self: end;
   background: rgba(0, 0, 0, 0.6);
-  padding: 0px 5px;
+  padding: 0px 4px;
   margin-right: 4px;
   border-radius: 4px;
   display: flex;
@@ -508,6 +583,20 @@ function handlePinToggle(event: MouseEvent) {
     font-size: 10px;
   }
 
+  .grade-container {
+    margin-top: 4px;
+    margin-right: 0px;
+  }
+
+  .grade-stars-row {
+    padding: 3px 3px;
+  }
+
+  .small-star {
+    width: 10px;
+    height: 10px;
+  }
+
   .level-container {
     max-height: 18px;
     padding: 1px 3px;
@@ -530,12 +619,8 @@ function handlePinToggle(event: MouseEvent) {
   .skill-value,
   .equipment-value {
     font-size: 10px;
-    min-width: 10px; 
+    min-width: 12px; 
     width: 10px; 
-  }
-  
-  .bottom-overlays {
-    gap: 2px;
   }
 
   .pin-icon {
