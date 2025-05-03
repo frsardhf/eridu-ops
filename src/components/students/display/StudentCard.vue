@@ -142,7 +142,7 @@ const characterTargetLevel = computed(() => {
 });
 
 const gradeLevel = computed(() => {
-  return studentData.value?.gradeLevels?.current || props.student.StarGrade;
+  return studentData.value?.gradeLevels?.current || 0;
 });
 
 function handlePinToggle(event: MouseEvent) {

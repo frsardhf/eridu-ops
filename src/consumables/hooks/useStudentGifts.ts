@@ -360,6 +360,9 @@ export function useStudentGifts(props: {
     // Set the quantities for non-favor gifts in boxFormData
     boxFormData.value[100000] = nonFavorGiftsSr;
     boxFormData.value[100009] = nonFavorGiftsSsr;
+
+    // Set the original quantities for non-favor gifts
+    bondDetailData.value.originalSrGiftQuantity = nonFavorGiftsSr;
   }
 
   function closeModal() {
