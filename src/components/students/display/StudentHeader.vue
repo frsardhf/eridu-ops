@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue';
 import { HeaderProps, SortOption } from '../../../types/header';
+import { 
+  downloadLocalStorageData
+} from '../../../consumables/utils/studentStorage';
+import ImportModal from './ImportModal.vue';
 
 const props = defineProps<HeaderProps>();
 const dropdownOpen = ref(false);
 const mobileMenuOpen = ref(false);
+const showImportModal = ref(false);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
   'toggleTheme': [];
   'updateSort': [option: SortOption];
   'toggleDirection': [];
+  'dataImported': [];
 }>();
 
 function updateSearch(event: Event) {
@@ -25,6 +31,7 @@ function onToggleTheme() {
 function updateSortOption(option: SortOption) {
   emit('updateSort', option);
   dropdownOpen.value = false;
+  mobileMenuOpen.value = false;
 }
 
 function toggleDirection(event: Event) {
@@ -54,6 +61,24 @@ function handleClickOutside(event: MouseEvent) {
       mobileMenuOpen.value) {
     mobileMenuOpen.value = false;
   }
+}
+
+function exportData() {
+  downloadLocalStorageData();
+  mobileMenuOpen.value = false;
+}
+
+function openImportModal() {
+  showImportModal.value = true;
+  mobileMenuOpen.value = false;
+}
+
+function closeImportModal() {
+  showImportModal.value = false;
+}
+
+function handleImportSuccess() {
+  emit('dataImported');
 }
 
 onMounted(() => {
@@ -230,10 +255,20 @@ onBeforeUnmount(() => {
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">Data</h3>
           <div class="mobile-menu-options">
-            <button class="mobile-menu-option">
+            <button class="mobile-menu-option" @click="exportData">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
               Export Data
             </button>
-            <button class="mobile-menu-option">
+            <button class="mobile-menu-option" @click="openImportModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
               Import Data
             </button>
           </div>
@@ -249,6 +284,13 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+    
+    <!-- Import Modal -->
+    <ImportModal 
+      v-if="showImportModal"
+      @close="closeImportModal"
+      @import-success="handleImportSuccess"
+    />
   </header>
 </template>
 
@@ -429,6 +471,28 @@ onBeforeUnmount(() => {
   gap: 15px;
 }
 
+.desktop-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.data-button {
+  background-color: var(--background-secondary);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.data-button:hover {
+  background-color: var(--background-tertiary);
+}
+
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -582,6 +646,9 @@ input:checked + .slider:before {
 }
 
 .mobile-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-align: left;
   background: transparent;
   border: none;
@@ -600,6 +667,10 @@ input:checked + .slider:before {
 .mobile-menu-option.active {
   background-color: rgba(var(--accent-color-rgb), 0.1);
   font-weight: 500;
+}
+
+.option-icon {
+  flex-shrink: 0;
 }
 
 .mobile-menu-direction {

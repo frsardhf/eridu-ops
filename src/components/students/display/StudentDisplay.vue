@@ -92,6 +92,11 @@ function handleStudentPinned() {
   sortedStudentsArray.value = [...sortedStudentsArray.value];
 }
 
+function handleDataImported() {
+  console.log('Data imported successfully, page will reload to apply changes');
+  // The actual reload is handled in the StudentHeader component
+}
+
 onMounted(() => {
   const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
   if (savedTheme) {
@@ -112,6 +117,7 @@ onMounted(() => {
       @toggle-theme="toggleTheme"
       @update-sort="updateSortOption"
       @toggle-direction="handleToggleDirection"
+      @data-imported="handleDataImported"
     />
 
     <StudentGrid

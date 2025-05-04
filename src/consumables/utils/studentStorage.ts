@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   SORT_DIRECTION: 'sort-direction',
   MATERIALS: 'materials',
   GEARS: 'gears',
+  FORMS_MIGRATION_VERSION: 'forms_migration_version',
   // Add more keys as needed
 };
 
@@ -715,4 +716,97 @@ export function checkAndMigrateFormData() {
   }
   
   return null;
+}
+
+/**
+ * Exports all localStorage data to a downloadable text file
+ * @returns A Blob URL to download the exported data
+ */
+export function exportLocalStorageData(): string {
+  try {
+    const exportData: Record<string, any> = {};
+    
+    // Export all items from STORAGE_KEYS
+    Object.values(STORAGE_KEYS).forEach(key => {
+      try {
+        const data = localStorage.getItem(key);
+        if (data) {
+          exportData[key] = data;
+        }
+      } catch (e) {
+        console.error(`Error exporting key ${key}:`, e);
+      }
+    });
+    
+    // Create a JSON string of the data
+    const exportString = JSON.stringify(exportData, null, 2);
+    
+    // Create a blob and return its URL
+    const blob = new Blob([exportString], { type: 'text/plain' });
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    return '';
+  }
+}
+
+/**
+ * Triggers download of localStorage data as a text file
+ */
+export function downloadLocalStorageData(): void {
+  const url = exportLocalStorageData();
+  if (!url) return;
+  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `export-${timestamp}.txt`;
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  
+  // Clean up the URL object
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+/**
+ * Imports data from a text file into localStorage
+ * @param file The file to import data from
+ * @returns Promise resolving to boolean indicating success
+ */
+export function importLocalStorageData(file: File): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const fileContent = e.target?.result as string;
+        const importData = JSON.parse(fileContent);
+        
+        if (typeof importData !== 'object' || importData === null) {
+          reject(new Error('Invalid import data format'));
+          return;
+        }
+        
+        // Import data for each key
+        for (const [key, value] of Object.entries(importData)) {
+          if (typeof value === 'string') {
+            localStorage.setItem(key, value);
+          }
+        }
+        
+        resolve(true);
+      } catch (error) {
+        console.error('Error importing data:', error);
+        reject(error);
+      }
+    };
+    
+    reader.onerror = (error) => {
+      console.error('Error reading file:', error);
+      reject(error);
+    };
+    
+    reader.readAsText(file);
+  });
 }
