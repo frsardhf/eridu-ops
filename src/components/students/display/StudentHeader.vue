@@ -5,11 +5,13 @@ import {
   downloadLocalStorageData
 } from '../../../consumables/utils/studentStorage';
 import ImportModal from './ImportModal.vue';
+import CreditsModal from './CreditsModal.vue';
 
 const props = defineProps<HeaderProps>();
 const dropdownOpen = ref(false);
 const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
+const showCreditsModal = ref(false);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
@@ -75,6 +77,15 @@ function openImportModal() {
 
 function closeImportModal() {
   showImportModal.value = false;
+}
+
+function openCreditsModal() {
+  showCreditsModal.value = true;
+  mobileMenuOpen.value = false;
+}
+
+function closeCreditsModal() {
+  showCreditsModal.value = false;
 }
 
 function handleImportSuccess() {
@@ -277,7 +288,12 @@ onBeforeUnmount(() => {
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">App</h3>
           <div class="mobile-menu-options">
-            <button class="mobile-menu-option">
+            <button class="mobile-menu-option" @click="openCreditsModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
               Credits
             </button>
           </div>
@@ -290,6 +306,12 @@ onBeforeUnmount(() => {
       v-if="showImportModal"
       @close="closeImportModal"
       @import-success="handleImportSuccess"
+    />
+    
+    <!-- Credits Modal -->
+    <CreditsModal
+      v-if="showCreditsModal"
+      @close="closeCreditsModal"
     />
   </header>
 </template>

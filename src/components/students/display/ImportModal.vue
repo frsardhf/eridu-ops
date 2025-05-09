@@ -160,7 +160,7 @@ function closeModal(event: MouseEvent) {
 }
 
 .modal-container {
-  background-color: #1e1e1e;
+  background-color: var(--background-primary);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   width: 90%;
@@ -188,7 +188,7 @@ function closeModal(event: MouseEvent) {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .close-button {
@@ -221,7 +221,7 @@ function closeModal(event: MouseEvent) {
   margin-bottom: 16px;
   position: relative;
   transition: all 0.3s ease;
-  background-color: #252525;
+  background-color: var(--background-secondary);
   min-height: 160px;
   display: flex;
   align-items: center;
@@ -247,7 +247,7 @@ function closeModal(event: MouseEvent) {
 .dropzone-text {
   margin: 10px 0 5px;
   font-size: 1rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .dropzone-subtext {
