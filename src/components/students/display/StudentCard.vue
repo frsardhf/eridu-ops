@@ -383,8 +383,16 @@ function handlePinToggle(event: MouseEvent) {
   transform: translate(-50%, -55%);
   font-weight: bold;
   font-size: 14px;
-  color: white;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  color: black;
+  text-shadow: 
+    -0.2px -0.2px 0 #fff,
+    0px -0.2px 0 #fff,
+    0.2px -0.2px 0 #fff,
+    -0.2px 0px 0 #fff,
+    0.2px 0px 0 #fff,
+    -0.2px 0.2px 0 #fff,
+    0px 0.2px 0 #fff,
+    0.2px 0.2px 0 #fff;
 }
 
 .grade-container {

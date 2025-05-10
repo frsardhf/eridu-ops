@@ -1,4 +1,4 @@
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { StudentProps, FetchedData } from '../../types/student';
 import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
@@ -22,6 +22,7 @@ import {
   getStorageData,
   STORAGE_KEYS,
 } from '../utils/studentStorage';
+import { studentDataStore } from '../stores/studentStore';
 
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
@@ -43,6 +44,7 @@ export function useStudentData() {
     const pinnedStudents: string[] = getPinnedStudents();
     const pinnedStudentsList: StudentProps[] = [];
     const unpinnedStudentsList: StudentProps[] = [];
+    const studentStore = studentDataStore.value;
     
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
@@ -69,6 +71,26 @@ export function useStudentData() {
           case 'default':
             comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
             break;
+          case 'bond': {
+            // studentStore may not have every student, so default to 0 if missing
+            const aBond = studentStore[a.Id]?.bondDetailData?.currentBond ?? 0;
+            const bBond = studentStore[b.Id]?.bondDetailData?.currentBond ?? 0;
+            comparison = aBond - bBond;
+            break;
+          }
+          case 'level': {
+            // studentStore may not have every student, so default to 1 if missing
+            const aLevel = studentStore[a.Id]?.characterLevels?.current ?? 1;
+            const bLevel = studentStore[b.Id]?.characterLevels?.current ?? 1;
+            comparison = aLevel - bLevel;
+            break;
+          }
+          case 'grade': {
+            const aGrade = studentStore[a.Id]?.gradeLevels?.current ?? a.StarGrade;
+            const bGrade = studentStore[b.Id]?.gradeLevels?.current ?? b.StarGrade;
+            comparison = aGrade - bGrade;
+            break;
+          }
           case 'id':
           default:
             comparison = Number(a.Id) - Number(b.Id);
@@ -94,7 +116,8 @@ export function useStudentData() {
     const savedSort = getStorageData<SortOption>(STORAGE_KEYS.SORT_OPTION);
     const savedDirection = getStorageData<SortDirection>(STORAGE_KEYS.SORT_DIRECTION);
     
-    if (savedSort && ['id', 'name', 'default'].includes(savedSort)) {
+    if (savedSort && ['id', 'name', 'default', 'bond', 'level', 'grade']
+      .includes(savedSort)) {
       currentSort.value = savedSort;
     }
     
@@ -441,6 +464,15 @@ export function useStudentData() {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
   });
+
+  // Watch for changes in studentStore and re-sort when it updates
+  watch(
+    () => studentDataStore.value,
+    () => {
+      updateSortedStudents();
+    },
+    { deep: true }
+  );
 
   initializeData();
 

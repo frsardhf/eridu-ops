@@ -154,7 +154,13 @@ onBeforeUnmount(() => {
                 class="sort-text"
                 @click="toggleDropdown"
               >
-                {{ currentSort === 'id' ? 'ID' : currentSort === 'name' ? 'Name' : 'Default' }}
+                {{ 
+                  currentSort === 'id' ? 'ID' : 
+                  currentSort === 'name' ? 'Name' : 
+                  currentSort === 'bond' ? 'Bond' : 
+                  currentSort === 'level' ? 'Level' : 
+                  currentSort === 'grade' ? 'Grade' : 'Default' 
+                }}
                 <span class="sort-arrow">▼</span>
               </span>
             </button>
@@ -179,6 +185,27 @@ onBeforeUnmount(() => {
                 @click.stop="updateSortOption('default')"
               >
                 Default
+              </div>
+              <div 
+                class="sort-option" 
+                :class="{ 'active': currentSort === 'bond' }"
+                @click.stop="updateSortOption('bond')"
+              >
+                Bond
+              </div>
+              <div 
+                class="sort-option" 
+                :class="{ 'active': currentSort === 'level' }"
+                @click.stop="updateSortOption('level')"
+              >
+                Level
+              </div>
+              <div 
+                class="sort-option" 
+                :class="{ 'active': currentSort === 'grade' }"
+                @click.stop="updateSortOption('grade')"
+              >
+                Grade
               </div>
             </div>
           </div>
@@ -240,6 +267,27 @@ onBeforeUnmount(() => {
               @click="updateSortOption('default')"
             >
               Default
+            </button>
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentSort === 'bond' }"
+              @click="updateSortOption('bond')"
+            >
+              Bond
+            </button>
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentSort === 'level' }"
+              @click="updateSortOption('level')"
+            >
+              Level
+            </button>
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentSort === 'grade' }"
+              @click="updateSortOption('grade')"
+            >
+              Grade
             </button>
           </div>
           

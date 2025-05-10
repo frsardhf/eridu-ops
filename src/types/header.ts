@@ -1,4 +1,4 @@
-export type SortOption = 'id' | 'name' | 'default';
+export type SortOption = 'id' | 'name' | 'default' | 'bond' | 'level' | 'grade' | 'pinned';
 
 export type SortDirection = 'asc' | 'desc';
 

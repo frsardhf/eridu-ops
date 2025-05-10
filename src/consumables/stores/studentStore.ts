@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import { getFormData } from '../utils/studentStorage';
 
 // Create a reactive store for student data
-const studentDataStore = ref<Record<string, any>>({});
+export const studentDataStore = ref<Record<string, any>>({});
 
 // Function to update student data in the store
 export function updateStudentData(studentId: string | number) {
