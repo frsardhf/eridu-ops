@@ -7,6 +7,10 @@ const routes = [
     path: '/',
     name: 'StudentDisplay',
     component: StudentDisplay
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ]
 
