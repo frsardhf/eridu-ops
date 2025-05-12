@@ -84,12 +84,13 @@ function hideTooltip() {
         }"
       >
         <template v-if="hoveredTooltipType === 'convert'">
-          Toggle this to convert into selector boxes automatically.
-          Each selector box requires 1 yellow stone and 2 SR gift materials.
+          Automatically convert gifts into selector boxes.
+          Each selector box costs 1 fusion keystone and 2 SR gift materials.
         </template>
         <template v-else-if="hoveredTooltipType === 'autofill'">
-          Click this to auto-fill all gifts owned from Items tab. 
-          This will replace all current gift form inputs minus the selector box and yellow stone.
+          Auto-fill all owned gifts from your Items inventory.
+          This will update gift quantities while keeping your selector box 
+          and fusion keystone settings unchanged.
         </template>
       </div>
     </div>

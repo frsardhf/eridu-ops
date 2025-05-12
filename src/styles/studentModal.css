@@ -47,6 +47,10 @@
   transition: all 0.2s ease;
 }
 
+.tab-button:focus {
+  outline: none;
+}
+
 .tab-button.active {
   color: var(--text-primary);
   border-bottom: 2px solid var(--accent-color);

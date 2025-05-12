@@ -285,32 +285,26 @@ onUnmounted(() => {
         </div>
 
         <!-- Resources Tab - Just the input grid -->
-        <div v-if="activeTab === 'resources'">
-          <div class="resources-placeholder">
-            <StudentResourceGrid
-              :student="student"
-              :resource-form-data="resourceFormData"
-              @update-resource="handleResourceInput"
-            />
-          </div>
+        <div v-if="activeTab === 'resources'" class="tab-content resources-tab">
+          <StudentResourceGrid
+            :student="student"
+            :resource-form-data="resourceFormData"
+            @update-resource="handleResourceInput"
+          />
         </div>
         
         <!-- Equipment Tab -->
-        <div v-if="activeTab === 'equipment'">
-          <div class="resources-placeholder">
-            <StudentEquipmentGrid
-              :student="student"
-              :equipment-form-data="equipmentFormData"
-              @update-equipment="handleEquipmentInput"
-            />
-          </div>
+        <div v-if="activeTab === 'equipment'" class="tab-content resources-tab">
+          <StudentEquipmentGrid
+            :student="student"
+            :equipment-form-data="equipmentFormData"
+            @update-equipment="handleEquipmentInput"
+          />
         </div>
         
         <!-- Summary Tab - Just the resource summary -->
-        <div v-if="activeTab === 'summary'">
-          <div class="resources-placeholder">
-            <StudentResourceSummary />
-          </div>
+        <div v-if="activeTab === 'summary'" class="tab-content resources-tab">
+          <StudentResourceSummary />
         </div>
       </div>
     </div>
@@ -330,16 +324,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.resources-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  border-radius: 8px;
-  padding: 5px;
-  background-color: var(--background-primary);
-}
-
 .gift-section {
   display: flex;
   flex-direction: column;
@@ -347,6 +331,11 @@ onUnmounted(() => {
   background-color: var(--background-primary);
   border-radius: 8px;
   padding: 0 15px 15px 15px;
+}
+
+.resources-tab {
+  display: block;
+  width: 100%;
 }
 
 .modal-overlay {

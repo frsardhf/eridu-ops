@@ -131,7 +131,6 @@ function hasTargetUpgrades(levels: Record<string, { current: number, target: num
   return Object.values(levels).some(level => level.target > level.current);
 } 
 
-
 /**
  * Function to format material quantity for display
  * This function formats the quantity of materials for display in the UI
