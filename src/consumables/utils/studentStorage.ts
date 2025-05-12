@@ -198,7 +198,7 @@ export function loadFormDataToRefs(
           
           // Handle nested objects (like equipment types, skill types, etc.)
           Object.keys(mergedValue).forEach(nestedKey => {
-            if (storedValue && storedValue[nestedKey]) {
+            if (storedValue[nestedKey]) {
               // If the stored value has this nested key, use it
               if (typeof mergedValue[nestedKey] === 'object' && mergedValue[nestedKey] !== null) {
                 // For nested objects like { current: 1, target: 1 }
@@ -281,7 +281,7 @@ export function loadResourcesToRefs(
     
     Object.entries(resources).forEach(([id, resource]) => {
       if (id in refs) {
-        refs[id].value = resource.QuantityOwned || 0;
+        refs[id].value = resource.QuantityOwned ?? 0;
       }
     });
     
@@ -358,7 +358,7 @@ export function loadEquipmentsToRefs(
     
     Object.entries(equipments).forEach(([id, equipment]) => {
       if (id in refs) {
-        refs[id].value = equipment.QuantityOwned || 0;
+        refs[id].value = equipment.QuantityOwned ?? 0;
       }
     });
     
@@ -460,7 +460,7 @@ export function getPinnedStudents(): string[] {
 export function getResourceDataById(id: string | number): Record<string, any> | null {
   try {
     const resourcesData = getStorageData(STORAGE_KEYS.RESOURCES);
-    return resourcesData?.[id] || null;
+    return resourcesData?.[id] ?? null;
   } catch (error) {
     console.error('Error retrieving resource by ID from localStorage:', error);
     return null;
@@ -475,7 +475,7 @@ export function getResourceDataById(id: string | number): Record<string, any> | 
 export function getEquipmentDataById(id: string | number): Record<string, any> | null {
   try {
     const equipmentData = getStorageData(STORAGE_KEYS.EQUIPMENTS);
-    return equipmentData?.[id] || null;
+    return equipmentData?.[id] ?? null;
   } catch (error) {
     console.error('Error retrieving equipment by ID from localStorage:', error);
     return null;

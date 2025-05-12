@@ -268,14 +268,37 @@ export function useStudentGifts(props: {
       // Use the minimum of what materials and stones allow
       const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
       
-      // Set the quantities in boxFormData
-      boxFormData.value[YELLOW_STONE_ID] = yellowStoneQuantity - convertedQuantity; // Leftover stones
-      boxFormData.value[SR_GIFT_MATERIAL_ID] = srGiftMaterialQuantity - (convertedQuantity * 2); // Remaining materials
-      boxFormData.value[SELECTOR_BOX_ID] = selectorBoxQuantity + convertedQuantity; // Number of selector boxes
+      // Set the quantities in boxFormData without triggering the watcher
+      boxFormData.value = {
+        ...boxFormData.value,
+        [YELLOW_STONE_ID]: yellowStoneQuantity - convertedQuantity, // Leftover stones
+        [SR_GIFT_MATERIAL_ID]: srGiftMaterialQuantity - (convertedQuantity * 2), // Remaining materials
+        [SELECTOR_BOX_ID]: selectorBoxQuantity + convertedQuantity // Number of selector boxes
+      };
     } finally {
       isCalculating.value = false;
     }
   };
+
+  // Add a debounced version of calculateOptimalConversion
+  let conversionDebounceTimer: number | null = null;
+  const debouncedCalculateConversion = () => {
+    if (conversionDebounceTimer !== null) {
+      clearTimeout(conversionDebounceTimer);
+    }
+    conversionDebounceTimer = setTimeout(() => {
+      calculateOptimalConversion();
+      conversionDebounceTimer = null;
+    }, 1000); // 1000ms debounce
+  };
+
+  // Watch for changes to boxFormData when in conversion mode
+  watch(boxFormData, () => {
+    if (bondDetailData.value.convertBox && !isCalculating.value) {
+      // When in conversion mode and box values change, use the debounced calculation
+      debouncedCalculateConversion();
+    }
+  }, { deep: true });
 
   const shouldShowGiftGrade = computed(() => {
     return (id: number): boolean => {
@@ -361,14 +384,6 @@ export function useStudentGifts(props: {
       calculateOptimalConversion();
     }
   });
-
-  // Watch for changes to boxFormData when in conversion mode
-  watch(boxFormData, () => {
-    if (bondDetailData.value.convertBox && !isCalculating.value) {
-      // When in conversion mode and box values change, recalculate
-      calculateOptimalConversion();
-    }
-  }, { deep: true });
 
   return {
     // State
