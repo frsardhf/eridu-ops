@@ -26,6 +26,11 @@ export const EQUIPMENT = {
 
 export const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
 
+export const YELLOW_STONE_ID = 82;
+export const SR_GIFT_MATERIAL_ID = 100000;
+export const SELECTOR_BOX_ID = 100008;
+export const SSR_GIFT_MATERIAL_ID = 100009;
+
 export const GIFT_BOX_IDS = ['82', '100000', '100008', '100009'];
 
 export const GIFT_BOX_EXP_VALUES = { 'SR': 20, 'SSR': 120 };

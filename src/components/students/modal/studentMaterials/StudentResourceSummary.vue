@@ -4,7 +4,7 @@ import { Material } from '../../../../types/upgrade';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
 import { getEquipments, getResources } from '../../../../consumables/utils/studentStorage';
-import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
+import { formatLargeNumber, adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
 
 // Define view options
@@ -233,43 +233,14 @@ const setView = (view: ViewMode) => {
 const showTooltip = (event: MouseEvent, materialId: number) => {
   hoveredItemId.value = materialId;
   
-  // Initial position based on event
-  const initialPosition = {
-    x: event.clientX + 20,
-    y: event.clientY + 20
-  };
-  
   // Set initial position
-  tooltipPosition.value = initialPosition;
+  tooltipPosition.value = adjustTooltipPosition(event);
   
   // Adjust tooltip position after it's rendered
   setTimeout(() => {
     const tooltip = document.querySelector('.material-tooltip') as HTMLElement;
     if (tooltip) {
-      const rect = tooltip.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      let adjustedX = initialPosition.x;
-      let adjustedY = initialPosition.y;
-      
-      // Check if off-screen right
-      if (rect.right > viewportWidth - 20) {
-        adjustedX = Math.max(20, event.clientX - rect.width - 20);
-      }
-      
-      // Check if off-screen bottom
-      if (rect.bottom > viewportHeight - 20) {
-        adjustedY = Math.max(20, event.clientY - rect.height - 20);
-      }
-      
-      // Update position if changed
-      if (adjustedX !== tooltipPosition.value.x || adjustedY !== tooltipPosition.value.y) {
-        tooltipPosition.value = {
-          x: adjustedX,
-          y: adjustedY
-        };
-      }
+      tooltipPosition.value = adjustTooltipPosition(event, tooltip);
     }
   }, 0);
 };

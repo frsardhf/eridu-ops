@@ -4,6 +4,7 @@ import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { getResources, loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import bondData from '../../data/data.json';
 import { updateStudentData } from '../stores/studentStore';
+import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
 
 export function useStudentGifts(props: {
   student: StudentProps | null,
@@ -13,6 +14,7 @@ export function useStudentGifts(props: {
   const giftFormData = ref<Record<string, number>>({});
   const boxFormData = ref<Record<string, number>>({});
   const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
+  const isCalculating = ref(false);
 
   const bondXpTable = bondData.bond_xp;
 
@@ -216,22 +218,6 @@ export function useStudentGifts(props: {
     removeLeadingZeros(event);
     const input = event.target as HTMLInputElement;
     boxFormData.value[boxId] = parseInt(input.value) || 0;
-
-    // Update original quantities when not in convert mode
-    if (!bondDetailData.value.convertBox) {
-      // Find the box by ID
-      const box = props.student?.Boxes[boxId];
-      if (box) {
-        // Store original values based on the gift ID
-        if (box.gift.Id === 82) { // Yellow stone
-          bondDetailData.value.originalYellowStoneQuantity = parseInt(input.value) || 0;
-        } else if (box.gift.Id === 100000) { // SR gift material
-          bondDetailData.value.originalSrGiftQuantity = parseInt(input.value) || 0;
-        } else if (box.gift.Id === 100008) { // Selector box
-          bondDetailData.value.originalSelectorBoxQuantity = parseInt(input.value) || 0;
-        }
-      }
-    }
   };
 
   const handleBondInput = (event: Event) => {
@@ -244,70 +230,59 @@ export function useStudentGifts(props: {
   };
 
   const convertBoxes = () => {
-    // Toggle the convertBox value first
+    // Toggle the convertBox value
     bondDetailData.value.convertBox = !bondDetailData.value.convertBox;
 
     if (!props.student?.Boxes || Object.keys(props.student.Boxes).length === 0) {
       return;
     }
     
-    // Define IDs for our special items
-    const YELLOW_STONE_ID = 82;
-    const SR_GIFT_MATERIAL_ID = 100000;
-    const SELECTOR_BOX_ID = 100008;
-    
-    // Apply conversion logic for quantities
-    const yellowStoneQuantity = bondDetailData.value.originalYellowStoneQuantity;
-    const srGiftMaterialQuantity = bondDetailData.value.originalSrGiftQuantity;
-    const selectorBoxQuantity = bondDetailData.value.originalSelectorBoxQuantity;
+    // No need to call calculateOptimalConversion here anymore
+    // The watch function will handle it when convertBox becomes true
+  };
 
-    if (bondDetailData.value.convertBox) {
-      // Save original values only when first checked
-      if (bondDetailData.value.originalYellowStoneQuantity === 0 || 
-        bondDetailData.value.originalSrGiftQuantity === 0) {
-        // Store the original quantities directly by ID
-        bondDetailData.value.originalYellowStoneQuantity = 
-          parseInt(boxFormData.value[YELLOW_STONE_ID] as unknown as string) || 0;
-        bondDetailData.value.originalSrGiftQuantity = 
-          parseInt(boxFormData.value[SR_GIFT_MATERIAL_ID] as unknown as string) || 0;
-        bondDetailData.value.originalSelectorBoxQuantity = 
-          parseInt(boxFormData.value[SELECTOR_BOX_ID] as unknown as string) || 0;
+  // Function to calculate optimal conversion
+  const calculateOptimalConversion = () => {
+    // Prevent recalculation if already calculating
+    if (isCalculating.value) return;
+    
+    try {
+      isCalculating.value = true;
+      
+      // Get current values
+      const yellowStoneQuantity = boxFormData.value[YELLOW_STONE_ID] || 0;
+      const srGiftMaterialQuantity = boxFormData.value[SR_GIFT_MATERIAL_ID] || 0;
+      const selectorBoxQuantity = boxFormData.value[SELECTOR_BOX_ID] || 0;
+      
+      // Ensure we have valid values
+      if (yellowStoneQuantity <= 0 || srGiftMaterialQuantity <= 0) {
+        // Not enough materials to convert, no changes needed
+        return;
       }
       
       // Calculate how many boxes can be converted based on available materials
       // Each conversion requires 2 materials and 1 stone
       const maxConvertibleByMaterials = Math.floor(srGiftMaterialQuantity / 2);
       const maxConvertibleByStones = yellowStoneQuantity;
-      // Use the minimum of what materials and stones allow
-      const convertedQuantity = Math.min(maxConvertibleByMaterials, 
-        maxConvertibleByStones);
       
-      // Set the quantities in boxFormData using gift IDs
+      // Use the minimum of what materials and stones allow
+      const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
+      
+      // Set the quantities in boxFormData
       boxFormData.value[YELLOW_STONE_ID] = yellowStoneQuantity - convertedQuantity; // Leftover stones
       boxFormData.value[SR_GIFT_MATERIAL_ID] = srGiftMaterialQuantity - (convertedQuantity * 2); // Remaining materials
       boxFormData.value[SELECTOR_BOX_ID] = selectorBoxQuantity + convertedQuantity; // Number of selector boxes
-    } else {
-      // Restore original values when unchecked
-      boxFormData.value[YELLOW_STONE_ID] = bondDetailData.value.originalYellowStoneQuantity;
-      boxFormData.value[SR_GIFT_MATERIAL_ID] = bondDetailData.value.originalSrGiftQuantity;
-      boxFormData.value[SELECTOR_BOX_ID] = bondDetailData.value.originalSelectorBoxQuantity;
+    } finally {
+      isCalculating.value = false;
     }
   };
 
   const shouldShowGiftGrade = computed(() => {
-    // Define IDs for our special items
-    const YELLOW_STONE_ID = 82;
-    const SR_GIFT_MATERIAL_ID = 100000;
-    const SELECTOR_BOX_ID = 100008;
-    const SELECTOR_KEYSTONE_ID = 100009;
-    
     return (id: number): boolean => {
       return (
-        // Only show grades for non-keystones or when converted boxes have quantities
-        (!bondDetailData.value.convertBox && id !== YELLOW_STONE_ID) || 
-        (bondDetailData.value.convertBox && id === SR_GIFT_MATERIAL_ID && boxFormData.value[SR_GIFT_MATERIAL_ID] > 0) ||
-        (bondDetailData.value.convertBox && id === SELECTOR_BOX_ID && boxFormData.value[SELECTOR_BOX_ID] > 0) ||
-        (bondDetailData.value.convertBox && id === SELECTOR_KEYSTONE_ID && boxFormData.value[SELECTOR_KEYSTONE_ID] > 0)
+        // Only show grades for non-keystones to avoid missing grade favor icon
+        // because keystone doesn't have exp value
+        id !== YELLOW_STONE_ID
       );
     };
   });
@@ -360,9 +335,6 @@ export function useStudentGifts(props: {
     // Set the quantities for non-favor gifts in boxFormData
     boxFormData.value[100000] = nonFavorGiftsSr;
     boxFormData.value[100009] = nonFavorGiftsSsr;
-
-    // Set the original quantities for non-favor gifts
-    bondDetailData.value.originalSrGiftQuantity = nonFavorGiftsSr;
   }
 
   function closeModal() {
@@ -381,6 +353,22 @@ export function useStudentGifts(props: {
     get: () => bondDetailData.value.convertBox,
     set: (value) => { bondDetailData.value.convertBox = value; }
   });
+
+  // Watch for changes to convertBox state
+  watch(() => bondDetailData.value.convertBox, (isChecked) => {
+    if (isChecked) {
+      // When checkbox is checked, apply conversion immediately
+      calculateOptimalConversion();
+    }
+  });
+
+  // Watch for changes to boxFormData when in conversion mode
+  watch(boxFormData, () => {
+    if (bondDetailData.value.convertBox && !isCalculating.value) {
+      // When in conversion mode and box values change, recalculate
+      calculateOptimalConversion();
+    }
+  }, { deep: true });
 
   return {
     // State

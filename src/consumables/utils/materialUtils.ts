@@ -149,3 +149,51 @@ export function formatLargeNumber(quantity: number): string {
   
   return `×${quantity}`;
 };
+
+/**
+ * Adjusts tooltip position to ensure it stays within viewport
+ * @param event Mouse event that triggered the tooltip
+ * @param tooltipElement The tooltip element or null if not yet rendered
+ * @param offsetX Horizontal offset from cursor (default: 20)
+ * @param offsetY Vertical offset from cursor (default: 20)
+ * @returns The adjusted position {x, y}
+ */
+export function adjustTooltipPosition(
+  event: MouseEvent, 
+  tooltipElement: HTMLElement | null = null,
+  offsetX: number = 20,
+  offsetY: number = 20
+): { x: number, y: number } {
+  // Initial position based on event
+  const initialPosition = {
+    x: event.clientX + offsetX,
+    y: event.clientY + offsetY
+  };
+  
+  // If no tooltip element provided, return initial position
+  if (!tooltipElement) {
+    return initialPosition;
+  }
+  
+  const rect = tooltipElement.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  let adjustedX = initialPosition.x;
+  let adjustedY = initialPosition.y;
+  
+  // Check if off-screen right
+  if (rect.right > viewportWidth - 20) {
+    adjustedX = Math.max(20, event.clientX - rect.width - offsetX);
+  }
+  
+  // Check if off-screen bottom
+  if (rect.bottom > viewportHeight - 20) {
+    adjustedY = Math.max(20, event.clientY - rect.height - offsetY);
+  }
+  
+  return {
+    x: adjustedX,
+    y: adjustedY
+  };
+}

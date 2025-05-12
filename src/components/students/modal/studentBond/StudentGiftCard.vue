@@ -44,7 +44,12 @@ function formatValue(value: any): string {
 
 const gift = props.item.gift;
 
-const isInputDisabled = computed(() => props.isBox && props.convertBox);
+// Determine if this is a special box item that's part of the conversion process
+const isConversionItem = computed(() => {
+  if (!props.isBox) return false;
+  const id = props.item.gift.Id;
+  return id === 82 || id === 100000 || id === 100008;
+});
 </script>
 
 <template>
@@ -71,19 +76,20 @@ const isInputDisabled = computed(() => props.isBox && props.convertBox);
           {{ formatValue(value) }}
         </div>
         
-        <!-- Hidden input for editing quantity -->
-        <input
-          ref="inputEl"
-          type="number"
-          :value="value"
-          :name="`${isBox ? 'box' : 'gift'}-${gift.Id}`"
-          @input="handleInput"
-          @focus="handleFocus"
-          @blur="handleBlur"
-          min="0"
-          class="resource-input"
-          :disabled="isInputDisabled"
-        />
+        <!-- Input for editing quantity -->
+        <div class="input-container">
+          <input
+            ref="inputEl"
+            type="number"
+            :value="value"
+            :name="`${isBox ? 'box' : 'gift'}-${gift.Id}`"
+            @input="handleInput"
+            @focus="handleFocus"
+            @blur="handleBlur"
+            min="0"
+            class="resource-input"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -125,5 +131,9 @@ const isInputDisabled = computed(() => props.isBox && props.convertBox);
   width: 34px;
   height: 29px;
   object-fit: contain;
+}
+
+.input-container {
+  position: relative;
 }
 </style>

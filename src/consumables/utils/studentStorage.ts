@@ -76,7 +76,7 @@ export function saveFormData(studentId: string | number, data: Record<string, an
     let studentsData = getDataCollection(STORAGE_KEYS.FORMS);
     
     // Get existing data for this student
-    const existingStudentData = studentsData[studentId] || {};
+    const existingStudentData = studentsData[studentId] ?? {};
     
     // Merge with new data
     studentsData[studentId] = {

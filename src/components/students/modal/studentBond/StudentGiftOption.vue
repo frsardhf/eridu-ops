@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
+
 const props = defineProps<{
   convertBox: boolean
 }>();
 
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift']);
+
+// Tooltip state
+const hoveredTooltipType = ref<'convert' | 'autofill' | null>(null);
+const tooltipPosition = ref({ x: 0, y: 0 });
 
 function handleConvert() {
   emit('toggle-convert');
@@ -11,6 +18,27 @@ function handleConvert() {
 
 function handleAutoFill() {
   emit('auto-fill-gift');
+}
+
+// Function to show tooltip
+function showTooltip(event: MouseEvent, type: 'convert' | 'autofill') {
+  hoveredTooltipType.value = type;
+  
+  // Set initial position
+  tooltipPosition.value = adjustTooltipPosition(event);
+  
+  // Adjust tooltip position after it's rendered
+  setTimeout(() => {
+    const tooltip = document.querySelector('.gift-tooltip') as HTMLElement;
+    if (tooltip) {
+      tooltipPosition.value = adjustTooltipPosition(event, tooltip);
+    }
+  }, 0);
+}
+
+// Function to hide tooltip
+function hideTooltip() {
+  hoveredTooltipType.value = null;
 }
 </script>
 
@@ -27,7 +55,12 @@ function handleAutoFill() {
           @change="handleConvert"
           class="convert-input"
         />
-        <label for="convert-input" class="checkbox-label">
+        <label 
+          for="convert-input" 
+          class="checkbox-label"
+          @mousemove="showTooltip($event, 'convert')"
+          @mouseleave="hideTooltip()"
+        >
           <span class="checkbox-custom"></span>
           <span class="checkbox-text">Convert Gift Choice Box</span>
         </label>
@@ -35,12 +68,30 @@ function handleAutoFill() {
       <button
         class="button button-primary"
         @click="handleAutoFill"
-        :disabled="convertBox"
-        :class="{ 'button-disabled': convertBox }"
+        @mousemove="showTooltip($event, 'autofill')"
+        @mouseleave="hideTooltip()"
       >
         <span class="button-text">Auto-Fill Gifts</span>
-        <span v-if="convertBox" class="tooltip">Disabled when Convert is checked</span>
       </button>
+      
+      <!-- Tooltip for both elements -->
+      <div 
+        v-if="hoveredTooltipType !== null" 
+        class="gift-tooltip"
+        :style="{ 
+          left: `${tooltipPosition.x}px`, 
+          top: `${tooltipPosition.y}px`
+        }"
+      >
+        <template v-if="hoveredTooltipType === 'convert'">
+          Toggle this to convert into selector boxes automatically.
+          Each selector box requires 1 yellow stone and 2 SR gift materials.
+        </template>
+        <template v-else-if="hoveredTooltipType === 'autofill'">
+          Click this to auto-fill all gifts owned from Items tab. 
+          This will replace all current gift form inputs minus the selector box and yellow stone.
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -76,6 +127,7 @@ function handleAutoFill() {
   align-items: center;
   gap: 10px;
   margin: 0 5px;
+  position: relative;
 }
 
 .custom-checkbox {
@@ -178,39 +230,21 @@ function handleAutoFill() {
   opacity: 0.8;
 }
 
-.tooltip {
-  visibility: hidden;
-  position: absolute;
-  bottom: 125%;
-  left: 40%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.75);
+/* Tooltip styles */
+.gift-tooltip {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(12, 12, 20, 0.92);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  backdrop-filter: blur(5px);
   color: white;
-  text-align: center;
-  padding: 5px 8px;
-  border-radius: 4px;
+  text-align: left;
   font-size: 0.8em;
   width: max-content;
-  max-width: 200px;
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.button:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-
-/* Add a small triangle at the bottom of the tooltip */
-.tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: rgba(0, 0, 0, 0.75) transparent transparent transparent;
+  max-width: 250px;
 }
 </style>
