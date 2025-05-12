@@ -652,7 +652,6 @@ export function migrateFormData() {
     
     // Parse the forms data
     const forms = JSON.parse(formsData);
-    const students = JSON.parse(studentsData);
     
     // Track if we've made any changes
     let hasChanges = false;
@@ -660,22 +659,21 @@ export function migrateFormData() {
     // Iterate through each student ID in the forms object
     Object.keys(forms).forEach(studentId => {
       const formData = forms[studentId];
-      const studentData = students[studentId];
       
       // Check if this student data needs migration
       if (formData && 
-          formData.gradeLevels !== undefined) {
-        
-        const starGrade = studentData.StarGrade;
+          formData.bondDetailData !== undefined) {
 
         // Replace the old gradeLevels with the new format
-        formData.gradeLevels = {
-          current: starGrade,
-          target: starGrade,
-        };
+        // formData.gradeLevels = {
+        //   current: starGrade,
+        //   target: starGrade,
+        // };
         
         // Remove old properties
-        // delete studentData.convertBox;
+        delete formData.bondDetailData.originalSelectorBoxQuantity;
+        delete formData.bondDetailData.originalSrGiftQuantity;
+        delete formData.bondDetailData.originalYellowStoneQuantity;
         
         hasChanges = true;
         console.log(`Migrated data for student ${studentId}`);
@@ -703,13 +701,13 @@ export function checkAndMigrateFormData() {
   // Check if migration has been run already
   const migrationVersion = localStorage.getItem('forms_migration_version');
   
-  // If we haven't run migration version 3 yet
-  if (!migrationVersion || parseInt(migrationVersion) < 3) {
+  // If we haven't run migration version 1 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 1) {
     const migratedData = migrateFormData();
     
     if (migratedData) {
       // Mark migration as complete
-      localStorage.setItem('forms_migration_version', '3');
+      localStorage.setItem('forms_migration_version', '1');
     }
     
     return migratedData;

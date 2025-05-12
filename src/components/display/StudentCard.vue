@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { StudentProps } from '../../../types/student'
+import { StudentProps } from '../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { getStudentData } from '../../../consumables/stores/studentStore'
-import { SkillType } from '../../../types/upgrade'
-import { EquipmentType } from '../../../types/gear'
+import { getStudentData } from '../../consumables/stores/studentStore'
+import { SkillType } from '../../types/upgrade'
+import { EquipmentType } from '../../types/gear'
 import { 
   isStudentPinned, 
   togglePinnedStudent 
-} from '../../../consumables/utils/studentStorage'
+} from '../../consumables/utils/studentStorage'
 
 const props = defineProps<{ student: StudentProps }>();
 const emit = defineEmits<{

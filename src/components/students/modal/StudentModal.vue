@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { ModalProps, StudentProps } from '../../../types/student';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
@@ -32,7 +32,7 @@ type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
 const emit = defineEmits<EmitFn>();
 
 // 'bond', 'upgrade', 'gear', 'resources', 'equipment', or 'summary'
-const activeTab = ref('upgrade'); 
+const activeTab = ref('bond'); 
 
 const {
   closeModal,

@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue';
-import { HeaderProps, SortOption } from '../../../types/header';
+import { HeaderProps, SortOption } from '../../types/header';
 import { 
   downloadLocalStorageData
-} from '../../../consumables/utils/studentStorage';
+} from '../../consumables/utils/studentStorage';
 import ImportModal from './ImportModal.vue';
 import CreditsModal from './CreditsModal.vue';
+import ContactModal from './ContactModal.vue';
 
 const props = defineProps<HeaderProps>();
 const dropdownOpen = ref(false);
 const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showCreditsModal = ref(false);
+const showContactModal = ref(false);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
@@ -90,6 +92,15 @@ function closeCreditsModal() {
 
 function handleImportSuccess() {
   emit('dataImported');
+}
+
+function openContactModal() {
+  showContactModal.value = true;
+  mobileMenuOpen.value = false;
+}
+
+function closeContactModal() {
+  showContactModal.value = false;
 }
 
 onMounted(() => {
@@ -336,8 +347,14 @@ onBeforeUnmount(() => {
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">App</h3>
           <div class="mobile-menu-options">
+            <button class="mobile-menu-option" @click="openContactModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+              Contact
+            </button>
             <button class="mobile-menu-option" @click="openCreditsModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"></path>
                 <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
@@ -360,6 +377,12 @@ onBeforeUnmount(() => {
     <CreditsModal
       v-if="showCreditsModal"
       @close="closeCreditsModal"
+    />
+
+    <!-- Contact Modal -->
+    <ContactModal
+      v-if="showContactModal"
+      @close="closeContactModal"
     />
   </header>
 </template>

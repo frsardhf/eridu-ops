@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, defineEmits } from 'vue';
-import { importLocalStorageData } from '../../../consumables/utils/studentStorage';
+import { importLocalStorageData } from '../../consumables/utils/studentStorage';
 
 const emit = defineEmits<{
   'close': [];

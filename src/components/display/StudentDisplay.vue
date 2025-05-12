@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ModalProps, StudentProps } from '../../../types/student';
-import { ResourceProps } from '../../../types/resource';
-import { SortOption } from '../../../types/header';
-import { GiftProps } from '../../../types/gift';
-import { useStudentData } from '../../../consumables/hooks/useStudentData';
-import { getStorageData, STORAGE_KEYS } from '../../../consumables/utils/studentStorage';
-import StudentHeader from './StudentHeader.vue';
+import { ModalProps, StudentProps } from '../../types/student';
+import { ResourceProps } from '../../types/resource';
+import { SortOption } from '../../types/header';
+import { GiftProps } from '../../types/gift';
+import { useStudentData } from '../../consumables/hooks/useStudentData';
+import { getStorageData, STORAGE_KEYS } from '../../consumables/utils/studentStorage';
+import StudentNavbar from '../navbar/StudentNavbar.vue';
 import StudentGrid from './StudentGrid.vue';
-import StudentModal from '../modal/StudentModal.vue'
+import StudentModal from '../students/modal/StudentModal.vue'
 
 const {
   materialData,
@@ -94,7 +94,7 @@ function handleStudentPinned() {
 
 function handleDataImported() {
   console.log('Data imported successfully, page will reload to apply changes');
-  // The actual reload is handled in the StudentHeader component
+  // The actual reload is handled in the StudentNavbar component
 }
 
 onMounted(() => {
@@ -108,7 +108,7 @@ onMounted(() => {
 
 <template>
   <div class="student-list-container">
-    <StudentHeader
+    <StudentNavbar
       :search-query="searchQuery"
       :is-dark-mode="isDarkMode"
       :current-sort="currentSort"

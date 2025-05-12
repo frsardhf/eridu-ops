@@ -21,6 +21,7 @@ import {
   setStorageData,
   getStorageData,
   STORAGE_KEYS,
+  checkAndMigrateFormData,
 } from '../utils/studentStorage';
 import { studentDataStore } from '../stores/studentStore';
 
@@ -416,6 +417,8 @@ export function useStudentData() {
   }
 
   async function initializeData() {
+    checkAndMigrateFormData();
+
     loadSortPreferences();
     
     // Fetch and update reactive refs
