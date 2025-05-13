@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, defineEmits } from 'vue';
 import { importLocalStorageData } from '../../consumables/utils/studentStorage';
+import { $t } from '../../locales';
 
 const emit = defineEmits<{
   'close': [];
@@ -44,19 +45,19 @@ async function handleFiles(files: FileList) {
   
   // Check if it's a text file
   if (!file.name.endsWith('.txt')) {
-    showImportError('Please select a .txt file');
+    showImportError($t('importErrorFileType'));
     return;
   }
   
   try {
     isLoading.value = true;
     showStatus.value = true;
-    importStatus.value = 'Importing data...';
+    importStatus.value = $t('importingData');
     
     const success = await importLocalStorageData(file);
     
     if (success) {
-      importStatus.value = 'Import successful! Reloading page...';
+      importStatus.value = $t('importSuccessful');
       emit('import-success');
       
       // Reload page after short delay
@@ -64,11 +65,11 @@ async function handleFiles(files: FileList) {
         window.location.reload();
       }, 1500);
     } else {
-      showImportError('Import failed. Please try again.');
+      showImportError($t('importFailed'));
     }
   } catch (error) {
     console.error('Error importing data:', error);
-    showImportError('Import failed. Please check your file format.');
+    showImportError($t('importFileFormatError'));
   } finally {
     isLoading.value = false;
   }
@@ -93,8 +94,8 @@ function closeModal(event: MouseEvent) {
   <div class="modal-backdrop" @click="closeModal">
     <div class="modal-container">
       <div class="modal-header">
-        <h2 class="modal-title">Import Data</h2>
-        <button class="close-button" @click="emit('close')" aria-label="Close">
+        <h2 class="modal-title">{{ $t('importData') }}</h2>
+        <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -129,15 +130,15 @@ function closeModal(event: MouseEvent) {
               <polyline points="17 8 12 3 7 8"/>
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-            <p class="dropzone-text">Drag & drop your export file here</p>
-            <p class="dropzone-subtext">or</p>
-            <label for="file-input" class="browse-button">Browse Files</label>
+            <p class="dropzone-text">{{ $t('dragDropFile') }}</p>
+            <p class="dropzone-subtext">{{ $t('or') }}</p>
+            <label for="file-input" class="browse-button">{{ $t('browseFiles') }}</label>
           </div>
         </div>
 
         <div class="info-text">
-          <p>Import your previously exported data to restore your progress and settings.</p>
-          <p>Note: This will replace your current data and reload the page.</p>
+          <p>{{ $t('importInstructions') }}</p>
+          <p>{{ $t('importWarning') }}</p>
         </div>
       </div>
     </div>

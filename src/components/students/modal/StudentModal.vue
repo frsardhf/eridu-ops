@@ -6,6 +6,7 @@ import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade'
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
+import { $t } from '../../../locales';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
 import StudentConvertBox from './studentBond/StudentGiftOption.vue';
@@ -153,37 +154,38 @@ onUnmounted(() => {
           :class="['tab-button', { active: activeTab === 'bond' }]" 
           @click="activeTab = 'bond'"
         >
-          Bond
+          <!-- 絆 for japanese, bond for english -->
+          {{ $t('bond') }}
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'upgrade' }]" 
           @click="activeTab = 'upgrade'"
         >
-          Upgrade
+          {{ $t('upgrade') }}
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'gear' }]" 
           @click="activeTab = 'gear'"
         >
-          Gear
+          {{ $t('gear') }}
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'resources' }]" 
           @click="activeTab = 'resources'"
         >
-          Items
+          {{ $t('items') }}
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'equipment' }]" 
           @click="activeTab = 'equipment'"
         >
-          Equipment
+          {{ $t('equipment') }}
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'summary' }]" 
           @click="activeTab = 'summary'"
         >
-          Summary
+          {{ $t('summary') }}
         </button>
       </div>
 

@@ -23,7 +23,8 @@ const {
   currentSort,
   sortDirection,
   updateSearchQuery,
-  toggleDirection
+  toggleDirection,
+  reinitializeData
 } = useStudentData()
 
 const selectedStudent = ref<ModalProps | null>(null)
@@ -97,6 +98,10 @@ function handleDataImported() {
   // The actual reload is handled in the StudentNavbar component
 }
 
+async function handleReinitializeData() {
+  await reinitializeData();
+}
+
 onMounted(() => {
   const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
   if (savedTheme) {
@@ -118,6 +123,7 @@ onMounted(() => {
       @update-sort="updateSortOption"
       @toggle-direction="handleToggleDirection"
       @data-imported="handleDataImported"
+      @reinitialize-data="handleReinitializeData"
     />
 
     <StudentGrid

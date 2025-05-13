@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import {
   SkillType,
   SkillSettings
 } from '../../../../types/upgrade';
 import '../../../../styles/studentUpgrade.css';
+import { currentLanguage } from '../../../../consumables/stores/localizationStore';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   student: Record<string, any> | null,
@@ -218,7 +220,8 @@ const fetchLocalizedBuffName = (key: string) => {
   // If cache is empty, fetch the data
   if (!localizationCache.value) {
     // We'll use a Promise to handle this asynchronously
-    fetch('https://schaledb.com/data/en/localization.json')
+    const lang = currentLanguage.value;
+    fetch(`https://schaledb.com/data/${lang}/localization.json`)
       .then(response => response.json())
       .then(data => {
         localizationCache.value = data;
@@ -237,7 +240,8 @@ const fetchLocalizedBuffName = (key: string) => {
 
 // Load localization data on component mount
 onMounted(() => {
-  fetch('https://schaledb.com/data/en/localization.json')
+  const lang = currentLanguage.value;
+  fetch(`https://schaledb.com/data/${lang}/localization.json`)
     .then(response => response.json())
     .then(data => {
       localizationCache.value = data;
@@ -342,12 +346,28 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
   const skill = skillTypes.value[skillType];
   return hoveredSkill.value === skillType || skill.current !== skill.target;
 };
+
+// Watch for language changes and update localization data
+watch(currentLanguage, (newLanguage) => {
+  // Clear current cache to force a reload
+  localizationCache.value = null;
+  
+  // Reload localization data with the new language
+  fetch(`https://schaledb.com/data/${newLanguage}/localization.json`)
+    .then(response => response.json())
+    .then(data => {
+      localizationCache.value = data;
+    })
+    .catch(error => {
+      console.error(`Error fetching localization data for language ${newLanguage}:`, error);
+    });
+});
 </script>
 
 <template>
   <div class="upgrade-section">
     <h3 class="section-title">
-      Skills
+      {{ $t('skills') }}
       <div class="options-container">
         <div class="max-all-container">
           <input
@@ -357,7 +377,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
             :checked="props.allSkillsMaxed"
             @change="handleMaxAllSkillsChange"
           />
-          <label for="max-all-skills">Max All Skills</label>
+          <label for="max-all-skills">{{ $t('maxAllSkills') }}</label>
         </div>
         <div class="max-all-container">
           <input
@@ -367,7 +387,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
             :checked="props.targetSkillsMaxed"
             @change="handleMaxTargetSkillsChange"
           />
-          <label for="max-target-skills">Max Target Skills</label>
+          <label for="max-target-skills">{{ $t('maxTargetSkills') }}</label>
         </div>
       </div>
     </h3>
@@ -384,7 +404,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
                 skillTypes[skillType].target, 
                 skillTypes[skillType].maxLevel
               ) === 'max'">
-                <span class="max-level">MAX</span>
+                <span class="max-level">{{ $t('max') }}</span>
               </template>
               
               <template v-else-if="getLevelDisplayState(
@@ -401,7 +421,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
                 <span class="target-level">{{ skillTypes[skillType].target }}</span>
                 <span class="max-indicator" 
                   v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
-                  MAX
+                  {{ $t('max') }}
                 </span>
               </template>
             </div>
@@ -429,7 +449,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
               >
                 <div class="tooltip-content">
                   <div class="tooltip-cost" v-if="props.student?.Skills?.[skillType]?.Cost">
-                    Cost: <span v-html="formatSkillCost(
+                    {{ $t('cost') }}: <span v-html="formatSkillCost(
                       props.student.Skills[skillType].Cost,
                       skillTypes[skillType].current,
                       skillTypes[skillType].target
@@ -451,7 +471,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
             >
               <!-- Current Skill Level Slider -->
               <div class="slider-row">
-                <span class="slider-label">{{ skillTypes[skillType].current === skillTypes[skillType].target ? 'Level' : 'Current' }}</span>
+                <span class="slider-label">{{ skillTypes[skillType].current === skillTypes[skillType].target ? $t('level') : $t('current') }}</span>
                 <input
                   type="range"
                   min="1"
@@ -469,7 +489,7 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
                 v-show="shouldShowTargetSlider(skillType)"
                 :class="{ 'fade-in': hoveredSkill === skillType }"
               >
-                <span class="slider-label">Target</span>
+                <span class="slider-label">{{ $t('target') }}</span>
                 <input
                   type="range"
                   min="1"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   convertBox: boolean
@@ -44,7 +45,7 @@ function hideTooltip() {
 
 <template>
   <div class="convert-box-section">
-    <h3 class="section-title">Gift Options</h3>
+    <h3 class="section-title">{{ $t('giftOptions') }}</h3>
     <div class="options-container">
       <div class="custom-checkbox">
         <input
@@ -62,7 +63,7 @@ function hideTooltip() {
           @mouseleave="hideTooltip()"
         >
           <span class="checkbox-custom"></span>
-          <span class="checkbox-text">Convert Gift Choice Box</span>
+          <span class="checkbox-text">{{ $t('convertGiftBox') }}</span>
         </label>
       </div>
       <button
@@ -71,7 +72,7 @@ function hideTooltip() {
         @mousemove="showTooltip($event, 'autofill')"
         @mouseleave="hideTooltip()"
       >
-        <span class="button-text">Auto-Fill Gifts</span>
+        <span class="button-text">{{ $t('autoFillGifts') }}</span>
       </button>
       
       <!-- Tooltip for both elements -->
@@ -84,13 +85,10 @@ function hideTooltip() {
         }"
       >
         <template v-if="hoveredTooltipType === 'convert'">
-          Automatically convert gifts into selector boxes.
-          Each selector box costs 1 fusion keystone and 2 SR gift materials.
+          {{ $t('convertGiftBoxTooltip') }}
         </template>
         <template v-else-if="hoveredTooltipType === 'autofill'">
-          Auto-fill all owned gifts from your Items inventory.
-          This will update gift quantities while keeping your selector box 
-          and fusion keystone settings unchanged.
+          {{ $t('autoFillGiftsTooltip') }}
         </template>
       </div>
     </div>

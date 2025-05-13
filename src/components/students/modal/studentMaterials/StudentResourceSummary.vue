@@ -5,6 +5,7 @@ import { useResourceCalculation } from '../../../../consumables/hooks/useResourc
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
 import { getEquipments, getResources } from '../../../../consumables/utils/studentStorage';
 import { formatLargeNumber, adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
+import { $t } from '../../../../locales';
 import '../../../../styles/resourceDisplay.css';
 
 // Define view options
@@ -284,35 +285,35 @@ const tooltipGridColumns = computed(() => {
         :class="{ active: activeView === 'needed' }"
         @click="setView('needed')"
       >
-        Items Needed
+        {{ $t('itemsNeeded') }}
       </button>
       <button 
         class="view-tab" 
         :class="{ active: activeView === 'missing' }"
         @click="setView('missing')"
       >
-        Missing Items
+        {{ $t('missingItems') }}
       </button>
       <button 
         class="view-tab" 
         :class="{ active: activeView === 'equipment-needed' }"
         @click="setView('equipment-needed')"
       >
-        Equipment Needed
+        {{ $t('equipmentNeeded') }}
       </button>
       <button 
         class="view-tab" 
         :class="{ active: activeView === 'equipment-missing' }"
         @click="setView('equipment-missing')"
       >
-        Missing Equipment
+        {{ $t('missingEquipment') }}
       </button>
     </div>
     
     <div class="resources-content">
       <div v-if="displayResources.length === 0" class="no-resources">
-        <span v-if="activeView === 'needed' || activeView === 'equipment-needed'">No resources needed for upgrades</span>
-        <span v-else>You have all the materials you need! ✓</span>
+        <span v-if="activeView === 'needed' || activeView === 'equipment-needed'">{{ $t('noResourcesNeeded') }}</span>
+        <span v-else>{{ $t('allMaterialsAvailable') }}</span>
       </div>
       
       <div v-else class="resources-grid">
@@ -320,7 +321,7 @@ const tooltipGridColumns = computed(() => {
           v-for="(item, index) in displayResources" 
           :key="`resource-${item.material?.Id || index}`"
           class="resource-item"
-          :title="item.material?.Name || 'Unknown Resource'"
+          :title="item.material?.Name || $t('unknownResource')"
           :class="{ 'exp-report': isExpReport(item.material?.Id) }"
           @mousemove="showTooltip($event, item.material?.Id)"
           @mouseleave="hideTooltip()"
@@ -329,7 +330,7 @@ const tooltipGridColumns = computed(() => {
             <img 
               v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
               :src="getMaterialIconSrc(item)" 
-              :alt="item.material?.Name || 'Unknown'"
+              :alt="item.material?.Name || $t('unknown')"
               class="resource-icon"
             />
             <div 

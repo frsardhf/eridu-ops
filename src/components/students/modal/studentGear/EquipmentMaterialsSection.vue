@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';
 import { Material } from '../../../../types/upgrade';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   materials: Material[];
@@ -52,11 +53,11 @@ const hasMaterials = computed(() => {
 
 <template>
   <div class="materials-section">
-    <h3 class="section-title">Total Materials Needed</h3>
+    <h3 class="section-title">{{ $t('totalMaterialsNeeded') }}</h3>
     
     <!-- No materials message -->
     <div v-if="!hasMaterials" class="no-materials">
-      No materials needed (target levels must be higher than current levels)
+      {{ $t('noMaterialsNeeded') }}
     </div>
     
     <div v-else class="materials-content">
@@ -65,7 +66,7 @@ const hasMaterials = computed(() => {
           v-for="(item, index) in cumulativeMaterials" 
           :key="index"
           class="resource-item"
-          :title="item.material?.Name || 'Material'"
+          :title="item.material?.Name || $t('material')"
         >
           <div class="resource-content">
             <img 
@@ -73,7 +74,7 @@ const hasMaterials = computed(() => {
               :src="item.material?.Id === 5 
                 ? `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`
                 : `https://schaledb.com/images/equipment/icon/${item.material.Icon}_piece.webp`"
-              :alt="item.material?.Name || 'Material'"
+              :alt="item.material?.Name || $t('material')"
               class="resource-icon"
             />
             <div class="resource-quantity">

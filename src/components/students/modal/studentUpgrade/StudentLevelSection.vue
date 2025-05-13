@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   characterLevels: { current: number; target: number; },
@@ -66,11 +67,11 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 
 <template>
   <div class="level-section">
-    <h3 class="section-title">Character Level</h3>
+    <h3 class="section-title">{{ $t('characterLevel') }}</h3>
     
     <!-- Level input moved to the top -->
     <div class="level-input-container">
-      <label for="current-level-input">Current Level:</label>
+      <label for="current-level-input">{{ $t('currentLevel') }}:</label>
       <input
         id="current-level-input"
         name="current-level-input"
@@ -108,7 +109,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
     
     <!-- Only show target input if not maxed -->
     <div class="input-container" v-if="!isMaxLevel">
-      <label for="target-level-input">Target Level:</label>
+      <label for="target-level-input">{{ $t('targetLevel') }}:</label>
       <input
         id="target-level-input"
         name="target-level-input"
@@ -123,12 +124,12 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
     
     <!-- Only show XP required if not maxed -->
     <div class="total-exp" v-if="!isMaxLevel">
-      XP Required: {{ totalXpNeeded.toLocaleString() }}
+      {{ $t('xpRequired') }}: {{ totalXpNeeded.toLocaleString() }}
     </div>
     
     <!-- Show MAX indicator when level is maxed -->
     <div v-else class="max-level-indicator">
-      MAX LEVEL
+      {{ $t('maxLevel') }}
     </div>
   </div>
 </template>

@@ -8,6 +8,7 @@ import {
   isStudentPinned, 
   togglePinnedStudent 
 } from '../../consumables/utils/studentStorage'
+import { currentLanguage } from '../../consumables/stores/localizationStore'
 
 const props = defineProps<{ student: StudentProps }>();
 const emit = defineEmits<{
@@ -42,19 +43,33 @@ onUnmounted(() => {
 });
 
 function getFontSizeClass(name: string): string {
+  // Mobile sizing is the same regardless of language
   if (isMobile.value) {
     return name.length < 10 ? 'text-lg' : 'text-sm';
   }
   
-  switch (true) {
-    case name.length < 10:
+  // Language-specific font sizing
+  if (currentLanguage.value === 'jp') {
+    // Japanese uses different thresholds
+    if (name.length < 7) {
       return 'text-xl';
-    case name.length < 13:
+    } else if (name.length < 8) {
       return 'text-lg';
-    case name.length < 17:
+    } else {
       return 'text-normal';
-    default:
-      return 'text-sm';
+    }
+  } else {
+    // English uses the original thresholds
+    switch (true) {
+      case name.length < 10:
+        return 'text-xl';
+      case name.length < 13:
+        return 'text-lg';
+      case name.length < 17:
+        return 'text-normal';
+      default:
+        return 'text-sm';
+    }
   }
 }
 

@@ -4,6 +4,8 @@ import { HeaderProps, SortOption } from '../../types/header';
 import { 
   downloadLocalStorageData
 } from '../../consumables/utils/studentStorage';
+import { currentLanguage, setLanguage, Language } from '../../consumables/stores/localizationStore';
+import { $t } from '../../locales';
 import ImportModal from './ImportModal.vue';
 import CreditsModal from './CreditsModal.vue';
 import ContactModal from './ContactModal.vue';
@@ -14,6 +16,7 @@ const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showCreditsModal = ref(false);
 const showContactModal = ref(false);
+const showLanguageMenu = ref(false);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
@@ -21,6 +24,7 @@ const emit = defineEmits<{
   'updateSort': [option: SortOption];
   'toggleDirection': [];
   'dataImported': [];
+  'reinitializeData': [];
 }>();
 
 function updateSearch(event: Event) {
@@ -52,12 +56,31 @@ function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 }
 
+function toggleLanguageMenu(event: Event) {
+  event.stopPropagation();
+  showLanguageMenu.value = !showLanguageMenu.value;
+}
+
+function changeLanguage(language: Language) {
+  setLanguage(language);
+  showLanguageMenu.value = false;
+  mobileMenuOpen.value = false;
+  emit('reinitializeData'); // Trigger data reinitialization with new language
+}
+
 function handleClickOutside(event: MouseEvent) {
   const dropdown = document.getElementById('sort-dropdown');
   const mobileMenu = document.getElementById('mobile-menu');
+  const languageMenu = document.getElementById('language-menu');
   
   if (dropdown && !dropdown.contains(event.target as Node) && dropdownOpen.value) {
     dropdownOpen.value = false;
+  }
+  
+  if (languageMenu && !languageMenu.contains(event.target as Node) && 
+      !document.getElementById('language-toggle')?.contains(event.target as Node) && 
+      showLanguageMenu.value) {
+    showLanguageMenu.value = false;
   }
   
   if (mobileMenu && !mobileMenu.contains(event.target as Node) && 
@@ -117,7 +140,7 @@ onBeforeUnmount(() => {
     <div class="header-content">
       <div class="header-main">
         <div class="header-title-section mobile-hidden">
-          <h1 class="header-title">Students</h1>
+          <h1 class="header-title">{{ $t('students') }}</h1>
           <div class="header-divider"></div>
         </div>
         
@@ -130,7 +153,7 @@ onBeforeUnmount(() => {
               @input="updateSearch"
               type="text"
               class="search-input"
-              placeholder="Search students..."
+              :placeholder="$t('searchStudents')"
             />
             <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" 
               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
@@ -149,7 +172,7 @@ onBeforeUnmount(() => {
               <span 
                 class="sort-icon" 
                 @click="toggleDirection"
-                title="Toggle sort direction"
+                :title="sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending')"
               >
                 <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
                   width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
@@ -166,11 +189,11 @@ onBeforeUnmount(() => {
                 @click="toggleDropdown"
               >
                 {{ 
-                  currentSort === 'id' ? 'ID' : 
-                  currentSort === 'name' ? 'Name' : 
-                  currentSort === 'bond' ? 'Bond' : 
-                  currentSort === 'level' ? 'Level' : 
-                  currentSort === 'grade' ? 'Grade' : 'Default' 
+                  currentSort === 'id' ? $t('sort.id') : 
+                  currentSort === 'name' ? $t('sort.name') : 
+                  currentSort === 'bond' ? $t('sort.bond') : 
+                  currentSort === 'level' ? $t('sort.level') : 
+                  currentSort === 'grade' ? $t('sort.grade') : $t('sort.default') 
                 }}
                 <span class="sort-arrow">▼</span>
               </span>
@@ -181,48 +204,76 @@ onBeforeUnmount(() => {
                 :class="{ 'active': currentSort === 'id' }"
                 @click.stop="updateSortOption('id')"
               >
-                ID
+                {{ $t('sort.id') }}
               </div>
               <div 
                 class="sort-option" 
                 :class="{ 'active': currentSort === 'name' }"
                 @click.stop="updateSortOption('name')"
               >
-                Name
+                {{ $t('sort.name') }}
               </div>
               <div 
                 class="sort-option" 
                 :class="{ 'active': currentSort === 'default' }"
                 @click.stop="updateSortOption('default')"
               >
-                Default
+                {{ $t('sort.default') }}
               </div>
               <div 
                 class="sort-option" 
                 :class="{ 'active': currentSort === 'bond' }"
                 @click.stop="updateSortOption('bond')"
               >
-                Bond
+                {{ $t('sort.bond') }}
               </div>
               <div 
                 class="sort-option" 
                 :class="{ 'active': currentSort === 'level' }"
                 @click.stop="updateSortOption('level')"
               >
-                Level
+                {{ $t('sort.level') }}
               </div>
               <div 
                 class="sort-option" 
                 :class="{ 'active': currentSort === 'grade' }"
                 @click.stop="updateSortOption('grade')"
               >
-                Grade
+                {{ $t('sort.grade') }}
               </div>
             </div>
           </div>
         </div>
 
         <div class="right-controls">
+          <!-- Language selector -->
+          <div class="language-toggle" id="language-menu">
+            <button 
+              id="language-toggle"
+              class="language-button"
+              @click="toggleLanguageMenu"
+              :title="currentLanguage === 'en' ? 'English' : '日本語'"
+            >
+              {{ currentLanguage === 'en' ? 'EN' : 'JP' }}
+            </button>
+            <div class="language-dropdown" v-if="showLanguageMenu">
+              <div 
+                class="language-option" 
+                :class="{ 'active': currentLanguage === 'en' }"
+                @click="changeLanguage('en')"
+              >
+                English
+              </div>
+              <div 
+                class="language-option" 
+                :class="{ 'active': currentLanguage === 'jp' }"
+                @click="changeLanguage('jp')"
+              >
+                日本語
+              </div>
+            </div>
+          </div>
+
           <div class="theme-toggle">
             <label class="switch" for="theme-toggle">
               <input 
@@ -256,59 +307,59 @@ onBeforeUnmount(() => {
     <div id="mobile-menu" class="mobile-menu" :class="{ 'open': mobileMenuOpen }">
       <div class="mobile-menu-container">
         <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">Sort by</h3>
+          <h3 class="mobile-menu-heading">{{ $t('sort.default') }}</h3>
           <div class="mobile-menu-options">
             <button 
               class="mobile-menu-option" 
               :class="{ 'active': currentSort === 'id' }"
               @click="updateSortOption('id')"
             >
-              ID
+              {{ $t('sort.id') }}
             </button>
             <button 
               class="mobile-menu-option" 
               :class="{ 'active': currentSort === 'name' }"
               @click="updateSortOption('name')"
             >
-              Name
+              {{ $t('sort.name') }}
             </button>
             <button 
               class="mobile-menu-option" 
               :class="{ 'active': currentSort === 'default' }"
               @click="updateSortOption('default')"
             >
-              Default
+              {{ $t('sort.default') }}
             </button>
             <button 
               class="mobile-menu-option" 
               :class="{ 'active': currentSort === 'bond' }"
               @click="updateSortOption('bond')"
             >
-              Bond
+              {{ $t('sort.bond') }}
             </button>
             <button 
               class="mobile-menu-option" 
               :class="{ 'active': currentSort === 'level' }"
               @click="updateSortOption('level')"
             >
-              Level
+              {{ $t('sort.level') }}
             </button>
             <button 
               class="mobile-menu-option" 
               :class="{ 'active': currentSort === 'grade' }"
               @click="updateSortOption('grade')"
             >
-              Grade
+              {{ $t('sort.grade') }}
             </button>
           </div>
           
           <div class="mobile-menu-direction">
-            <span class="direction-label">Direction:</span>
+            <span class="direction-label">{{ $t('direction.ascending') }}:</span>
             <button 
               class="direction-button"
               @click="toggleDirection($event)"
             >
-              {{ sortDirection === 'asc' ? 'Ascending' : 'Descending' }}
+              {{ sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending') }}
               <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
                 width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
                 stroke-width="2">
@@ -322,8 +373,29 @@ onBeforeUnmount(() => {
           </div>
         </div>
         
+        <!-- Language section for mobile -->
         <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">Data</h3>
+          <h3 class="mobile-menu-heading">Language / 言語</h3>
+          <div class="mobile-menu-options">
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentLanguage === 'en' }"
+              @click="changeLanguage('en')"
+            >
+              English
+            </button>
+            <button 
+              class="mobile-menu-option" 
+              :class="{ 'active': currentLanguage === 'jp' }"
+              @click="changeLanguage('jp')"
+            >
+              日本語
+            </button>
+          </div>
+        </div>
+        
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
           <div class="mobile-menu-options">
             <button class="mobile-menu-option" @click="exportData">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
@@ -331,7 +403,7 @@ onBeforeUnmount(() => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Export Data
+              {{ $t('exportData') }}
             </button>
             <button class="mobile-menu-option" @click="openImportModal">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
@@ -339,19 +411,19 @@ onBeforeUnmount(() => {
                 <polyline points="17 8 12 3 7 8"/>
                 <line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
-              Import Data
+              {{ $t('importData') }}
             </button>
           </div>
         </div>
         
         <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">App</h3>
+          <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
           <div class="mobile-menu-options">
             <button class="mobile-menu-option" @click="openContactModal">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
               </svg>
-              Contact
+              {{ $t('contact') }}
             </button>
             <button class="mobile-menu-option" @click="openCreditsModal">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -359,7 +431,7 @@ onBeforeUnmount(() => {
                 <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"></path>
                 <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
               </svg>
-              Credits
+              {{ $t('credits') }}
             </button>
           </div>
         </div>
@@ -562,6 +634,63 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+/* Language selector styles */
+.language-toggle {
+  position: relative;
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 18px;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  border: none;
+  padding: 0 10px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.language-button:hover {
+  background-color: var(--background-tertiary);
+}
+
+.language-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 120px;
+  margin-top: 5px;
+  background-color: var(--background-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.language-option {
+  padding: 10px 0;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.language-option:hover {
+  background-color: var(--background-secondary);
+}
+
+.language-option.active {
+  background-color: var(--background-tertiary);
+  font-weight: 500;
 }
 
 .desktop-controls {

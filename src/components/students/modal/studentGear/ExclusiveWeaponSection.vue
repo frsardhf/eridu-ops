@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ModalProps, StudentProps } from '../../../../types/student';
 import { computed, ref, watch } from 'vue';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   student: ModalProps | null;
@@ -92,7 +93,7 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
 <template>
   <div class="grade-growth-section">
     <div class="card-header">
-      <h3 class="section-title">Weapon Grade</h3>
+      <h3 class="section-title">{{ $t('weaponGrade') }}</h3>
       <div class="grade-indicators" v-if="!isMaxGrade">
         <div class="grade-pill" :class="gradeState.current <= 5 ? 'gold-grade' : 'blue-grade'">
           {{ gradeState.current <= 5 ? gradeState.current : (gradeState.current - 5) }}★
@@ -102,14 +103,14 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
           {{ gradeState.target <= 5 ? gradeState.target : (gradeState.target - 5) }}★
         </div>
       </div>
-      <div class="grade-max-pill" v-else>MAX GRADE</div>
+      <div class="grade-max-pill" v-else>{{ $t('maxGrade') }}</div>
     </div>
     
     <div class="weapon-showcase">
       <div class="weapon-preview">
         <img 
           :src="getWeaponIconUrl()" 
-          alt="Weapon" 
+          :alt="$t('weapon')" 
           class="weapon-icon"
           v-if="props.student?.WeaponImg"
         />
@@ -120,7 +121,7 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
     <div class="grade-controls">
       <!-- Current Grade Stars -->
       <div class="grade-row" :class="{ 'centered-row': isMaxGrade }">
-        <div class="grade-label">Current Grade</div>
+        <div class="grade-label">{{ $t('currentGrade') }}</div>
         <div class="stars-container">
           <span
             v-for="star in currentStars" 
@@ -142,7 +143,7 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
       
       <!-- Only show target stars if not at max grade -->
       <div class="grade-row" v-if="!isMaxGrade">
-        <div class="grade-label">Target Grade</div>
+        <div class="grade-label">{{ $t('targetGrade') }}</div>
         <div class="stars-container">
           <span
             v-for="star in targetStars" 

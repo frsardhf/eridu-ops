@@ -5,6 +5,7 @@ import {
   PotentialSettings,
 } from '../../../../types/upgrade';
 import '../../../../styles/studentUpgrade.css';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   potentialLevels: Record<PotentialType, { current: number; target: number }>;
@@ -28,19 +29,19 @@ const potentialTypes = ref<Record<PotentialType, PotentialSettings>>({
     current: props.potentialLevels.attack.current,
     target: props.potentialLevels.attack.target,
     icon: 'item_icon_workbook_potentialattack',
-    name: 'Attack'
+    name: $t('attack')
   },
   maxhp: {
     current: props.potentialLevels.maxhp.current,
     target: props.potentialLevels.maxhp.target,
     icon: 'item_icon_workbook_potentialmaxhp',
-    name: 'Max HP'
+    name: $t('maxHp')
   },
   healpower: {
     current: props.potentialLevels.healpower.current,
     target: props.potentialLevels.healpower.target,
     icon: 'item_icon_workbook_potentialhealpower',
-    name: 'Heal Power'
+    name: $t('healPower')
   }
 });
 
@@ -130,14 +131,14 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
   <div class="upgrade-section">
     <h3 class="section-title collapsible-header" @click="toggleExpand">
       <div class="collapsible-title">
-        <span>Talent</span>
+        <span>{{ $t('talent') }}</span>
         <div 
           class="material-summary" 
           v-if="!isExpanded">
         </div>
         <span 
           class="collapsible-hint" 
-          v-else>(Click to {{ isExpanded ? 'collapse' : 'expand' }})
+          v-else>({{ $t('clickTo') }} {{ isExpanded ? $t('collapse') : $t('expand') }})
         </span>
       </div>
       <div class="expand-icon" :class="{ 'rotated': isExpanded }">
@@ -169,7 +170,7 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
                 potentialTypes[potType].current, 
                 potentialTypes[potType].target
               ) === 'max'">
-                <span class="max-level">MAX</span>
+                <span class="max-level">{{ $t('max') }}</span>
               </template>
               
               <template v-else-if="getLevelDisplayState(
@@ -185,7 +186,7 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
                 <span class="target-level">{{ potentialTypes[potType].target }}</span>
                 <span class="max-indicator" 
                       v-if="isTargetMaxLevel(potentialTypes[potType].target)">
-                  MAX
+                  {{ $t('max') }}
                 </span>
               </template>
             </div>
@@ -203,9 +204,9 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
               @mouseenter="setHoveredPotential(potType)" 
               @mouseleave="setHoveredPotential(null)"
             >
-              <!-- Current Potential Slider -->
+              <!-- Current Potential Level Slider -->
               <div class="slider-row">
-                <span class="slider-label">{{ potentialTypes[potType].current === potentialTypes[potType].target ? 'Level' : 'Current' }}</span>
+                <span class="slider-label">{{ potentialTypes[potType].current === potentialTypes[potType].target ? $t('level') : $t('current') }}</span>
                 <input
                   type="range"
                   min="0"
@@ -217,13 +218,13 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
                 />
               </div>
               
-              <!-- Target Potential Slider - Only show when hovering or current !== target -->
+              <!-- Target Potential Level Slider - Only show when hovering or current !== target -->
               <div 
                 class="slider-row target-slider"
                 v-show="shouldShowTargetSlider(potType)"
                 :class="{ 'fade-in': hoveredPotential === potType }"
               >
-                <span class="slider-label">Target</span>
+                <span class="slider-label">{{ $t('target') }}</span>
                 <input
                   type="range"
                   min="0"

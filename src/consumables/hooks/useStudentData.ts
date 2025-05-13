@@ -24,6 +24,7 @@ import {
   checkAndMigrateFormData,
 } from '../utils/studentStorage';
 import { studentDataStore } from '../stores/studentStore';
+import { currentLanguage } from '../stores/localizationStore';
 
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
@@ -170,7 +171,8 @@ export function useStudentData() {
   // Fetch data from SchaleDB
   async function fetchData(type: string) {
     try {
-      const url = `https://schaledb.com/data/en/${type}.json`;
+      const lang = currentLanguage.value;
+      const url = `https://schaledb.com/data/${lang}/${type}.json`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -460,6 +462,11 @@ export function useStudentData() {
     updateSortedStudents();
   }
 
+  // Function to reinitialize data after language change
+  async function reinitializeData() {
+    await initializeData();
+  }
+
   onMounted(() => {
     const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
     if (savedTheme) {
@@ -475,6 +482,14 @@ export function useStudentData() {
       updateSortedStudents();
     },
     { deep: true }
+  );
+
+  // Watch for language changes and reinitialize data
+  watch(
+    () => currentLanguage.value,
+    () => {
+      reinitializeData();
+    }
   );
 
   initializeData();
@@ -496,6 +511,7 @@ export function useStudentData() {
     currentSort,
     sortDirection,
     updateSearchQuery,
-    toggleDirection
+    toggleDirection,
+    reinitializeData
   }
 }

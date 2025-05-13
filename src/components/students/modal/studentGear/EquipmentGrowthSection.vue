@@ -2,6 +2,7 @@
 import { ModalProps, StudentProps } from '../../../../types/student';
 import { EquipmentType } from '../../../../types/gear';
 import { getEquipments } from '../../../../consumables/utils/studentStorage';
+import { $t } from '../../../../locales';
 
 const props = defineProps<{
   student: ModalProps | null;
@@ -14,15 +15,15 @@ const emit = defineEmits<{
 
 // Equipment type mapping for display
 const equipmentTypes = {
-  Hat: 'Hat',
-  Gloves: 'Gloves',
-  Shoes: 'Shoes',
-  Bag: 'Bag',
-  Badge: 'Badge',
-  Hairpin: 'Hairpin',
-  Charm: 'Amulet',
-  Watch: 'Watch',
-  Necklace: 'Necklace'
+  Hat: $t('equipmentTypes.Hat'),
+  Gloves: $t('equipmentTypes.Gloves'),
+  Shoes: $t('equipmentTypes.Shoes'),
+  Bag: $t('equipmentTypes.Bag'),
+  Badge: $t('equipmentTypes.Badge'),
+  Hairpin: $t('equipmentTypes.Hairpin'),
+  Charm: $t('equipmentTypes.Charm'),
+  Watch: $t('equipmentTypes.Watch'),
+  Necklace: $t('equipmentTypes.Necklace')
 };
 
 // Format equipment type to lowercase for image URL
@@ -119,7 +120,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :class="{ disabled: equipmentLevels[type]?.current <= 1 }"
               @click="updateEquipmentCurrent(type, 1)"
               :disabled="equipmentLevels[type]?.current <= 1"
-              aria-label="Set to minimum level"
+              :aria-label="$t('setMinLevel')"
             >
               <span>«</span>
             </button>
@@ -128,7 +129,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :class="{ disabled: equipmentLevels[type]?.current <= 1 }"
               @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) - 1)"
               :disabled="equipmentLevels[type]?.current <= 1"
-              aria-label="Decrease current level"
+              :aria-label="$t('decreaseLevel')"
             >
               <span>−</span>
             </button>
@@ -140,14 +141,14 @@ function isTargetMaxLevel(target: number, type: string) {
               :min="1"
               :max="getMaxTierForType(type)"
               class="level-input current-level"
-              :aria-label="`Current ${equipmentTypes[type]} level`"
+              :aria-label="`${$t('currentEquipment')} ${equipmentTypes[type]}`"
             />
             <button 
               class="control-button increment-button"
               :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForType(type) }"
               @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) + 1)"
               :disabled="equipmentLevels[type]?.current >= getMaxTierForType(type)"
-              aria-label="Increase current level"
+              :aria-label="$t('increaseLevel')"
             >
               <span>+</span>
             </button>
@@ -156,7 +157,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForType(type) }"
               @click="updateEquipmentCurrent(type, getMaxTierForType(type))"
               :disabled="equipmentLevels[type]?.current >= getMaxTierForType(type)"
-              aria-label="Set to maximum level"
+              :aria-label="$t('setMaxLevel')"
             >
               <span>»</span>
             </button>
@@ -167,14 +168,14 @@ function isTargetMaxLevel(target: number, type: string) {
           <div class="equipment-type-badge">{{ equipmentTypes[type] }}</div>
           <img 
             :src="getEquipmentIconUrl(type, equipmentLevels[type]?.current || 1)"
-            :alt="`${equipmentTypes[type]} Tier ${equipmentLevels[type]?.current || 1}`"
+            :alt="`${equipmentTypes[type]} ${$t('tier')}${equipmentLevels[type]?.current || 1}`"
             class="equipment-image"
             loading="lazy"
           />
           <div class="tier-indicator">
-            T{{ equipmentLevels[type]?.current || 1 }}
+            {{ $t('tier') }}{{ equipmentLevels[type]?.current || 1 }}
             <span class="tier-target" v-if="equipmentLevels[type]?.current !== equipmentLevels[type]?.target">
-              → T{{ equipmentLevels[type]?.target || 1 }}
+              → {{ $t('tier') }}{{ equipmentLevels[type]?.target || 1 }}
             </span>
           </div>
         </div>
@@ -186,7 +187,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :class="{ disabled: equipmentLevels[type]?.target <= 1 }"
               @click="updateEquipmentTarget(type, 1)"
               :disabled="equipmentLevels[type]?.target <= 1"
-              aria-label="Set to minimum level"
+              :aria-label="$t('setMinLevel')"
             >
               <span>«</span>
             </button>
@@ -195,7 +196,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :class="{ disabled: equipmentLevels[type]?.target <= 1 }"
               @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) - 1)"
               :disabled="equipmentLevels[type]?.target <= 1"
-              aria-label="Decrease target level"
+              :aria-label="$t('decreaseLevel')"
             >
               <span>−</span>
             </button>
@@ -208,14 +209,14 @@ function isTargetMaxLevel(target: number, type: string) {
               :max="getMaxTierForType(type)"
               class="level-input target-level"
               :class="{ 'max-level': isTargetMaxLevel(equipmentLevels[type]?.target || 1, type) }"
-              :aria-label="`Target ${equipmentTypes[type]} level`"
+              :aria-label="`${$t('targetEquipment')} ${equipmentTypes[type]}`"
             />
             <button 
               class="control-button increment-button"
               :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForType(type) }"
               @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) + 1)"
               :disabled="equipmentLevels[type]?.target >= getMaxTierForType(type)"
-              aria-label="Increase target level"
+              :aria-label="$t('increaseLevel')"
             >
               <span>+</span>
             </button>
@@ -224,7 +225,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForType(type) }"
               @click="updateEquipmentTarget(type, getMaxTierForType(type))"
               :disabled="equipmentLevels[type]?.target >= getMaxTierForType(type)"
-              aria-label="Set to maximum level"
+              :aria-label="$t('setMaxLevel')"
             >
               <span>»</span>
             </button>
@@ -280,6 +281,7 @@ function isTargetMaxLevel(target: number, type: string) {
   background-color: var(--accent-color, #4a8af4);
   color: white;
   padding: 0.25rem 0.75rem;
+  width: max-content;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 700;

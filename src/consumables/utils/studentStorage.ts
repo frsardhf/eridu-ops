@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   MATERIALS: 'materials',
   GEARS: 'gears',
   FORMS_MIGRATION_VERSION: 'forms_migration_version',
+  LANGUAGE: 'language',
   // Add more keys as needed
 };
 
@@ -120,7 +121,8 @@ export function getStorageData<T = Record<string, any>>(key: string): T | null {
     // Check if the data is a plain string that shouldn't be parsed
     if (key === STORAGE_KEYS.THEME || 
         key === STORAGE_KEYS.SORT_OPTION || 
-        key === STORAGE_KEYS.SORT_DIRECTION) {
+        key === STORAGE_KEYS.SORT_DIRECTION ||
+        key === STORAGE_KEYS.LANGUAGE) {
       return data as unknown as T;
     }
     
@@ -493,7 +495,8 @@ export function setStorageData<T>(key: string, data: T): boolean {
     // Handle special cases for plain string values
     if (key === STORAGE_KEYS.THEME || 
         key === STORAGE_KEYS.SORT_OPTION || 
-        key === STORAGE_KEYS.SORT_DIRECTION) {
+        key === STORAGE_KEYS.SORT_DIRECTION ||
+        key === STORAGE_KEYS.LANGUAGE) {
       localStorage.setItem(key, data as unknown as string);
     } else {
       // For other data, stringify as JSON

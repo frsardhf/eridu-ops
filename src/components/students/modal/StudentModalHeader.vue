@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { StudentProps } from '../../../types/student';
+import { currentLanguage } from '../../../consumables/stores/localizationStore';
 
 const props = defineProps<{
   student: StudentProps | null
 }>();
 
 function getFontSizeClass(name: string) {
-  return name.length <= 15 ? 'text-xl' : 'text-normal';
+  // Language-specific font sizing
+  if (currentLanguage.value === 'jp') {
+    // Japanese uses different thresholds
+    return name.length < 10 ? 'text-xl' : 'text-normal';
+  } else {
+    // English uses the original thresholds
+    return name.length <= 15 ? 'text-xl' : 'text-normal';
+  }
 }
 </script>
 

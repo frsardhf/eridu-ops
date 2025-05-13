@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, onMounted } from 'vue';
-import { ModalProps, StudentProps } from '../../../../types/student';
+import { ModalProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import '../../../../styles/resourceDisplay.css';

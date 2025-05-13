@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { $t } from '../../../../locales';
 
 defineProps<{
   currentBond: number,
@@ -18,7 +19,7 @@ function handleBondInput(event: Event) {
   <div class="bond-section">
     <!-- Bond input moved to the top -->
     <div class="bond-input-container">
-      <label for="bond-input">Current Bond:</label>
+      <label for="bond-input">{{ $t('currentBond') }}</label>
       <input
         id="bond-input"
         name="bond-input"
@@ -58,11 +59,11 @@ function handleBondInput(event: Event) {
     </div>
     
     <div class="exp-info" v-if="remainingXp > 0">
-      {{ remainingXp }} XP to next level
+      {{ remainingXp }} {{ $t('expToNextLevel') }}
     </div>
     
     <div class="total-exp">
-      Total EXP: {{ totalExp }}
+      {{ $t('totalExp') }}: {{ totalExp }}
     </div>
   </div>
 </template>
