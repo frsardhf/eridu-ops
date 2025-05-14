@@ -181,7 +181,7 @@ export const translations = {
 
     // Bond component
     currentBond: "現在の絆",
-    expToNextLevel: "次のレベルまでの経験値",
+    expToNextLevel: "次のレベルまで",
     totalExp: "合計経験値",
     
     // Gift options

@@ -114,8 +114,8 @@ const isConversionItem = computed(() => {
 
 .gift-icon-container {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
 }
 
 .gift-icon {
