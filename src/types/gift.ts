@@ -7,10 +7,8 @@ export interface GiftProps {
 
 export interface BondDetailDataProps { 
   currentBond: number;
-  convertBox: boolean;
 }
 
 export const DEFAULT_BOND_DETAIL: BondDetailDataProps = {
   currentBond: 1,
-  convertBox: false,
 };

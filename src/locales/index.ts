@@ -53,10 +53,14 @@ export const translations = {
     
     // Gift options
     giftOptions: "Gift Options",
-    convertGiftBox: "Convert Gift Choice Box",
-    autoFillGifts: "Auto-Fill Gifts",
-    convertGiftBoxTooltip: "Automatically convert gifts into selector boxes. Each selector box costs 1 fusion keystone and 2 SR gift materials.",
+    convertGiftBox: "Convert Box",
+    autoFillGifts: "Auto-Fill",
+    resetGifts: "Reset",
+    undoChanges: "Undo",
+    convertGiftBoxTooltip: "Convert materials into selector boxes. Each selector box costs 1 fusion keystone and 2 SR gift materials.",
     autoFillGiftsTooltip: "Auto-fill all owned gifts from your Items inventory. This will update gift quantities while keeping your selector box and fusion keystone settings unchanged.",
+    resetGiftsTooltip: "Reset all gift quantities to zero.",
+    undoChangesTooltip: "Undo changes and revert to previous gift quantities.",
 
     // Upgrade component - Skills
     skills: "Skills",
@@ -181,11 +185,15 @@ export const translations = {
     totalExp: "合計経験値",
     
     // Gift options
-    giftOptions: "ギフトオプション",
-    convertGiftBox: "ギフト選択ボックスに変換",
-    autoFillGifts: "ギフト自動設定",
-    convertGiftBoxTooltip: "ギフトをセレクターボックスに自動変換します。セレクターボックス1つにつき、融合キーストーン1つとSRギフト素材2つが必要です。",
+    giftOptions: "ギフト設定",
+    convertGiftBox: "選択ボックス変換",
+    autoFillGifts: "自動設定",
+    resetGifts: "リセット",
+    undoChanges: "元に戻す",
+    convertGiftBoxTooltip: "素材をセレクターボックスに変換します。セレクターボックス1つにつき、融合キーストーン1つとSRギフト素材2つが必要です。",
     autoFillGiftsTooltip: "所持アイテムからギフトを自動的に設定します。セレクターボックスと融合キーストーンの設定は変更されません。",
+    resetGiftsTooltip: "ギフトの数量をゼロにリセットします。",
+    undoChangesTooltip: "ギフトの変更を取り消し、以前のギフト数量に戻します。",
 
     // Upgrade component - Skills
     skills: "スキル",

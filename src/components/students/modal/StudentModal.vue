@@ -41,7 +41,6 @@ const {
   newBondLevel,
   remainingXp: bondRemainingXp,
   totalCumulativeExp,
-  convertBox,
   convertBoxes,
   handleBondInput,
   giftFormData,
@@ -49,7 +48,9 @@ const {
   handleGiftInput,
   handleBoxInput,
   shouldShowGiftGrade,
-  autoFillGifts
+  autoFillGifts,
+  resetGifts,
+  undoChanges
 } = useStudentGifts(props, emit);
 
 const {
@@ -207,16 +208,16 @@ onUnmounted(() => {
           <div class="right-column">
             <div class="gift-section">
               <StudentConvertBox
-                :convert-box="convertBox"
                 @toggle-convert="convertBoxes"
                 @auto-fill-gift="autoFillGifts"
+                @reset-gifts="resetGifts"
+                @undo-changes="undoChanges"
               />
               
               <StudentGiftGrid
                 :student="student"
                 :gift-form-data="giftFormData"
                 :box-form-data="boxFormData"
-                :convert-box="convertBox"
                 :should-show-gift-grade="shouldShowGiftGrade"
                 @update-gift="handleGiftInput"
                 @update-box="handleBoxInput"

@@ -7,7 +7,7 @@ const props = defineProps<{
   student: StudentProps | null,
   giftFormData: Record<string, number>,
   boxFormData: Record<string, number>,
-  convertBox: boolean,
+  convertBox?: boolean,
   shouldShowGiftGrade: (id: number) => boolean
 }>();
 
@@ -26,6 +26,9 @@ function handleBoxInput(id: number, event: Event) {
 
 const hasGifts = computed(() => props.student?.Gifts && Object.keys(props.student.Gifts).length > 0);
 const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.student.Boxes).length > 0);
+
+// Provide a default value for convertBox
+const convertBox = computed(() => props.convertBox ?? false);
 </script>
 
 <template>

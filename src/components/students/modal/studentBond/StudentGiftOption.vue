@@ -3,14 +3,14 @@ import { ref } from 'vue';
 import { adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
 import { $t } from '../../../../locales';
 
-const props = defineProps<{
-  convertBox: boolean
+// No longer need the convertBox prop
+defineProps<{
 }>();
 
-const emit = defineEmits(['toggle-convert', 'auto-fill-gift']);
+const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 
 // Tooltip state
-const hoveredTooltipType = ref<'convert' | 'autofill' | null>(null);
+const hoveredTooltipType = ref<'convert' | 'autofill' | 'reset' | 'undo' | null>(null);
 const tooltipPosition = ref({ x: 0, y: 0 });
 
 function handleConvert() {
@@ -21,8 +21,16 @@ function handleAutoFill() {
   emit('auto-fill-gift');
 }
 
+function handleReset() {
+  emit('reset-gifts');
+}
+
+function handleUndo() {
+  emit('undo-changes');
+}
+
 // Function to show tooltip
-function showTooltip(event: MouseEvent, type: 'convert' | 'autofill') {
+function showTooltip(event: MouseEvent, type: 'convert' | 'autofill' | 'reset' | 'undo') {
   hoveredTooltipType.value = type;
   
   // Set initial position
@@ -47,35 +55,45 @@ function hideTooltip() {
   <div class="convert-box-section">
     <h3 class="section-title">{{ $t('giftOptions') }}</h3>
     <div class="options-container">
-      <div class="custom-checkbox">
-        <input
-          id="convert-input"
-          name="convert-input"
-          type="checkbox"
-          :checked="convertBox"
-          @change="handleConvert"
-          class="convert-input"
-        />
-        <label 
-          for="convert-input" 
-          class="checkbox-label"
+      <div class="button-group">
+        <button
+          class="button button-secondary"
+          @click="handleReset"
+          @mousemove="showTooltip($event, 'reset')"
+          @mouseleave="hideTooltip()"
+        >
+          <span class="button-text">{{ $t('resetGifts') }}</span>
+        </button>
+        
+        <button
+          class="button button-secondary"
+          @click="handleUndo"
+          @mousemove="showTooltip($event, 'undo')"
+          @mouseleave="hideTooltip()"
+        >
+          <span class="button-text">{{ $t('undoChanges') }}</span>
+        </button>
+        
+        <button
+          class="button button-convert"
+          @click="handleConvert"
           @mousemove="showTooltip($event, 'convert')"
           @mouseleave="hideTooltip()"
         >
-          <span class="checkbox-custom"></span>
-          <span class="checkbox-text">{{ $t('convertGiftBox') }}</span>
-        </label>
+          <span class="button-text">{{ $t('convertGiftBox') }}</span>
+        </button>
+        
+        <button
+          class="button button-primary"
+          @click="handleAutoFill"
+          @mousemove="showTooltip($event, 'autofill')"
+          @mouseleave="hideTooltip()"
+        >
+          <span class="button-text">{{ $t('autoFillGifts') }}</span>
+        </button>
       </div>
-      <button
-        class="button button-primary"
-        @click="handleAutoFill"
-        @mousemove="showTooltip($event, 'autofill')"
-        @mouseleave="hideTooltip()"
-      >
-        <span class="button-text">{{ $t('autoFillGifts') }}</span>
-      </button>
       
-      <!-- Tooltip for both elements -->
+      <!-- Tooltip for all buttons -->
       <div 
         v-if="hoveredTooltipType !== null" 
         class="gift-tooltip"
@@ -89,6 +107,12 @@ function hideTooltip() {
         </template>
         <template v-else-if="hoveredTooltipType === 'autofill'">
           {{ $t('autoFillGiftsTooltip') }}
+        </template>
+        <template v-else-if="hoveredTooltipType === 'reset'">
+          {{ $t('resetGiftsTooltip') }}
+        </template>
+        <template v-else-if="hoveredTooltipType === 'undo'">
+          {{ $t('undoChangesTooltip') }}
         </template>
       </div>
     </div>
@@ -122,84 +146,18 @@ function hideTooltip() {
 .options-container {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 10px;
   margin: 0 5px;
   position: relative;
 }
 
-.custom-checkbox {
+.button-group {
   display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.custom-checkbox .convert-input {
-  opacity: 0;
-  position: absolute;
-  width: 0;
-  height: 0;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
   gap: 8px;
-  user-select: none;
-  font-size: 0.9em;
-  color: var(--text-secondary);
-}
-
-.checkbox-custom {
-  position: relative;
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  background: var(--card-background);
-  border: 2px solid var(--primary-color, #4a6cf7);
-  border-radius: 3px;
-  transition: all 0.2s ease;
-}
-
-.checkbox-custom::after {
-  content: '';
-  position: absolute;
-  display: none;
-  left: 5px;
-  top: 1px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.convert-input:checked + .checkbox-label .checkbox-custom {
-  background-color: var(--primary-color, #4a6cf7);
-  border-color: var(--primary-color, #4a6cf7);
-}
-
-.convert-input:checked + .checkbox-label .checkbox-custom::after {
-  display: block;
-}
-
-.convert-input:focus + .checkbox-label .checkbox-custom {
-  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.2);
-}
-
-.checkbox-label:hover .checkbox-custom {
-  border-color: var(--primary-hover, #3a5ce7);
-}
-
-.convert-option input[type="checkbox"] {
-  cursor: pointer;
-}
-
-.convert-option label {
-  cursor: pointer;
-  user-select: none;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .button {
@@ -219,6 +177,38 @@ function hideTooltip() {
 
 .button-primary:hover:not(:disabled) {
   background-color: var(--primary-hover, #3a5ce7);
+}
+
+.button-primary:focus {
+  outline: none;
+}
+
+.button-secondary {
+  background-color: var(--secondary-color, #b8b8b8);
+  color: white;
+  border: 1px solid var(--border-color, #ccc);
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: var(--secondary-hover, #8d8d8d);
+}
+
+.button-secondary:focus {
+  outline: none;
+}
+
+.button-convert {
+  background-color: var(--convert-color, #f7ac4a);
+  color: white;
+  border: 1px solid var(--convert-color, #f7ac4a);
+}
+
+.button-convert:hover:not(:disabled) {
+  background-color: var(--convert-hover, #e49329);
+}
+
+.button-convert:focus {
+  outline: none;
 }
 
 .button-disabled {
@@ -245,5 +235,17 @@ function hideTooltip() {
   font-size: 0.8em;
   width: max-content;
   max-width: 250px;
+}
+
+@media (max-width: 768px) {
+  .options-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .button-group {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>

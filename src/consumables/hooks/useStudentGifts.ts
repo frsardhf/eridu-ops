@@ -15,6 +15,10 @@ export function useStudentGifts(props: {
   const boxFormData = ref<Record<string, number>>({});
   const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
   const isCalculating = ref(false);
+  
+  // Add previous state storage for undo functionality
+  const previousGiftFormData = ref<Record<string, number>>({});
+  const previousBoxFormData = ref<Record<string, number>>({});
 
   const bondXpTable = bondData.bond_xp;
 
@@ -42,6 +46,12 @@ export function useStudentGifts(props: {
       }
     }
   });
+
+  // Store previous state before any changes
+  const savePreviousState = () => {
+    previousGiftFormData.value = JSON.parse(JSON.stringify(giftFormData.value));
+    previousBoxFormData.value = JSON.parse(JSON.stringify(boxFormData.value));
+  };
 
   // Watch for changes to form data and save to localStorage
   watch([giftFormData, boxFormData, bondDetailData], () => {
@@ -80,6 +90,9 @@ export function useStudentGifts(props: {
     };
 
     loadFormDataToRefs(props.student.Id, refs, defaultValues);
+    
+    // Store initial state for undo after loading
+    savePreviousState();
   }
 
   // Calculate individual item EXP
@@ -209,12 +222,18 @@ export function useStudentGifts(props: {
   };
 
   const handleGiftInput = (giftId: number, event: Event) => {
+    // Save current state before modifying
+    savePreviousState();
+    
     removeLeadingZeros(event);
     const input = event.target as HTMLInputElement;
     giftFormData.value[giftId] = parseInt(input.value) || 0;
   };
 
   const handleBoxInput = (boxId: number, event: Event) => {
+    // Save current state before modifying
+    savePreviousState();
+    
     removeLeadingZeros(event);
     const input = event.target as HTMLInputElement;
     boxFormData.value[boxId] = parseInt(input.value) || 0;
@@ -230,15 +249,15 @@ export function useStudentGifts(props: {
   };
 
   const convertBoxes = () => {
-    // Toggle the convertBox value
-    bondDetailData.value.convertBox = !bondDetailData.value.convertBox;
-
+    // Save current state before modifying
+    savePreviousState();
+    
     if (!props.student?.Boxes || Object.keys(props.student.Boxes).length === 0) {
       return;
     }
     
-    // No need to call calculateOptimalConversion here anymore
-    // The watch function will handle it when convertBox becomes true
+    // Run conversion immediately (no toggling needed)
+    calculateOptimalConversion();
   };
 
   // Function to calculate optimal conversion
@@ -280,24 +299,9 @@ export function useStudentGifts(props: {
     }
   };
 
-  // Add a debounced version of calculateOptimalConversion
-  let conversionDebounceTimer: number | null = null;
-  const debouncedCalculateConversion = () => {
-    if (conversionDebounceTimer !== null) {
-      clearTimeout(conversionDebounceTimer);
-    }
-    conversionDebounceTimer = setTimeout(() => {
-      calculateOptimalConversion();
-      conversionDebounceTimer = null;
-    }, 1000); // 1000ms debounce
-  };
-
   // Watch for changes to boxFormData when in conversion mode
   watch(boxFormData, () => {
-    if (bondDetailData.value.convertBox && !isCalculating.value) {
-      // When in conversion mode and box values change, use the debounced calculation
-      debouncedCalculateConversion();
-    }
+    // Removed the conversion logic from the watcher
   }, { deep: true });
 
   const shouldShowGiftGrade = computed(() => {
@@ -310,7 +314,27 @@ export function useStudentGifts(props: {
     };
   });
 
+  // Reset all gifts to zero
+  const resetGifts = () => {
+    // Save current state before resetting
+    savePreviousState();
+    
+    // Reset all gift and box data to empty objects (zero values)
+    giftFormData.value = {};
+    boxFormData.value = {};
+  };
+  
+  // Undo changes to previous state
+  const undoChanges = () => {
+    // Restore from previous state
+    giftFormData.value = JSON.parse(JSON.stringify(previousGiftFormData.value));
+    boxFormData.value = JSON.parse(JSON.stringify(previousBoxFormData.value));
+  };
+
   const autoFillGifts = () => {
+    // Save current state before autofilling
+    savePreviousState();
+    
     const resources = getResources();
 
     // Filter out gifts from the resources
@@ -372,26 +396,12 @@ export function useStudentGifts(props: {
     set: (value) => { bondDetailData.value.currentBond = value; }
   });
 
-  const convertBox = computed({
-    get: () => bondDetailData.value.convertBox,
-    set: (value) => { bondDetailData.value.convertBox = value; }
-  });
-
-  // Watch for changes to convertBox state
-  watch(() => bondDetailData.value.convertBox, (isChecked) => {
-    if (isChecked) {
-      // When checkbox is checked, apply conversion immediately
-      calculateOptimalConversion();
-    }
-  });
-
   return {
     // State
     giftFormData,
     boxFormData,
     bondDetailData,
     currentBond, // Computed getter/setter for compatibility
-    convertBox,  // Computed getter/setter for compatibility
     
     // Computed
     totalCumulativeExp,
@@ -407,5 +417,7 @@ export function useStudentGifts(props: {
     handleBondInput,
     convertBoxes,
     autoFillGifts,
+    resetGifts,
+    undoChanges,
   };
 }
