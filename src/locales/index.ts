@@ -40,8 +40,8 @@ export const translations = {
     
     // Student modal tabs
     bond: "Bond",
-    upgrade: "Upgrade",
-    gear: "Gear",
+    upgrade: "Skills",
+    gear: "Weapons",
     items: "Items",
     equipment: "Equipment",
     summary: "Summary",
@@ -119,11 +119,10 @@ export const translations = {
     increaseLevel: "Increase level",
     
     // Weapon Grade component
-    weaponGrade: "Exclusive Weapon Grade",
-    currentGrade: "Current Grade",
-    targetGrade: "Target Grade",
-    maxGrade: "MAX GRADE",
-    weapon: "Exclusive Weapon",
+    exclusiveWeapon: "Exclusive Weapon",
+    currentGrade: "Current",
+    targetGrade: "Target",
+    maxGrade: "MAX",
     
     // Buttons and actions
     reset: "Reset",
@@ -170,8 +169,8 @@ export const translations = {
     
     // Student modal tabs
     bond: "絆",
-    upgrade: "アップグレード",
-    gear: "ギア",
+    upgrade: "育成",
+    gear: "武器",
     items: "アイテム",
     equipment: "装備",
     summary: "要約",
@@ -206,7 +205,7 @@ export const translations = {
     maxLevel: "最大レベル",
 
     // Upgrade component - Potential/Talent
-    talent: "タレント",
+    talent: "能力",
     clickTo: "クリックして",
     collapse: "折りたたむ",
     expand: "展開する",
@@ -249,11 +248,10 @@ export const translations = {
     increaseLevel: "レベルを上げる",
     
     // Weapon Grade component
-    weaponGrade: "固有武器星級",
-    currentGrade: "現在の星級",
-    targetGrade: "目標の星級",
-    maxGrade: "最大星級",
-    weapon: "固有武器",
+    exclusiveWeapon: "固有武器",
+    currentGrade: "現在",
+    targetGrade: "目標",
+    maxGrade: "最大",
     
     // Buttons and actions
     reset: "リセット",

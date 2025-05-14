@@ -88,12 +88,15 @@ const targetStars = computed(() => {
 
 // Add computed property to check if grade is maxed
 const isMaxGrade = computed(() => gradeState.value.current === 8);
+
+// Add computed property to check if weapon is locked
+const isWeaponLocked = computed(() => gradeState.value.current <= 5);
 </script>
 
 <template>
   <div class="grade-growth-section">
     <div class="card-header">
-      <h3 class="section-title">{{ $t('weaponGrade') }}</h3>
+      <h3 class="section-title">{{ $t('exclusiveWeapon') }}</h3>
       <div class="grade-indicators" v-if="!isMaxGrade">
         <div class="grade-pill" :class="gradeState.current <= 5 ? 'gold-grade' : 'blue-grade'">
           {{ gradeState.current <= 5 ? gradeState.current : (gradeState.current - 5) }}★
@@ -107,14 +110,21 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
     </div>
     
     <div class="weapon-showcase">
-      <div class="weapon-preview">
+      <div class="weapon-preview" :class="{ 'locked': isWeaponLocked }">
         <img 
           :src="getWeaponIconUrl()" 
-          :alt="$t('weapon')" 
+          :alt="$t('exclusiveWeapon')" 
           class="weapon-icon"
           v-if="props.student?.WeaponImg"
         />
         <div class="weapon-icon placeholder" v-else>?</div>
+        
+        <!-- Lock overlay for locked weapons -->
+        <div class="weapon-lock-overlay" v-if="isWeaponLocked">
+          <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+            <path fill="currentColor" d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
+          </svg>
+        </div>
       </div>
     </div>
     
@@ -242,6 +252,33 @@ const isMaxGrade = computed(() => gradeState.value.current === 8);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+/* Styles for locked weapon state */
+.weapon-preview.locked .weapon-icon {
+  filter: grayscale(100%) brightness(50%);
+  opacity: 0.8;
+}
+
+.weapon-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.lock-icon {
+  width: 40px;
+  height: 40px;
+  color: rgba(255, 255, 255, 0.8);
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
 }
 
 .weapon-icon {
