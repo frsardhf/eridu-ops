@@ -1,14 +1,20 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import tailwindcss from '@tailwindcss/vite'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 import type { PreRenderedAsset } from 'rollup'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    tailwindcss(),
-  ],
+  plugins: [vue()],
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss,
+        autoprefixer(),
+      ],
+    },
+  },
   base: '/',
   server: {
     headers: {
@@ -19,8 +25,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo: PreRenderedAsset) => {
-          const fileName = assetInfo.name || 'asset';
-          const extType = fileName.split('.').at(1) || 'unknown';
+          const fileName = typeof assetInfo.source === 'string' ? assetInfo.source : 'asset';
+          const extType = fileName.split('.').at(1) ?? 'unknown';
           if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
             return `assets/img/[name]-[hash][extname]`;
           }
