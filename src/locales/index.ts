@@ -148,7 +148,7 @@ export const translations = {
       bond: "絆",
       level: "レベル",
       grade: "星級",
-      method: "ソート方法 "
+      method: "ソート方法"
     },
     direction: {
       ascending: "昇順",
