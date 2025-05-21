@@ -304,135 +304,137 @@ onBeforeUnmount(() => {
       </div>
     </div>
     
-    <div id="mobile-menu" class="mobile-menu" :class="{ 'open': mobileMenuOpen }">
+    <div class="mobile-menu" :class="{ 'open': mobileMenuOpen }" id="mobile-menu">
       <div class="mobile-menu-container">
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">{{ $t('sort.method') }}</h3>
-          <div class="mobile-menu-options">
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'id' }"
-              @click="updateSortOption('id')"
-            >
-              {{ $t('sort.id') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'name' }"
-              @click="updateSortOption('name')"
-            >
-              {{ $t('sort.name') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'default' }"
-              @click="updateSortOption('default')"
-            >
-              {{ $t('sort.default') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'bond' }"
-              @click="updateSortOption('bond')"
-            >
-              {{ $t('sort.bond') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'level' }"
-              @click="updateSortOption('level')"
-            >
-              {{ $t('sort.level') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'grade' }"
-              @click="updateSortOption('grade')"
-            >
-              {{ $t('sort.grade') }}
-            </button>
+        <div class="mobile-menu-content">
+          <div class="mobile-menu-section">
+            <h3 class="mobile-menu-heading">{{ $t('sort.method') }}</h3>
+            <div class="mobile-menu-options">
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentSort === 'id' }"
+                @click="updateSortOption('id')"
+              >
+                {{ $t('sort.id') }}
+              </button>
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentSort === 'name' }"
+                @click="updateSortOption('name')"
+              >
+                {{ $t('sort.name') }}
+              </button>
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentSort === 'default' }"
+                @click="updateSortOption('default')"
+              >
+                {{ $t('sort.default') }}
+              </button>
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentSort === 'bond' }"
+                @click="updateSortOption('bond')"
+              >
+                {{ $t('sort.bond') }}
+              </button>
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentSort === 'level' }"
+                @click="updateSortOption('level')"
+              >
+                {{ $t('sort.level') }}
+              </button>
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentSort === 'grade' }"
+                @click="updateSortOption('grade')"
+              >
+                {{ $t('sort.grade') }}
+              </button>
+            </div>
+            
+            <div class="mobile-menu-direction">
+              <span class="direction-label">{{ $t('direction.ascending') }}:</span>
+              <button 
+                class="direction-button"
+                @click="toggleDirection($event)"
+              >
+                {{ sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending') }}
+                <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                  stroke-width="2">
+                  <path d="M12 5v14M19 12l-7-7-7 7"/>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 19V5M5 12l7 7 7-7"/>
+                </svg>
+              </button>
+            </div>
           </div>
           
-          <div class="mobile-menu-direction">
-            <span class="direction-label">{{ $t('direction.ascending') }}:</span>
-            <button 
-              class="direction-button"
-              @click="toggleDirection($event)"
-            >
-              {{ sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending') }}
-              <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
-                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                stroke-width="2">
-                <path d="M12 5v14M19 12l-7-7-7 7"/>
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 19V5M5 12l7 7 7-7"/>
-              </svg>
-            </button>
+          <!-- Language section for mobile -->
+          <div class="mobile-menu-section">
+            <h3 class="mobile-menu-heading">Language / 言語</h3>
+            <div class="mobile-menu-options">
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentLanguage === 'en' }"
+                @click="changeLanguage('en')"
+              >
+                English
+              </button>
+              <button 
+                class="mobile-menu-option" 
+                :class="{ 'active': currentLanguage === 'jp' }"
+                @click="changeLanguage('jp')"
+              >
+                日本語
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <!-- Language section for mobile -->
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">Language / 言語</h3>
-          <div class="mobile-menu-options">
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentLanguage === 'en' }"
-              @click="changeLanguage('en')"
-            >
-              English
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentLanguage === 'jp' }"
-              @click="changeLanguage('jp')"
-            >
-              日本語
-            </button>
+          
+          <div class="mobile-menu-section">
+            <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
+            <div class="mobile-menu-options">
+              <button class="mobile-menu-option" @click="exportData">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                {{ $t('exportData') }}
+              </button>
+              <button class="mobile-menu-option" @click="openImportModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {{ $t('importData') }}
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
-          <div class="mobile-menu-options">
-            <button class="mobile-menu-option" @click="exportData">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              {{ $t('exportData') }}
-            </button>
-            <button class="mobile-menu-option" @click="openImportModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              {{ $t('importData') }}
-            </button>
-          </div>
-        </div>
-        
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
-          <div class="mobile-menu-options">
-            <button class="mobile-menu-option" @click="openContactModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-              </svg>
-              {{ $t('contact') }}
-            </button>
-            <button class="mobile-menu-option" @click="openCreditsModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"></path>
-                <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
-              </svg>
-              {{ $t('credits') }}
-            </button>
+          
+          <div class="mobile-menu-section">
+            <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
+            <div class="mobile-menu-options">
+              <button class="mobile-menu-option" @click="openContactModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                {{ $t('contact') }}
+              </button>
+              <button class="mobile-menu-option" @click="openCreditsModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"></path>
+                  <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
+                </svg>
+                {{ $t('credits') }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -833,6 +835,9 @@ input:checked + .slider:before {
   z-index: 1000;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
+  height: calc(100vh - 100%); /* Full viewport height minus header height */
+  display: flex;
+  flex-direction: column;
 }
 
 .mobile-menu.open {
@@ -840,7 +845,17 @@ input:checked + .slider:before {
 }
 
 .mobile-menu-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu-content {
+  flex: 1;
+  overflow-y: auto;
   padding: 1rem;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .mobile-menu-section {
@@ -853,78 +868,6 @@ input:checked + .slider:before {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
-}
-
-.mobile-menu-heading {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0 0 0.75rem 0;
-  color: var(--text-primary);
-}
-
-.mobile-menu-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mobile-menu-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.mobile-menu-option:hover {
-  background-color: rgba(var(--background-hover-rgb), 0.1);
-}
-
-.mobile-menu-option.active {
-  background-color: rgba(var(--accent-color-rgb), 0.1);
-  font-weight: 500;
-}
-
-.option-icon {
-  flex-shrink: 0;
-}
-
-.mobile-menu-direction {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 0 12px;
-}
-
-.direction-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.direction-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.direction-button:hover {
-  background-color: rgba(var(--background-hover-rgb), 0.1);
 }
 
 .desktop-only {
