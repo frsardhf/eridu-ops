@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
       <div class="mobile-menu-container">
         <div class="mobile-menu-content">
           <div class="mobile-menu-section">
-            <h3 class="mobile-menu-heading">{{ $t('sort.default') }}</h3>
+            <h3 class="mobile-menu-heading">{{ $t('sort.method') }}</h3>
             <div class="mobile-menu-options">
               <button 
                 class="mobile-menu-option" 
