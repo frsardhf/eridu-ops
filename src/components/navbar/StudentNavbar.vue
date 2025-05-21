@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
     <div id="mobile-menu" class="mobile-menu" :class="{ 'open': mobileMenuOpen }">
       <div class="mobile-menu-container">
         <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">{{ $t('sort.default') }}</h3>
+          <h3 class="mobile-menu-heading">{{ $t('sort.method') }}</h3>
           <div class="mobile-menu-options">
             <button 
               class="mobile-menu-option" 
@@ -825,13 +825,14 @@ input:checked + .slider:before {
   right: 0;
   width: 100%;
   max-width: 300px;
+  max-height: calc(100vh - 100%);
+  overflow-y: auto;
   background-color: var(--background-primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   border-radius: 0 0 0 10px;
   z-index: 1000;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
-  overflow: hidden;
 }
 
 .mobile-menu.open {

@@ -34,6 +34,34 @@
   display: flex;
   margin-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+  padding-bottom: 2px;
+  background: var(--background-primary);
+  min-height: 44px;
+  z-index: 2;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.modal-tabs::-webkit-scrollbar {
+  display: none; /* Hide scrollbar in Chrome, Safari, Opera */
+}
+
+.modal-tabs::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 2px;
+}
+
+.modal-tabs::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.modal-tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 .tab-button {
@@ -45,6 +73,7 @@
   font-weight: 500;
   color: var(--text-secondary);
   transition: all 0.2s ease;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 .tab-button:focus {

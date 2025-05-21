@@ -13,7 +13,8 @@ export const translations = {
       default: "Default",
       bond: "Bond",
       level: "Level",
-      grade: "Grade"
+      grade: "Grade",
+      method: "Sorting Method"
     },
     direction: {
       ascending: "Ascending",
@@ -146,7 +147,8 @@ export const translations = {
       default: "デフォルト",
       bond: "絆",
       level: "レベル",
-      grade: "星級"
+      grade: "星級",
+      method: "ソート方法"
     },
     direction: {
       ascending: "昇順",
