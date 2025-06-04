@@ -771,6 +771,100 @@ export function downloadLocalStorageData(): void {
 }
 
 /**
+ * Imports data from other sites format into localStorage
+ * @param importText The text data to import
+ * @returns boolean indicating success
+ */
+export function importFromOtherSite(importText: string): boolean {
+  try {
+    const importData = JSON.parse(importText);
+    
+    if (!importData.characters || !Array.isArray(importData.characters)) {
+      throw new Error('Invalid import data format: missing characters array');
+    }
+
+    // Get existing forms data
+    const existingForms = getDataCollection(STORAGE_KEYS.FORMS);
+    const studentForms = getDataCollection(STORAGE_KEYS.STUDENTS);
+    
+    // Process each character
+    importData.characters.forEach((char: any) => {
+      if (!char.id) return;
+
+      // Get equipment data from student forms
+      const equipmentTypes = studentForms[char.id]?.Equipment ?? ['gear1', 'gear2', 'gear3'];
+      const starData = studentForms[char.id]?.StarGrade ?? 1;
+
+      const formData = {
+        id: char.id,
+        bondDetailData: {
+          currentBond: parseInt(char.current.bond) || 1
+        },
+        boxFormData: {},
+        characterLevels: {
+          current: parseInt(char.current.level) || 1,
+          target: parseInt(char.target.level) || 1
+        },
+        equipmentLevels: {
+          [equipmentTypes[0]]: {
+            current: parseInt(char.current.gear1) || 1,
+            target: parseInt(char.target.gear1) || 1
+          },
+          [equipmentTypes[1]]: {
+            current: parseInt(char.current.gear2) || 1,
+            target: parseInt(char.target.gear2) || 1
+          },
+          [equipmentTypes[2]]: {
+            current: parseInt(char.current.gear3) || 1,
+            target: parseInt(char.target.gear3) || 1
+          }
+        },
+        giftFormData: {},
+        gradeLevels: {
+          current: (parseInt(char.current.star) || starData) + (parseInt(char.current.ue) || 0),
+          target: (parseInt(char.target.star) || starData) + (parseInt(char.target.ue) || 0)
+        },
+        potentialLevels: {
+          attack: { current: 0, target: 0 },
+          maxhp: { current: 0, target: 0 },
+          healpower: { current: 0, target: 0 }
+        },
+        skillLevels: {
+          Ex: {
+            current: parseInt(char.current.ex) || 0,
+            target: parseInt(char.target.ex) || 0
+          },
+          Public: {
+            current: parseInt(char.current.basic) || 0,
+            target: parseInt(char.target.basic) || 0
+          },
+          Passive: {
+            current: parseInt(char.current.passive) || 0,
+            target: parseInt(char.target.passive) || 0
+          },
+          ExtraPassive: {
+            current: parseInt(char.current.sub) || 0,
+            target: parseInt(char.target.sub) || 0
+          }
+        }
+      };
+
+      // Merge with existing data
+      existingForms[char.id] = {
+        ...existingForms[char.id],
+        ...formData
+      };
+    });
+
+    // Save the updated forms data
+    return setStorageData(STORAGE_KEYS.FORMS, existingForms);
+  } catch (error) {
+    console.error('Error importing data from other site:', error);
+    return false;
+  }
+}
+
+/**
  * Imports data from a text file into localStorage
  * @param file The file to import data from
  * @returns Promise resolving to boolean indicating success
@@ -788,8 +882,15 @@ export function importLocalStorageData(file: File): Promise<boolean> {
           reject(new Error('Invalid import data format'));
           return;
         }
+
+        // Check if this is data from another site
+        if (importData.characters && Array.isArray(importData.characters)) {
+          const success = importFromOtherSite(fileContent);
+          resolve(success);
+          return;
+        }
         
-        // Import data for each key
+        // Otherwise handle as regular import
         for (const [key, value] of Object.entries(importData)) {
           if (typeof value === 'string') {
             localStorage.setItem(key, value);

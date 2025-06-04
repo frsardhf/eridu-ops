@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, defineEmits } from 'vue';
-import { importLocalStorageData } from '../../consumables/utils/studentStorage';
+import { importLocalStorageData, importFromOtherSite } from '../../consumables/utils/studentStorage';
 import { $t } from '../../locales';
 
 const emit = defineEmits<{
@@ -12,6 +12,8 @@ const isDragging = ref(false);
 const importStatus = ref<string>('');
 const showStatus = ref(false);
 const isLoading = ref(false);
+const importText = ref('');
+const showTextInput = ref(false);
 
 function handleDragOver(event: DragEvent) {
   event.preventDefault();
@@ -75,6 +77,43 @@ async function handleFiles(files: FileList) {
   }
 }
 
+async function handleTextImport() {
+  if (!importText.value.trim()) {
+    showImportError($t('importEmptyText'));
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    showStatus.value = true;
+    importStatus.value = $t('importingData');
+    
+    const success = importFromOtherSite(importText.value);
+    
+    if (success) {
+      importStatus.value = $t('importSuccessful');
+      emit('import-success');
+      
+      // Reload page after short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      showImportError($t('importFailed'));
+    }
+  } catch (error) {
+    console.error('Error importing data:', error);
+    showImportError($t('importFileFormatError'));
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+function toggleImportMethod() {
+  showTextInput.value = !showTextInput.value;
+  importText.value = '';
+}
+
 function showImportError(message: string) {
   importStatus.value = message;
   showStatus.value = true;
@@ -104,7 +143,41 @@ function closeModal(event: MouseEvent) {
       </div>
       
       <div class="modal-content">
+        <div class="import-method-toggle">
+          <button 
+            class="method-button" 
+            :class="{ active: !showTextInput }"
+            @click="toggleImportMethod"
+          >
+            {{ $t('importFromFile') }}
+          </button>
+          <button 
+            class="method-button" 
+            :class="{ active: showTextInput }"
+            @click="toggleImportMethod"
+          >
+            {{ $t('importFromText') }}
+          </button>
+        </div>
+
+        <div v-if="showTextInput" class="text-input-container">
+          <textarea
+            v-model="importText"
+            class="import-textarea"
+            :placeholder="$t('pasteImportData')"
+            rows="6"
+          ></textarea>
+          <button 
+            class="import-button"
+            @click="handleTextImport"
+            :disabled="isLoading || !importText.trim()"
+          >
+            {{ $t('import') }}
+          </button>
+        </div>
+
         <div 
+          v-else
           class="dropzone" 
           :class="{ 'dragging': isDragging, 'has-status': showStatus }"
           @dragover="handleDragOver"
@@ -212,6 +285,78 @@ function closeModal(event: MouseEvent) {
 .modal-content {
   padding: 16px;
   width: 100%;
+}
+
+.import-method-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.method-button {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.method-button:hover {
+  background: var(--background-tertiary);
+}
+
+.method-button.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.text-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.import-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  font-family: monospace;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.import-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
+}
+
+.import-button {
+  align-self: flex-end;
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent-color);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-button:hover:not(:disabled) {
+  background: var(--accent-color-hover);
+}
+
+.import-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .dropzone {

@@ -38,6 +38,11 @@ export const translations = {
     browseFiles: "Browse Files",
     importInstructions: "Import your previously exported data to restore your progress and settings.",
     importWarning: "Note: This will replace your current data and reload the page.",
+    importFromFile: "From File",
+    importFromText: "From Text",
+    pasteImportData: "Paste justin163 data",
+    import: "Import",
+    importEmptyText: "Please paste data",
     
     // Student modal tabs
     bond: "Bond",
@@ -172,6 +177,11 @@ export const translations = {
     browseFiles: "ファイルを参照",
     importInstructions: "以前にエクスポートしたデータをインポートして、進捗と設定を復元します。",
     importWarning: "注意：これにより現在のデータが置き換えられ、ページが再読み込みされます。",
+    importFromFile: "ファイルから",
+    importFromText: "テキストから",
+    pasteImportData: "justin163データを貼り付け",
+    import: "インポート",
+    importEmptyText: "データを貼り付けてください",
     
     // Student modal tabs
     bond: "絆",

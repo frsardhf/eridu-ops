@@ -398,16 +398,7 @@ function handlePinToggle(event: MouseEvent) {
   transform: translate(-50%, -55%);
   font-weight: bold;
   font-size: 14px;
-  color: black;
-  text-shadow: 
-    -0.2px -0.2px 0 #fff,
-    0px -0.2px 0 #fff,
-    0.2px -0.2px 0 #fff,
-    -0.2px 0px 0 #fff,
-    0.2px 0px 0 #fff,
-    -0.2px 0.2px 0 #fff,
-    0px 0.2px 0 #fff,
-    0.2px 0.2px 0 #fff;
+  color: white;
 }
 
 .grade-container {
@@ -652,6 +643,12 @@ function handlePinToggle(event: MouseEvent) {
     top: -8px;
     left: -8px;
     padding: 5px;
+  }
+}
+
+@media screen and (max-width: 384px) {
+  .bond-number {
+    left: 52%;
   }
 }
 </style>

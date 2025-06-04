@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { getDataCollection, getEquipmentDataById, getEquipments, getResourceDataById, getResources } from '../utils/studentStorage';
+import { getDataCollection, getEquipmentDataById, getEquipments, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
 import { Material } from '../../types/upgrade';
 import { EquipmentMaterial, EquipmentType, EquipmentLevels } from '../../types/gear';
@@ -31,7 +31,7 @@ const getEquipmentXpDetails = () => {
   // Calculate XP needed for each student's equipment
   allStudentIds.forEach(studentId => {
     const form = getDataCollection('forms')[studentId];
-    if (!form || !form.equipmentLevels) return;
+    if (!form?.equipmentLevels) return;
 
     const equipmentLevels = form.equipmentLevels as EquipmentLevels;
     
@@ -70,10 +70,10 @@ const getEquipmentXpDetails = () => {
 const allocateXpBalls = (equipmentXpDetails: any[], resources: any) => {
   // Get available XP balls from resources
   const expBallInfo = [
-    { id: 4, value: resources['4']?.LevelUpFeedExp || 0, quantity: resources['4']?.QuantityOwned || 0 }, // Superior
-    { id: 3, value: resources['3']?.LevelUpFeedExp || 0, quantity: resources['3']?.QuantityOwned || 0 }, // Advanced
-    { id: 2, value: resources['2']?.LevelUpFeedExp || 0, quantity: resources['2']?.QuantityOwned || 0 }, // Normal
-    { id: 1, value: resources['1']?.LevelUpFeedExp || 0, quantity: resources['1']?.QuantityOwned || 0 }  // Novice
+    { id: 4, value: resources['4']?.LevelUpFeedExp ?? 0, quantity: resources['4']?.QuantityOwned ?? 0 }, // Superior
+    { id: 3, value: resources['3']?.LevelUpFeedExp ?? 0, quantity: resources['3']?.QuantityOwned ?? 0 }, // Advanced
+    { id: 2, value: resources['2']?.LevelUpFeedExp ?? 0, quantity: resources['2']?.QuantityOwned ?? 0 }, // Normal
+    { id: 1, value: resources['1']?.LevelUpFeedExp ?? 0, quantity: resources['1']?.QuantityOwned ?? 0 }  // Novice
   ].filter(item => item.value > 0 && item.quantity > 0);
 
   // Allocate available exp balls efficiently
@@ -153,7 +153,7 @@ export function useGearCalculation() {
     if (!xpCalculationCache) {
       xpCalculationCache = calculateExpNeeds();
     }
-    const { totalXpNeeded, remainingXpNeeded } = xpCalculationCache;
+    const { totalXpNeeded } = xpCalculationCache;
     
     // Add XP as a special material type
     materialMap.set(1, { // Using Novice exp ball ID as the XP material ID
@@ -234,7 +234,7 @@ export function useGearCalculation() {
         if (!student) return;
         
         const form = getDataCollection('forms')[detail.studentId];
-        if (!form || !form.equipmentLevels) return;
+        if (!form?.equipmentLevels) return;
 
         const equipmentLevels = form.equipmentLevels as EquipmentLevels;
         const equipmentLevel = equipmentLevels[detail.equipmentType];
@@ -283,7 +283,7 @@ export function useGearCalculation() {
       // Handle regular materials
       const materialNeeds = new Map<string, { quantity: number; equipmentTypes: EquipmentType[] }>();
       const equipments = getEquipments() || {};
-      const ownedQuantity = equipments[materialId.toString()]?.QuantityOwned || 0;
+      const ownedQuantity = equipments[materialId.toString()]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed quantities
       Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
@@ -334,7 +334,7 @@ export function useGearCalculation() {
         const student = studentsCollection[studentId];
         if (student) {
           const isMissingView = viewMode === 'missing' || viewMode === 'equipment-missing';
-          const displayQuantity = isMissingView ? studentRemainingQuantities.get(studentId) || 0 : quantity;
+          const displayQuantity = isMissingView ? studentRemainingQuantities.get(studentId) ?? 0 : quantity;
           
           if (displayQuantity > 0) {
             usage.push({ 
