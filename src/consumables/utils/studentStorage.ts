@@ -674,9 +674,7 @@ export function migrateFormData() {
         // };
         
         // Remove old properties
-        delete formData.bondDetailData.originalSelectorBoxQuantity;
-        delete formData.bondDetailData.originalSrGiftQuantity;
-        delete formData.bondDetailData.originalYellowStoneQuantity;
+        delete formData.bondDetailData.convertBox;
         
         hasChanges = true;
         console.log(`Migrated data for student ${studentId}`);
