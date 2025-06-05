@@ -1,6 +1,8 @@
 import { 
   getAllFormData, 
-  getDataCollection 
+  getDataCollection,
+  getResourceDataById,
+  getEquipmentDataById
 } from './studentStorage';
 import { 
   Material,
@@ -132,22 +134,39 @@ function hasTargetUpgrades(levels: Record<string, { current: number, target: num
 } 
 
 /**
- * Function to format material quantity for display
- * This function formats the quantity of materials for display in the UI
- * It handles large numbers by using 'k' for thousands and 'M' for millions
+ * Base function to format large numbers
+ * @param quantity The number to format
+ * @param prefix Optional prefix to add before the number
+ * @returns Formatted number string
  */
-export function formatLargeNumber(quantity: number): string {
+function formatNumber(quantity: number, prefix: string = ''): string {
   if (!quantity || quantity <= 0) return '';
   
   // Format large numbers with 'k' suffix
   if (quantity >= 1000000) {
-    return `×${Math.floor(quantity / 1000000)}M`;
+    return `${prefix}${Math.floor(quantity / 1000000)}M`;
   } else if (quantity >= 10000) {
-    return `×${Math.floor(quantity / 1000)}K`;
+    return `${prefix}${Math.floor(quantity / 1000)}K`;
   } 
   
-  return `×${quantity}`;
-};
+  return `${prefix}${quantity}`;
+}
+
+/**
+ * Function to format material quantity for display with '×' prefix
+ * Used for material quantities in the UI
+ */
+export function formatLargeNumber(quantity: number): string {
+  return formatNumber(quantity, '×');
+}
+
+/**
+ * Function to format material quantity for display without prefix
+ * Used for credit amounts and other numeric displays
+ */
+export function formatLargeNumberAmount(quantity: number): string {
+  return `${quantity.toLocaleString()}`;
+}
 
 /**
  * Adjusts tooltip position to ensure it stays within viewport
@@ -195,4 +214,56 @@ export function adjustTooltipPosition(
     x: adjustedX,
     y: adjustedY
   };
+}
+
+/**
+ * Helper function to check if a material ID is an EXP report
+ */
+export function isExpReport(materialId: number): boolean {
+  return [10, 11, 12, 13].includes(materialId);
+}
+
+/**
+ * Helper function to check if a material ID is an EXP ball
+ */
+export function isExpBall(materialId: number): boolean {
+  return [1, 2, 3, 4].includes(materialId);
+}
+
+/**
+ * Helper function to get material name
+ */
+export function getMaterialName(item: any, isEquipmentTab: boolean): string {
+  if (isExpReport(item.material?.Id)) return 'Activity Report';
+  if (isExpBall(item.material?.Id)) return 'Enhancement Stone';
+  return item.material?.Name ?? 'Unknown Resource';
+}
+
+/**
+ * Helper function to get material icon source
+ */
+export function getMaterialIconSrc(
+  item: any, 
+  isEquipmentTab: boolean, 
+  currentExpIcon: number, 
+  currentExpBall: number
+): string {
+  if (!item.material?.Icon) return '';
+  
+  const isExp = isExpReport(item.material?.Id);
+  const isBall = isExpBall(item.material?.Id);
+  
+  if (isExp) {
+    const expResource = getResourceDataById(currentExpIcon);
+    return `https://schaledb.com/images/item/icon/${expResource?.Icon}.webp`;
+  }
+  
+  if (isBall) {
+    const expBallResource = getEquipmentDataById(currentExpBall);
+    return `https://schaledb.com/images/equipment/icon/${expBallResource?.Icon}.webp`;
+  }
+  
+  const baseUrl = isEquipmentTab ? 'equipment' : 'item';
+  const suffix = isEquipmentTab && item.material?.Id !== 5 ? '_piece' : '';
+  return `https://schaledb.com/images/${baseUrl}/icon/${item.material.Icon}${suffix}.webp`;
 }

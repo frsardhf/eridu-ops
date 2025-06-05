@@ -247,7 +247,7 @@ export function useResourceCalculation() {
       // Handle credits
       const studentCredits = new Map<string, number>();
       const resources = getResources() || {};
-      const ownedCredits = resources[CREDITS_ID.toString()]?.QuantityOwned || 0;
+      const ownedCredits = resources[CREDITS_ID.toString()]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed credits
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
@@ -296,7 +296,7 @@ export function useResourceCalculation() {
         const student = studentsCollection[studentId];
         if (student) {
           const isMissingView = viewMode === 'missing' || viewMode === 'equipment-missing';
-          const displayQuantity = isMissingView ? studentRemainingCredits.get(studentId) || 0 : quantity;
+          const displayQuantity = isMissingView ? studentRemainingCredits.get(studentId) ?? 0 : quantity;
           
           if (displayQuantity > 0) {
             usage.push({ student, quantity: displayQuantity });
@@ -307,7 +307,7 @@ export function useResourceCalculation() {
       // Handle regular materials
       const materialNeeds = new Map<string, number>();
       const resources = getResources() || {};
-      const ownedQuantity = resources[materialId.toString()]?.QuantityOwned || 0;
+      const ownedQuantity = resources[materialId.toString()]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed quantities
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
@@ -354,7 +354,7 @@ export function useResourceCalculation() {
         const student = studentsCollection[studentId];
         if (student) {
           const isMissingView = viewMode === 'missing' || viewMode === 'equipment-missing';
-          const displayQuantity = isMissingView ? studentRemainingQuantities.get(studentId) || 0 : quantity;
+          const displayQuantity = isMissingView ? studentRemainingQuantities.get(studentId) ?? 0 : quantity;
           
           if (displayQuantity > 0) {
             usage.push({ student, quantity: displayQuantity });

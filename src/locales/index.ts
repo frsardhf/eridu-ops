@@ -107,6 +107,9 @@ export const translations = {
     missingItems: "Missing Items",
     equipmentNeeded: "Equipment Needed",
     missingEquipment: "Missing Equipment",
+    owned: "Owned",
+    needed: "Needed",
+    remaining: "Remaining",
     
     // Equipment types and gear component
     equipmentTypes: {
@@ -246,6 +249,9 @@ export const translations = {
     missingItems: "不足アイテム",
     equipmentNeeded: "全体の必要装備",
     missingEquipment: "不足装備",
+    owned: "所持",
+    needed: "必要",
+    remaining: "残り",
     
     // Equipment types and gear component
     equipmentTypes: {

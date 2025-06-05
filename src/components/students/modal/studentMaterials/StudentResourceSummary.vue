@@ -4,8 +4,15 @@ import { Material } from '../../../../types/upgrade';
 import { EquipmentType } from '../../../../types/gear';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
-import { getEquipments, getResources, getResourceDataById, getEquipmentDataById } from '../../../../consumables/utils/studentStorage';
-import { formatLargeNumber, adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
+import { getEquipments, getResources } from '../../../../consumables/utils/studentStorage';
+import { 
+  formatLargeNumber, 
+  formatLargeNumberAmount, 
+  adjustTooltipPosition,
+  isExpReport,
+  getMaterialName,
+  getMaterialIconSrc
+} from '../../../../consumables/utils/materialUtils';
 import { $t } from '../../../../locales';
 import '../../../../styles/resourceDisplay.css';
 
@@ -31,7 +38,8 @@ const {
   totalEquipmentsNeeded, 
   equipmentsLeftover, 
   getEquipmentUsageByStudents,
-  isExpBall
+  isExpBall: isEquipmentExpBall,
+  calculateExpNeeds: calculateEquipmentExpNeeds
 } = useGearCalculation();
 
 // Track the currently hovered item for tooltip
@@ -62,11 +70,6 @@ const getXpCalculation = () => {
     xpCalculationCache.value = calculateExpNeeds();
   }
   return xpCalculationCache.value;
-};
-
-// Helper function to check if a material ID is an EXP report
-const isExpReport = (materialId: number) => {
-  return [10, 11, 12, 13].includes(materialId);
 };
 
 // Materials that are missing (negative leftover)
@@ -138,8 +141,8 @@ const missingEquipments = computed<MaterialWithRemaining[]>(() => {
       if (!materialId) return false;
       
       // Special handling for XP balls
-      if (isExpBall(materialId)) {
-        const { remainingXpNeeded } = calculateExpNeeds();
+      if (isEquipmentExpBall(materialId)) {
+        const { remainingXpNeeded } = calculateEquipmentExpNeeds();
         return remainingXpNeeded > 0;
       }
       
@@ -157,8 +160,8 @@ const missingEquipments = computed<MaterialWithRemaining[]>(() => {
       const materialId = item.material?.Id;
       
       // Special handling for XP balls
-      if (isExpBall(materialId)) {
-        const { remainingXpNeeded } = calculateExpNeeds();
+      if (isEquipmentExpBall(materialId)) {
+        const { remainingXpNeeded } = calculateEquipmentExpNeeds();
         return {
           material: item.material,
           materialQuantity: remainingXpNeeded,
@@ -239,34 +242,18 @@ onMounted(() => {
   });
 });
 
-// Helper function to get material icon source
-const getMaterialIconSrc = (item: any, activeView: ViewMode, currentExpIcon: number, currentExpBall: number): string => {
-  if (!item.material?.Icon) return '';
-  
+// Helper function to get material icon source and alt text
+const getMaterialIconSrcAndAlt = (item: any, activeView: ViewMode, currentExpIcon: number, currentExpBall: number): { src: string; alt: string } => {
   const isEquipmentTab = activeView === 'equipment-needed' || activeView === 'equipment-missing';
-  const isCredits = item.material?.Id === 5;
-  const isExp = isExpReport(item.material?.Id);
-  const isBall = isExpBall(item.material?.Id);
-  
-  if (isCredits) {
-    return `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`;
-  } else if (isEquipmentTab) {
-    if (isBall) {
-      const expBallResource = getEquipmentDataById(currentExpBall);
-      return `https://schaledb.com/images/equipment/icon/${expBallResource?.Icon}.webp`;
-    }
-    return `https://schaledb.com/images/equipment/icon/${item.material.Icon}_piece.webp`;
-  } else if (isExp) {
-    const expResource = getResourceDataById(currentExpIcon);
-    return `https://schaledb.com/images/item/icon/${expResource?.Icon}.webp`;
-  } else {
-    return `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`;
-  }
+  return {
+    src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon, currentExpBall),
+    alt: getMaterialName(item, isEquipmentTab)
+  };
 };
 
 // Helper function to format quantity
 const formatQuantity = (item: any, activeView: ViewMode): string => {
-  if (isExpReport(item.material?.Id) || isExpBall(item.material?.Id)) {
+  if (isExpReport(item.material?.Id) || isEquipmentExpBall(item.material?.Id)) {
     return '';
   }
 
@@ -351,7 +338,7 @@ const tooltipGridColumns = computed(() => getTooltipGridColumns(studentUsageForM
 
 // Helper function to format usage quantity
 const formatUsageQuantity = (quantity: number, materialId?: number | null, equipmentTypes?: EquipmentType[]): string => {
-  if (materialId && (isExpReport(materialId) || isExpBall(materialId))) {
+  if (materialId && (isExpReport(materialId) || isEquipmentExpBall(materialId))) {
     return quantity.toString();
   }
   return formatLargeNumber(quantity);
@@ -371,7 +358,7 @@ const studentUsageForMaterial = computed(() => {
   const cacheKey = `${materialId}-${activeView.value}`;
   
   // For XP reports, credits, and XP balls, always get fresh data
-  if (isExpReport(materialId) || materialId === 5 || isExpBall(materialId)) {
+  if (isExpReport(materialId) || materialId === 5 || isEquipmentExpBall(materialId)) {
     const usage = isEquipmentView 
       ? getEquipmentUsageByStudents(materialId, activeView.value)
       : getMaterialUsageByStudents(materialId, activeView.value);
@@ -397,6 +384,44 @@ const studentUsageForMaterial = computed(() => {
   
   return usage;
 });
+
+// Add computed properties for credit quantities
+const creditOwned = computed(() => {
+  const resources = getResources() || {};
+  return resources[5]?.QuantityOwned || 0;
+});
+
+const creditNeeded = computed(() => {
+  const needed = totalMaterialsNeeded.value.find(m => m.material?.Id === 5);
+  return needed?.materialQuantity || 0;
+});
+
+const creditRemaining = computed(() => Math.abs(creditOwned.value - creditNeeded.value));
+const isCreditDeficit = computed(() => creditOwned.value < creditNeeded.value);
+const isCreditSurplus = computed(() => creditOwned.value > creditNeeded.value);
+
+// Add computed properties for EXP quantities
+const expInfo = computed(() => {
+  const { totalXpNeeded, remainingXpNeeded } = calculateExpNeeds();
+  return {
+    needed: totalXpNeeded,
+    remaining: remainingXpNeeded,
+    owned: totalXpNeeded - remainingXpNeeded
+  };
+});
+
+// Add computed properties for EXP balls quantities
+const expBallInfo = computed(() => {
+  const { totalXpNeeded, remainingXpNeeded } = calculateEquipmentExpNeeds();
+  return {
+    needed: totalXpNeeded,
+    remaining: remainingXpNeeded,
+    owned: totalXpNeeded - remainingXpNeeded
+  };
+});
+
+const isExpBallDeficit = computed(() => expBallInfo.value.owned < expBallInfo.value.needed);
+const isExpBallSurplus = computed(() => expBallInfo.value.owned > expBallInfo.value.needed);
 </script>
 
 <template>
@@ -443,15 +468,15 @@ const studentUsageForMaterial = computed(() => {
           v-for="(item, index) in displayResources" 
           :key="`resource-${item.material?.Id || index}`"
           class="resource-item"
-          :title="item.material?.Name || $t('unknownResource')"
+          :title="getMaterialName(item, activeView === 'equipment-needed' || activeView === 'equipment-missing')"
           @mousemove="showTooltip($event, item.material?.Id)"
           @mouseleave="hideTooltip()"
         >
           <div class="resource-content">
             <img 
               v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-              :src="getMaterialIconSrc(item, activeView, currentExpIcon, currentExpBall)" 
-              :alt="item.material?.Name || $t('unknown')"
+              :src="getMaterialIconSrcAndAlt(item, activeView, currentExpIcon, currentExpBall).src" 
+              :alt="getMaterialIconSrcAndAlt(item, activeView, currentExpIcon, currentExpBall).alt"
               class="resource-icon"
             />
             <div 
@@ -481,6 +506,74 @@ const studentUsageForMaterial = computed(() => {
         @mouseenter="handleTooltipMouseEnter"
         @mouseleave="handleTooltipMouseLeave"
       >
+        <!-- Credit Information Section -->
+        <div v-if="hoveredItemId === 5" class="credit-info">
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('owned') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(creditOwned) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('needed') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(creditNeeded) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('remaining') }}</span>
+              <span class="value" :class="{ 
+                'negative': isCreditDeficit,
+                'positive': isCreditSurplus 
+              }">
+                {{ formatLargeNumberAmount(creditRemaining) }}
+              </span>
+            </div>
+          </div>
+          <div class="separator"></div>
+        </div>
+
+        <!-- EXP Information Section -->
+        <div v-if="hoveredItemId !== null && isExpReport(hoveredItemId as number)" class="credit-info">
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('owned') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(expInfo.owned) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('needed') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(expInfo.needed) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('remaining') }}</span>
+              <span class="value" :class="{ 'negative': expInfo.remaining > 0 }">
+                {{ formatLargeNumberAmount(expInfo.remaining) }}
+              </span>
+            </div>
+          </div>
+          <div class="separator"></div>
+        </div>
+
+        <!-- EXP Balls Information Section -->
+        <div v-if="hoveredItemId !== null && isEquipmentExpBall(hoveredItemId as number)" class="credit-info">
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('owned') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(expBallInfo.owned) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('needed') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(expBallInfo.needed) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('remaining') }}</span>
+              <span class="value" :class="{ 
+                'negative': isExpBallDeficit,
+                'positive': isExpBallSurplus 
+              }">
+                {{ formatLargeNumberAmount(expBallInfo.remaining) }}
+              </span>
+            </div>
+          </div>
+          <div class="separator"></div>
+        </div>
         <div class="student-icons-grid">
           <div 
             v-for="(usage, i) in studentUsageForMaterial" 
@@ -657,5 +750,62 @@ const studentUsageForMaterial = computed(() => {
   .material-tooltip {
     min-width: 200px;
   }
+}
+
+/* Credit Info Styles */
+.credit-info {
+  padding: 6px;
+  background: var(--background-primary);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.credit-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.label {
+  font-size: 0.75em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.value {
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--card-background);
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.value.negative {
+  color: var(--error-color, #ff4d4f);
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.value.positive {
+  color: var(--success-color, #52c41a);
+  background: rgba(82, 196, 26, 0.1);
+}
+
+.separator {
+  height: 1px;
+  background: var(--border-color);
+  margin: 12px 0 0;
+  opacity: 0.5;
 }
 </style> 
