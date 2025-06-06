@@ -10,6 +10,7 @@ import {
   formatLargeNumberAmount, 
   adjustTooltipPosition,
   isExpReport,
+  isExpBall,
   getMaterialName,
   getMaterialIconSrc
 } from '../../../../consumables/utils/materialUtils';
@@ -38,7 +39,6 @@ const {
   totalEquipmentsNeeded, 
   equipmentsLeftover, 
   getEquipmentUsageByStudents,
-  isExpBall: isEquipmentExpBall,
   calculateExpNeeds: calculateEquipmentExpNeeds
 } = useGearCalculation();
 
@@ -54,8 +54,8 @@ const equipmentUsageCache = ref<Map<string, any[]>>(new Map());
 // Add cache for XP calculation results
 const xpCalculationCache = ref<{
   totalXpNeeded: number;
-  remainingXpNeeded: number;
-  studentXpDetails: any[];
+  ownedXp: number;
+  studentXpDetails: { studentId: string; xpNeeded: number; remainingXp: number; name: string; }[];
 } | null>(null);
 
 // Add ref for current exp report icon
@@ -64,125 +64,86 @@ const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
 // Add ref for current exp ball icon
 const currentExpBall = ref(1); // Start with Novice exp ball (ID: 1)
 
-// Function to get XP calculation results (with caching)
-const getXpCalculation = () => {
-  if (!xpCalculationCache.value) {
-    xpCalculationCache.value = calculateExpNeeds();
-  }
-  return xpCalculationCache.value;
+// Generic function to calculate missing items
+const calculateMissingItems = (
+  items: any[],
+  getStorage: () => Record<string, any> | null,
+  isSpecialItem: (id: number) => boolean,
+  getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number }
+): MaterialWithRemaining[] => {
+  // Get storage directly to ensure we have latest data
+  const storage = getStorage() || {};
+  
+  // Generate items that are missing
+  return items
+    .filter(item => {
+      // Get the material ID and check if we have it
+      const materialId = item.material?.Id;
+      if (!materialId) return false;
+      
+      // Special handling for special items (XP reports/balls)
+      if (isSpecialItem(materialId)) {
+        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
+        return ownedXp < totalXpNeeded;
+      }
+      
+      // Get resource for this material
+      const resource = storage[materialId.toString()];
+      if (!resource) return true; // If resource doesn't exist, consider it missing
+      
+      // Get owned quantity
+      const owned = resource.QuantityOwned || 0;
+      
+      // Consider missing if owned < needed
+      return owned < item.materialQuantity;
+    })
+    .map(item => {
+      const materialId = item.material?.Id;
+      
+      // Special handling for special items (XP reports/balls)
+      if (isSpecialItem(materialId)) {
+        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
+        return {
+          material: item.material,
+          materialQuantity: totalXpNeeded,
+          remaining: ownedXp - totalXpNeeded,
+          type: 'xp' as const
+        };
+      }
+      
+      const resource = storage[materialId?.toString() || ''];
+      const owned = resource?.QuantityOwned || 0;
+      const remaining = owned - item.materialQuantity;
+      
+      return {
+        material: item.material,
+        materialQuantity: item.materialQuantity,
+        remaining: remaining,
+        type: item.type
+      };
+    })
+    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
 };
 
 // Materials that are missing (negative leftover)
-const missingMaterials = computed<MaterialWithRemaining[]>(() => {
-  // Get resources directly to ensure we have latest data
-  const resources = getResources() || {};
-  
-  // Generate materials that are missing
-  return totalMaterialsNeeded.value
-    .filter(item => {
-      // Get the material ID and check if we have it
-      const materialId = item.material?.Id;
-      if (!materialId) return false;
-      
-      // Special handling for XP reports
-      if (isExpReport(materialId)) {
-        const { remainingXpNeeded } = getXpCalculation();
-        return remainingXpNeeded > 0;
-      }
-      
-      // Get resource for this material
-      const resource = resources[materialId.toString()];
-      if (!resource) return true; // If resource doesn't exist, consider it missing
-      
-      // Get owned quantity
-      const owned = resource.QuantityOwned || 0;
-      
-      // Consider missing if owned < needed
-      return owned < item.materialQuantity;
-    })
-    .map(item => {
-      const materialId = item.material?.Id;
-      
-      // Special handling for XP reports
-      if (isExpReport(materialId)) {
-        const { remainingXpNeeded } = getXpCalculation();
-        return {
-          material: item.material,
-          materialQuantity: remainingXpNeeded,
-          remaining: -remainingXpNeeded,
-          type: 'xp' as const
-        };
-      }
-      
-      const resource = resources[materialId?.toString() || ''];
-      const owned = resource?.QuantityOwned || 0;
-      const remaining = owned - item.materialQuantity;
-      
-      return {
-        material: item.material,
-        materialQuantity: item.materialQuantity,
-        remaining: remaining,
-        type: item.type
-      };
-    })
-    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
-});
+const missingMaterials = computed<MaterialWithRemaining[]>(() => 
+  calculateMissingItems(
+    totalMaterialsNeeded.value,
+    getResources,
+    isExpReport,
+    calculateExpNeeds
+  )
+);
 
 // Equipments that are missing (negative leftover)
-const missingEquipments = computed<MaterialWithRemaining[]>(() => {
-  // Get equipments directly to ensure we have latest data
-  const equipments = getEquipments() || {};
-  
-  // Generate materials that are missing
-  return totalEquipmentsNeeded.value
-    .filter(item => {
-      // Get the material ID and check if we have it
-      const materialId = item.material?.Id;
-      if (!materialId) return false;
-      
-      // Special handling for XP balls
-      if (isEquipmentExpBall(materialId)) {
-        const { remainingXpNeeded } = calculateEquipmentExpNeeds();
-        return remainingXpNeeded > 0;
-      }
-      
-      // Get resource for this material
-      const resource = equipments[materialId.toString()];
-      if (!resource) return true; // If resource doesn't exist, consider it missing
-      
-      // Get owned quantity
-      const owned = resource.QuantityOwned || 0;
-      
-      // Consider missing if owned < needed
-      return owned < item.materialQuantity;
-    })
-    .map(item => {
-      const materialId = item.material?.Id;
-      
-      // Special handling for XP balls
-      if (isEquipmentExpBall(materialId)) {
-        const { remainingXpNeeded } = calculateEquipmentExpNeeds();
-        return {
-          material: item.material,
-          materialQuantity: remainingXpNeeded,
-          remaining: -remainingXpNeeded,
-          type: 'xp' as const
-        };
-      }
-      
-      const resource = equipments[materialId?.toString() || ''];
-      const owned = resource?.QuantityOwned || 0;
-      const remaining = owned - item.materialQuantity;
-      
-      return {
-        material: item.material,
-        materialQuantity: item.materialQuantity,
-        remaining: remaining,
-        type: item.type
-      };
-    })
-    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
-});
+const missingEquipments = computed<MaterialWithRemaining[]>(() => 
+  calculateMissingItems(
+    totalEquipmentsNeeded.value,
+    getEquipments,
+    isExpBall,
+    calculateEquipmentExpNeeds
+  )
+);
 
 // Computed property to get the resources based on active view
 const displayResources = computed(() => {
@@ -253,7 +214,7 @@ const getMaterialIconSrcAndAlt = (item: any, activeView: ViewMode, currentExpIco
 
 // Helper function to format quantity
 const formatQuantity = (item: any, activeView: ViewMode): string => {
-  if (isExpReport(item.material?.Id) || isEquipmentExpBall(item.material?.Id)) {
+  if (isExpReport(item.material?.Id) || isExpBall(item.material?.Id)) {
     return '';
   }
 
@@ -338,7 +299,7 @@ const tooltipGridColumns = computed(() => getTooltipGridColumns(studentUsageForM
 
 // Helper function to format usage quantity
 const formatUsageQuantity = (quantity: number, materialId?: number | null, equipmentTypes?: EquipmentType[]): string => {
-  if (materialId && (isExpReport(materialId) || isEquipmentExpBall(materialId))) {
+  if (materialId && (isExpReport(materialId) || isExpBall(materialId))) {
     return quantity.toString();
   }
   return formatLargeNumber(quantity);
@@ -358,7 +319,7 @@ const studentUsageForMaterial = computed(() => {
   const cacheKey = `${materialId}-${activeView.value}`;
   
   // For XP reports, credits, and XP balls, always get fresh data
-  if (isExpReport(materialId) || materialId === 5 || isEquipmentExpBall(materialId)) {
+  if (isExpReport(materialId) || materialId === 5 || isExpBall(materialId)) {
     const usage = isEquipmentView 
       ? getEquipmentUsageByStudents(materialId, activeView.value)
       : getMaterialUsageByStudents(materialId, activeView.value);
@@ -400,28 +361,34 @@ const creditRemaining = computed(() => Math.abs(creditOwned.value - creditNeeded
 const isCreditDeficit = computed(() => creditOwned.value < creditNeeded.value);
 const isCreditSurplus = computed(() => creditOwned.value > creditNeeded.value);
 
+// Helper function to create exp info computed property
+const createExpInfo = (calculateFn: () => { totalXpNeeded: number; ownedXp: number }) => {
+  return computed(() => {
+    const { totalXpNeeded, ownedXp } = calculateFn();
+    const remaining = ownedXp - totalXpNeeded;
+    return {
+      needed: totalXpNeeded,
+      remaining: Math.abs(remaining),
+      owned: ownedXp,
+      isDeficit: remaining < 0,
+      isSurplus: remaining > 0
+    };
+  });
+};
+
 // Add computed properties for EXP quantities
-const expInfo = computed(() => {
-  const { totalXpNeeded, remainingXpNeeded } = calculateExpNeeds();
-  return {
-    needed: totalXpNeeded,
-    remaining: remainingXpNeeded,
-    owned: totalXpNeeded - remainingXpNeeded
-  };
-});
+const expInfo = createExpInfo(calculateExpNeeds);
 
 // Add computed properties for EXP balls quantities
-const expBallInfo = computed(() => {
-  const { totalXpNeeded, remainingXpNeeded } = calculateEquipmentExpNeeds();
-  return {
-    needed: totalXpNeeded,
-    remaining: remainingXpNeeded,
-    owned: totalXpNeeded - remainingXpNeeded
-  };
-});
+const expBallInfo = createExpInfo(calculateEquipmentExpNeeds);
 
-const isExpBallDeficit = computed(() => expBallInfo.value.owned < expBallInfo.value.needed);
-const isExpBallSurplus = computed(() => expBallInfo.value.owned > expBallInfo.value.needed);
+// Add computed property to get leftover quantity for a material
+const getMaterialLeftover = (materialId: number) => {
+  const isEquipmentView = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
+  const leftover = isEquipmentView ? equipmentsLeftover.value : materialsLeftover.value;
+  const material = leftover.find(m => m.material?.Id === materialId);
+  return material?.materialQuantity ?? 0;
+};
 </script>
 
 <template>
@@ -543,7 +510,10 @@ const isExpBallSurplus = computed(() => expBallInfo.value.owned > expBallInfo.va
             </div>
             <div class="stat">
               <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="{ 'negative': expInfo.remaining > 0 }">
+              <span class="value" :class="{ 
+                'negative': expInfo.isDeficit,
+                'positive': expInfo.isSurplus 
+              }">
                 {{ formatLargeNumberAmount(expInfo.remaining) }}
               </span>
             </div>
@@ -552,7 +522,7 @@ const isExpBallSurplus = computed(() => expBallInfo.value.owned > expBallInfo.va
         </div>
 
         <!-- EXP Balls Information Section -->
-        <div v-if="hoveredItemId !== null && isEquipmentExpBall(hoveredItemId as number)" class="credit-info">
+        <div v-if="hoveredItemId !== null && isExpBall(hoveredItemId as number)" class="credit-info">
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('owned') }}</span>
@@ -565,8 +535,8 @@ const isExpBallSurplus = computed(() => expBallInfo.value.owned > expBallInfo.va
             <div class="stat">
               <span class="label">{{ $t('remaining') }}</span>
               <span class="value" :class="{ 
-                'negative': isExpBallDeficit,
-                'positive': isExpBallSurplus 
+                'negative': expBallInfo.isDeficit,
+                'positive': expBallInfo.isSurplus 
               }">
                 {{ formatLargeNumberAmount(expBallInfo.remaining) }}
               </span>
@@ -574,6 +544,27 @@ const isExpBallSurplus = computed(() => expBallInfo.value.owned > expBallInfo.va
           </div>
           <div class="separator"></div>
         </div>
+
+        <!-- Material Information Section -->
+        <div 
+          v-if="hoveredItemId !== null && !isExpReport(hoveredItemId as number) 
+            && hoveredItemId !== 5 && !isExpBall(hoveredItemId as number)" 
+          class="credit-info"
+        >
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('remaining') }}</span>
+              <span class="value" :class="{ 
+                'negative': getMaterialLeftover(hoveredItemId) < 0,
+                'positive': getMaterialLeftover(hoveredItemId) > 0 
+              }">
+                {{ formatLargeNumberAmount(Math.abs(getMaterialLeftover(hoveredItemId))) }}
+              </span>
+            </div>
+          </div>
+          <div class="separator"></div>
+        </div>
+
         <div class="student-icons-grid">
           <div 
             v-for="(usage, i) in studentUsageForMaterial" 

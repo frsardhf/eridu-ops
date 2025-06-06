@@ -4,12 +4,8 @@ import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/equipmentsStore';
+import { isExpReport } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
-
-// Helper function to check if a material ID is an EXP report
-const isExpReport = (materialId: number) => {
-  return [10, 11, 12, 13].includes(materialId);
-};
 
 // Helper function to get student XP details
 const getStudentXpDetails = () => {
@@ -54,39 +50,6 @@ const getStudentXpDetails = () => {
   return studentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
 };
 
-// Helper function to allocate XP reports
-const allocateXpReports = (studentXpDetails: any[], resources: any) => {
-  const expItemInfo = [
-    { id: 13, value: resources['13']?.ExpValue, quantity: resources['13']?.QuantityOwned }, // Superior
-    { id: 12, value: resources['12']?.ExpValue, quantity: resources['12']?.QuantityOwned }, // Advanced
-    { id: 11, value: resources['11']?.ExpValue, quantity: resources['11']?.QuantityOwned }, // Normal
-    { id: 10, value: resources['10']?.ExpValue, quantity: resources['10']?.QuantityOwned }  // Novice
-  ].filter(item => item.value > 0 && item.quantity > 0);
-
-  // Allocate available reports efficiently
-  for (const expItem of expItemInfo) {
-    if (expItem.value <= 0) continue;
-    
-    let availableReports = expItem.quantity;
-    if (availableReports <= 0) continue;
-    
-    while (availableReports > 0 && studentXpDetails.some(s => s.remainingXp > 0)) {
-      studentXpDetails.sort((a, b) => b.remainingXp - a.remainingXp);
-      const student = studentXpDetails[0];
-      if (student.remainingXp <= 0) break;
-      
-      const reportsNeeded = Math.ceil(student.remainingXp / expItem.value);
-      const reportsToUse = Math.min(reportsNeeded, availableReports);
-      
-      if (reportsToUse <= 0) break;
-      
-      const xpProvided = reportsToUse * expItem.value;
-      student.remainingXp = Math.max(0, student.remainingXp - xpProvided);
-      availableReports -= reportsToUse;
-    }
-  }
-};
-
 // Helper function to calculate XP needs and report allocations
 function calculateExpNeeds() {
   const resources = getResources() || {};
@@ -95,15 +58,16 @@ function calculateExpNeeds() {
   // Calculate total XP needed
   const totalXpNeeded = studentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
   
-  // Allocate available XP reports
-  allocateXpReports(studentXpDetails, resources);
-  
-  // Calculate remaining XP needed after using available reports
-  const remainingXpNeeded = studentXpDetails.reduce((sum, student) => sum + student.remainingXp, 0);
-  
+  // Calculate owned XP (sum of all XP report quantities * their values)
+  const ownedXp =
+    (resources['10']?.QuantityOwned ?? 0) * (resources['10']?.ExpValue ?? 0) +
+    (resources['11']?.QuantityOwned ?? 0) * (resources['11']?.ExpValue ?? 0) +
+    (resources['12']?.QuantityOwned ?? 0) * (resources['12']?.ExpValue ?? 0) +
+    (resources['13']?.QuantityOwned ?? 0) * (resources['13']?.ExpValue ?? 0);
+
   return {
     totalXpNeeded,
-    remainingXpNeeded,
+    ownedXp,
     studentXpDetails
   };
 }
