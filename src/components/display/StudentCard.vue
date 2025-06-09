@@ -425,6 +425,10 @@ function handlePinToggle(event: MouseEvent) {
   justify-self: flex-end;
   margin-top: 7px;
   margin-right: 2px;
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  pointer-events: none;
 }
 
 .grade-stars-row {
@@ -461,6 +465,10 @@ function handlePinToggle(event: MouseEvent) {
   display: flex;
   align-items: center;
   gap: 1px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  pointer-events: none;
 }
 
 .level-number {
@@ -472,6 +480,20 @@ function handlePinToggle(event: MouseEvent) {
 .level-max {
   color: #aaa;
   font-size: 12px;
+}
+
+.selection-grid-card:hover .grade-container,
+.selection-grid-card:focus .grade-container {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.selection-grid-card:hover .level-container,
+.selection-grid-card:focus .level-container {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
 .skill-levels,
