@@ -2,7 +2,7 @@
 import { StudentProps } from '../../types/student'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { getStudentData } from '../../consumables/stores/studentStore'
-import { SkillType } from '../../types/upgrade'
+import { SkillType, SkillTypeName } from '../../types/upgrade'
 import { EquipmentType } from '../../types/gear'
 import { 
   isStudentPinned, 
@@ -24,6 +24,7 @@ const isPinned = computed(() => {
   return isStudentPinned(props.student.Id);
 });
 const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
+const skillTypeNames: SkillTypeName[] = ['Ex', 'Basic', 'Enhanced', 'Sub'];
 
 // Watch for changes in the store
 watch(() => studentData.value, () => {
@@ -264,7 +265,7 @@ function handlePinToggle(event: MouseEvent) {
                   v-for="type in displayEquipment" 
                   :key="type" 
                   class="equipment-value"
-                  :title="type"
+                  :title="type + ' Equipment Level'"
                 >
                   {{ formatEquipmentTier(studentData.equipmentLevels[type]?.current) }}
                 </span>
@@ -274,7 +275,7 @@ function handlePinToggle(event: MouseEvent) {
                   v-for="type in displayEquipment" 
                   :key="`target-${type}`" 
                   class="equipment-value target-value"
-                  :title="`Target ${type}`"
+                  :title="'Target ' + type + ' Equipment Level'"
                 >
                   {{ formatEquipmentTier(studentData.equipmentLevels[type]?.target) }}
                 </span>
@@ -285,9 +286,10 @@ function handlePinToggle(event: MouseEvent) {
             <div class="skill-levels" v-if="studentData?.skillLevels">
               <div class="skill-row">
                 <span 
-                  v-for="skillType in skillTypes" 
+                  v-for="(skillType, idx) in skillTypes" 
                   :key="skillType"
                   class="skill-value"
+                  :title="skillTypeNames[idx] + ' Skill Level'"
                 >
                   {{ formatSkillValue(
                     studentData.skillLevels[skillType]?.current, 
@@ -297,9 +299,10 @@ function handlePinToggle(event: MouseEvent) {
               </div>
               <div class="skill-row" v-if="hasAnySkillDifference">
                 <span 
-                  v-for="skillType in skillTypes" 
+                  v-for="(skillType, idx) in skillTypes" 
                   :key="`target-${skillType}`"
                   class="skill-value"
+                  :title="'Target ' + skillTypeNames[idx] + ' Skill Level'"
                 >
                   {{ formatSkillValue(
                     studentData.skillLevels[skillType]?.target, 
@@ -335,8 +338,24 @@ function handlePinToggle(event: MouseEvent) {
   overflow: hidden;
   background: var(--card-background);
   box-shadow: 0 2px 4px var(--box-shadow);
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
+  outline: none;
+}
+
+.selection-grid-card:focus {
+  box-shadow: 0 0 0 3px #4fc3f7, 0 2px 8px var(--box-shadow);
+  z-index: 2;
+}
+
+.selection-grid-card:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.selection-grid-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 
 .card-img {
@@ -497,6 +516,11 @@ function handlePinToggle(event: MouseEvent) {
   text-align: center;
   display: inline-block; 
   box-sizing: border-box;
+  transition: background 0.15s;
+}
+
+.skill-value[title]:hover, .equipment-value[title]:hover {
+  background: rgba(80, 180, 255, 0.5);
 }
 
 .card-label {

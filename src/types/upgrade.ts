@@ -1,5 +1,7 @@
 export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
 
+export type SkillTypeName = 'Ex' | 'Basic' | 'Enhanced' | 'Sub';
+
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 
 export interface Material {
