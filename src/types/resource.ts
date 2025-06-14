@@ -15,7 +15,7 @@ export interface ResourceProps {
 export const MATERIAL = {
   'category': ["CharacterExpGrowth", "Favor"],
   'subcategory': ["Artifact", "CDItem", "BookItem"],
-  'id': ['5', '2000', '2001', '2002', '9999']
+  'id': ['5', '23', '2000', '2001', '2002', '9999']
 };
 
 export const EQUIPMENT = {

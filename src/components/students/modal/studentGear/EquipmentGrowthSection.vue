@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ModalProps, StudentProps } from '../../../../types/student';
+import { ModalProps } from '../../../../types/student';
 import { EquipmentType } from '../../../../types/gear';
 import { getEquipments } from '../../../../consumables/utils/studentStorage';
 import { $t } from '../../../../locales';

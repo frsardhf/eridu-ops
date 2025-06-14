@@ -21,6 +21,7 @@ import StudentEquipmentGrid from './studentMaterials/StudentEquipmentGrid.vue';
 import StudentEquipmentGrowth from './studentGear/EquipmentGrowthSection.vue';
 import StudentGradeGrowth from './studentGear/ExclusiveWeaponSection.vue';
 import EquipmentMaterialsSection from './studentGear/EquipmentMaterialsSection.vue';
+import ElephEligmaSection from './studentGear/ElephEligmaSection.vue';
 import '../../../styles/studentModal.css'
 
 const props = defineProps<{
@@ -81,9 +82,12 @@ const {
 const {
   equipmentLevels,
   gradeLevels,
+  gradeInfos,
   handleEquipmentUpdate,
   handleGradeUpdate,
-  equipmentMaterialsNeeded
+  handleGradeInfoUpdate,
+  equipmentMaterialsNeeded,
+  getElephsForGrade, 
 } = useStudentGear(props, emit);
 
 // Navigation functions
@@ -265,6 +269,13 @@ onUnmounted(() => {
         <div v-if="activeTab === 'gear'" class="tab-content">
           <div class="left-column">
             <StudentModalHeader :student="student" />
+
+            <ElephEligmaSection
+              :student="student"
+              :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
+              :grade-infos="gradeInfos"
+              @update-info="handleGradeInfoUpdate"
+            />
           </div>
           
           <div class="right-column">

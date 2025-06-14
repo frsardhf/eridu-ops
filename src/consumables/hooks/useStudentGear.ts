@@ -1,5 +1,5 @@
   import { ref, computed, watch } from 'vue';
-  import { ModalProps, StudentProps } from '../../types/student';
+  import { ModalProps } from '../../types/student';
   import dataTable from '../../data/data.json';
   import { 
     loadFormDataToRefs, 
@@ -9,19 +9,18 @@
     getEquipmentDataById
   } from '../utils/studentStorage';
   import { 
-    EquipmentItem,
     EquipmentLevels, 
     EquipmentType, 
+    GradeInfos, 
     GradeLevels
   } from '../../types/gear';
   import {
     CREDITS_ID,
+    ELIGMAS_ID,
     Material,
   } from '../../types/upgrade';
   import { consolidateAndSortMaterials } from '../utils/materialUtils';
-  import { updateMaterialsData } from '../stores/materialsStore';
   import { updateStudentData } from '../stores/studentStore';
-  import { ResourceProps } from '../../types/resource';
   import { updateGearsData } from '../stores/equipmentsStore';
 
   // Function to get maximum tier for each equipment type
@@ -65,6 +64,44 @@
     // For other levels, calculate the difference
     const creditsNeeded = gradeCreditsTable[target-2] - gradeCreditsTable[current-2];
     return creditsNeeded || 0;
+  }
+
+  // Get elephs required for a specific grade tier
+  export function getElephsForGrade(current: number, target: number, owned: number) {
+    // Elephs table for grade tiers
+    const gradeElephsTable = dataTable.grade_elephs;
+    
+    // When current is 1, we need the full amount for target
+    if (current === 1) {
+      return gradeElephsTable[target-2] ?? 0;
+    }
+    
+    // For other levels, calculate the difference
+    const elephsNeeded = gradeElephsTable[target-2] - gradeElephsTable[current-2];
+    return elephsNeeded - owned || 0;
+  }
+
+  // Get elephs required for a specific grade tier
+  export function getEligmasForGrade(needed: number, price: number = 1, purchasable: number = 20) {
+    // When current is 1, we need the full amount for target
+    let totalEligma = 0
+    let remainingElephs = needed
+    while (price <= 5) {
+      remainingElephs -= purchasable;
+      totalEligma += price * purchasable;
+      if (remainingElephs <= 0) {
+        // Adjust totalEligma for the last batch if we went over
+        if (remainingElephs < 0) {
+          totalEligma += remainingElephs * price;
+        }
+        break;
+      }
+      price++
+    }
+    if (remainingElephs > 0) totalEligma += 5 * remainingElephs
+    
+    // For other levels, calculate the difference
+    return totalEligma || 0;
   }
 
   // Exported function to calculate equipment materials needed
@@ -190,15 +227,49 @@
     return materialsNeeded;
   }
 
+  // Calculate eligmas needed for equipment upgrades
+  export function calculateGradeMaterialsNeeded(
+    gradeLevels: GradeLevels,
+    gradeInfos: GradeInfos
+  ): Material[] {
+    const materialsNeeded: Material[] = [];
+    const eligmasData = getResourceDataById(ELIGMAS_ID);
+    
+    const current = gradeLevels.current ?? 1;
+    const target = gradeLevels.target ?? 1;
+    const owned = gradeInfos.owned ?? 0;
+    const price = gradeInfos.price ?? 1;
+    const purchasable = gradeInfos.purchasable ?? 20;
+      
+    // Skip if no upgrade needed for grade
+    if (current >= target) return materialsNeeded;
+    
+    const elephsNeeded = getElephsForGrade(current, target, owned);
+    const eligmasQuantity = getEligmasForGrade(elephsNeeded, price, purchasable);
+    
+    // Only add if eligmas are needed
+    if (eligmasQuantity > 0) {
+      materialsNeeded.push({
+        material: eligmasData,
+        materialQuantity: eligmasQuantity,
+        type: 'materials'
+      });
+    }
+    
+    return materialsNeeded;
+  }
+
   export function calculateAllGears(
     student: Record<string | number, any>,
     equipmentLevels: EquipmentLevels,
-    gradeLevels: GradeLevels
+    gradeLevels: GradeLevels,
+    gradeInfos: GradeInfos
   ): Material[] {
     // Collect all materials
     const materials: Material[] = [];
     
     materials.push(...calculateGradeCreditsNeeded(gradeLevels));
+    materials.push(...calculateGradeMaterialsNeeded(gradeLevels, gradeInfos));
     materials.push(...calculateEquipmentCreditsNeeded(equipmentLevels));
     materials.push(...calculateEquipmentMaterialsNeeded(student?.Equipments, equipmentLevels));
     if (!student?.Equipments) {
@@ -216,6 +287,7 @@
     // Track all equipment levels in one object
     const equipmentLevels = ref<EquipmentLevels>({});
     const gradeLevels = ref<GradeLevels>({});
+    const gradeInfos = ref<GradeInfos>({});
 
     // Reset form data
     function resetFormData() {
@@ -230,6 +302,7 @@
 
       const starGrade = props.student?.StarGrade ?? 1;
       gradeLevels.value = { current: starGrade, target: starGrade };
+      gradeInfos.value = { owned: 0, price: 1, purchasable: 20};
     }
 
     // Watch for changes to isVisible to load data when modal opens
@@ -252,7 +325,7 @@
     });
 
     // Watch for changes to form data and save to localStorage
-    watch([equipmentLevels], () => {
+    watch([equipmentLevels, gradeLevels, gradeInfos], () => {
       if (props.student && props.isVisible) {
         saveToLocalStorage();
         updateStudentData(props.student.Id);
@@ -265,7 +338,8 @@
       
       const dataToSave = {
         equipmentLevels: equipmentLevels.value,
-        gradeLevels: gradeLevels.value
+        gradeLevels: gradeLevels.value,
+        gradeInfos: gradeInfos.value
       };
 
       saveFormData(props.student.Id, dataToSave);
@@ -277,7 +351,8 @@
 
       const refs = {
         equipmentLevels,
-        gradeLevels
+        gradeLevels,
+        gradeInfos
       }
 
       const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
@@ -289,7 +364,8 @@
 
       const defaultValues = {
         equipmentLevels: defaultEquipmentLevels,
-        gradeLevels: { current: starGrade, target: starGrade }
+        gradeLevels: { current: starGrade, target: starGrade },
+        gradeInfos: { owned: 0, price: 1, purchasable: 20}
       };
 
       const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
@@ -297,6 +373,7 @@
       if (!success || Object.keys(equipmentLevels.value).length === 0) {
         equipmentLevels.value = defaultEquipmentLevels;
         gradeLevels.value = defaultValues.gradeLevels;
+        gradeInfos.value = defaultValues.gradeInfos;
         
         saveToLocalStorage();
       }
@@ -313,7 +390,8 @@
       const materials = calculateAllGears(
         props.student ?? undefined,
         equipmentLevels.value,
-        gradeLevels.value
+        gradeLevels.value,
+        gradeInfos.value
       );
 
       updateGearsData(props.student.Id, materials);
@@ -357,6 +435,21 @@
       }
     };
 
+    // Function to handle updates for equipment levels
+    const handleGradeInfoUpdate = (owned: number, price: number, purchasable: number) => {
+      // Update the specified equipment type
+      if (gradeInfos.value) {
+        gradeInfos.value.owned = owned;
+        gradeInfos.value.price = price;
+        gradeInfos.value.purchasable = purchasable;
+        
+        if (props.student && props.isVisible) {
+          saveToLocalStorage();
+          updateStudentData(props.student.Id);
+        }
+      }
+    };
+
     function closeModal() {
       saveToLocalStorage();
       emit('close');
@@ -365,9 +458,14 @@
     return {
       equipmentLevels,
       gradeLevels,
+      gradeInfos,
       equipmentMaterialsNeeded,
       closeModal,
       handleEquipmentUpdate,
       handleGradeUpdate,
+      handleGradeInfoUpdate,
+      getElephsForGrade, 
+      getEligmasForGrade, 
+      calculateGradeMaterialsNeeded
     };
   }

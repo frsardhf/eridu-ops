@@ -71,7 +71,7 @@ const hasMaterials = computed(() => {
           <div class="resource-content">
             <img 
               v-if="item.material?.Icon"
-              :src="item.material?.Id === 5 
+              :src="[5, 23].includes(item.material?.Id) 
                 ? `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`
                 : `https://schaledb.com/images/equipment/icon/${item.material.Icon}_piece.webp`"
               :alt="item.material?.Name || $t('material')"

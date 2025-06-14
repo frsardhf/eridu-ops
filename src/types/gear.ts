@@ -30,6 +30,12 @@ export type EquipmentLevels = {
   [key in EquipmentType]?: EquipmentLevel;
 };
 
+export interface GradeInfos {
+  owned?: number;
+  price?: number;
+  purchasable?: number;
+}
+
 export interface EquipmentSettings {
   current: number;
   target: number;

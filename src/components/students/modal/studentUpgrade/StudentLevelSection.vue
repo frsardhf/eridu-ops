@@ -71,7 +71,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
     
     <!-- Level input moved to the top -->
     <div class="level-input-container">
-      <label for="current-level-input">{{ $t('currentLevel') }}:</label>
+      <label for="current-level-input">{{ $t('currentLevel') }}</label>
       <input
         id="current-level-input"
         name="current-level-input"
@@ -109,7 +109,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
     
     <!-- Only show target input if not maxed -->
     <div class="input-container" v-if="!isMaxLevel">
-      <label for="target-level-input">{{ $t('targetLevel') }}:</label>
+      <label for="target-level-input">{{ $t('targetLevel') }}</label>
       <input
         id="target-level-input"
         name="target-level-input"

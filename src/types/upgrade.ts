@@ -64,6 +64,8 @@ export const CREDITS_ID = 5;
 
 export const EXP_REPORT_ID = [10, 11, 12, 13];
 
+export const ELIGMAS_ID = 23;
+
 export const WORKBOOK_ID = [2000, 2001, 2002];
 
 export const SECRET_TECH_NOTE_ID = 9999;

@@ -25,18 +25,20 @@ export const STORAGE_KEYS = {
  * @param studentData The base student data
  * @param favoredGift The favored gifts data for each student
  * @param giftBoxData The gift boxes data for each student
+ * @param elephIcons The eleph icons data for each student
  * @returns boolean indicating success or failure
  */
 export function saveStudentData(
   studentData: Record<string, any>,
   favoredGift: Record<string, any[]>,
-  giftBoxData: Record<string, any[]>
+  giftBoxData: Record<string, any[]>,
+  elephIcons: Record<string, string>
 ): boolean {
   try {
     // Create a copy of studentData to avoid modifying the original
     const updatedStudentData = { ...studentData };
 
-    // Add Gifts and Boxes to each student's data
+    // Add Gifts, Boxes, and ElephIcons to each student's data
     for (const studentId in updatedStudentData) {
       const giftsObject = (favoredGift[studentId] || []).reduce((acc, item) => {
         acc[item.gift.Id] = item;
@@ -51,7 +53,8 @@ export function saveStudentData(
       updatedStudentData[studentId] = {
         ...updatedStudentData[studentId],
         Gifts: giftsObject,
-        Boxes: boxesObject
+        Boxes: boxesObject,
+        ElephIcon: elephIcons[studentId] || ''
       };
     }
 

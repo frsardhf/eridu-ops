@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { getDataCollection, getResourceDataById, getResources } from '../utils/studentStorage';
 import { StudentProps } from '../../types/student';
-import { Material, CREDITS_ID } from '../../types/upgrade';
+import { Material, CREDITS_ID, ELIGMAS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/equipmentsStore';
 import { isExpReport } from '../utils/materialUtils';
@@ -100,8 +100,10 @@ export function useResourceCalculation() {
   // Calculate total materials needed across all students
   const totalMaterialsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();
-    let creditsMaterial = getResourceDataById(CREDITS_ID);
+    const creditsMaterial = getResourceDataById(CREDITS_ID);
+    const eligmasMaterial = getResourceDataById(ELIGMAS_ID);
     let creditsQuantity = 0;
+    let eligmasQuantity = 0;
 
     Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {
@@ -127,6 +129,8 @@ export function useResourceCalculation() {
       (materials as Material[]).forEach(material => {
         if (material.type === 'credits') {
           creditsQuantity += material.materialQuantity;
+        } else if (material.type === 'materials') {
+          eligmasQuantity += material.materialQuantity;
         }
       });
     });
@@ -135,6 +139,12 @@ export function useResourceCalculation() {
       material: creditsMaterial, 
       materialQuantity: creditsQuantity, 
       type: 'credits'}
+    );
+
+    materialMap.set(ELIGMAS_ID, { 
+      material: eligmasMaterial, 
+      materialQuantity: eligmasQuantity, 
+      type: 'materials'}
     );
 
     // Add XP materials from helper function
@@ -282,6 +292,24 @@ export function useResourceCalculation() {
         (materials as Material[]).forEach(material => {
           if (material.material?.Id === materialId) {
             quantity += material.materialQuantity;
+          }
+        });
+        
+        if (quantity > 0) {
+          materialNeeds.set(studentId, quantity);
+        }
+      });
+
+      // Check gear data for students who only have gear upgrades
+      Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
+        // Collect eligmas needed
+        const student = studentsCollection[studentId];
+        if (!student) return;
+
+        let quantity = 0;
+        (gears as Material[]).forEach(gear => {
+          if (gear.material?.Id === materialId) {
+            quantity += gear.materialQuantity;
           }
         });
         

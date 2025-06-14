@@ -436,28 +436,58 @@ export function useStudentData() {
     favoredGift.value = getGiftsByStudent(studentData.value, giftData.value, false);
     giftBoxData.value = getGiftsByStudent(studentData.value, boxData.value, true);
     
-    saveStudentData(studentData.value, favoredGift.value, giftBoxData.value);
+    // Create ElephIcons object to store student icons
+    const elephIcons = Object.entries(studentData.value).reduce((acc, [studentId, student]) => {
+      if (allItems[studentId]?.Icon) {
+        acc[studentId] = allItems[studentId].Icon;
+        // Update the student data with ElephIcon
+        studentData.value[studentId].ElephIcon = allItems[studentId].Icon;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Save student data with the new ElephIcons property
+    saveStudentData(studentData.value, favoredGift.value, giftBoxData.value, elephIcons);
     
     // Handle resources initialization and credits
     const existingResources = getResources();
     const existingEquipments = getEquipments();
 
+    // Initialize resources if they don't exist
     if (!existingResources) {
-      allItems[5] = creditsEntry;
-      saveResources(applyFilters(allItems, MATERIAL));
-    } else if (!existingResources[5]) {
-      existingResources[5] = creditsEntry;
+      const filteredItems = applyFilters(allItems, MATERIAL);
+      filteredItems[5] = creditsEntry; // Add credits
+      saveResources(filteredItems);
+      materialData.value = filteredItems;
+    } else {
+      // Add any missing required resources from MATERIAL.id
+      let hasChanges = false;
+      
+      MATERIAL.id.forEach(id => {
+        if (!existingResources[id]) {
+          if (id === '5') {
+            existingResources[id] = creditsEntry;
+          } else if (allItems[id]) {
+            existingResources[id] = allItems[id];
+          }
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
       saveResources(existingResources);
+      }
+      materialData.value = existingResources;
     }
 
     if (!existingEquipments) {
-      saveEquipments(applyFilters(allEquipments, EQUIPMENT));
+      const filteredEquipments = applyFilters(allEquipments, EQUIPMENT);
+      saveEquipments(filteredEquipments);
+      equipmentData.value = filteredEquipments;
     } else {
       saveEquipments(existingEquipments);
+      equipmentData.value = existingEquipments;
     }
-
-    materialData.value = existingResources || applyFilters(allItems, MATERIAL);
-    equipmentData.value = existingEquipments || applyFilters(allEquipments, EQUIPMENT);
 
     updateSortedStudents();
   }

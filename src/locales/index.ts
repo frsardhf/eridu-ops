@@ -110,6 +110,11 @@ export const translations = {
     owned: "Owned",
     needed: "Needed",
     remaining: "Remaining",
+    elephsOwned: "Elephs Owned",
+    elephsNeeded: "Elephs Needed",
+    price: "Eligma Price",
+    purchasable: "Purchasable",
+    noUpgradeNeeded: "No upgrade needed",
     
     // Equipment types and gear component
     equipmentTypes: {
@@ -252,6 +257,11 @@ export const translations = {
     owned: "所持",
     needed: "必要",
     remaining: "残り",
+    elephsOwned: "所持エレフ",
+    elephsNeeded: "必要エレフ",
+    price: "エリグマ価格",
+    purchasable: "購入可能数",
+    noUpgradeNeeded: "アップグレード不要",
     
     // Equipment types and gear component
     equipmentTypes: {

@@ -53,12 +53,16 @@ function prepareStudentForModal(student: StudentProps): ModalProps {
       }, {})
     : studentBoxes;
   
+  // Get the student data from storage to access ElephIcon
+  const storedStudentData = getStorageData(STORAGE_KEYS.STUDENTS)?.[student.Id];
+  
   return {
     ...student,
     Gifts: giftsObject as GiftProps[],
     Boxes: boxesObject as GiftProps[],
     Materials: Object.values(materialData.value) as ResourceProps[],
-    Equipments: Object.values(equipmentData.value) as ResourceProps[]
+    Equipments: Object.values(equipmentData.value) as ResourceProps[],
+    ElephIcon: student.ElephIcon || storedStudentData?.ElephIcon || ''
   };
 }
 
