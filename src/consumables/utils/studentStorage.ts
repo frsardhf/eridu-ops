@@ -668,16 +668,17 @@ export function migrateFormData() {
       
       // Check if this student data needs migration
       if (formData && 
-          formData.bondDetailData !== undefined) {
+          formData.gradeInfos === undefined) {
 
-        // Replace the old gradeLevels with the new format
-        // formData.gradeLevels = {
-        //   current: starGrade,
-        //   target: starGrade,
-        // };
+        // Replace the old gradeInfos with the new format
+        formData.gradeInfos = {
+          owned: 0,
+          price: 1,
+          purchasable: 20
+        };
         
         // Remove old properties
-        delete formData.bondDetailData.convertBox;
+        // delete formData.bondDetailData.convertBox;
         
         hasChanges = true;
         console.log(`Migrated data for student ${studentId}`);
@@ -705,13 +706,13 @@ export function checkAndMigrateFormData() {
   // Check if migration has been run already
   const migrationVersion = localStorage.getItem('forms_migration_version');
   
-  // If we haven't run migration version 1 yet
-  if (!migrationVersion || parseInt(migrationVersion) < 1) {
+  // If we haven't run migration version 2 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 2) {
     const migratedData = migrateFormData();
     
     if (migratedData) {
       // Mark migration as complete
-      localStorage.setItem('forms_migration_version', '1');
+      localStorage.setItem('forms_migration_version', '2');
     }
     
     return migratedData;
@@ -847,6 +848,11 @@ export function importFromOtherSite(importText: string): boolean {
             current: parseInt(char.current.sub) || 0,
             target: parseInt(char.target.sub) || 0
           }
+        },
+        gradeInfos: {
+          owned: parseInt(char.eleph.owned) || 0,
+          price: parseInt(char.eleph.cost) || 1,
+          purchasable: parseInt(char.eleph.purchasable) || 20
         }
       };
 
