@@ -5,7 +5,7 @@ import { ModalProps } from '../../../../types/student';
 import { getStudentData } from '../../../../consumables/stores/studentStore';
 
 const props = defineProps<{
-  student: ModalProps;
+  student: ModalProps | null;
   elephNeeded: number;
   gradeInfos: { owned?: number; price?: number; purchasable?: number; };
 }>();
@@ -21,7 +21,10 @@ const gradeState = ref({
   purchasable: props.gradeInfos?.purchasable || 20
 });
 
-const studentData = computed(() => getStudentData(props.student?.Id));
+const studentData = computed(() => {
+  if (!props.student?.Id) return null;
+  return getStudentData(props.student.Id);
+});
 
 // Computed property for ElephIcon
 const elephIcon = computed(() => {

@@ -55,52 +55,64 @@ export function useStudentData() {
       );
     }
     
+    // First collect all unpinned students (these will be sorted later)
     filteredStudents.forEach((student: StudentProps) => {
-      if (pinnedStudents.includes(student.Id.toString())) {
-        pinnedStudentsList.push(student);
-      } else {
+      if (!pinnedStudents.includes(student.Id.toString())) {
         unpinnedStudentsList.push(student);
       }
     });
     
-    [pinnedStudentsList, unpinnedStudentsList].forEach((list) => {
-      list.sort((a, b) => {
-        let comparison = 0;
-        switch (currentSort.value) {
-          case 'name':
-            comparison = a.Name.localeCompare(b.Name);
-            break;
-          case 'default':
-            comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
-            break;
-          case 'bond': {
-            // studentStore may not have every student, so default to 0 if missing
-            const aBond = studentStore[a.Id]?.bondDetailData?.currentBond ?? 0;
-            const bBond = studentStore[b.Id]?.bondDetailData?.currentBond ?? 0;
-            comparison = aBond - bBond;
-            break;
-          }
-          case 'level': {
-            // studentStore may not have every student, so default to 1 if missing
-            const aLevel = studentStore[a.Id]?.characterLevels?.current ?? 1;
-            const bLevel = studentStore[b.Id]?.characterLevels?.current ?? 1;
-            comparison = aLevel - bLevel;
-            break;
-          }
-          case 'grade': {
-            const aGrade = studentStore[a.Id]?.gradeLevels?.current ?? a.StarGrade;
-            const bGrade = studentStore[b.Id]?.gradeLevels?.current ?? b.StarGrade;
-            comparison = aGrade - bGrade;
-            break;
-          }
-          case 'id':
-          default:
-            comparison = Number(a.Id) - Number(b.Id);
-            break;
+    // Then collect pinned students in the exact order they appear in pinnedStudents
+    const pinnedStudentsMap = new Map<string, StudentProps>();
+    filteredStudents.forEach((student: StudentProps) => {
+      if (pinnedStudents.includes(student.Id.toString())) {
+        pinnedStudentsMap.set(student.Id.toString(), student);
+      }
+    });
+    
+    // Add pinned students to the list in the same order as pinnedStudents array
+    pinnedStudents.forEach(id => {
+      const student = pinnedStudentsMap.get(id);
+      if (student) {
+        pinnedStudentsList.push(student);
+      }
+    });
+    
+    // Sort only the unpinned students
+    unpinnedStudentsList.sort((a, b) => {
+      let comparison = 0;
+      switch (currentSort.value) {
+        case 'name':
+          comparison = a.Name.localeCompare(b.Name);
+          break;
+        case 'default':
+          comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
+          break;
+        case 'bond': {
+          const aBond = studentStore[a.Id]?.bondDetailData?.currentBond ?? 0;
+          const bBond = studentStore[b.Id]?.bondDetailData?.currentBond ?? 0;
+          comparison = aBond - bBond;
+          break;
         }
+        case 'level': {
+          const aLevel = studentStore[a.Id]?.characterLevels?.current ?? 1;
+          const bLevel = studentStore[b.Id]?.characterLevels?.current ?? 1;
+          comparison = aLevel - bLevel;
+          break;
+        }
+        case 'grade': {
+          const aGrade = studentStore[a.Id]?.gradeLevels?.current ?? a.StarGrade;
+          const bGrade = studentStore[b.Id]?.gradeLevels?.current ?? b.StarGrade;
+          comparison = aGrade - bGrade;
+          break;
+        }
+        case 'id':
+        default:
+          comparison = Number(a.Id) - Number(b.Id);
+          break;
+      }
 
-        return sortDirection.value === 'asc' ? comparison : -comparison;
-      });
+      return sortDirection.value === 'asc' ? comparison : -comparison;
     });
 
     sortedStudentsArray.value = [...pinnedStudentsList, ...unpinnedStudentsList];

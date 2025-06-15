@@ -406,6 +406,12 @@ onUnmounted(() => {
   display: none;
 }
 
+/* Remove outline on focus */
+.prev-button:focus,
+.next-button:focus {
+  outline: none;
+}
+
 .nav-icon {
   font-size: 2rem;
   font-weight: bold;
