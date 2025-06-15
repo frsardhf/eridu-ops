@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import {
   SkillType,
   SkillSettings
@@ -7,6 +7,7 @@ import {
 import '../../../../styles/studentUpgrade.css';
 import { currentLanguage } from '../../../../consumables/stores/localizationStore';
 import { $t } from '../../../../locales';
+import { getStudentData } from '../../../../consumables/stores/studentStore';
 
 const props = defineProps<{
   student: Record<string, any> | null,
@@ -20,6 +21,11 @@ const emit = defineEmits<{
   (e: 'toggle-max-skills', checked: boolean): void;
   (e: 'toggle-max-target', checked: boolean): void;
 }>();
+
+const studentData = computed(() => {
+  if (!props.student?.Id) return null;
+  return getStudentData(props.student.Id);
+});
 
 // Create skill settings for each type
 const skillTypes = ref<Record<SkillType, SkillSettings>>({
@@ -95,6 +101,18 @@ watch(() => props.student, (student) => {
     }
   }
 }, { immediate: true });
+
+// Watch for changes in the store
+watch(() => studentData.value, () => {
+}, { deep: true });
+
+const gradeLevel = computed(() => {
+  return studentData.value?.gradeLevels?.current || 0;
+});
+
+const isPassiveEnhanced = computed(() => {
+  return gradeLevel.value >= 7;
+});
 
 // Handle skill level changes
 const updateSkillCurrent = (type: SkillType, value: number) => {
@@ -205,6 +223,26 @@ const formatSkillDescription = (skill: any, current: number, target: number) => 
   });
   
   return formattedDesc;
+};
+
+// Get the appropriate skill data - use WeaponPassive when enhanced, otherwise use the original skill
+const getSkillData = (skillType: SkillType) => {
+  if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
+    return props.student.Skills.WeaponPassive;
+  }
+  return props.student?.Skills?.[skillType];
+};
+
+// Get skill description - use WeaponPassive description when enhanced
+const getSkillDescription = (skillType: SkillType, current: number, target: number) => {
+  const skill = getSkillData(skillType);
+  return formatSkillDescription(skill, current, target);
+};
+
+// Get skill cost - WeaponPassive doesn't have cost, so use original Passive cost even when enhanced
+const getSkillCost = (skillType: SkillType, current: number, target: number) => {
+  const skill = props.student?.Skills?.[skillType];
+  return skill?.Cost ? formatSkillCost(skill.Cost, current, target) : '';
 };
 
 // Cache for localization data to avoid repeated fetching
@@ -429,34 +467,56 @@ watch(currentLanguage, (newLanguage) => {
           
           <div class="content-container">
             <div class="skill-icon-wrapper">
+              <svg 
+                data-v-0f12ca96="" 
+                xml:space="preserve" 
+                viewBox="0 0 37.6 37.6" 
+                version="1.1" 
+                height="64" 
+                width="64" 
+                xmlns="http://www.w3.org/2000/svg" 
+                class="skill-bg"
+                :class="{
+                  'bg-explosive': props.student?.BulletType === 'Explosion',
+                  'bg-piercing': props.student?.BulletType === 'Pierce',
+                  'bg-mystic': props.student?.BulletType === 'Mystic',
+                  'bg-sonic': props.student?.BulletType === 'Sonic'
+                }"
+              >
+                <path 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  d="m18.8 0c-0.96 0-1.92 0.161-2.47 0.481l-13.1 7.98c-1.13 0.653-1.81 1.8-1.81 3.03v14.6c0 1.23 0.684 2.37 1.81 3.03l13.1 7.98c1.11 0.642 3.85 0.665 4.95 0l13.1-7.98c1.11-0.677 1.81-1.8 1.81-3.03v-14.6c0-1.23-0.699-2.35-1.81-3.03l-13.1-7.98c-0.554-0.321-1.51-0.481-2.47-0.481z"
+                />
+              </svg>
               <img 
                 :src="getSkillIconUrl(skillTypes[skillType].icon)"
                 :alt="skillTypes[skillType].name"
-                class="type-icon skill-icon"
-                :class="{
-                  'icon-background-explosive': props.student?.BulletType === 'Explosion',
-                  'icon-background-piercing': props.student?.BulletType === 'Pierce',
-                  'icon-background-mystic': props.student?.BulletType === 'Mystic',
-                  'icon-background-sonic': props.student?.BulletType === 'Sonic'
-                }"
+                class="skill-fg"
                 @mouseenter="showTooltip($event, skillType)"
                 @mouseleave="hideTooltip"
               />
+              <!-- Enhanced overlay for Passive and ExtraPassive skills -->
+              <div 
+                v-if="(skillType === 'Passive') && isPassiveEnhanced"
+                class="enhanced-overlay"
+              >
+                +
+              </div>
               <div 
                 class="skill-tooltip"
                 :style="tooltipStyle"
                 v-show="activeTooltip === skillType"
               >
                 <div class="tooltip-content">
-                  <div class="tooltip-cost" v-if="props.student?.Skills?.[skillType]?.Cost">
-                    {{ $t('cost') }}: <span v-html="formatSkillCost(
-                      props.student.Skills[skillType].Cost,
+                  <div class="tooltip-cost" v-if="getSkillCost(skillType, skillTypes[skillType].current, skillTypes[skillType].target)">
+                    {{ $t('cost') }}: <span v-html="getSkillCost(
+                      skillType,
                       skillTypes[skillType].current,
                       skillTypes[skillType].target
                     )"></span>
                   </div>
-                  <div class="tooltip-desc" v-html="formatSkillDescription(
-                    props.student?.Skills?.[skillType],
+                  <div class="tooltip-desc" v-html="getSkillDescription(
+                    skillType,
                     skillTypes[skillType].current,
                     skillTypes[skillType].target
                   )"></div>
@@ -563,30 +623,85 @@ watch(currentLanguage, (newLanguage) => {
 .skill-icon-wrapper {
   position: relative;
   flex-shrink: 0;
-  min-width: 0;
+  width: 54px;
+  height: 54px;
 }
 
-.skill-icon {
-  padding: 4px;
-  border-radius: 20%;
-  transition: background-color 0.3s ease;
-  max-width: 100%;
-  height: auto;
+.skill-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-.icon-background-explosive {
+.skill-bg.bg-explosive path {
+  fill: rgb(167, 12, 25);
+}
+
+.skill-bg.bg-piercing path {
+  fill: rgb(178, 109, 31);
+}
+
+.skill-bg.bg-mystic path {
+  fill: rgb(33, 111, 156);
+}
+
+.skill-bg.bg-sonic path {
+  fill: rgb(148, 49, 165);
+}
+
+.skill-fg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  z-index: 2;
+  padding: 2px;
+}
+
+img, svg {
+  vertical-align: middle;
+}
+
+/* Modified style for the enhanced overlay */
+.enhanced-overlay {
+  position: absolute;
+  top: 2px;
+  right: -4px;
+  width: 15px;
+  height: 15px;
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1;
+}
+
+/* Background colors based on bullet type */
+.bg-explosive + .skill-fg + .enhanced-overlay {
   background-color: rgb(167, 12, 25);
 }
 
-.icon-background-piercing {
+.bg-piercing + .skill-fg + .enhanced-overlay {
   background-color: rgb(178, 109, 31);
 }
 
-.icon-background-mystic {
+.bg-mystic + .skill-fg + .enhanced-overlay {
   background-color: rgb(33, 111, 156);
 }
 
-.icon-background-sonic {
+.bg-sonic + .skill-fg + .enhanced-overlay {
   background-color: rgb(148, 49, 165);
 }
 
@@ -668,4 +783,4 @@ watch(currentLanguage, (newLanguage) => {
     gap: 3px;
   }
 }
-</style> 
+</style>
