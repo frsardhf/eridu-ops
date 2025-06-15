@@ -67,34 +67,67 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 
 <template>
   <div class="level-section">
-    <h3 class="section-title">{{ $t('characterLevel') }}</h3>
     
-    <!-- Level input moved to the top -->
-    <div class="level-input-container">
-      <label for="current-level-input">{{ $t('currentLevel') }}</label>
-      <input
-        id="current-level-input"
-        name="current-level-input"
-        type="number"
-        :value="levelState.current"
-        @input="(e) => updateLevel(e, false)"
-        class="level-input"
-        min="1"
-        max="90"
-      />
-    </div>
-    
-    <div class="level-container">
-      <div class="level-display">
-        <div class="level-icon-container">
-          <div class="level-badge">
-            <span class="level-number">{{ levelState.current }}</span>
+    <!-- Maxed Version -->
+    <div v-if="isMaxLevel" class="maxed-section">
+      <div class="maxed-content">
+        <div class="maxed-icon">
+          <div class="max-level-badge">
+            <span class="max-level-number">90</span>
           </div>
+        </div>
+        <div class="maxed-text">
+          <h3 class="maxed-title">{{ $t('maxGrade') }}</h3>
+          <p class="maxed-subtitle">{{ $t('noUpgradeNeeded') }}</p>
         </div>
       </div>
       
-      <!-- Only show arrow and target level if not maxed -->
-      <template v-if="!isMaxLevel">
+      <!-- Keep the level input for maxed version -->
+      <div class="maxed-input-container">
+        <label for="current-level-input-maxed">{{ $t('currentLevel') }}</label>
+        <input
+          id="current-level-input-maxed"
+          name="current-level-input"
+          type="number"
+          :value="levelState.current"
+          @input="(e) => updateLevel(e, false)"
+          class="level-input maxed-input"
+          min="1"
+          max="90"
+        />
+      </div>
+      
+      <div class="maxed-decorative">
+        <div class="shine-effect"></div>
+      </div>
+    </div>
+
+    <!-- Normal Version -->
+    <template v-else>
+      <!-- Level input moved to the top -->
+      <div class="level-input-container">
+        <label for="current-level-input">{{ $t('currentLevel') }}</label>
+        <input
+          id="current-level-input"
+          name="current-level-input"
+          type="number"
+          :value="levelState.current"
+          @input="(e) => updateLevel(e, false)"
+          class="level-input"
+          min="1"
+          max="90"
+        />
+      </div>
+      
+      <div class="level-container">
+        <div class="level-display">
+          <div class="level-icon-container">
+            <div class="level-badge">
+              <span class="level-number">{{ levelState.current }}</span>
+            </div>
+          </div>
+        </div>
+        
         <div class="level-arrow">→</div>
         
         <div class="level-display">
@@ -104,33 +137,26 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
             </div>
           </div>
         </div>
-      </template>
-    </div>
-    
-    <!-- Only show target input if not maxed -->
-    <div class="input-container" v-if="!isMaxLevel">
-      <label for="target-level-input">{{ $t('targetLevel') }}</label>
-      <input
-        id="target-level-input"
-        name="target-level-input"
-        type="number"
-        :value="levelState.target"
-        @input="(e) => updateLevel(e, true)"
-        class="level-input"
-        min="1"
-        max="90"
-      />
-    </div>
-    
-    <!-- Only show XP required if not maxed -->
-    <div class="total-exp" v-if="!isMaxLevel">
-      {{ $t('xpRequired') }}: {{ totalXpNeeded.toLocaleString() }}
-    </div>
-    
-    <!-- Show MAX indicator when level is maxed -->
-    <div v-else class="max-level-indicator">
-      {{ $t('maxLevel') }}
-    </div>
+      </div>
+      
+      <div class="input-container">
+        <label for="target-level-input">{{ $t('targetLevel') }}</label>
+        <input
+          id="target-level-input"
+          name="target-level-input"
+          type="number"
+          :value="levelState.target"
+          @input="(e) => updateLevel(e, true)"
+          class="level-input"
+          min="1"
+          max="90"
+        />
+      </div>
+      
+      <div class="total-exp">
+        {{ $t('xpRequired') }}: {{ totalXpNeeded.toLocaleString() }}
+      </div>
+    </template>
   </div>
 </template>
 
@@ -139,7 +165,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   align-self: center;
   background: var(--card-background);
   border-radius: 8px;
-  padding: 20px;
+  padding: 16px;
   border: 1px solid var(--border-color);
   margin-bottom: 15px;
 }
@@ -154,10 +180,170 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   text-align: center;
 }
 
+/* Maxed Section Styles */
+.maxed-section {
+  position: relative;
+  background: linear-gradient(135deg, 
+    rgba(255, 201, 51, 0.1), 
+    rgba(51, 200, 255, 0.1),
+    rgba(255, 201, 51, 0.05)
+  );
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  gap: 15px;
+}
+
+.maxed-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+  position: relative;
+}
+
+.maxed-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.max-level-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--header-gradient-start);
+  border: 2px solid #4e7eff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.max-level-number {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--text-primary);
+}
+
+.maxed-text {
+  text-align: center;
+}
+
+.maxed-title {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+  background: linear-gradient(135deg, rgb(255, 201, 51), hsl(192, 100%, 60%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+}
+
+.maxed-subtitle {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  opacity: 0.8;
+}
+
+.maxed-level-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maxed-badge {
+  background: linear-gradient(135deg, rgba(255, 201, 51, 0.2), rgba(51, 200, 255, 0.2));
+  border: 2px solid;
+  border-image: linear-gradient(135deg, rgb(255, 201, 51), hsl(192, 100%, 60%)) 1;
+  box-shadow: 0 0 15px rgba(255, 201, 51, 0.3);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.maxed-input-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+  z-index: 2;
+  position: relative;
+}
+
+.maxed-input-container label {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.maxed-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 201, 51, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.maxed-input:focus {
+  outline: none;
+  border-color: rgb(255, 201, 51);
+  box-shadow: 0 0 0 2px rgba(255, 201, 51, 0.2);
+}
+
+.maxed-decorative {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shine-effect {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 60%,
+    transparent 70%
+  );
+  animation: shine 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 15px rgba(255, 201, 51, 0.3); }
+  100% { box-shadow: 0 0 25px rgba(255, 201, 51, 0.5); }
+}
+
+@keyframes shine {
+  0% { transform: rotate(0deg) translate(-100%, -100%); }
+  100% { transform: rotate(360deg) translate(-100%, -100%); }
+}
+
+/* Normal Section Styles */
 .level-input-container, .input-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   justify-content: center;
   margin-bottom: 15px;
 }
@@ -165,13 +351,6 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 .level-input-container label, .input-container label {
   font-size: 0.9em;
   color: var(--text-secondary);
-}
-
-.exp-info {
-  font-size: 0.9em;
-  color: var(--text-primary);
-  text-align: center;
-  margin: 10px 0;
 }
 
 .level-container {
@@ -222,7 +401,7 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 }
 
 .level-input {
-  width: 60px;
+  width: 40px;
   padding: 4px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -243,16 +422,31 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.max-level-indicator {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: var(--accent-color);
-  margin-top: 15px;
-  text-align: center;
-  background: var(--background-primary);
-  padding: 10px 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.level-input-container, .input-container, .maxed-input-container
+::-webkit-outer-spin-button,
+::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .maxed-title {
+    font-size: 1.1em;
+  }
+  
+  .max-level-badge {
+    width: 55px;
+    height: 55px;
+  }
+  
+  .max-level-number {
+    font-size: 1.2em;
+  }
+  
+  .maxed-section {
+    min-height: 120px;
+    padding: 15px;
+  }
 }
 </style>
