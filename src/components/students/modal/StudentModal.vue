@@ -184,7 +184,7 @@ onUnmounted(() => {
           :class="['tab-button', { active: activeTab === 'equipment' }]" 
           @click="activeTab = 'equipment'"
         >
-          {{ $t('equipment') }}
+          {{ $t('equipments') }}
         </button>
         <button 
           :class="['tab-button', { active: activeTab === 'summary' }]" 

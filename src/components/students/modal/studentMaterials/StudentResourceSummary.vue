@@ -17,8 +17,9 @@ import {
 import { $t } from '../../../../locales';
 import '../../../../styles/resourceDisplay.css';
 
-// Define view options
-type ViewMode = 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing';
+// Define view options - simplified to 2 main tabs
+type ViewTab = 'materials' | 'equipment';
+type ViewMode = 'needed' | 'missing';
 
 // Define types for material items with remaining property
 interface MaterialWithRemaining extends Material {
@@ -26,7 +27,9 @@ interface MaterialWithRemaining extends Material {
 }
 
 // UI state
-const activeView = ref<ViewMode>('needed');
+const activeTab = ref<ViewTab>('materials');
+const activeMode = ref<ViewMode>('needed');
+
 const { 
   totalMaterialsNeeded, 
   materialsLeftover, 
@@ -145,25 +148,14 @@ const missingEquipments = computed<MaterialWithRemaining[]>(() =>
   )
 );
 
-// Computed property to get the resources based on active view
+// Computed property to get the resources based on active tab and mode
 const displayResources = computed(() => {
   let resources: any[] = [];
   
-  switch (activeView.value) {
-    case 'needed':
-      resources = totalMaterialsNeeded.value;
-      break;
-    case 'missing':
-      resources = missingMaterials.value;
-      break;
-    case 'equipment-needed':
-      resources = totalEquipmentsNeeded.value;
-      break;
-    case 'equipment-missing':
-      resources = missingEquipments.value;
-      break;
-    default:
-      resources = [];
+  if (activeTab.value === 'materials') {
+    resources = activeMode.value === 'needed' ? totalMaterialsNeeded.value : missingMaterials.value;
+  } else {
+    resources = activeMode.value === 'needed' ? totalEquipmentsNeeded.value : missingEquipments.value;
   }
   
   // Sort to put credits first, then exp reports, then other materials
@@ -204,25 +196,25 @@ onMounted(() => {
 });
 
 // Helper function to get material icon source and alt text
-const getMaterialIconSrcAndAlt = (item: any, activeView: ViewMode, currentExpIcon: number, currentExpBall: number): { src: string; alt: string } => {
-  const isEquipmentTab = activeView === 'equipment-needed' || activeView === 'equipment-missing';
+const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
+  const isEquipmentTab = activeTab.value === 'equipment';
   return {
-    src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon, currentExpBall),
+    src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon.value, currentExpBall.value),
     alt: getMaterialName(item, isEquipmentTab)
   };
 };
 
 // Helper function to format quantity
-const formatQuantity = (item: any, activeView: ViewMode): string => {
+const formatQuantity = (item: any): string => {
   if (isExpReport(item.material?.Id) || isExpBall(item.material?.Id)) {
     return '';
   }
 
   let quantity = 0;
   
-  if (activeView === 'needed' || activeView === 'equipment-needed') {
+  if (activeMode.value === 'needed') {
     quantity = item.materialQuantity || 0;
-  } else if (activeView === 'missing' || activeView === 'equipment-missing') {
+  } else {
     quantity = Math.abs(item.remaining || 0);
   }
   
@@ -230,25 +222,28 @@ const formatQuantity = (item: any, activeView: ViewMode): string => {
 };
 
 // Helper function to get quantity class
-const getQuantityClass = (activeView: ViewMode): string => {
-  return (activeView === 'missing' || activeView === 'equipment-missing') ? 'negative' : '';
+const getQuantityClass = (): string => {
+  return activeMode.value === 'missing' ? 'negative' : '';
 };
 
 // Function to reset cache when view changes
-const setView = (view: ViewMode) => {
-  // Only clear cache if we're switching between equipment and materials views
-  const wasEquipmentView = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
-  const isEquipmentView = view === 'equipment-needed' || view === 'equipment-missing';
-  
-  if (wasEquipmentView !== isEquipmentView) {
-    // Clear hover state and caches
+const setTab = (tab: ViewTab) => {
+  // Clear hover state and caches when switching tabs
+  if (activeTab.value !== tab) {
     hoveredItemId.value = null;
     materialUsageCache.value.clear();
     equipmentUsageCache.value.clear();
     xpCalculationCache.value = null;
   }
   
-  activeView.value = view;
+  activeTab.value = tab;
+};
+
+// Function to toggle mode
+const toggleMode = () => {
+  activeMode.value = activeMode.value === 'needed' ? 'missing' : 'needed';
+  // Clear hover state when switching modes
+  hoveredItemId.value = null;
 };
 
 const showTooltip = async (event: MouseEvent, materialId: number) => {
@@ -311,18 +306,18 @@ const studentUsageForMaterial = computed(() => {
   
   const materialId = hoveredItemId.value;
   
-  // Use different cache based on the active view
-  const isEquipmentView = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
+  // Use different cache based on the active tab
+  const isEquipmentView = activeTab.value === 'equipment';
   const cache = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
   
-  // Create a cache key that includes both material ID and view mode
-  const cacheKey = `${materialId}-${activeView.value}`;
+  // Create a cache key that includes both material ID and current view
+  const cacheKey = `${materialId}-${activeTab.value}-${activeMode.value}`;
   
   // For XP reports, credits, and XP balls, always get fresh data
   if (isExpReport(materialId) || materialId === 5 || isExpBall(materialId)) {
     const usage = isEquipmentView 
-      ? getEquipmentUsageByStudents(materialId, activeView.value)
-      : getMaterialUsageByStudents(materialId, activeView.value);
+      ? getEquipmentUsageByStudents(materialId, activeMode.value)
+      : getMaterialUsageByStudents(materialId, activeMode.value);
     return usage.sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
   }
   
@@ -334,11 +329,11 @@ const studentUsageForMaterial = computed(() => {
   // If not in cache, calculate and store in cache
   let usage: any[] = [];
   if (isEquipmentView) {
-    usage = getEquipmentUsageByStudents(materialId, activeView.value)
+    usage = getEquipmentUsageByStudents(materialId, activeMode.value)
       .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
     equipmentUsageCache.value.set(cacheKey, usage);
   } else {
-    usage = getMaterialUsageByStudents(materialId, activeView.value)
+    usage = getMaterialUsageByStudents(materialId, activeMode.value)
       .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
     materialUsageCache.value.set(cacheKey, usage);
   }
@@ -384,7 +379,7 @@ const expBallInfo = createExpInfo(calculateEquipmentExpNeeds);
 
 // Add computed property to get leftover quantity for a material
 const getMaterialLeftover = (materialId: number) => {
-  const isEquipmentView = activeView.value === 'equipment-needed' || activeView.value === 'equipment-missing';
+  const isEquipmentView = activeTab.value === 'equipment';
   const leftover = isEquipmentView ? equipmentsLeftover.value : materialsLeftover.value;
   const material = leftover.find(m => m.material?.Id === materialId);
   return material?.materialQuantity ?? 0;
@@ -393,40 +388,57 @@ const getMaterialLeftover = (materialId: number) => {
 
 <template>
   <div class="resource-summary">
-    <div class="view-tabs">
+    <!-- Main Tabs -->
+    <div class="main-tabs">
       <button 
-        class="view-tab" 
-        :class="{ active: activeView === 'needed' }"
-        @click="setView('needed')"
+        class="main-tab" 
+        :class="{ active: activeTab === 'materials' }"
+        @click="setTab('materials')"
       >
-        {{ $t('itemsNeeded') }}
+        {{ $t('items') }}
       </button>
       <button 
-        class="view-tab" 
-        :class="{ active: activeView === 'missing' }"
-        @click="setView('missing')"
+        class="main-tab" 
+        :class="{ active: activeTab === 'equipment' }"
+        @click="setTab('equipment')"
       >
-        {{ $t('missingItems') }}
+        {{ $t('equipments') }}
       </button>
+    </div>
+
+    <!-- Mode Toggle -->
+    <div class="mode-toggle-container">
       <button 
-        class="view-tab" 
-        :class="{ active: activeView === 'equipment-needed' }"
-        @click="setView('equipment-needed')"
+        class="mode-toggle"
+        @click="toggleMode"
+        :class="{ 'missing-mode': activeMode === 'missing' }"
       >
-        {{ $t('equipmentNeeded') }}
+        <span class="toggle-icon">
+          <svg v-if="activeMode === 'needed'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+        </span>
+        <span class="toggle-text">
+          {{ activeMode === 'needed' ? $t('showMissing') : $t('showNeeded') }}
+        </span>
       </button>
-      <button 
-        class="view-tab" 
-        :class="{ active: activeView === 'equipment-missing' }"
-        @click="setView('equipment-missing')"
-      >
-        {{ $t('missingEquipment') }}
-      </button>
+      
+      <div class="mode-indicator">
+        <span class="current-mode">
+          {{ activeMode === 'needed' ? $t('needed') : $t('missing') }}
+        </span>
+      </div>
     </div>
     
     <div class="resources-content">
       <div v-if="displayResources.length === 0" class="no-resources">
-        <span v-if="activeView === 'needed' || activeView === 'equipment-needed'">{{ $t('noResourcesNeeded') }}</span>
+        <span v-if="activeMode === 'needed'">{{ $t('noResourcesNeeded') }}</span>
         <span v-else>{{ $t('allMaterialsAvailable') }}</span>
       </div>
       
@@ -435,15 +447,15 @@ const getMaterialLeftover = (materialId: number) => {
           v-for="(item, index) in displayResources" 
           :key="`resource-${item.material?.Id || index}`"
           class="resource-item"
-          :title="getMaterialName(item, activeView === 'equipment-needed' || activeView === 'equipment-missing')"
+          :title="getMaterialName(item, activeTab === 'equipment')"
           @mousemove="showTooltip($event, item.material?.Id)"
           @mouseleave="hideTooltip()"
         >
           <div class="resource-content">
             <img 
               v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-              :src="getMaterialIconSrcAndAlt(item, activeView, currentExpIcon, currentExpBall).src" 
-              :alt="getMaterialIconSrcAndAlt(item, activeView, currentExpIcon, currentExpBall).alt"
+              :src="getMaterialIconSrcAndAlt(item).src" 
+              :alt="getMaterialIconSrcAndAlt(item).alt"
               class="resource-icon"
             />
             <div 
@@ -453,9 +465,9 @@ const getMaterialLeftover = (materialId: number) => {
             
             <div 
               class="resource-quantity" 
-              :class="getQuantityClass(activeView)"
+              :class="getQuantityClass()"
             >
-              {{ formatQuantity(item, activeView) }}
+              {{ formatQuantity(item) }}
             </div>
           </div>
         </div>
@@ -595,16 +607,15 @@ const getMaterialLeftover = (materialId: number) => {
   width: 100%;
 }
 
-.view-tabs {
+.main-tabs {
   display: flex;
-  flex-wrap: wrap;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
-.view-tab {
-  padding: 10px 15px;
-  font-size: 0.9em;
+.main-tab {
+  padding: 6px 10px;
+  font-size: 1em;
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
@@ -612,19 +623,80 @@ const getMaterialLeftover = (materialId: number) => {
   cursor: pointer;
   font-weight: bold;
   transition: all 0.2s ease;
+  flex: 1;
 }
 
-.view-tab:hover {
+.main-tab:hover {
   color: var(--text-primary);
 }
 
-.view-tab.active {
+.main-tab.active {
   color: var(--accent-color);
   border-bottom-color: var(--accent-color);
 }
 
-.view-tab:focus {
+.main-tab:focus {
   outline: none;
+}
+
+.mode-toggle-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 0 5px;
+}
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.mode-toggle:hover {
+  background: var(--background-secondary);
+  border-color: var(--accent-color);
+}
+
+.mode-toggle.missing-mode {
+  background: rgba(255, 77, 79, 0.1);
+  border-color: var(--error-color, #ff4d4f);
+  color: var(--error-color, #ff4d4f);
+}
+
+.mode-toggle:focus {
+  outline: none;
+}
+
+.toggle-icon {
+  display: flex;
+  align-items: center;
+}
+
+.mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-mode {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
 }
 
 .resources-content {
@@ -720,13 +792,23 @@ const getMaterialLeftover = (materialId: number) => {
 }
 
 @media (max-width: 768px) {
-  .view-tabs {
+  .main-tabs {
     flex-wrap: wrap;
   }
   
-  .view-tab {
-    font-size: 0.8em;
-    padding: 8px 10px;
+  .main-tab {
+    font-size: 0.9em;
+    padding: 10px 15px;
+  }
+  
+  .mode-toggle-container {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .mode-toggle {
+    justify-content: center;
   }
   
   .student-icons-grid {

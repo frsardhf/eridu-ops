@@ -49,7 +49,7 @@ export const translations = {
     upgrade: "Skills",
     gear: "Weapons",
     items: "Items",
-    equipment: "Equipment",
+    equipments: "Equipments",
     summary: "Summary",
     
     // Bond component
@@ -98,9 +98,15 @@ export const translations = {
     totalMaterialsNeeded: "Total Materials Needed",
     noMaterialsNeeded: "No resources needed for upgrades",
     allMaterialsAvailable: "You have all the materials you need! ✓",
+    noResourcesNeeded: "No resources needed",
     material: "Material",
     unknownResource: "Unknown Resource",
     unknown: "Unknown",
+    
+    // Mode toggle
+    showMissing: "Show Missing",
+    showNeeded: "Show Needed",
+    missing: "Missing",
     
     // Resource summary component
     itemsNeeded: "Items Needed",
@@ -196,7 +202,7 @@ export const translations = {
     upgrade: "育成",
     gear: "武器",
     items: "アイテム",
-    equipment: "装備",
+    equipments: "装備",
     summary: "要約",
 
     // Bond component
@@ -245,9 +251,15 @@ export const translations = {
     totalMaterialsNeeded: "必要な素材の合計",
     noMaterialsNeeded: "アップグレードに必要な素材はありません",
     allMaterialsAvailable: "必要な素材はすべて揃っています! ✓",
+    noResourcesNeeded: "アップグレードに必要な素材はありません",
     material: "素材",
     unknownResource: "不明な素材",
     unknown: "不明",
+    
+    // Mode toggle
+    showMissing: "不足アイテムを表示",
+    showNeeded: "必要アイテムを表示",
+    missing: "不足",
     
     // Resource summary component
     itemsNeeded: "全体の必要アイテム",
