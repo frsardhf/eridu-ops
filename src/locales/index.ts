@@ -77,6 +77,10 @@ export const translations = {
     level: "Level",
     current: "Current",
     target: "Target",
+    skillToggle: {
+      normal: "Switch to normal EX skill",
+      enhanced: "Switch to enhanced EX skill"
+    },
     
     // Upgrade component - Levels
     characterLevel: "Character Level",
@@ -230,6 +234,10 @@ export const translations = {
     level: "レベル",
     current: "現在",
     target: "目標",
+    skillToggle: {
+      normal: "通常のEXスキルに切り替え",
+      enhanced: "強化EXスキルに切り替え"
+    },
     
     // Upgrade component - Levels
     characterLevel: "キャラクターレベル",

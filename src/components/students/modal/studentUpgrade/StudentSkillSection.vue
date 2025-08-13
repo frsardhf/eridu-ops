@@ -27,6 +27,12 @@ const studentData = computed(() => {
   return getStudentData(props.student.Id);
 });
 
+const useExtraExSkill = ref(false);
+
+const hasExtraExSkill = computed(() => {
+  return props.student?.Skills?.Ex?.ExtraSkills && props.student.Skills.Ex.ExtraSkills.length > 0;
+});
+
 // Create skill settings for each type
 const skillTypes = ref<Record<SkillType, SkillSettings>>({
   Ex: {
@@ -34,7 +40,8 @@ const skillTypes = ref<Record<SkillType, SkillSettings>>({
     target: props.skillLevels.Ex?.target || 1,
     icon: props.student?.Skills?.Ex?.Icon,
     name: 'EX Skill',
-    maxLevel: props.student?.Skills?.Ex?.Parameters?.[0]?.length || 5
+    maxLevel: props.student?.Skills?.Ex?.Parameters?.[0]?.length ||
+      props.student?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length || 5
   },
   Public: {
     current: props.skillLevels.Public?.current || 1,
@@ -74,9 +81,14 @@ watch(() => props.student, (student) => {
   if (student?.Skills) {
     // Update EX skill
     if (student.Skills.Ex) {
-      skillTypes.value.Ex.icon = student.Skills.Ex.Icon;
-      skillTypes.value.Ex.name = student.Skills.Ex.Name;
-      skillTypes.value.Ex.maxLevel = student.Skills.Ex.Parameters?.[0]?.length;
+      const skillData = useExtraExSkill.value && student.Skills.Ex.ExtraSkills?.[0] 
+        ? student.Skills.Ex.ExtraSkills[0] 
+        : student.Skills.Ex;
+
+      skillTypes.value.Ex.icon = skillData.Icon;
+      skillTypes.value.Ex.name = skillData.Name;
+      skillTypes.value.Ex.maxLevel = student.Skills.Ex.Parameters?.[0]?.length ||
+        student.Skills.Ex.ExtraSkills?.[0]?.Parameters?.[0]?.length || 5;
     }
     
     // Update Public skill
@@ -101,6 +113,18 @@ watch(() => props.student, (student) => {
     }
   }
 }, { immediate: true });
+
+// Watch for toggle state changes to update icon/name immediately
+watch(useExtraExSkill, () => {
+  if (props.student?.Skills?.Ex) {
+    const skillData = useExtraExSkill.value && props.student.Skills.Ex.ExtraSkills?.[0] 
+      ? props.student.Skills.Ex.ExtraSkills[0] 
+      : props.student.Skills.Ex;
+    
+    skillTypes.value.Ex.icon = skillData.Icon;
+    skillTypes.value.Ex.name = skillData.Name;
+  }
+});
 
 // Watch for changes in the store
 watch(() => studentData.value, () => {
@@ -230,6 +254,11 @@ const getSkillData = (skillType: SkillType) => {
   if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
     return props.student.Skills.WeaponPassive;
   }
+
+  if (skillType === 'Ex' && useExtraExSkill.value && props.student?.Skills?.Ex?.ExtraSkills?.[0]) {
+    return props.student.Skills.Ex.ExtraSkills[0];
+  }
+
   return props.student?.Skills?.[skillType];
 };
 
@@ -239,9 +268,28 @@ const getSkillDescription = (skillType: SkillType, current: number, target: numb
   return formatSkillDescription(skill, current, target);
 };
 
-// Get skill cost - WeaponPassive doesn't have cost, so use original Passive cost even when enhanced
-const getSkillCost = (skillType: SkillType, current: number, target: number) => {
-  const skill = props.student?.Skills?.[skillType];
+// Get skill cost - use ExtraSkills cost when Ex skill toggle is active, 
+// WeaponPassive doesn't have cost for Passive
+interface SkillData {
+  Cost?: number[];
+  [key: string]: any;
+}
+
+const getSkillCost = (skillType: SkillType, current: number, target: number): string => {
+  let skill: SkillData | undefined;
+
+  if (
+    skillType === 'Ex' &&
+    useExtraExSkill.value &&
+    props.student?.Skills?.Ex?.ExtraSkills?.[0]
+  ) {
+    // Use ExtraSkills cost when toggle is active
+    skill = props.student.Skills.Ex.ExtraSkills[0] as SkillData;
+  } else {
+    // Use original skill cost for all other cases
+    skill = props.student?.Skills?.[skillType] as SkillData;
+  }
+
   return skill?.Cost ? formatSkillCost(skill.Cost, current, target) : '';
 };
 
@@ -385,6 +433,14 @@ const shouldShowTargetSlider = (skillType: SkillType) => {
   return hoveredSkill.value === skillType || skill.current !== skill.target;
 };
 
+const toggleExtraExSkill = () => {
+  useExtraExSkill.value = !useExtraExSkill.value;
+};
+
+watch(() => props.student, () => {
+  useExtraExSkill.value = false;
+});
+
 // Watch for language changes and update localization data
 watch(currentLanguage, (newLanguage) => {
   // Clear current cache to force a reload
@@ -434,7 +490,52 @@ watch(currentLanguage, (newLanguage) => {
       <template 
         v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
         <div class="type-section">
-          <div class="type-header">
+          <!-- Special header for Ex skill with toggle -->
+          <div class="type-header" v-if="skillType === 'Ex'">
+            <div class="skill-name-container">
+              <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
+              <!-- Toggle button for ExtraSkills - only show if available -->
+              <button 
+                v-if="hasExtraExSkill"
+                @click="toggleExtraExSkill"
+                class="ex-toggle-btn"
+                :class="{ active: useExtraExSkill }"
+                :title="useExtraExSkill ? $t('skillToggle.normal') : $t('skillToggle.enhanced')"
+              >
+                {{ useExtraExSkill ? 'II' : 'I' }}
+              </button>
+            </div>
+            <div class="level-display">
+              <template v-if="getLevelDisplayState(
+                skillTypes[skillType].current, 
+                skillTypes[skillType].target, 
+                skillTypes[skillType].maxLevel
+              ) === 'max'">
+                <span class="max-level">{{ $t('max') }}</span>
+              </template>
+              
+              <template v-else-if="getLevelDisplayState(
+                skillTypes[skillType].current, 
+                skillTypes[skillType].target, 
+                skillTypes[skillType].maxLevel
+              ) === 'same'">
+                <span class="target-level">{{ skillTypes[skillType].current }}</span>
+              </template>
+              
+              <template v-else>
+                <span class="current-level">{{ skillTypes[skillType].current }}</span>
+                <span class="level-arrow">→</span>
+                <span class="target-level">{{ skillTypes[skillType].target }}</span>
+                <span class="max-indicator" 
+                  v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
+                  {{ $t('max') }}
+                </span>
+              </template>
+            </div>
+          </div>
+
+          <!-- Regular header for other skills -->
+          <div class="type-header" v-else>
             <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
             <div class="level-display">
               <template v-if="getLevelDisplayState(
@@ -737,6 +838,46 @@ img, svg {
   font-size: 0.95em;
   white-space: normal;
   font-weight: bold;
+}
+
+.skill-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ex-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.ex-toggle-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
+}
+
+.ex-toggle-btn.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.ex-toggle-btn.active:hover {
+  background: var(--accent-color-hover);
+}
+
+.ex-toggle-btn:focus {
+  outline: none;
 }
 
 .sliders {
