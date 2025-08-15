@@ -1,5 +1,7 @@
 // storageUtils.ts
 
+import { ResourceProps } from "../../types/resource";
+
 /**
  * Storage keys used throughout the application
  */
@@ -643,45 +645,44 @@ export function getAllFormData(): Record<string | number, any> {
 export function migrateFormData() {
   try {
     // Get the forms data from localStorage
-    const formsData = localStorage.getItem('forms');
-    const studentsData = localStorage.getItem('students');
-    
-    if (!formsData) {
-      console.log('No forms data found to migrate');
-      return;
-    }
+    // const formsData = localStorage.getItem('forms');
+    // const studentsData = localStorage.getItem('students');
+    const equipmentsData = localStorage.getItem('equipments');
 
-    if (!studentsData) {
+    if (!equipmentsData) {
       console.log('No students data found to migrate');
       return;
     }
     
-    // Parse the forms data
-    const forms = JSON.parse(formsData);
+    // Parse the forms/students/equipments data
+    const forms = JSON.parse(equipmentsData);
     
     // Track if we've made any changes
     let hasChanges = false;
     
     // Iterate through each student ID in the forms object
-    Object.keys(forms).forEach(studentId => {
-      const formData = forms[studentId];
+    Object.keys(forms).forEach(id => {
+      const formData = forms[id];
       
       // Check if this student data needs migration
       if (formData && 
-          formData.gradeInfos === undefined) {
+          formData.Category === "WeaponExpGrowthA" || 
+          formData.Category === "WeaponExpGrowthB" ||
+          formData.Category === "WeaponExpGrowthC" ||
+          formData.Category === "WeaponExpGrowthZ") {
 
         // Replace the old gradeInfos with the new format
-        formData.gradeInfos = {
-          owned: 0,
-          price: 1,
-          purchasable: 20
-        };
+        // formData.gradeInfos = {
+        //   owned: 0,
+        //   price: 1,
+        //   purchasable: 20
+        // };
         
         // Remove old properties
-        // delete formData.bondDetailData.convertBox;
+        delete forms[id];
         
         hasChanges = true;
-        console.log(`Migrated data for student ${studentId}`);
+        console.log(`Migrated data for id ${id}`);
       }
     });
     
@@ -706,19 +707,107 @@ export function checkAndMigrateFormData() {
   // Check if migration has been run already
   const migrationVersion = localStorage.getItem('forms_migration_version');
   
-  // If we haven't run migration version 2 yet
-  if (!migrationVersion || parseInt(migrationVersion) < 2) {
+  // If we haven't run migration version 3 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 3) {
     const migratedData = migrateFormData();
     
     if (migratedData) {
       // Mark migration as complete
-      localStorage.setItem('forms_migration_version', '2');
+      localStorage.setItem('forms_migration_version', '3');
     }
     
     return migratedData;
   }
   
   return null;
+}
+
+/**
+ * Merges new equipment data with existing data while preserving user progress
+ * @param existingEquipments - Current equipment data from storage
+ * @param newEquipments - Fresh equipment data from API
+ * @returns Merged equipment data with preserved user quantities
+ */
+export function mergeEquipmentData(
+  existingEquipments: Record<string, ResourceProps>,
+  newEquipments: Record<string, ResourceProps>
+): Record<string, ResourceProps> {
+  const existingCount = Object.keys(existingEquipments).length;
+  const newCount = Object.keys(newEquipments).length;
+
+  // If existing has more items than new, use new data entirely
+  // This helps clean up obsolete data
+  if (existingCount > newCount) {
+    return { ...newEquipments };
+  }
+
+  // If existing has fewer items, merge while preserving quantities
+  const merged: Record<string, ResourceProps> = {};
+
+  // Add all new equipment items
+  Object.keys(newEquipments).forEach(equipmentId => {
+    const newEquipment = newEquipments[equipmentId];
+    const existingEquipment = existingEquipments[equipmentId];
+
+    if (existingEquipment) {
+      // Preserve user's quantity while using new data
+      merged[equipmentId] = {
+        ...newEquipment,
+        QuantityOwned: existingEquipment.QuantityOwned || 0
+      };
+    } else {
+      // New equipment item, use default quantity
+      merged[equipmentId] = {
+        ...newEquipment,
+        QuantityOwned: 0
+      };
+    }
+  });
+
+  return merged;
+}
+
+/**
+ * Migrates equipment data from old format to new format
+ * This function should be called similar to migrateFormData
+ */
+export function migrateEquipmentData(
+  existingEquipments: Record<string, ResourceProps>,
+  newEquipments: Record<string, ResourceProps>
+): Record<string, ResourceProps> {
+  try {
+    console.log('Starting equipment data migration...');
+    
+    const mergedEquipments = mergeEquipmentData(existingEquipments, newEquipments);
+    
+    console.log(`Equipment migration completed. ${Object.keys(mergedEquipments).length} items processed.`);
+    return mergedEquipments;
+  } catch (error) {
+    console.error('Equipment migration failed:', error);
+    return existingEquipments; // Return original data if migration fails
+  }
+}
+
+/**
+ * Checks if equipment migration is needed based on data length difference
+ * Only merges when there's a difference in the number of equipment items
+ */
+export function checkAndMigrateEquipmentData(
+  existingEquipments: Record<string, ResourceProps>,
+  newEquipments: Record<string, ResourceProps>
+): Record<string, ResourceProps> {
+  const existingCount = Object.keys(existingEquipments).length;
+  const newCount = Object.keys(newEquipments).length;
+  
+  // Only merge if there's a difference in equipment count
+  if (existingCount !== newCount) {
+    console.log(`Equipment count changed: ${existingCount} -> ${newCount}. Running migration...`);
+    return migrateEquipmentData(existingEquipments, newEquipments);
+  }
+  
+  // No changes in count, return existing data as-is
+  console.log('No equipment count changes detected. Using existing data.');
+  return existingEquipments;
 }
 
 /**

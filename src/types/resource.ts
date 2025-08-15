@@ -19,7 +19,7 @@ export const MATERIAL = {
 };
 
 export const EQUIPMENT = {
-  'tier': ['0'],
+  'category': ['Exp'],
   'recipecost': ['1500', '10000', '25000', '50000', 
     '75000', '100000', '125000', '150000', '175000']
 };

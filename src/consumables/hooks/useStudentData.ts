@@ -22,6 +22,7 @@ import {
   getStorageData,
   STORAGE_KEYS,
   checkAndMigrateFormData,
+  checkAndMigrateEquipmentData,
 } from '../utils/studentStorage';
 import { studentDataStore } from '../stores/studentStore';
 import { currentLanguage } from '../stores/localizationStore';
@@ -464,10 +465,11 @@ export function useStudentData() {
     // Handle resources initialization and credits
     const existingResources = getResources();
     const existingEquipments = getEquipments();
+    const filteredItems = applyFilters(allItems, MATERIAL);
+    const filteredEquipments = applyFilters(allEquipments, EQUIPMENT);
 
     // Initialize resources if they don't exist
     if (!existingResources) {
-      const filteredItems = applyFilters(allItems, MATERIAL);
       filteredItems[5] = creditsEntry; // Add credits
       saveResources(filteredItems);
       materialData.value = filteredItems;
@@ -493,12 +495,12 @@ export function useStudentData() {
     }
 
     if (!existingEquipments) {
-      const filteredEquipments = applyFilters(allEquipments, EQUIPMENT);
       saveEquipments(filteredEquipments);
       equipmentData.value = filteredEquipments;
     } else {
-      saveEquipments(existingEquipments);
-      equipmentData.value = existingEquipments;
+      const mergedEquipments = checkAndMigrateEquipmentData(existingEquipments, filteredEquipments);
+      saveEquipments(mergedEquipments);
+      equipmentData.value = mergedEquipments;
     }
 
     updateSortedStudents();
