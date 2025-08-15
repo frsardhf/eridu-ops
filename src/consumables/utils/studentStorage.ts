@@ -707,13 +707,13 @@ export function checkAndMigrateFormData() {
   // Check if migration has been run already
   const migrationVersion = localStorage.getItem('forms_migration_version');
   
-  // If we haven't run migration version 3 yet
-  if (!migrationVersion || parseInt(migrationVersion) < 3) {
+  // If we haven't run migration version 2 yet
+  if (!migrationVersion || parseInt(migrationVersion) < 2) {
     const migratedData = migrateFormData();
     
     if (migratedData) {
       // Mark migration as complete
-      localStorage.setItem('forms_migration_version', '3');
+      localStorage.setItem('forms_migration_version', '2');
     }
     
     return migratedData;
