@@ -32,36 +32,36 @@ export function useStudentEquipment(props: {
     }
   });
 
-  // Watch for changes to form data and save to localStorage
+  // Watch for changes to form data and save to IndexedDB
   watch([equipmentFormData], () => {
     if (props.student && props.isVisible) {
       saveEquipments();
     }
   }, { deep: true });
 
-  function loadEquipments() {
+  async function loadEquipments() {
     try {
-      const equipments = getEquipments();
+      const equipments = await getEquipments();
       if (equipments) {
         const quantities: Record<string, number> = {};
-        
+
         // Extract quantities from the stored equipment objects
         Object.values(equipments).forEach((equipment: any) => {
           if (equipment && equipment.Id !== undefined && equipment.QuantityOwned !== undefined) {
             quantities[equipment.Id] = equipment.QuantityOwned;
           }
         });
-        
+
         equipmentFormData.value = quantities;
       }
     } catch (error) {
-      console.error('Error retrieving equipments from localStorage:', error);
+      console.error('Error retrieving equipments from IndexedDB:', error);
     }
   }
 
-  function saveEquipments() {
+  async function saveEquipments() {
     if (!props.student?.Equipments) return;
-    saveEquipmentsFromStudent(props.student, equipmentFormData);
+    await saveEquipmentsFromStudent(props.student, equipmentFormData);
   }
 
   return {

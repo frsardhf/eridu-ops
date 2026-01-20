@@ -1,15 +1,19 @@
 import { ref } from 'vue';
 import { Material } from '../../types/upgrade';
-import { saveMaterialsData, getAllMaterialsData as getStoredMaterialsData } from '../utils/studentStorage';
-import { preloadAllStudentsData } from '../utils/materialUtils';
 
-// Create a reactive store for materials data
+/**
+ * Materials store - now in-memory only (not persisted)
+ * Materials are calculated on-demand from student form data
+ * This store is just a reactive cache for performance
+ */
+
+// Create a reactive store for materials data (in-memory only)
 const materialsDataStore = ref<Record<string, Material[]>>({});
 
-// Function to update materials data in the store
+// Function to update materials data in the store (in-memory only)
 export function updateMaterialsData(studentId: string | number, materials: Material[]) {
   materialsDataStore.value[studentId] = materials;
-  saveMaterialsData(studentId, materials);
+  // No longer persisted to localStorage/IndexedDB
 }
 
 // Function to get materials data from the store
@@ -20,7 +24,7 @@ export function getMaterialsData(studentId: string | number): Material[] {
 // Function to clear materials data from the store
 export function clearMaterialsData(studentId: string | number) {
   delete materialsDataStore.value[studentId];
-  saveMaterialsData(studentId, []);
+  // No longer persisted to localStorage/IndexedDB
 }
 
 // Function to get all materials data
@@ -31,8 +35,5 @@ export function getAllMaterialsData(): Record<string, Material[]> {
 // Function to clear all materials data
 export function clearAllMaterialsData() {
   materialsDataStore.value = {};
-  // Clear all in localStorage
-  Object.keys(materialsDataStore.value).forEach(studentId => {
-    saveMaterialsData(studentId, []);
-  });
+  // No longer persisted to localStorage/IndexedDB
 }

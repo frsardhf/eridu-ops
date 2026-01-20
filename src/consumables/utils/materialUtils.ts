@@ -1,9 +1,6 @@
-import { 
-  getAllFormData, 
-  getDataCollection,
-  getResourceDataById,
-  getEquipmentDataById
-} from './studentStorage';
+import { getResourceDataById, getEquipmentDataById } from './studentStorage';
+import { getAllFormData } from '../services/dbService';
+import { useStudentData } from '../hooks/useStudentData';
 import { 
   Material,
   DEFAULT_SKILL_LEVELS, 
@@ -64,14 +61,15 @@ export function consolidateAndSortMaterials(materials: Material[]): Material[] {
  * Function to preload all student materials and gears during initialization
  * This will calculate materials and gears for all students that have form data
  */
-export function preloadAllStudentsData() {
+export async function preloadAllStudentsData() {
   try {
-    // Get all students form data
-    const allFormData = getAllFormData();
-    
-    // Get all students data
-    const allStudentsData = getDataCollection('students');
-    const allGearsData = getDataCollection('equipments');
+    // Get all students form data from IndexedDB
+    const allFormData = await getAllFormData();
+
+    // Get all students data from useStudentData composable
+    const { studentData, equipmentData } = useStudentData();
+    const allStudentsData = studentData.value;
+    const allGearsData = equipmentData.value;
     
     // Process each student's form data
     Object.entries(allFormData).forEach(([studentId, formData]) => {

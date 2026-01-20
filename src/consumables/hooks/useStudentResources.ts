@@ -32,36 +32,36 @@ export function useStudentResources(props: {
     }
   });
 
-  // Watch for changes to form data and save to localStorage
+  // Watch for changes to form data and save to IndexedDB
   watch([resourceFormData], () => {
     if (props.student && props.isVisible) {
       saveResources();
     }
   }, { deep: true });
 
-  function loadResources() {
+  async function loadResources() {
     try {
-      const resources = getResources();
+      const resources = await getResources();
       if (resources) {
         const quantities: Record<string, number> = {};
-        
+
         // Extract quantities from the stored material objects
         Object.values(resources).forEach((material: any) => {
           if (material && material.Id !== undefined && material.QuantityOwned !== undefined) {
             quantities[material.Id] = material.QuantityOwned;
           }
         });
-        
+
         resourceFormData.value = quantities;
       }
     } catch (error) {
-      console.error('Error retrieving resources from localStorage:', error);
+      console.error('Error retrieving resources from IndexedDB:', error);
     }
   }
 
-  function saveResources() {
+  async function saveResources() {
     if (!props.student?.Materials) return;
-    saveResourcesFromStudent(props.student, resourceFormData);
+    await saveResourcesFromStudent(props.student, resourceFormData);
   }
 
   return {

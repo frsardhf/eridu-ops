@@ -5,7 +5,7 @@ import { ResourceProps } from '../../types/resource';
 import { SortOption } from '../../types/header';
 import { GiftProps } from '../../types/gift';
 import { useStudentData } from '../../consumables/hooks/useStudentData';
-import { getStorageData, STORAGE_KEYS } from '../../consumables/utils/studentStorage';
+import { getSettings } from '../../consumables/utils/settingsStorage';
 import StudentNavbar from '../navbar/StudentNavbar.vue';
 import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../students/modal/StudentModal.vue'
@@ -34,8 +34,8 @@ const isModalVisible = ref(false)
 function prepareStudentForModal(student: StudentProps): ModalProps {
   const studentGifts = favoredGift.value[student.Id] || {};
   const studentBoxes = giftBoxData.value[student.Id] || {};
-  
-  const giftsObject = Array.isArray(studentGifts) 
+
+  const giftsObject = Array.isArray(studentGifts)
     ? studentGifts.reduce((acc, gift) => {
         if (gift.gift && gift.gift.Id) {
           acc[gift.gift.Id] = gift;
@@ -43,7 +43,7 @@ function prepareStudentForModal(student: StudentProps): ModalProps {
         return acc;
       }, {})
     : studentGifts;
-    
+
   const boxesObject = Array.isArray(studentBoxes)
     ? studentBoxes.reduce((acc, box) => {
         if (box.gift && box.gift.Id) {
@@ -52,17 +52,15 @@ function prepareStudentForModal(student: StudentProps): ModalProps {
         return acc;
       }, {})
     : studentBoxes;
-  
-  // Get the student data from storage to access ElephIcon
-  const storedStudentData = getStorageData(STORAGE_KEYS.STUDENTS)?.[student.Id];
-  
+
+  // ElephIcon should already be part of student data from useStudentData
   return {
     ...student,
     Gifts: giftsObject as GiftProps[],
     Boxes: boxesObject as GiftProps[],
     Materials: Object.values(materialData.value) as ResourceProps[],
     Equipments: Object.values(equipmentData.value) as ResourceProps[],
-    ElephIcon: student.ElephIcon || storedStudentData?.ElephIcon || ''
+    ElephIcon: student.ElephIcon || ''
   };
 }
 
@@ -107,10 +105,10 @@ async function handleReinitializeData() {
 }
 
 onMounted(() => {
-  const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
-  if (savedTheme) {
-    isDarkMode.value = savedTheme === 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+  const settings = getSettings();
+  if (settings.theme) {
+    isDarkMode.value = settings.theme === 'dark';
+    document.documentElement.setAttribute('data-theme', settings.theme);
   }
 })
 </script>
