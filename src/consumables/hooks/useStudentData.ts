@@ -2,7 +2,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { StudentProps, FetchedData } from '../../types/student';
 import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
-import { 
+import {
   ResourceProps,
   MATERIAL,
   EQUIPMENT,
@@ -11,21 +11,35 @@ import {
   GIFT_BOX_EXP_VALUES,
   creditsEntry
 } from '../../types/resource';
-import { 
-  saveResources, 
-  saveStudentData, 
-  getResources, 
-  getEquipments, 
-  saveEquipments, 
-  getPinnedStudents,
-  setStorageData,
-  getStorageData,
-  STORAGE_KEYS,
-  checkAndMigrateFormData,
-  checkAndMigrateEquipmentData,
+import {
+  saveResources,
+  getResources,
+  getEquipments,
+  saveEquipments,
 } from '../utils/studentStorage';
+import {
+  getSettings,
+  saveSettings,
+  getPinnedStudents,
+  updateSetting,
+  updateSortSettings,
+  type AppSettings
+} from '../utils/settingsStorage';
+import {
+  getAllStudents,
+  getAllItems,
+  getAllEquipment,
+  getAllFormData,
+  saveStudents,
+  saveItems,
+  saveEquipment,
+  needsRefresh,
+  updateCacheMetadata
+} from '../services/dbService';
+import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { studentDataStore } from '../stores/studentStore';
 import { currentLanguage } from '../stores/localizationStore';
+import { filterByProperty } from '../utils/filterUtils';
 
 export function useStudentData() {
   const studentData = ref<{ [key: string]: StudentProps }>({});
@@ -40,6 +54,8 @@ export function useStudentData() {
   const currentSort = ref<SortOption>('id');
   const sortDirection = ref<SortDirection>('asc');
   const sortedStudentsArray = ref<StudentProps[]>([]);
+  const isLoading = ref<boolean>(true);
+  const isReady = ref<boolean>(false);
 
   // Function to update the sorted students array
   function updateSortedStudents() {
@@ -126,25 +142,21 @@ export function useStudentData() {
     ));
   });
   
-  // Load saved sort preferences
-  function loadSortPreferences() {
-    const savedSort = getStorageData<SortOption>(STORAGE_KEYS.SORT_OPTION);
-    const savedDirection = getStorageData<SortDirection>(STORAGE_KEYS.SORT_DIRECTION);
-    
-    if (savedSort && ['id', 'name', 'default', 'bond', 'level', 'grade']
-      .includes(savedSort)) {
-      currentSort.value = savedSort;
-    }
-    
-    if (savedDirection && ['asc', 'desc'].includes(savedDirection)) {
-      sortDirection.value = savedDirection;
-    }
+  // Load saved preferences from consolidated settings
+  function loadSettings() {
+    const settings = getSettings();
+
+    isDarkMode.value = settings.theme === 'dark';
+    currentSort.value = settings.sort.option;
+    sortDirection.value = settings.sort.direction;
+
+    // Apply theme to document
+    document.documentElement.setAttribute('data-theme', settings.theme);
   }
 
-  // Save sort preferences
+  // Save sort preferences to consolidated settings
   function saveSortPreferences() {
-    setStorageData(STORAGE_KEYS.SORT_OPTION, currentSort.value);
-    setStorageData(STORAGE_KEYS.SORT_DIRECTION, sortDirection.value);
+    updateSortSettings(currentSort.value, sortDirection.value);
   }
 
   // Change the sort option
@@ -172,7 +184,7 @@ export function useStudentData() {
     isDarkMode.value = !isDarkMode.value
     const theme = isDarkMode.value ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', theme);
-    setStorageData(STORAGE_KEYS.THEME, theme);
+    updateSetting('theme', theme);
   }
   
   // Update search query
@@ -201,67 +213,6 @@ export function useStudentData() {
   }
 
   // Utility functions
-  function filterByProperty(
-    items: Record<string, any>, type: string, value: string | string[]) {
-    let valueArray: (string | number)[] = Array.isArray(value) ? value : [value];
-    const filteredItems = {};
-    
-    if (type === 'id' || type === 'tier' || type === 'recipecost') {
-      valueArray = valueArray.map(val => Number(val));
-    }
-    
-    for (const itemId in items) {
-      if (isItemMatch(items[itemId], type, valueArray)) {
-        filteredItems[itemId] = items[itemId];
-      }
-    }
-    
-    return filteredItems;
-  }
-
-  function isItemMatch(
-    item: any, type: string, valueArray: (string | number)[]): boolean {
-    switch (type) {
-      case 'category':
-        return valueArray.includes(item.Category);
-      case 'subcategory':
-        return valueArray.includes(item.SubCategory);
-      case 'id':
-        return valueArray.includes(item.Id);
-      case 'tier':
-        return valueArray.includes(item.Tier);
-      case 'recipecost':
-        return valueArray.includes(item.RecipeCost);
-      default:
-        return false;
-    }
-  }
-
-  function mergeFilteredItems(...objects: Record<string, any>[]) {
-    const result: Record<string, any> = {};
-    
-    for (const obj of objects) {
-      for (const key in obj) {
-        result[key] = obj[key];
-      }
-    }
-    
-    return result;
-  }
-
-  function applyFilters(
-    items: Record<string, any>, filterObj: Record<string, any>) {
-    const results: Record<string, any>[] = [];
-    
-    for (const [type, value] of Object.entries(filterObj)) {
-      if (value) { 
-        const filtered = filterByProperty(items, type, value);
-        results.push(filtered);
-      }
-    }
-    
-    return mergeFilteredItems(...results);
-  }
 
   function getGiftsByStudent(
     students: Record<string, StudentProps>, 
@@ -432,91 +383,191 @@ export function useStudentData() {
   }
 
   async function initializeData() {
-    checkAndMigrateFormData();
+    try {
+      isLoading.value = true;
 
-    loadSortPreferences();
-    
-    // Fetch and update reactive refs
-    const { students, items, equipment } = await fetchAllData();
-    
+      // 1. Run migration once (checks internally if already completed)
+      await migrateFromLocalStorageToIndexedDB();
+
+      // 2. Load settings from localStorage
+      loadSettings();
+
+      // 3. Load cached data from IndexedDB (cache-first for immediate render)
+      await loadFromCache();
+
+      // Mark as ready for initial render
+      isReady.value = true;
+      isLoading.value = false;
+
+      // 4. Check if background refresh is needed (non-blocking)
+      const shouldRefresh = await needsRefresh(7); // 7-day cache
+      if (shouldRefresh) {
+        console.log('Cache is stale, triggering background refresh...');
+        refreshSchaleDBData(); // Non-blocking background refresh
+      }
+    } catch (error) {
+      console.error('Error initializing data:', error);
+      isLoading.value = false;
+      isReady.value = true; // Still mark as ready to prevent blocking
+    }
+  }
+
+  // Load data from IndexedDB cache
+  async function loadFromCache() {
+    try {
+      const [students, items, equipment] = await Promise.all([
+        getAllStudents(),
+        getAllItems(),
+        getAllEquipment()
+      ]);
+
+      // Convert arrays to records
+      const studentRecord = students.reduce((acc, s) => {
+        acc[s.Id] = s;
+        return acc;
+      }, {} as Record<string, StudentProps>);
+
+      const itemRecord = items.reduce((acc, i) => {
+        acc[i.Id] = i;
+        return acc;
+      }, {} as Record<string, ResourceProps>);
+
+      const equipmentRecord = equipment.reduce((acc, e) => {
+        acc[e.Id] = e;
+        return acc;
+      }, {} as Record<string, ResourceProps>);
+
+      // Process and populate reactive refs
+      await processAndPopulateData(studentRecord, itemRecord, equipmentRecord);
+
+    } catch (error) {
+      console.error('Error loading from cache:', error);
+    }
+  }
+
+  // Background refresh from SchaleDB API
+  async function refreshSchaleDBData() {
+    try {
+      console.log('Fetching fresh data from SchaleDB...');
+      const { students, items, equipment } = await fetchAllData();
+
+      // Save to IndexedDB
+      await Promise.all([
+        saveStudents(Object.values(students)),
+        saveItems(Object.values(items)),
+        saveEquipment(Object.values(equipment))
+      ]);
+
+      // Update cache metadata
+      await updateCacheMetadata();
+
+      // Process and update reactive refs (UI updates)
+      await processAndPopulateData(students, items, equipment);
+
+      console.log('Background refresh completed successfully');
+    } catch (error) {
+      console.error('Background refresh failed:', error);
+      // Keep using cached data - no action needed
+    }
+  }
+
+  // Process fetched/cached data and populate all reactive refs
+  async function processAndPopulateData(
+    students: Record<string, StudentProps>,
+    items: Record<string, ResourceProps>,
+    equipment: Record<string, ResourceProps>
+  ) {
+    // Update student data
     studentData.value = students;
-    const allItems = items;
-    const allEquipments = equipment;
-    
-    giftData.value = filterByProperty(allItems, 'category', 'Favor');
-    boxData.value = filterByProperty(allItems, 'id', GIFT_BOX_IDS);
-    
+
+    // Filter gifts and boxes
+    giftData.value = filterByProperty(items, 'category', 'Favor');
+    boxData.value = filterByProperty(items, 'id', GIFT_BOX_IDS);
+
+    // Calculate gifts by student
     favoredGift.value = getGiftsByStudent(studentData.value, giftData.value, false);
     giftBoxData.value = getGiftsByStudent(studentData.value, boxData.value, true);
-    
-    // Create ElephIcons object to store student icons
-    const elephIcons = Object.entries(studentData.value).reduce((acc, [studentId, student]) => {
-      if (allItems[studentId]?.Icon) {
-        acc[studentId] = allItems[studentId].Icon;
-        // Update the student data with ElephIcon
-        studentData.value[studentId].ElephIcon = allItems[studentId].Icon;
+
+    // Add ElephIcons to student data
+    Object.entries(studentData.value).forEach(([studentId, student]) => {
+      if (items[studentId]?.Icon) {
+        studentData.value[studentId].ElephIcon = items[studentId].Icon;
       }
-      return acc;
-    }, {} as Record<string, string>);
+    });
 
-    // Save student data with the new ElephIcons property
-    saveStudentData(studentData.value, favoredGift.value, giftBoxData.value, elephIcons);
-    
-    // Handle resources initialization and credits
-    const existingResources = getResources();
-    const existingEquipments = getEquipments();
-    const filteredItems = applyFilters(allItems, MATERIAL);
-    const filteredEquipments = applyFilters(allEquipments, EQUIPMENT);
+    // Handle resources initialization - store ALL items
+    const existingResources = await getResources();
 
-    // Initialize resources if they don't exist
-    if (!existingResources) {
-      filteredItems[5] = creditsEntry; // Add credits
-      saveResources(filteredItems);
-      materialData.value = filteredItems;
+    if (!existingResources || Object.keys(existingResources).length === 0) {
+      // Initialize with all items including credits
+      const allItems = { ...items };
+      allItems[5] = creditsEntry;
+      await saveResources(allItems);
+      materialData.value = allItems;
     } else {
-      // Add any missing required resources from MATERIAL.id
-      let hasChanges = false;
-      
-      MATERIAL.id.forEach(id => {
-        if (!existingResources[id]) {
-          if (id === '5') {
-            existingResources[id] = creditsEntry;
-          } else if (allItems[id]) {
-            existingResources[id] = allItems[id];
-          }
-          hasChanges = true;
-        }
-      });
-
-      if (hasChanges) {
-      saveResources(existingResources);
+      // Ensure credits entry exists
+      if (!existingResources[5]) {
+        existingResources[5] = creditsEntry;
+        await saveResources(existingResources);
       }
       materialData.value = existingResources;
     }
 
-    if (!existingEquipments) {
-      saveEquipments(filteredEquipments);
-      equipmentData.value = filteredEquipments;
+    // Handle equipment initialization - store ALL equipment
+    const existingEquipments = await getEquipments();
+
+    if (!existingEquipments || Object.keys(existingEquipments).length === 0) {
+      await saveEquipments(equipment);
+      equipmentData.value = equipment;
     } else {
-      const mergedEquipments = checkAndMigrateEquipmentData(existingEquipments, filteredEquipments);
-      saveEquipments(mergedEquipments);
+      // Merge with existing (preserve QuantityOwned)
+      const mergedEquipments = { ...equipment };
+      Object.keys(existingEquipments).forEach(id => {
+        if (mergedEquipments[id]) {
+          mergedEquipments[id].QuantityOwned = existingEquipments[id].QuantityOwned || 0;
+        } else {
+          mergedEquipments[id] = existingEquipments[id];
+        }
+      });
+
+      await saveEquipments(mergedEquipments);
       equipmentData.value = mergedEquipments;
     }
 
+    // Preload student store for card overlays
+    await preloadStudentStore();
+
+    // Update sorted students
     updateSortedStudents();
+  }
+
+  // Preload student form data into store for card overlays
+  async function preloadStudentStore() {
+    try {
+      const allFormData = await getAllFormData();
+      // Populate the studentStore with all form data
+      Object.entries(allFormData).forEach(([studentId, formData]) => {
+        studentDataStore.value[studentId] = formData;
+      });
+    } catch (error) {
+      console.error('Error preloading student store:', error);
+    }
   }
 
   // Function to reinitialize data after language change
   async function reinitializeData() {
-    await initializeData();
+    // Force a fresh fetch from SchaleDB API when language changes
+    isLoading.value = true;
+    try {
+      await refreshSchaleDBData();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   onMounted(() => {
-    const savedTheme = getStorageData<string>(STORAGE_KEYS.THEME);
-    if (savedTheme) {
-      isDarkMode.value = savedTheme === 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
+    // Settings are already loaded in initializeData
+    // No need for separate onMounted logic
   });
 
   // Watch for changes in studentStore and re-sort when it updates
@@ -556,6 +607,9 @@ export function useStudentData() {
     sortDirection,
     updateSearchQuery,
     toggleDirection,
-    reinitializeData
+    reinitializeData,
+    isLoading,
+    isReady,
+    refreshSchaleDBData
   }
 }

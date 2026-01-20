@@ -1,5 +1,7 @@
 import { computed } from 'vue';
-import { getDataCollection, getEquipmentDataById, getEquipments } from '../utils/studentStorage';
+import { getEquipmentDataById, getEquipments } from '../utils/studentStorage';
+import { useStudentData } from './useStudentData';
+import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
 import { Material } from '../../types/upgrade';
 import { EquipmentMaterial, EquipmentType, EquipmentLevels } from '../../types/gear';
@@ -26,7 +28,7 @@ const getEquipmentXpDetails = () => {
   
   // Calculate XP needed for each student's equipment
   allStudentIds.forEach(studentId => {
-    const form = getDataCollection('forms')[studentId];
+    const form = studentDataStore.value[studentId];
     if (!form?.equipmentLevels) return;
 
     const equipmentLevels = form.equipmentLevels as EquipmentLevels;
@@ -47,7 +49,7 @@ const getEquipmentXpDetails = () => {
       const totalXpNeeded = targetXp - currentXp;
       
       if (totalXpNeeded > 0) {
-        const student = getDataCollection('students')[studentId];
+        const student = studentData.value[studentId];
         equipmentXpDetails.push({
           studentId,
           xpNeeded: totalXpNeeded,
@@ -85,6 +87,7 @@ function calculateExpNeeds() {
 }
 
 export function useGearCalculation() {
+  const { studentData } = useStudentData();
   const allGearsData = computed(() => getAllGearsData());
   
   // Add cache for XP calculation results
@@ -175,7 +178,7 @@ export function useGearCalculation() {
   // Get students using a specific material
   const getEquipmentUsageByStudents = (materialId: number, viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed') => {
     const usage: { student: StudentProps; quantity: number; equipmentTypes: EquipmentType[] }[] = [];
-    const studentsCollection = getDataCollection('students') || {};
+    const studentsCollection = studentData.value || {};
     
     if (isExpBall(materialId)) {
       // Use cached XP details if available
@@ -196,7 +199,7 @@ export function useGearCalculation() {
         const student = studentsCollection[detail.studentId];
         if (!student) return;
         
-        const form = getDataCollection('forms')[detail.studentId];
+        const form = studentDataStore.value[detail.studentId];
         if (!form?.equipmentLevels) return;
 
         const equipmentLevels = form.equipmentLevels as EquipmentLevels;

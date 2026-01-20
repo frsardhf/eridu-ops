@@ -3,6 +3,8 @@ import { ref, computed, onUnmounted, onMounted } from 'vue';
 import { ModalProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
+import { applyFilters } from '../../../../consumables/utils/filterUtils';
+import { EQUIPMENT } from '../../../../types/resource';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
@@ -24,7 +26,12 @@ const containerWidth = ref(0);
 
 const equipments = computed(() => {
   if (!props.student) return [];
-  return Object.values(props.student.Equipments || {});
+
+  // Apply EQUIPMENT filters to show only planner-relevant equipment
+  const allEquipments = props.student.Equipments || {};
+  const filteredEquipments = applyFilters(allEquipments, EQUIPMENT);
+
+  return Object.values(filteredEquipments);
 });
 
 const totalPages = computed(() => {

@@ -45,8 +45,8 @@ async function handleFiles(files: FileList) {
   
   const file = files[0];
   
-  // Check if it's a text file
-  if (!file.name.endsWith('.txt')) {
+  // Check if it's a valid file type
+  if (!file.name.endsWith('.txt') && !file.name.endsWith('.json')) {
     showImportError($t('importErrorFileType'));
     return;
   }
@@ -184,11 +184,11 @@ function closeModal(event: MouseEvent) {
           @dragleave="handleDragLeave"
           @drop="handleDrop"
         >
-          <input 
-            type="file" 
-            id="file-input" 
-            class="file-input" 
-            accept=".txt"
+          <input
+            type="file"
+            id="file-input"
+            class="file-input"
+            accept=".json,.txt"
             @change="handleFileSelect"
           />
 

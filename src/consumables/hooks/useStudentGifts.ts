@@ -3,7 +3,7 @@ import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { getResources, loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import bondData from '../../data/data.json';
-import { updateStudentData } from '../stores/studentStore';
+import { updateStudentData, studentDataStore } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
 
 export function useStudentGifts(props: {
@@ -32,7 +32,7 @@ export function useStudentGifts(props: {
   watch(() => props.isVisible, (newValue) => {
     if (newValue && props.student) {
       setTimeout(() => {
-        loadFromLocalStorage();
+        loadFromIndexedDB();
       }, 50);
     }
   }, { immediate: true });
@@ -42,7 +42,7 @@ export function useStudentGifts(props: {
     if (newValue) {
       resetFormData();
       if (props.isVisible) {
-        loadFromLocalStorage();
+        loadFromIndexedDB();
       }
     }
   });
@@ -53,15 +53,15 @@ export function useStudentGifts(props: {
     previousBoxFormData.value = JSON.parse(JSON.stringify(boxFormData.value));
   };
 
-  // Watch for changes to form data and save to localStorage
+  // Watch for changes to form data and save to IndexedDB
   watch([giftFormData, boxFormData, bondDetailData], () => {
     if (props.student && props.isVisible) {
-      saveToLocalStorage();
+      saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
   }, { deep: true });
 
-  function saveToLocalStorage() {
+  async function saveToIndexedDB() {
     if (!props.student) return;
 
     const dataToSave = {
@@ -70,27 +70,31 @@ export function useStudentGifts(props: {
       bondDetailData: bondDetailData.value
     }
 
-    saveFormData(props.student.Id, dataToSave);
+    const savedData = await saveFormData(props.student.Id, dataToSave);
+    if (savedData) {
+      // Update store immediately with sanitized data for reactive overlay updates
+      studentDataStore.value[props.student.Id] = savedData;
+    }
   }
 
-  function loadFromLocalStorage() {
+  async function loadFromIndexedDB() {
     if (!props.student) return;
-    
+
     // Define the refs and their default values
     const refs = {
       giftFormData,
       boxFormData,
       bondDetailData
     };
-    
+
     const defaultValues = {
       giftFormData: {},
       boxFormData: {},
       bondDetailData: DEFAULT_BOND_DETAIL
     };
 
-    loadFormDataToRefs(props.student.Id, refs, defaultValues);
-    
+    await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+
     // Store initial state for undo after loading
     savePreviousState();
   }
@@ -386,7 +390,7 @@ export function useStudentGifts(props: {
 
   function closeModal() {
     // Save the current state (including conversion state) before closing
-    saveToLocalStorage();
+    saveToIndexedDB();
     emit('close');
   }
 

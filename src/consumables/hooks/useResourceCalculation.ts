@@ -1,5 +1,7 @@
 import { computed } from 'vue';
-import { getDataCollection, getResourceDataById, getResources } from '../utils/studentStorage';
+import { getResourceDataById, getResources } from '../utils/studentStorage';
+import { useStudentData } from './useStudentData';
+import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID, ELIGMAS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
@@ -9,6 +11,7 @@ import dataTable from '../../data/data.json';
 
 // Helper function to get student XP details
 const getStudentXpDetails = () => {
+  const { studentData } = useStudentData();
   const characterXpTable = dataTable.character_xp ?? [];
   const studentXpDetails: { 
     studentId: string; 
@@ -24,7 +27,7 @@ const getStudentXpDetails = () => {
   
   // Calculate XP needed for each student
   allStudentIds.forEach(studentId => {
-    const form = getDataCollection('forms')[studentId];
+    const form = studentDataStore.value[studentId];
     if (!form) return;
 
     const currentLevel = form.characterLevels.current ?? 1;
@@ -37,7 +40,7 @@ const getStudentXpDetails = () => {
     const studentXpNeeded = Math.max(0, targetXp - currentXp);
     
     if (studentXpNeeded > 0) {
-      const student = getDataCollection('students')[studentId];
+      const student = studentData.value[studentId];
       studentXpDetails.push({
         studentId,
         xpNeeded: studentXpNeeded,
@@ -94,6 +97,7 @@ const getStudentCredits = (studentId: string, materials: Material[], gears: Mate
 };
 
 export function useResourceCalculation() {
+  const { studentData } = useStudentData();
   const allMaterialsData = computed(() => getAllMaterialsData());
   const allGearsData = computed(() => getAllGearsData());
 
@@ -194,7 +198,7 @@ export function useResourceCalculation() {
   const getMaterialUsageByStudents = (materialId: number, viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed') => {
     const usage: { student: StudentProps; quantity: number }[] = [];
     const isCredits = materialId === CREDITS_ID;
-    const studentsCollection = getDataCollection('students') || {};
+    const studentsCollection = studentData.value || {};
     
     if (isExpReport(materialId)) {
       // Handle EXP reports
@@ -204,7 +208,7 @@ export function useResourceCalculation() {
         const student = studentsCollection[detail.studentId];
         if (!student) return;
         
-        const form = getDataCollection('forms')[detail.studentId];
+        const form = studentDataStore.value[detail.studentId];
         if (!form) return;
 
         const currentLevel = form.characterLevels.current ?? 1;

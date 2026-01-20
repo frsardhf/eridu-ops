@@ -1,13 +1,12 @@
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, watchEffect } from 'vue';
   import { ModalProps } from '../../types/student';
   import dataTable from '../../data/data.json';
-  import { 
-    loadFormDataToRefs, 
-    saveFormData, 
-    getEquipments,
-    getResourceDataById,
-    getEquipmentDataById
+  import {
+    loadFormDataToRefs,
+    saveFormData,
+    getEquipments
   } from '../utils/studentStorage';
+  import { getResourceDataByIdSync, getEquipmentDataByIdSync, getAllEquipmentFromCache } from '../stores/resourceCacheStore';
   import { 
     EquipmentLevels, 
     EquipmentType, 
@@ -20,12 +19,12 @@
     Material,
   } from '../../types/upgrade';
   import { consolidateAndSortMaterials } from '../utils/materialUtils';
-  import { updateStudentData } from '../stores/studentStore';
+  import { updateStudentData, studentDataStore } from '../stores/studentStore';
   import { updateGearsData } from '../stores/equipmentsStore';
 
   // Function to get maximum tier for each equipment type
-  function getMaxTierForType(type: string): number {
-    const equipments = getEquipments();
+  async function getMaxTierForType(type: string): Promise<number> {
+    const equipments = await getEquipments();
     if (!equipments) return 10; // Default to 10 if data not found
 
     // Find the equipment that matches the type
@@ -106,26 +105,28 @@
 
   // Exported function to calculate equipment materials needed
   export function calculateEquipmentMaterialsNeeded(
-    studentEquipments: Record<string | number, any>,
+    studentEquipmentTypes: string[] | Record<string | number, any>,
     equipmentLevels: EquipmentLevels
   ): Material[] {
     const materialsNeeded: Material[] = [];
-    if (!studentEquipments || !equipmentLevels) return materialsNeeded;
+    if (!studentEquipmentTypes || !equipmentLevels) return materialsNeeded;
+
+    // Get all equipment data from cache
+    const allEquipment = getAllEquipmentFromCache();
 
     Object.entries(equipmentLevels).forEach(([type, levels]) => {
       const { current, target } = levels;
-      
+
       // Skip if no upgrade needed for this type
       if (current >= target) return;
 
       // Calculate materials for each level from current to target-1
       for (let level = current; level < target; level++) {
-        // Find the equipment item for the next tier
+        // Find the equipment item for the next tier from the cache
         const nextTier = level + 1;
-        const equipmentItem = studentEquipments ? 
-          Object.values(studentEquipments).find(eq => 
-            eq.Category === type && eq.Tier === nextTier
-          ) : null;
+        const equipmentItem = Object.values(allEquipment).find(eq =>
+          eq.Category === type && eq.Tier === nextTier
+        );
 
         // Get the recipe from the equipment item
         const recipes = equipmentItem?.Recipe ?? null;
@@ -140,20 +141,20 @@
         for (const recipe of recipes) {
           const recipeId = recipe[0];
           const quantity = recipe[1];
-          
+
           if (!recipeId || !quantity) continue;
-          
+
           // Convert equipment ID to material ID by removing first two digits
           const materialId = parseInt(recipeId.toString().substring(2));
-          
+
           // Get material data from ID
-          const materialData = getEquipmentDataById(materialId);
-          
+          const materialData = getEquipmentDataByIdSync(materialId);
+
           // Check if this material type already exists
-          const existingMaterial = materialsNeeded.find(m => 
+          const existingMaterial = materialsNeeded.find(m =>
             m.material?.Id === materialId && m.type === type
           );
-          
+
           if (existingMaterial) {
             // Update quantity for existing material
             existingMaterial.materialQuantity += quantity;
@@ -177,7 +178,7 @@
     equipmentLevels: EquipmentLevels
   ): Material[] {
     const materialsNeeded: Material[] = [];
-    const creditsData = getResourceDataById(CREDITS_ID);
+    const creditsData = getResourceDataByIdSync(CREDITS_ID);
     
     Object.entries(equipmentLevels).forEach(([type, levels]) => {
       const { current, target } = levels;
@@ -205,7 +206,7 @@
     gradeLevels: GradeLevels
   ): Material[] {
     const materialsNeeded: Material[] = [];
-    const creditsData = getResourceDataById(CREDITS_ID);
+    const creditsData = getResourceDataByIdSync(CREDITS_ID);
     
     const current = gradeLevels.current ?? 1;
     const target = gradeLevels.target ?? 1;
@@ -233,7 +234,7 @@
     gradeInfos: GradeInfos
   ): Material[] {
     const materialsNeeded: Material[] = [];
-    const eligmasData = getResourceDataById(ELIGMAS_ID);
+    const eligmasData = getResourceDataByIdSync(ELIGMAS_ID);
     
     const current = gradeLevels.current ?? 1;
     const target = gradeLevels.target ?? 1;
@@ -267,15 +268,12 @@
   ): Material[] {
     // Collect all materials
     const materials: Material[] = [];
-    
+
     materials.push(...calculateGradeCreditsNeeded(gradeLevels));
     materials.push(...calculateGradeMaterialsNeeded(gradeLevels, gradeInfos));
     materials.push(...calculateEquipmentCreditsNeeded(equipmentLevels));
-    materials.push(...calculateEquipmentMaterialsNeeded(student?.Equipments, equipmentLevels));
-    if (!student?.Equipments) {
-      materials.push(...calculateEquipmentMaterialsNeeded(student, equipmentLevels));
-    }
-    
+    materials.push(...calculateEquipmentMaterialsNeeded(student?.Equipment, equipmentLevels));
+
     // Consolidate and sort materials
     return consolidateAndSortMaterials(materials);
   }
@@ -309,7 +307,7 @@
     watch(() => props.isVisible, (newValue) => {
       if (newValue && props.student) {
         setTimeout(() => {
-          loadFromLocalStorage();
+          loadFromIndexedDB();
         }, 50);
       }
     }, { immediate: true });
@@ -319,34 +317,38 @@
       if (newValue) {
         resetFormData();
         if (props.isVisible) {
-          loadFromLocalStorage();
+          loadFromIndexedDB();
         }
       }
     });
 
-    // Watch for changes to form data and save to localStorage
+    // Watch for changes to form data and save to IndexedDB
     watch([equipmentLevels, gradeLevels, gradeInfos], () => {
       if (props.student && props.isVisible) {
-        saveToLocalStorage();
+        saveToIndexedDB();
         updateStudentData(props.student.Id);
       }
     }, { deep: true });
 
-    // Save current form data to localStorage
-    function saveToLocalStorage() {
+    // Save current form data to IndexedDB
+    async function saveToIndexedDB() {
       if (!props.student) return;
-      
+
       const dataToSave = {
         equipmentLevels: equipmentLevels.value,
         gradeLevels: gradeLevels.value,
         gradeInfos: gradeInfos.value
       };
 
-      saveFormData(props.student.Id, dataToSave);
+      const savedData = await saveFormData(props.student.Id, dataToSave);
+      if (savedData) {
+        // Update store immediately with sanitized data for reactive overlay updates
+        studentDataStore.value[props.student.Id] = savedData;
+      }
     }
 
-    // Load form data from localStorage
-    function loadFromLocalStorage() {
+    // Load form data from IndexedDB
+    async function loadFromIndexedDB() {
       if (!props.student) return;
 
       const refs = {
@@ -368,26 +370,31 @@
         gradeInfos: { owned: 0, price: 1, purchasable: 20}
       };
 
-      const success = loadFormDataToRefs(props.student.Id, refs, defaultValues);
+      const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
 
       if (!success || Object.keys(equipmentLevels.value).length === 0) {
         equipmentLevels.value = defaultEquipmentLevels;
         gradeLevels.value = defaultValues.gradeLevels;
         gradeInfos.value = defaultValues.gradeInfos;
-        
-        saveToLocalStorage();
+
+        await saveToIndexedDB();
       }
-      
+
       if (props.student) {
-        updateStudentData(props.student.Id);
+        await updateStudentData(props.student.Id);
       }
     }
 
-    // Use the external calculation function for the computed property
-    const equipmentMaterialsNeeded = computed<Material[]>(() => {
-      if (!props.student) return [];
-      
-      const materials = calculateAllGears(
+    // Use the external calculation function
+    const equipmentMaterialsNeeded = ref<Material[]>([]);
+
+    watchEffect(async () => {
+      if (!props.student) {
+        equipmentMaterialsNeeded.value = [];
+        return;
+      }
+
+      const materials = await calculateAllGears(
         props.student ?? undefined,
         equipmentLevels.value,
         gradeLevels.value,
@@ -395,23 +402,22 @@
       );
 
       updateGearsData(props.student.Id, materials);
-      
-      return materials;
+      equipmentMaterialsNeeded.value = materials;
     });
 
     // Function to handle updates for equipment levels
-    const handleEquipmentUpdate = (type: EquipmentType, current: number, target: number) => {
-      const maxTier = getMaxTierForType(type);
-      
+    const handleEquipmentUpdate = async (type: EquipmentType, current: number, target: number) => {
+      const maxTier = await getMaxTierForType(type);
+
       if (current >= 1 && current <= maxTier && target >= current && target <= maxTier) {
         // Update the specified equipment type
         if (equipmentLevels.value[type]) {
           equipmentLevels.value[type].current = current;
           equipmentLevels.value[type].target = target;
-          
+
           if (props.student && props.isVisible) {
-            saveToLocalStorage();
-            updateStudentData(props.student.Id);
+            await saveToIndexedDB();
+            await updateStudentData(props.student.Id);
           }
         } else {
           console.error('Equipment type not found in levels:', type);
@@ -428,7 +434,7 @@
           gradeLevels.value.target = target;
           
           if (props.student && props.isVisible) {
-            saveToLocalStorage();
+            saveToIndexedDB();
             updateStudentData(props.student.Id);
           }
         }
@@ -444,14 +450,14 @@
         gradeInfos.value.purchasable = purchasable;
         
         if (props.student && props.isVisible) {
-          saveToLocalStorage();
+          saveToIndexedDB();
           updateStudentData(props.student.Id);
         }
       }
     };
 
     function closeModal() {
-      saveToLocalStorage();
+      saveToIndexedDB();
       emit('close');
     }
 

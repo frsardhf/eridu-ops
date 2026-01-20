@@ -90,8 +90,8 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-function exportData() {
-  downloadLocalStorageData();
+async function exportData() {
+  await downloadLocalStorageData();
   mobileMenuOpen.value = false;
 }
 
