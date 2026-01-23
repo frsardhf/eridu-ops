@@ -21,6 +21,7 @@
   import { consolidateAndSortMaterials } from '../utils/materialUtils';
   import { updateStudentData, studentDataStore } from '../stores/studentStore';
   import { updateGearsData } from '../stores/equipmentsStore';
+  import { useGearCalculation } from './useGearCalculation';
 
   // Function to get maximum tier for each equipment type
   async function getMaxTierForType(type: string): Promise<number> {
@@ -278,10 +279,15 @@
     return consolidateAndSortMaterials(materials);
   }
 
-  export function useStudentGear(props: { 
+  export function useStudentGear(props: {
     student: ModalProps | null,
     isVisible?: boolean
   }, emit: (event: 'close') => void) {
+    // Track pending save to deduplicate concurrent saves
+    let pendingSave: Promise<void> | null = null;
+    // Track loading state to prevent watch from triggering saves during load
+    const isLoading = ref(false);
+
     // Track all equipment levels in one object
     const equipmentLevels = ref<EquipmentLevels>({});
     const gradeLevels = ref<GradeLevels>({});
@@ -293,7 +299,7 @@
       if (props.student?.Equipment) {
         const newLevels: EquipmentLevels = {};
         props.student.Equipment.forEach(type => {
-          newLevels[type] = { current: 1, target: 1 };
+          newLevels[type as EquipmentType] = { current: 1, target: 1 };
         });
         equipmentLevels.value = newLevels;
       } 
@@ -323,9 +329,9 @@
     });
 
     // Watch for changes to form data and save to IndexedDB
-    watch([equipmentLevels, gradeLevels, gradeInfos], () => {
-      if (props.student && props.isVisible) {
-        saveToIndexedDB();
+    watch([equipmentLevels, gradeLevels, gradeInfos], async () => {
+      if (props.student && props.isVisible && !isLoading.value) {
+        await saveToIndexedDB();
         updateStudentData(props.student.Id);
       }
     }, { deep: true });
@@ -334,54 +340,72 @@
     async function saveToIndexedDB() {
       if (!props.student) return;
 
-      const dataToSave = {
-        equipmentLevels: equipmentLevels.value,
-        gradeLevels: gradeLevels.value,
-        gradeInfos: gradeInfos.value
-      };
-
-      const savedData = await saveFormData(props.student.Id, dataToSave);
-      if (savedData) {
-        // Update store immediately with sanitized data for reactive overlay updates
-        studentDataStore.value[props.student.Id] = savedData;
+      // Wait for any pending save to complete
+      if (pendingSave) {
+        await pendingSave;
       }
+
+      // Mark this as the current pending save
+      const currentSave = (async () => {
+        const dataToSave = {
+          equipmentLevels: { ...equipmentLevels.value },
+          gradeLevels: { ...gradeLevels.value },
+          gradeInfos: { ...gradeInfos.value }
+        };
+
+        const savedData = await saveFormData(props.student!.Id, dataToSave);
+        if (savedData) {
+          // Update store immediately with sanitized data for reactive overlay updates
+          studentDataStore.value[props.student!.Id] = savedData;
+        }
+      })();
+
+      pendingSave = currentSave;
+      await currentSave;
+      pendingSave = null;
     }
 
     // Load form data from IndexedDB
     async function loadFromIndexedDB() {
       if (!props.student) return;
 
-      const refs = {
-        equipmentLevels,
-        gradeLevels,
-        gradeInfos
-      }
+      isLoading.value = true;
 
-      const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
-        acc[type] = { current: 1, target: 1 };
-        return acc;
-      }, {} as EquipmentLevels);
+      try {
+        const refs = {
+          equipmentLevels,
+          gradeLevels,
+          gradeInfos
+        }
 
-      const starGrade = props.student?.StarGrade ?? 1;
+        const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
+          acc[type as EquipmentType] = { current: 1, target: 1 };
+          return acc;
+        }, {} as EquipmentLevels);
 
-      const defaultValues = {
-        equipmentLevels: defaultEquipmentLevels,
-        gradeLevels: { current: starGrade, target: starGrade },
-        gradeInfos: { owned: 0, price: 1, purchasable: 20}
-      };
+        const starGrade = props.student?.StarGrade ?? 1;
 
-      const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+        const defaultValues = {
+          equipmentLevels: defaultEquipmentLevels,
+          gradeLevels: { current: starGrade, target: starGrade },
+          gradeInfos: { owned: 0, price: 1, purchasable: 20}
+        };
 
-      if (!success || Object.keys(equipmentLevels.value).length === 0) {
-        equipmentLevels.value = defaultEquipmentLevels;
-        gradeLevels.value = defaultValues.gradeLevels;
-        gradeInfos.value = defaultValues.gradeInfos;
+        const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
 
-        await saveToIndexedDB();
-      }
+        if (!success || Object.keys(equipmentLevels.value).length === 0) {
+          equipmentLevels.value = defaultEquipmentLevels;
+          gradeLevels.value = defaultValues.gradeLevels;
+          gradeInfos.value = defaultValues.gradeInfos;
 
-      if (props.student) {
-        await updateStudentData(props.student.Id);
+          await saveToIndexedDB();
+        }
+
+        if (props.student) {
+          await updateStudentData(props.student.Id);
+        }
+      } finally {
+        isLoading.value = false;
       }
     }
 
@@ -416,8 +440,7 @@
           equipmentLevels.value[type].target = target;
 
           if (props.student && props.isVisible) {
-            await saveToIndexedDB();
-            await updateStudentData(props.student.Id);
+            updateStudentData(props.student.Id);
           }
         } else {
           console.error('Equipment type not found in levels:', type);
@@ -427,14 +450,13 @@
 
     // Function to handle updates for equipment levels
     const handleGradeUpdate = (current: number, target: number) => {
-      if (current >= 1 && current <= 8 && target >= current && target <= 8) {
+      if (current >= 1 && current <= 9 && target >= current && target <= 9) {
         // Update the specified equipment type
         if (gradeLevels.value) {
           gradeLevels.value.current = current;
           gradeLevels.value.target = target;
-          
+
           if (props.student && props.isVisible) {
-            saveToIndexedDB();
             updateStudentData(props.student.Id);
           }
         }
@@ -448,9 +470,8 @@
         gradeInfos.value.owned = owned;
         gradeInfos.value.price = price;
         gradeInfos.value.purchasable = purchasable;
-        
+
         if (props.student && props.isVisible) {
-          saveToIndexedDB();
           updateStudentData(props.student.Id);
         }
       }

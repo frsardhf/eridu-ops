@@ -1,5 +1,5 @@
-import { computed } from 'vue';
-import { getResourceDataById, getResources } from '../utils/studentStorage';
+import { computed, ComputedRef } from 'vue';
+import { getResourceDataByIdSync, getAllResourcesFromCache } from '../stores/resourceCacheStore';
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
@@ -9,71 +9,11 @@ import { getAllGearsData } from '../stores/equipmentsStore';
 import { isExpReport } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
 
-// Helper function to get student XP details
-const getStudentXpDetails = () => {
-  const { studentData } = useStudentData();
-  const characterXpTable = dataTable.character_xp ?? [];
-  const studentXpDetails: { 
-    studentId: string; 
-    xpNeeded: number; 
-    remainingXp: number;
-    name: string 
-  }[] = [];
-
-  // Create a set of all student IDs from both data sources
-  const allStudentIds = new Set<string>();
-  Object.keys(getAllMaterialsData()).forEach(studentId => allStudentIds.add(studentId));
-  Object.keys(getAllGearsData()).forEach(studentId => allStudentIds.add(studentId));
-  
-  // Calculate XP needed for each student
-  allStudentIds.forEach(studentId => {
-    const form = studentDataStore.value[studentId];
-    if (!form) return;
-
-    const currentLevel = form.characterLevels.current ?? 1;
-    const targetLevel = form.characterLevels.target ?? currentLevel;
-    
-    if (currentLevel >= targetLevel || !characterXpTable.length) return;
-    
-    const currentXp = characterXpTable[currentLevel - 1] ?? 0;
-    const targetXp = characterXpTable[targetLevel - 1] ?? 0;
-    const studentXpNeeded = Math.max(0, targetXp - currentXp);
-    
-    if (studentXpNeeded > 0) {
-      const student = studentData.value[studentId];
-      studentXpDetails.push({
-        studentId,
-        xpNeeded: studentXpNeeded,
-        remainingXp: studentXpNeeded,
-        name: student?.Name ?? studentId
-      });
-    }
-  });
-  
-  return studentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
-};
-
-// Helper function to calculate XP needs and report allocations
-function calculateExpNeeds() {
-  const resources = getResources() || {};
-  const studentXpDetails = getStudentXpDetails();
-  
-  // Calculate total XP needed
-  const totalXpNeeded = studentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
-  
-  // Calculate owned XP (sum of all XP report quantities * their values)
-  const ownedXp =
-    (resources['10']?.QuantityOwned ?? 0) * (resources['10']?.ExpValue ?? 0) +
-    (resources['11']?.QuantityOwned ?? 0) * (resources['11']?.ExpValue ?? 0) +
-    (resources['12']?.QuantityOwned ?? 0) * (resources['12']?.ExpValue ?? 0) +
-    (resources['13']?.QuantityOwned ?? 0) * (resources['13']?.ExpValue ?? 0);
-
-  return {
-    totalXpNeeded,
-    ownedXp,
-    studentXpDetails
-  };
-}
+// Singleton state
+let _totalMaterialsNeeded: ComputedRef<Material[]>;
+let _materialsLeftover: ComputedRef<Material[]>;
+let _allMaterialsData: ComputedRef<Record<string, Material[]>>;
+let _allGearsData: ComputedRef<Record<string, Material[]>>;
 
 // Helper function to get student credits
 const getStudentCredits = (studentId: string, materials: Material[], gears: Material[]) => {
@@ -98,14 +38,87 @@ const getStudentCredits = (studentId: string, materials: Material[], gears: Mate
 
 export function useResourceCalculation() {
   const { studentData } = useStudentData();
-  const allMaterialsData = computed(() => getAllMaterialsData());
-  const allGearsData = computed(() => getAllGearsData());
+
+  // Helper function to get student XP details
+  const getStudentXpDetails = () => {
+    const characterXpTable = dataTable.character_xp ?? [];
+    const studentXpDetails: {
+      studentId: string;
+      xpNeeded: number;
+      remainingXp: number;
+      name: string
+    }[] = [];
+
+    // Create a set of all student IDs from both data sources
+    const allStudentIds = new Set<string>();
+    Object.keys(getAllMaterialsData()).forEach(studentId => allStudentIds.add(studentId));
+    Object.keys(getAllGearsData()).forEach(studentId => allStudentIds.add(studentId));
+
+    // Calculate XP needed for each student
+    allStudentIds.forEach(studentId => {
+      const form = studentDataStore.value[studentId];
+      if (!form) return;
+
+      const currentLevel = form.characterLevels.current ?? 1;
+      const targetLevel = form.characterLevels.target ?? currentLevel;
+
+      if (currentLevel >= targetLevel || !characterXpTable.length) return;
+
+      const currentXp = characterXpTable[currentLevel - 1] ?? 0;
+      const targetXp = characterXpTable[targetLevel - 1] ?? 0;
+      const studentXpNeeded = Math.max(0, targetXp - currentXp);
+
+      if (studentXpNeeded > 0) {
+        const student = studentData.value[studentId];
+        studentXpDetails.push({
+          studentId,
+          xpNeeded: studentXpNeeded,
+          remainingXp: studentXpNeeded,
+          name: student?.Name ?? studentId
+        });
+      }
+    });
+
+    return studentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
+  };
+
+  // Helper function to calculate XP needs and report allocations
+  const calculateExpNeeds = () => {
+    const resources = getAllResourcesFromCache();
+    const studentXpDetails = getStudentXpDetails();
+
+    // Calculate total XP needed
+    const totalXpNeeded = studentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
+
+    // Calculate owned XP (sum of all XP report quantities * their values)
+    const ownedXp =
+      (resources['10']?.QuantityOwned ?? 0) * (resources['10']?.ExpValue ?? 0) +
+      (resources['11']?.QuantityOwned ?? 0) * (resources['11']?.ExpValue ?? 0) +
+      (resources['12']?.QuantityOwned ?? 0) * (resources['12']?.ExpValue ?? 0) +
+      (resources['13']?.QuantityOwned ?? 0) * (resources['13']?.ExpValue ?? 0);
+
+    return {
+      totalXpNeeded,
+      ownedXp,
+      studentXpDetails
+    };
+  };
+
+  // Initialize computed properties on first call only
+  if (!_allMaterialsData) {
+    _allMaterialsData = computed(() => getAllMaterialsData());
+    _allGearsData = computed(() => getAllGearsData());
+  }
+
+  const allMaterialsData = _allMaterialsData;
+  const allGearsData = _allGearsData;
 
   // Calculate total materials needed across all students
-  const totalMaterialsNeeded = computed(() => {
+  if (!_totalMaterialsNeeded) {
+    _totalMaterialsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();
-    const creditsMaterial = getResourceDataById(CREDITS_ID);
-    const eligmasMaterial = getResourceDataById(ELIGMAS_ID);
+    const creditsMaterial = getResourceDataByIdSync(CREDITS_ID);
+    const eligmasMaterial = getResourceDataByIdSync(ELIGMAS_ID);
     let creditsQuantity = 0;
     let eligmasQuantity = 0;
 
@@ -153,27 +166,31 @@ export function useResourceCalculation() {
 
     // Add XP materials from helper function
     const { totalXpNeeded } = calculateExpNeeds();
-    
+
     // Add XP as a special material type
     materialMap.set(10, { // Using Novice report ID as the XP material ID
-      material: getResourceDataById(10),
+      material: getResourceDataByIdSync(10),
       materialQuantity: totalXpNeeded,
       type: 'xp'
     });
     
     return Array.from(materialMap.values());
-  });
+    });
+  }
+
+  const totalMaterialsNeeded = _totalMaterialsNeeded;
 
   // Calculate materials leftover
-  const materialsLeftover = computed(() => {
-    const resources = getResources() || {};
+  if (!_materialsLeftover) {
+    _materialsLeftover = computed(() => {
+    const resources = getAllResourcesFromCache();
     const leftover: Material[] = [];
 
     totalMaterialsNeeded.value.forEach(needed => {
       const materialId = needed.material?.Id;
       if (!materialId) return;
 
-      const resource = resources[materialId.toString()];
+      const resource = resources[materialId];
       if (!resource) return;
 
       const owned = resource.QuantityOwned ?? 0;
@@ -187,7 +204,10 @@ export function useResourceCalculation() {
     });
 
     return leftover;
-  });
+    });
+  }
+
+  const materialsLeftover = _materialsLeftover;
 
   // Get materials for a specific student
   const getStudentMaterials = (studentId: string | number): Material[] => {
@@ -224,8 +244,8 @@ export function useResourceCalculation() {
     } else if (isCredits) {
       // Handle credits
       const studentCredits = new Map<string, number>();
-      const resources = getResources() || {};
-      const ownedCredits = resources[CREDITS_ID.toString()]?.QuantityOwned ?? 0;
+      const resources = getAllResourcesFromCache();
+      const ownedCredits = resources[CREDITS_ID]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed credits
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
@@ -284,8 +304,8 @@ export function useResourceCalculation() {
     } else {
       // Handle regular materials
       const materialNeeds = new Map<string, number>();
-      const resources = getResources() || {};
-      const ownedQuantity = resources[materialId.toString()]?.QuantityOwned ?? 0;
+      const resources = getAllResourcesFromCache();
+      const ownedQuantity = resources[materialId]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed quantities
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {

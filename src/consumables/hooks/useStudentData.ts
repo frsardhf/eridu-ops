@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch, Ref } from 'vue'
 import { StudentProps, FetchedData } from '../../types/student';
 import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
@@ -9,7 +9,8 @@ import {
   GENERIC_GIFT_TAGS,
   GIFT_BOX_IDS,
   GIFT_BOX_EXP_VALUES,
-  creditsEntry
+  creditsEntry,
+  GiftRarity
 } from '../../types/resource';
 import {
   saveResources,
@@ -38,24 +39,62 @@ import {
 } from '../services/dbService';
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { studentDataStore } from '../stores/studentStore';
+import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage } from '../stores/localizationStore';
 import { filterByProperty } from '../utils/filterUtils';
 
+// Singleton state (shared across all calls)
+let _studentData: Ref<{ [key: string]: StudentProps }>;
+let _materialData: Ref<Record<string, ResourceProps>>;
+let _equipmentData: Ref<Record<string, ResourceProps>>;
+let _giftData: Ref<Record<string, ResourceProps>>;
+let _boxData: Ref<Record<string, ResourceProps>>;
+let _favoredGift: Ref<Record<string, GiftProps[]>>;
+let _giftBoxData: Ref<Record<string, GiftProps[]>>;
+let _searchQuery: Ref<string>;
+let _isDarkMode: Ref<boolean>;
+let _currentSort: Ref<SortOption>;
+let _sortDirection: Ref<SortDirection>;
+let _sortedStudentsArray: Ref<StudentProps[]>;
+let _isLoading: Ref<boolean>;
+let _isReady: Ref<boolean>;
+let _isInitialized = false;
+let _initPromise: Promise<void>;
+
 export function useStudentData() {
-  const studentData = ref<{ [key: string]: StudentProps }>({});
-  const materialData = ref<Record<string, ResourceProps>>({});
-  const equipmentData = ref<Record<string, ResourceProps>>({});
-  const giftData = ref<Record<string, ResourceProps>>({});
-  const boxData = ref<Record<string, ResourceProps>>({});
-  const favoredGift = ref<Record<string, GiftProps[]>>({});
-  const giftBoxData = ref<Record<string, GiftProps[]>>({});
-  const searchQuery = ref<string>('');
-  const isDarkMode = ref<boolean>(false);
-  const currentSort = ref<SortOption>('id');
-  const sortDirection = ref<SortDirection>('asc');
-  const sortedStudentsArray = ref<StudentProps[]>([]);
-  const isLoading = ref<boolean>(true);
-  const isReady = ref<boolean>(false);
+  // Initialize refs on first call only
+  if (!_studentData) {
+    _studentData = ref<{ [key: string]: StudentProps }>({});
+    _materialData = ref<Record<string, ResourceProps>>({});
+    _equipmentData = ref<Record<string, ResourceProps>>({});
+    _giftData = ref<Record<string, ResourceProps>>({});
+    _boxData = ref<Record<string, ResourceProps>>({});
+    _favoredGift = ref<Record<string, GiftProps[]>>({});
+    _giftBoxData = ref<Record<string, GiftProps[]>>({});
+    _searchQuery = ref<string>('');
+    _isDarkMode = ref<boolean>(false);
+    _currentSort = ref<SortOption>('id');
+    _sortDirection = ref<SortDirection>('asc');
+    _sortedStudentsArray = ref<StudentProps[]>([]);
+    _isLoading = ref<boolean>(true);
+    _isReady = ref<boolean>(false);
+  }
+
+  // Use local aliases for singleton refs
+  const studentData = _studentData;
+  const materialData = _materialData;
+  const equipmentData = _equipmentData;
+  const giftData = _giftData;
+  const boxData = _boxData;
+  const favoredGift = _favoredGift;
+  const giftBoxData = _giftBoxData;
+  const searchQuery = _searchQuery;
+  const isDarkMode = _isDarkMode;
+  const currentSort = _currentSort;
+  const sortDirection = _sortDirection;
+  const sortedStudentsArray = _sortedStudentsArray;
+  const isLoading = _isLoading;
+  const isReady = _isReady;
 
   // Function to update the sorted students array
   function updateSortedStudents() {
@@ -334,7 +373,7 @@ export function useStudentData() {
     let newFavorGrade = 0;
     
     if (item.Category === 'Consumable') {
-      expValue = GIFT_BOX_EXP_VALUES[item.Rarity];
+      expValue = GIFT_BOX_EXP_VALUES[item.Rarity as GiftRarity];
       newFavorGrade = favorGrade + genericTagCount + item.Quality - 2;
       
       if (item.Tags.includes('DW')) {
@@ -477,6 +516,9 @@ export function useStudentData() {
     items: Record<string, ResourceProps>,
     equipment: Record<string, ResourceProps>
   ) {
+    // Initialize caches FIRST before any data access
+    await initializeAllCaches();
+
     // Update student data
     studentData.value = students;
 
@@ -502,12 +544,22 @@ export function useStudentData() {
       // Initialize with all items including credits
       const allItems = { ...items };
       allItems[5] = creditsEntry;
+
+      // Save item definitions to items table (including credits)
+      await saveItems(Object.values(allItems));
+
+      // Save inventories to resources table
       await saveResources(allItems);
       materialData.value = allItems;
     } else {
       // Ensure credits entry exists
       if (!existingResources[5]) {
         existingResources[5] = creditsEntry;
+
+        // Save credits definition to items table
+        await saveItems([creditsEntry]);
+
+        // Save inventory to resources table
         await saveResources(existingResources);
       }
       materialData.value = existingResources;
@@ -565,29 +617,31 @@ export function useStudentData() {
     }
   }
 
-  onMounted(() => {
-    // Settings are already loaded in initializeData
-    // No need for separate onMounted logic
-  });
+  // Watch for language changes and reinitialize data (only once)
+  if (!_isInitialized) {
+    watch(
+      () => currentLanguage.value,
+      () => {
+        reinitializeData();
+      }
+    );
 
-  // Watch for changes in studentStore and re-sort when it updates
-  watch(
-    () => studentDataStore.value,
-    () => {
-      updateSortedStudents();
-    },
-    { deep: true }
-  );
+    // Watch for changes in studentStore and re-sort when it updates (only once)
+    watch(
+      () => studentDataStore.value,
+      () => {
+        updateSortedStudents();
+      },
+      { deep: true }
+    );
+  }
 
-  // Watch for language changes and reinitialize data
-  watch(
-    () => currentLanguage.value,
-    () => {
-      reinitializeData();
-    }
-  );
-
-  initializeData();
+  // Initialize data only once
+  if (!_isInitialized && !_initPromise) {
+    _initPromise = initializeData().then(() => {
+      _isInitialized = true;
+    });
+  }
 
   return {
     studentData,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, computed, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { StudentProps } from '../../types/student'
 import { getPinnedStudents } from '../../consumables/utils/studentStorage';
 import StudentCard from './StudentCard.vue';

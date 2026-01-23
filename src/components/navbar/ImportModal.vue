@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits } from 'vue';
+import { ref } from 'vue';
 import { importLocalStorageData, importFromOtherSite } from '../../consumables/utils/studentStorage';
 import { $t } from '../../locales';
 
@@ -88,7 +88,7 @@ async function handleTextImport() {
     showStatus.value = true;
     importStatus.value = $t('importingData');
     
-    const success = importFromOtherSite(importText.value);
+    const success = await importFromOtherSite(importText.value);
     
     if (success) {
       importStatus.value = $t('importSuccessful');

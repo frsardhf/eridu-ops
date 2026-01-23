@@ -1,5 +1,5 @@
-import { computed } from 'vue';
-import { getEquipmentDataById, getEquipments } from '../utils/studentStorage';
+import { computed, ComputedRef } from 'vue';
+import { getEquipmentDataByIdSync, getAllEquipmentFromCache } from '../stores/resourceCacheStore';
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
@@ -10,95 +10,100 @@ import { getAllGearsData } from '../stores/equipmentsStore';
 import { isExpBall } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
 
-// Helper function to get equipment XP details
-const getEquipmentXpDetails = () => {
-  const equipmentXpTable = dataTable.equipment_xp ?? [];
-  const equipmentXpDetails: { 
-    studentId: string; 
-    xpNeeded: number; 
-    remainingXp: number;
-    name: string;
-    equipmentType: EquipmentType;
-  }[] = [];
-
-  // Create a set of all student IDs from both data sources
-  const allStudentIds = new Set<string>();
-  Object.keys(getAllMaterialsData()).forEach(studentId => allStudentIds.add(studentId));
-  Object.keys(getAllGearsData()).forEach(studentId => allStudentIds.add(studentId));
-  
-  // Calculate XP needed for each student's equipment
-  allStudentIds.forEach(studentId => {
-    const form = studentDataStore.value[studentId];
-    if (!form?.equipmentLevels) return;
-
-    const equipmentLevels = form.equipmentLevels as EquipmentLevels;
-    
-    // Calculate XP for each equipment type
-    Object.entries(equipmentLevels).forEach(([type, levels]) => {
-      const currentLevel = levels.current ?? 1;
-      const targetLevel = levels.target ?? currentLevel;
-      
-      if (currentLevel >= targetLevel || !equipmentXpTable.length) return;
-      
-      // Calculate XP needed using cumulative values
-      // equipmentXpTable[0] = XP from 1->2
-      // equipmentXpTable[1] = XP from 1->3
-      // equipmentXpTable[8] = XP from 1->10
-      const currentXp = currentLevel === 1 ? 0 : equipmentXpTable[currentLevel - 2] ?? 0;
-      const targetXp = equipmentXpTable[targetLevel - 2] ?? 0;
-      const totalXpNeeded = targetXp - currentXp;
-      
-      if (totalXpNeeded > 0) {
-        const student = studentData.value[studentId];
-        equipmentXpDetails.push({
-          studentId,
-          xpNeeded: totalXpNeeded,
-          remainingXp: totalXpNeeded,
-          name: student?.Name ?? studentId,
-          equipmentType: type as EquipmentType
-        });
-      }
-    });
-  });
-  
-  return equipmentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
-};
-
-// Helper function to calculate XP needs and ball allocations
-function calculateExpNeeds() {
-  const resources = getEquipments() || {};
-  const equipmentXpDetails = getEquipmentXpDetails();
-  
-  // Calculate total XP needed
-  const totalXpNeeded = equipmentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
-  
-  // Calculate owned XP (sum of all XP ball quantities * their values)
-  const ownedXp =
-    (resources['1']?.QuantityOwned ?? 0) * (resources['1']?.LevelUpFeedExp ?? 0) +
-    (resources['2']?.QuantityOwned ?? 0) * (resources['2']?.LevelUpFeedExp ?? 0) +
-    (resources['3']?.QuantityOwned ?? 0) * (resources['3']?.LevelUpFeedExp ?? 0) +
-    (resources['4']?.QuantityOwned ?? 0) * (resources['4']?.LevelUpFeedExp ?? 0);
-
-  return {
-    totalXpNeeded,
-    ownedXp,
-    equipmentXpDetails
-  };
-}
+// Singleton state
+let _allGearsData: ComputedRef<Record<string, Material[]>>;
+let _totalEquipmentsNeeded: ComputedRef<Material[]>;
+let _equipmentsLeftover: ComputedRef<Material[]>;
 
 export function useGearCalculation() {
   const { studentData } = useStudentData();
-  const allGearsData = computed(() => getAllGearsData());
-  
-  // Add cache for XP calculation results
-  let xpCalculationCache: {
-    totalXpNeeded: number;
-    ownedXp: number;
-    equipmentXpDetails: any[];
-  } | null = null;
+
+  // Helper function to get equipment XP details
+  const getEquipmentXpDetails = () => {
+    const equipmentXpTable = dataTable.equipment_xp ?? [];
+    const equipmentXpDetails: {
+      studentId: string;
+      xpNeeded: number;
+      remainingXp: number;
+      name: string;
+      equipmentType: EquipmentType;
+    }[] = [];
+
+    // Create a set of all student IDs from both data sources
+    const allStudentIds = new Set<string>();
+    Object.keys(getAllMaterialsData()).forEach(studentId => allStudentIds.add(studentId));
+    Object.keys(getAllGearsData()).forEach(studentId => allStudentIds.add(studentId));
+
+    // Calculate XP needed for each student's equipment
+    allStudentIds.forEach(studentId => {
+      const form = studentDataStore.value[studentId];
+      if (!form?.equipmentLevels) return;
+
+      const equipmentLevels = form.equipmentLevels as EquipmentLevels;
+
+      // Calculate XP for each equipment type
+      Object.entries(equipmentLevels).forEach(([type, levels]) => {
+        const currentLevel = levels.current ?? 1;
+        const targetLevel = levels.target ?? currentLevel;
+
+        if (currentLevel >= targetLevel || !equipmentXpTable.length) return;
+
+        // Calculate XP needed using cumulative values
+        // equipmentXpTable[0] = XP from 1->2
+        // equipmentXpTable[1] = XP from 1->3
+        // equipmentXpTable[8] = XP from 1->10
+        const currentXp = currentLevel === 1 ? 0 : equipmentXpTable[currentLevel - 2] ?? 0;
+        const targetXp = equipmentXpTable[targetLevel - 2] ?? 0;
+        const totalXpNeeded = targetXp - currentXp;
+
+        if (totalXpNeeded > 0) {
+          const student = studentData.value[studentId];
+          equipmentXpDetails.push({
+            studentId,
+            xpNeeded: totalXpNeeded,
+            remainingXp: totalXpNeeded,
+            name: student?.Name ?? studentId,
+            equipmentType: type as EquipmentType
+          });
+        }
+      });
+    });
+
+    return equipmentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
+  };
+
+  // Helper function to calculate XP needs and ball allocations
+  const calculateExpNeeds = () => {
+    const resources = getAllEquipmentFromCache();
+    const equipmentXpDetails = getEquipmentXpDetails();
+
+    // Calculate total XP needed
+    const totalXpNeeded = equipmentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
+
+    // Calculate owned XP (sum of all XP ball quantities * their values)
+    const ownedXp =
+      (resources['1']?.QuantityOwned ?? 0) * (resources['1']?.LevelUpFeedExp ?? 0) +
+      (resources['2']?.QuantityOwned ?? 0) * (resources['2']?.LevelUpFeedExp ?? 0) +
+      (resources['3']?.QuantityOwned ?? 0) * (resources['3']?.LevelUpFeedExp ?? 0) +
+      (resources['4']?.QuantityOwned ?? 0) * (resources['4']?.LevelUpFeedExp ?? 0);
+
+    return {
+      totalXpNeeded,
+      ownedXp,
+      equipmentXpDetails
+    };
+  };
+
+  // Initialize computed on first call only
+  if (!_allGearsData) {
+    _allGearsData = computed(() => getAllGearsData());
+  }
+
+  const allGearsData = _allGearsData;
 
   // Calculate total materials needed across all students
-  const totalEquipmentsNeeded = computed(() => {
+  if (!_totalEquipmentsNeeded) {
+    _totalEquipmentsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();
 
     Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
@@ -115,25 +120,26 @@ export function useGearCalculation() {
       });
     });
 
-    // Get XP calculation results (using cache if available)
-    if (!xpCalculationCache) {
-      xpCalculationCache = calculateExpNeeds();
-    }
-    const { totalXpNeeded } = xpCalculationCache;
-    
+    // Get XP calculation results
+    const { totalXpNeeded } = calculateExpNeeds();
+
     // Add XP as a special material type
     materialMap.set(1, { // Using Novice exp ball ID as the XP material ID
-      material: getEquipmentDataById(1),
+      material: getEquipmentDataByIdSync(1),
       materialQuantity: totalXpNeeded,
       type: 'xp'
     });
-    
+
     return Array.from(materialMap.values());
-  });
+    });
+  }
+
+  const totalEquipmentsNeeded = _totalEquipmentsNeeded;
 
   // Calculate materials leftover
-  const equipmentsLeftover = computed(() => {
-    const resources = getEquipments() || {};
+  if (!_equipmentsLeftover) {
+    _equipmentsLeftover = computed(() => {
+    const resources = getAllEquipmentFromCache();
     const leftover: Material[] = [];
 
     totalEquipmentsNeeded.value.forEach(needed => {
@@ -142,19 +148,21 @@ export function useGearCalculation() {
 
       // For XP balls, use remaining XP instead of total XP
       if (isExpBall(materialId)) {
-        if (!xpCalculationCache) {
-          xpCalculationCache = calculateExpNeeds();
-        }
-        const { ownedXp } = xpCalculationCache;
+        const resource = resources[materialId];
+        if (!resource) return;
+
+        const owned = resource.QuantityOwned ?? 0;
+        const remaining = owned - needed.materialQuantity;
+
         leftover.push({
           material: needed.material,
-          materialQuantity: -ownedXp, // Negative to indicate missing
+          materialQuantity: remaining, // Negative to indicate missing
           type: 'xp'
         });
         return;
       }
 
-      const resource = resources[materialId.toString()];
+      const resource = resources[materialId];
       if (!resource) return;
 
       const owned = resource.QuantityOwned ?? 0;
@@ -168,7 +176,10 @@ export function useGearCalculation() {
     });
 
     return leftover;
-  });
+    });
+  }
+
+  const equipmentsLeftover = _equipmentsLeftover;
 
   // Get materials for a specific student
   const getStudentMaterials = (studentId: string | number): Material[] => {
@@ -179,13 +190,9 @@ export function useGearCalculation() {
   const getEquipmentUsageByStudents = (materialId: number, viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed') => {
     const usage: { student: StudentProps; quantity: number; equipmentTypes: EquipmentType[] }[] = [];
     const studentsCollection = studentData.value || {};
-    
+
     if (isExpBall(materialId)) {
-      // Use cached XP details if available
-      if (!xpCalculationCache) {
-        xpCalculationCache = calculateExpNeeds();
-      }
-      const { equipmentXpDetails, totalXpNeeded, ownedXp } = xpCalculationCache;
+      const { equipmentXpDetails, totalXpNeeded, ownedXp } = calculateExpNeeds();
       
       // Group XP details by student
       const studentXpMap = new Map<string, { 
@@ -203,7 +210,7 @@ export function useGearCalculation() {
         if (!form?.equipmentLevels) return;
 
         const equipmentLevels = form.equipmentLevels as EquipmentLevels;
-        const equipmentLevel = equipmentLevels[detail.equipmentType];
+        const equipmentLevel = equipmentLevels[detail.equipmentType as EquipmentType];
         
         if (!equipmentLevel) return;
         
@@ -257,8 +264,8 @@ export function useGearCalculation() {
     } else if (materialId !== 5) { // Skip credits (ID: 5)
       // Handle regular materials
       const materialNeeds = new Map<string, { quantity: number; equipmentTypes: EquipmentType[] }>();
-      const equipments = getEquipments() || {};
-      const ownedQuantity = equipments[materialId.toString()]?.QuantityOwned ?? 0;
+      const equipments = getAllEquipmentFromCache();
+      const ownedQuantity = equipments[materialId]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed quantities
       Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
@@ -331,6 +338,6 @@ export function useGearCalculation() {
     getStudentMaterials,
     getEquipmentUsageByStudents,
     calculateExpNeeds,
-    isExpBall
+    isExpBall,
   };
 }

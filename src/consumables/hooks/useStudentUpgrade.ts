@@ -269,6 +269,10 @@ export function useStudentUpgrade(props: {
   student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
+  // Track pending save to deduplicate concurrent saves
+  let pendingSave: Promise<void> | null = null;
+  // Track loading state to prevent watch from triggering saves during load
+  const isLoading = ref(false);
 
   const characterLevels = ref<CharacterLevels>({...DEFAULT_CHARACTER_LEVELS});
   const skillLevels = ref<SkillLevels>({...DEFAULT_SKILL_LEVELS});
@@ -370,9 +374,9 @@ export function useStudentUpgrade(props: {
   });
 
   // Watch for changes to form data and save to IndexedDB
-  watch([characterLevels, skillLevels, potentialLevels], () => {
-    if (props.student && props.isVisible) {
-      saveToIndexedDB();
+  watch([characterLevels, skillLevels, potentialLevels], async () => {
+    if (props.student && props.isVisible && !isLoading.value) {
+      await saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
   }, { deep: true });
@@ -385,42 +389,68 @@ export function useStudentUpgrade(props: {
   async function saveToIndexedDB() {
     if (!props.student) return;
 
-    const dataToSave = {
-      characterLevels: characterLevels.value,
-      skillLevels: skillLevels.value,
-      potentialLevels: potentialLevels.value
-    };
-
-    const savedData = await saveFormData(props.student.Id, dataToSave);
-    if (savedData) {
-      // Update store immediately with sanitized data for reactive overlay updates
-      studentDataStore.value[props.student.Id] = savedData;
+    // Wait for any pending save to complete
+    if (pendingSave) {
+      await pendingSave;
     }
+
+    // Mark this as the current pending save
+    const currentSave = (async () => {
+      const dataToSave = {
+        characterLevels: characterLevels.value,
+        skillLevels: skillLevels.value,
+        potentialLevels: potentialLevels.value
+      };
+
+      const savedData = await saveFormData(props.student!.Id, dataToSave);
+      if (savedData) {
+        // Update store immediately with sanitized data for reactive overlay updates
+        studentDataStore.value[props.student!.Id] = savedData;
+      }
+    })();
+
+    pendingSave = currentSave;
+    await currentSave;
+    pendingSave = null;
   }
 
   async function loadFromIndexedDB() {
     if (!props.student) return;
 
-    const refs = {
-      characterLevels,
-      skillLevels,
-      potentialLevels
-    };
+    isLoading.value = true;
 
-    const defaultValues = {
-      characterLevels: DEFAULT_CHARACTER_LEVELS,
-      skillLevels: DEFAULT_SKILL_LEVELS,
-      potentialLevels: DEFAULT_POTENTIAL_LEVELS
-    };
+    try {
+      const refs = {
+        characterLevels,
+        skillLevels,
+        potentialLevels
+      };
 
-    const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+      const defaultValues = {
+        characterLevels: DEFAULT_CHARACTER_LEVELS,
+        skillLevels: DEFAULT_SKILL_LEVELS,
+        potentialLevels: DEFAULT_POTENTIAL_LEVELS
+      };
 
-    if (!success || Object.keys(skillLevels.value).length === 0) {
-      characterLevels.value = defaultValues.characterLevels;
-      skillLevels.value = defaultValues.skillLevels;
-      potentialLevels.value = defaultValues.potentialLevels;
+      const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
 
-      await saveToIndexedDB();
+      // More robust check for uninitialized data
+      if (!success ||
+          !skillLevels.value ||
+          !skillLevels.value.ex ||
+          !characterLevels.value ||
+          !characterLevels.value.current ||
+          !potentialLevels.value) {
+
+        // Use structuredClone to avoid reference issues
+        characterLevels.value = structuredClone(DEFAULT_CHARACTER_LEVELS);
+        skillLevels.value = structuredClone(DEFAULT_SKILL_LEVELS);
+        potentialLevels.value = structuredClone(DEFAULT_POTENTIAL_LEVELS);
+
+        await saveToIndexedDB();
+      }
+    } finally {
+      isLoading.value = false;
     }
 
     if (props.student) {
@@ -471,9 +501,8 @@ export function useStudentUpgrade(props: {
     if (current >= 1 && target >= current) {
       characterLevels.value.current = current;
       characterLevels.value.target = target;
-      
+
       if (props.student && props.isVisible) {
-        saveToIndexedDB();
         updateStudentData(props.student.Id);
       }
     }
@@ -485,9 +514,8 @@ export function useStudentUpgrade(props: {
       if (skillLevels.value[type]) {
         skillLevels.value[type].current = current;
         skillLevels.value[type].target = target;
-        
+
         if (props.student && props.isVisible) {
-          saveToIndexedDB();
           updateStudentData(props.student.Id);
         }
       }
@@ -500,9 +528,8 @@ export function useStudentUpgrade(props: {
       if (potentialLevels.value[type]) {
         potentialLevels.value[type].current = current;
         potentialLevels.value[type].target = target;
-        
+
         if (props.student && props.isVisible) {
-          saveToIndexedDB();
           updateStudentData(props.student.Id);
         }
       }

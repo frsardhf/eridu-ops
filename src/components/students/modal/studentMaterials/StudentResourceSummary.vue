@@ -4,7 +4,7 @@ import { Material } from '../../../../types/upgrade';
 import { EquipmentType } from '../../../../types/gear';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
-import { getEquipments, getResources } from '../../../../consumables/utils/studentStorage';
+import { getAllResourcesFromCache, getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import { 
   formatLargeNumber, 
   formatLargeNumberAmount, 
@@ -70,12 +70,12 @@ const currentExpBall = ref(1); // Start with Novice exp ball (ID: 1)
 // Generic function to calculate missing items
 const calculateMissingItems = (
   items: any[],
-  getStorage: () => Record<string, any> | null,
+  getStorage: () => Record<string, any>,
   isSpecialItem: (id: number) => boolean,
   getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number }
 ): MaterialWithRemaining[] => {
   // Get storage directly to ensure we have latest data
-  const storage = getStorage() || {};
+  const storage = getStorage();
   
   // Generate items that are missing
   return items
@@ -129,20 +129,20 @@ const calculateMissingItems = (
 };
 
 // Materials that are missing (negative leftover)
-const missingMaterials = computed<MaterialWithRemaining[]>(() => 
+const missingMaterials = computed<MaterialWithRemaining[]>(() =>
   calculateMissingItems(
     totalMaterialsNeeded.value,
-    getResources,
+    getAllResourcesFromCache,
     isExpReport,
     calculateExpNeeds
   )
 );
 
 // Equipments that are missing (negative leftover)
-const missingEquipments = computed<MaterialWithRemaining[]>(() => 
+const missingEquipments = computed<MaterialWithRemaining[]>(() =>
   calculateMissingItems(
     totalEquipmentsNeeded.value,
-    getEquipments,
+    getAllEquipmentFromCache,
     isExpBall,
     calculateEquipmentExpNeeds
   )
@@ -343,7 +343,7 @@ const studentUsageForMaterial = computed(() => {
 
 // Add computed properties for credit quantities
 const creditOwned = computed(() => {
-  const resources = getResources() || {};
+  const resources = getAllResourcesFromCache();
   return resources[5]?.QuantityOwned || 0;
 });
 
@@ -372,10 +372,10 @@ const createExpInfo = (calculateFn: () => { totalXpNeeded: number; ownedXp: numb
 };
 
 // Add computed properties for EXP quantities
-const expInfo = createExpInfo(calculateExpNeeds);
+const expInfo = createExpInfo(() => calculateExpNeeds());
 
 // Add computed properties for EXP balls quantities
-const expBallInfo = createExpInfo(calculateEquipmentExpNeeds);
+const expBallInfo = createExpInfo(() => calculateEquipmentExpNeeds());
 
 // Add computed property to get leftover quantity for a material
 const getMaterialLeftover = (materialId: number) => {

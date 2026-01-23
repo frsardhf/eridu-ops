@@ -54,7 +54,7 @@ const gradeLevel = computed(() => {
 });
 
 const isMaxGrade = computed(() => {
-  return gradeLevel.value === 8;
+  return gradeLevel.value === 9;
 });
 
 // Update handlers

@@ -11,6 +11,7 @@ import { updateMaterialsData } from '../stores/materialsStore';
 import { updateGearsData } from '../stores/equipmentsStore';
 import { calculateAllMaterials } from '../hooks/useStudentUpgrade';
 import { calculateAllGears } from '../hooks/useStudentGear';
+import { getEquipmentDataByIdSync, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 
 /**
  * Utility function to consolidate and sort materials
@@ -86,35 +87,34 @@ export async function preloadAllStudentsData() {
       const gradeLevels = formData.gradeLevels ?? {};
       const gradeInfos = formData.gradeInfos ?? {};      
       
-      // Process student materials
-      if (hasTargetUpgrades(characterLevels) || 
-          hasTargetUpgrades(skillLevels) || 
-          hasTargetUpgrades(potentialLevels)) {
-        
+      // Check if student has any upgrades
+      const hasAnyUpgrades = hasTargetUpgrades(characterLevels) || 
+        hasTargetUpgrades(skillLevels) || hasTargetUpgrades(potentialLevels) ||
+        hasTargetUpgrades(equipmentLevels) || hasTargetUpgrades(gradeLevels);
+
+      // Process student gears (if ANY upgrade type exists)
+      if (hasAnyUpgrades) {
         // Calculate materials for this student
         const materials = calculateAllMaterials(
           student,
-          characterLevels, 
-          skillLevels, 
+          characterLevels,
+          skillLevels,
           potentialLevels
         );
-        
+
         // Add to store
         if (materials.length > 0) {
           updateMaterialsData(studentId, materials);
         }
-      }
-      
-      // Process student gears
-      if (hasTargetUpgrades(equipmentLevels)) {
+
         // Calculate gears for this student
         const gears = calculateAllGears(
-          allGearsData,
+          student,
           equipmentLevels,
           gradeLevels,
           gradeInfos
         );
-        
+
         // Add to store
         if (gears.length > 0) {
           updateGearsData(studentId, gears);
@@ -129,7 +129,10 @@ export async function preloadAllStudentsData() {
 /**
  * Helper function to check if a student has any target upgrades
  */
-function hasTargetUpgrades(levels: Record<string, { current: number, target: number }>) {
+function hasTargetUpgrades(
+  levels: { current: number; target: number } | 
+  Record<string, { current: number; target: number }>
+) {
   return Object.values(levels).some(level => level.target > level.current);
 } 
 
@@ -254,12 +257,12 @@ export function getMaterialIconSrc(
   const isBall = isExpBall(item.material?.Id);
   
   if (isExp) {
-    const expResource = getResourceDataById(currentExpIcon);
+    const expResource = getResourceDataByIdSync(currentExpIcon);
     return `https://schaledb.com/images/item/icon/${expResource?.Icon}.webp`;
   }
   
   if (isBall) {
-    const expBallResource = getEquipmentDataById(currentExpBall);
+    const expBallResource = getEquipmentDataByIdSync(currentExpBall);
     return `https://schaledb.com/images/equipment/icon/${expBallResource?.Icon}.webp`;
   }
   

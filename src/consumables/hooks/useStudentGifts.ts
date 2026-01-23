@@ -1,7 +1,8 @@
 import { ref, computed, watch } from 'vue';
 import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
-import { getResources, loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
+import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
+import { getAllResourcesFromCache } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
 import { updateStudentData, studentDataStore } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
@@ -338,8 +339,8 @@ export function useStudentGifts(props: {
   const autoFillGifts = () => {
     // Save current state before autofilling
     savePreviousState();
-    
-    const resources = getResources();
+
+    const resources = getAllResourcesFromCache();
 
     // Filter out gifts from the resources
     const gifts = Object.values(resources ?? {}).filter(resource => 
@@ -361,11 +362,9 @@ export function useStudentGifts(props: {
         if (gift.Id) {
           // Check if this gift ID exists in the student's Gifts
           // This depends on the structure of student.Gifts
-          const isStudentGift = props.student?.Gifts
-            ? Object.keys(props.student.Gifts).some(
-                giftKey => props.student?.Gifts[giftKey].gift.Id === gift.Id
-              )
-            : false;
+          const isStudentGift = Object.values(props.student?.Gifts ?? {}).some(
+            g => g.gift.Id === gift.Id
+          );
           
           if (isStudentGift) {
             // Set the quantity in giftFormData based on what's owned

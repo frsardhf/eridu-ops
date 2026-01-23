@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ModalProps } from '../../../../types/student';
 import { EquipmentType } from '../../../../types/gear';
-import { getEquipments } from '../../../../consumables/utils/studentStorage';
+import { getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
@@ -26,6 +26,8 @@ const equipmentTypes = {
   Necklace: $t('equipmentTypes.Necklace')
 };
 
+type EquipmentKey = keyof typeof equipmentTypes;
+
 // Format equipment type to lowercase for image URL
 function formatEquipmentType(type: string): string {
   return type.toLowerCase();
@@ -40,8 +42,8 @@ function getEquipmentIconUrl(type: string, tier: number): string {
 
 // Function to get maximum tier for each equipment type
 function getMaxTierForType(type: string): number {
-  const equipments = getEquipments();
-  if (!equipments) return 10; // Default to 10 if data not found
+  const equipments = getAllEquipmentFromCache();
+  if (!equipments || Object.keys(equipments).length === 0) return 10; // Default to 10 if data not found
 
   // Find all equipment that matches the type and sort by ID in descending order
   const matchingEquipments = Object.values(equipments)
@@ -141,7 +143,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :min="1"
               :max="getMaxTierForType(type)"
               class="level-input current-level"
-              :aria-label="`${$t('currentEquipment')} ${equipmentTypes[type]}`"
+              :aria-label="`${$t('currentEquipment')} ${equipmentTypes[type as EquipmentKey]}`"
             />
             <button 
               class="control-button increment-button"
@@ -165,10 +167,10 @@ function isTargetMaxLevel(target: number, type: string) {
         </div>
         
         <div class="equipment-icon">
-          <div class="equipment-type-badge">{{ equipmentTypes[type] }}</div>
+          <div class="equipment-type-badge">{{ equipmentTypes[type as EquipmentKey] }}</div>
           <img 
             :src="getEquipmentIconUrl(type, equipmentLevels[type]?.current || 1)"
-            :alt="`${equipmentTypes[type]} ${$t('tier')}${equipmentLevels[type]?.current || 1}`"
+            :alt="`${equipmentTypes[type as EquipmentKey]} ${$t('tier')}${equipmentLevels[type]?.current || 1}`"
             class="equipment-image"
             loading="lazy"
           />
@@ -209,7 +211,7 @@ function isTargetMaxLevel(target: number, type: string) {
               :max="getMaxTierForType(type)"
               class="level-input target-level"
               :class="{ 'max-level': isTargetMaxLevel(equipmentLevels[type]?.target || 1, type) }"
-              :aria-label="`${$t('targetEquipment')} ${equipmentTypes[type]}`"
+              :aria-label="`${$t('targetEquipment')} ${equipmentTypes[type as EquipmentKey]}`"
             />
             <button 
               class="control-button increment-button"

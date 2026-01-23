@@ -35,59 +35,59 @@ function getWeaponIconUrl(): string {
 
 // Single function to handle both current and target grade updates
 const updateCurrentGrade = (grade: number) => {
-  // Clamp the value between 1 and 8
-  const value = Math.max(1, Math.min(8, grade));
+  // Clamp the value between 1 and 9
+  const value = Math.max(1, Math.min(9, grade));
   gradeState.value.current = value;
-  
+
   // Ensure target is at least as high as current
   if (gradeState.value.target < value) {
     gradeState.value.target = value;
   }
-  
+
   emit('update-grade', gradeState.value.current, gradeState.value.target);
 };
 
 const updateTargetGrade = (grade: number) => {
-  // Target must be at least current and at most 8
-  const value = Math.max(gradeState.value.current, Math.min(8, grade));
+  // Target must be at least current and at most 9
+  const value = Math.max(gradeState.value.current, Math.min(9, grade));
   gradeState.value.target = value;
-  
+
   emit('update-grade', gradeState.value.current, gradeState.value.target);
 };
 
 // Generate stars array for rendering
 const currentStars = computed(() => {
   const starsArray: { position: number; isGold: boolean; active: boolean }[] = [];
-  
-  // Generate 8 stars (5 gold, 3 blue)
-  for (let i = 1; i <= 8; i++) {
+
+  // Generate 9 stars (5 gold, 4 blue)
+  for (let i = 1; i <= 9; i++) {
     starsArray.push({
       position: i,
       isGold: i <= 5,
       active: i <= gradeState.value.current
     });
   }
-  
+
   return starsArray;
 });
 
 const targetStars = computed(() => {
   const starsArray: { position: number; isGold: boolean; active: boolean }[] = [];
-  
-  // Generate 8 stars (5 gold, 3 blue)
-  for (let i = 1; i <= 8; i++) {
+
+  // Generate 9 stars (5 gold, 4 blue)
+  for (let i = 1; i <= 9; i++) {
     starsArray.push({
       position: i,
       isGold: i <= 5,
       active: i <= gradeState.value.target
     });
   }
-  
+
   return starsArray;
 });
 
 // Add computed property to check if grade is maxed
-const isMaxGrade = computed(() => gradeState.value.current === 8);
+const isMaxGrade = computed(() => gradeState.value.current === 9);
 
 // Add computed property to check if weapon is locked
 const isWeaponLocked = computed(() => gradeState.value.current <= 5);

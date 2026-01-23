@@ -17,7 +17,8 @@ import {
   getAllEquipment,
   getAllFormData,
   getMetadata,
-  setMetadata
+  setMetadata,
+  getAllStudentsAsRecord
 } from '../services/dbService';
 import type { ResourceInventoryRecord, EquipmentInventoryRecord } from '../db/database';
 import { getSettings, saveSettings } from './settingsStorage';
@@ -123,8 +124,8 @@ export async function getFormData(studentId: string | number): Promise<Record<st
  */
 export async function loadFormDataToRefs(
   studentId: string | number,
-  refs: Record<string, { value: any }>,
-  defaultValues: Record<string, any> = {}
+  refs: Record<string, { value: unknown }>,
+  defaultValues: Record<string, unknown> = {}
 ): Promise<boolean> {
   if (!studentId) return false;
 
@@ -132,58 +133,64 @@ export async function loadFormDataToRefs(
     const studentData = await getFormData(studentId);
     if (!studentData) return false;
 
-    // Update each ref with proper deep merging
-    Object.keys(refs).forEach(key => {
-      // Create a properly merged value
-      let mergedValue;
+    for (const key of Object.keys(refs)) {
+      let mergedValue: unknown;
 
       if (key in studentData) {
         const storedValue = studentData[key];
         const defaultValue = defaultValues[key];
 
-        if (typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
-          // For objects, do a deep merge
-          mergedValue = { ...defaultValue };
+        if (
+          typeof defaultValue === 'object' &&
+          defaultValue !== null &&
+          !Array.isArray(defaultValue) &&
+          typeof storedValue === 'object' &&
+          storedValue !== null
+        ) {
+          // Deep merge objects
+          const base = { ...(defaultValue as Record<string, unknown>) };
 
-          // Handle nested objects (like equipment types, skill types, etc.)
-          Object.keys(mergedValue).forEach(nestedKey => {
-            if (storedValue[nestedKey]) {
-              // If the stored value has this nested key, use it
-              if (typeof mergedValue[nestedKey] === 'object' && mergedValue[nestedKey] !== null) {
-                // For nested objects like { current: 1, target: 1 }
-                mergedValue[nestedKey] = {
-                  ...mergedValue[nestedKey],
-                  ...storedValue[nestedKey]
+          for (const nestedKey of Object.keys(base)) {
+            if (nestedKey in (storedValue as Record<string, unknown>)) {
+              const baseVal = base[nestedKey];
+              const storedVal = (storedValue as Record<string, unknown>)[nestedKey];
+
+              if (
+                typeof baseVal === 'object' &&
+                baseVal !== null &&
+                typeof storedVal === 'object' &&
+                storedVal !== null
+              ) {
+                base[nestedKey] = {
+                  ...(baseVal as Record<string, unknown>),
+                  ...(storedVal as Record<string, unknown>)
                 };
               } else {
-                // For primitive values
-                mergedValue[nestedKey] = storedValue[nestedKey];
+                base[nestedKey] = storedVal;
               }
             }
-          });
-
-          // Also include any extra keys from stored value that aren't in default
-          if (storedValue) {
-            Object.keys(storedValue).forEach(storedKey => {
-              if (!(storedKey in mergedValue)) {
-                mergedValue[storedKey] = storedValue[storedKey];
-              }
-            });
           }
+
+          // Include extra keys from stored value
+          for (const storedKey of Object.keys(storedValue as Record<string, unknown>)) {
+            if (!(storedKey in base)) {
+              base[storedKey] = (storedValue as Record<string, unknown>)[storedKey];
+            }
+          }
+
+          mergedValue = base;
         } else {
-          // For primitives or arrays, just use the stored value
+          // Primitives / arrays
           mergedValue = storedValue;
         }
       } else if (key in defaultValues) {
-        // If no stored value exists, use the default
         mergedValue = structuredClone(defaultValues[key]);
       }
 
-      // Explicitly set the ref's value to trigger reactivity
       if (mergedValue !== undefined) {
         refs[key].value = mergedValue;
       }
-    });
+    }
 
     return true;
   } catch (error) {
@@ -191,6 +198,7 @@ export async function loadFormDataToRefs(
     return false;
   }
 }
+
 
 /**
  * Saves resources inventory to IndexedDB

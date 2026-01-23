@@ -33,7 +33,9 @@ export const SSR_GIFT_MATERIAL_ID = 100009;
 
 export const GIFT_BOX_IDS = ['82', '100000', '100008', '100009'];
 
-export const GIFT_BOX_EXP_VALUES = { 'SR': 20, 'SSR': 120 };
+export const GIFT_BOX_EXP_VALUES = { 'SR': 20, 'SSR': 120 } as const;
+
+export type GiftRarity = keyof typeof GIFT_BOX_EXP_VALUES;
 
 export const creditsEntry = {
   Id: 5,

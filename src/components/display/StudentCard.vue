@@ -224,7 +224,7 @@ function handlePinToggle(event: MouseEvent) {
                 </template>
               </template>
               
-              <!-- Blue stars only for grades 6-8 -->
+              <!-- Blue stars only for grades 6-9 -->
               <template v-else>
                 <template v-for="i in gradeLevel - 5" :key="`blue-star-${i}`">
                   <svg class="small-star blue-star"
