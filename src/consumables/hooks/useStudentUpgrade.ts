@@ -498,8 +498,9 @@ export function useStudentUpgrade(props: {
   });
 
   // Update materials store when materials change (side effects belong in watchers, not computed)
+  // Always update even when empty to clear stale cached data
   watch(allMaterialsNeeded, (materials) => {
-    if (props.student && materials.length > 0) {
+    if (props.student) {
       updateMaterialsData(props.student.Id, materials);
     }
   }, { immediate: true });

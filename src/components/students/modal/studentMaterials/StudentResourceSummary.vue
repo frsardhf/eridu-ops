@@ -151,15 +151,17 @@ const missingEquipments = computed<MaterialWithRemaining[]>(() =>
 // Computed property to get the resources based on active tab and mode
 const displayResources = computed(() => {
   let resources: any[] = [];
-  
+
   if (activeTab.value === 'materials') {
     resources = activeMode.value === 'needed' ? totalMaterialsNeeded.value : missingMaterials.value;
   } else {
     resources = activeMode.value === 'needed' ? totalEquipmentsNeeded.value : missingEquipments.value;
   }
-  
+
+  const filtered = resources.filter(r => (r.materialQuantity ?? 0) > 0);
+
   // Sort to put credits first, then exp reports, then other materials
-  return resources.sort((a, b) => {
+  return filtered.sort((a, b) => {
     const aId = a.material?.Id || 0;
     const bId = b.material?.Id || 0;
     
@@ -174,6 +176,12 @@ const displayResources = computed(() => {
     // For all other materials, sort by ID
     return aId - bId;
   });
+});
+
+const totalMaterialQuantity = computed(() => {
+  return displayResources.value.reduce((sum, item) => {
+    return sum + (item.materialQuantity ?? 0);
+  }, 0);
 });
 
 // Set up intervals to rotate exp report and exp ball icons
@@ -437,7 +445,7 @@ const getMaterialLeftover = (materialId: number) => {
     </div>
     
     <div class="resources-content">
-      <div v-if="displayResources.length === 0" class="no-resources">
+      <div v-if="totalMaterialQuantity === 0" class="no-resources">
         <span v-if="activeMode === 'needed'">{{ $t('noResourcesNeeded') }}</span>
         <span v-else>{{ $t('allMaterialsAvailable') }}</span>
       </div>
