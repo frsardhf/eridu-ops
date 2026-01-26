@@ -2,11 +2,13 @@ import { ref, watch } from 'vue';
 import { StudentProps, ModalProps } from '../../types/student';
 import { getResources, saveResourcesFromStudent } from '../utils/studentStorage';
 
-export function useStudentResources(props: { 
+export function useStudentResources(props: {
   student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   const resourceFormData = ref<Record<string, number>>({});
+  // Track loading state to prevent watch from triggering saves during load
+  const isLoading = ref(false);
 
   function handleResourceInput(id: string, event: Event) {
     const input = event.target as HTMLInputElement;
@@ -34,12 +36,13 @@ export function useStudentResources(props: {
 
   // Watch for changes to form data and save to IndexedDB
   watch([resourceFormData], () => {
-    if (props.student && props.isVisible) {
+    if (props.student && props.isVisible && !isLoading.value) {
       saveResources();
     }
   }, { deep: true });
 
   async function loadResources() {
+    isLoading.value = true;
     try {
       const resources = await getResources();
       if (resources) {
@@ -56,6 +59,8 @@ export function useStudentResources(props: {
       }
     } catch (error) {
       console.error('Error retrieving resources from IndexedDB:', error);
+    } finally {
+      isLoading.value = false;
     }
   }
 

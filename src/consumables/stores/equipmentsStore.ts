@@ -8,27 +8,31 @@ import { Material } from '../../types/upgrade';
  */
 
 // Create a reactive store for gears data (in-memory only)
-const gearsDataStore = ref<Record<string, Material[]>>({});
+// Uses number keys for consistency with database IDs
+const gearsDataStore = ref<Record<number, Material[]>>({});
 
 // Function to update gears data in the store (in-memory only)
 export function updateGearsData(studentId: string | number, gears: Material[]) {
-  gearsDataStore.value[studentId] = gears;
+  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  gearsDataStore.value[numericId] = gears;
   // No longer persisted to localStorage/IndexedDB
 }
 
 // Function to get gears data from the store
 export function getGearsData(studentId: string | number): Material[] {
-  return gearsDataStore.value[studentId] || [];
+  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  return gearsDataStore.value[numericId] || [];
 }
 
 // Function to clear gears data from the store
 export function clearGearsData(studentId: string | number) {
-  delete gearsDataStore.value[studentId];
+  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  delete gearsDataStore.value[numericId];
   // No longer persisted to localStorage/IndexedDB
 }
 
 // Function to get all gears data
-export function getAllGearsData(): Record<string, Material[]> {
+export function getAllGearsData(): Record<number, Material[]> {
   return gearsDataStore.value;
 }
 

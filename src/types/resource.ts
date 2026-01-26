@@ -10,6 +10,15 @@ export interface ResourceProps {
   Icon: string;
   Tier?: number;
   Tags: string[];
+  Description?: string;
+}
+
+/**
+ * CachedResource extends ResourceProps with guaranteed QuantityOwned
+ * Used in the resource cache store after merging items with inventory
+ */
+export interface CachedResource extends ResourceProps {
+  QuantityOwned: number;
 }
 
 export const MATERIAL = {
@@ -37,14 +46,5 @@ export const GIFT_BOX_EXP_VALUES = { 'SR': 20, 'SSR': 120 } as const;
 
 export type GiftRarity = keyof typeof GIFT_BOX_EXP_VALUES;
 
-export const creditsEntry = {
-  Id: 5,
-  Name: 'Credits',
-  Rarity: 'C',
-  Category: 'Currency',
-  Quality: 1,
-  Tags: ['c'],
-  Icon: 'currency_icon_gold',
-  Description: 'In-game currency used for various upgrades',
-  QuantityOwned: 0
-};
+// Re-export credits from centralized synthetic entities module for backward compatibility
+export { creditsEntry, CREDITS_ID } from '../consumables/constants/syntheticEntities';

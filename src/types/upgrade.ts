@@ -1,13 +1,17 @@
+import type { ResourceProps } from './resource';
+
 export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
 
 export type SkillTypeName = 'Ex' | 'Basic' | 'Enhanced' | 'Sub';
 
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 
+export type MaterialType = 'materials' | 'special' | 'equipments' | 'credits' | 'xp';
+
 export interface Material {
-  material: Record<string, any> | null;
+  material: ResourceProps | null;
   materialQuantity: number;
-  type?: 'materials' | 'special' | 'equipments' | 'credits' | 'xp';
+  type?: MaterialType;
 }
 
 export interface CharacterLevels {
@@ -60,7 +64,8 @@ export interface PotentialSettings {
   name: string;
 }
 
-export const CREDITS_ID = 5;
+// Re-export CREDITS_ID from centralized synthetic entities
+export { CREDITS_ID } from '../consumables/constants/syntheticEntities';
 
 export const EXP_REPORT_ID = [10, 11, 12, 13];
 

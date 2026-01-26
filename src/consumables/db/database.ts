@@ -57,12 +57,12 @@ export interface FormRecord {
 }
 
 export interface ResourceInventoryRecord {
-  id: number; // Primary key
+  id: number; // Primary key (lowercase for inventory tables)
   QuantityOwned: number;
 }
 
 export interface EquipmentInventoryRecord {
-  id: number; // Primary key
+  id: number; // Primary key (lowercase for inventory tables)
   QuantityOwned: number;
 }
 
@@ -81,6 +81,8 @@ export class EriduOpsDatabase extends Dexie {
     super('eridu-ops-db');
 
     // Define schema version 1
+    // Note: resources and equipments_inventory use lowercase 'id' as primary key
+    // This is intentional - Dexie does not support changing primary keys after creation
     this.version(1).stores({
       students: 'Id, Name, DefaultOrder, StarGrade',
       items: 'Id, Name, Category, Rarity',

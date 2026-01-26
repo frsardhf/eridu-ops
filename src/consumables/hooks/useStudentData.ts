@@ -4,14 +4,16 @@ import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
 import {
   ResourceProps,
-  MATERIAL,
-  EQUIPMENT,
   GENERIC_GIFT_TAGS,
   GIFT_BOX_IDS,
   GIFT_BOX_EXP_VALUES,
-  creditsEntry,
   GiftRarity
 } from '../../types/resource';
+import {
+  creditsEntry,
+  CREDITS_ID,
+  injectSyntheticEntities
+} from '../constants/syntheticEntities';
 import {
   saveResources,
   getResources,
@@ -38,7 +40,7 @@ import {
   updateCacheMetadata
 } from '../services/dbService';
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
-import { studentDataStore } from '../stores/studentStore';
+import { studentDataStore, studentDataVersion, batchSetStudentData } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage } from '../stores/localizationStore';
 import { filterByProperty } from '../utils/filterUtils';
@@ -541,9 +543,12 @@ export function useStudentData() {
     const existingResources = await getResources();
 
     if (!existingResources || Object.keys(existingResources).length === 0) {
-      // Initialize with all items including credits
-      const allItems = { ...items };
-      allItems[5] = creditsEntry;
+      // Initialize with all items including synthetic entities (credits)
+      const allItems: Record<number, any> = {};
+      Object.entries(items).forEach(([id, item]) => {
+        allItems[Number(id)] = item;
+      });
+      injectSyntheticEntities(allItems);
 
       // Save item definitions to items table (including credits)
       await saveItems(Object.values(allItems));
@@ -552,17 +557,22 @@ export function useStudentData() {
       await saveResources(allItems);
       materialData.value = allItems;
     } else {
-      // Ensure credits entry exists
-      if (!existingResources[5]) {
-        existingResources[5] = creditsEntry;
+      // Ensure synthetic entities exist (credits, etc.)
+      const resourcesAsNumbers: Record<number, any> = {};
+      Object.entries(existingResources).forEach(([id, resource]) => {
+        resourcesAsNumbers[Number(id)] = resource;
+      });
+
+      if (!resourcesAsNumbers[CREDITS_ID]) {
+        injectSyntheticEntities(resourcesAsNumbers);
 
         // Save credits definition to items table
         await saveItems([creditsEntry]);
 
         // Save inventory to resources table
-        await saveResources(existingResources);
+        await saveResources(resourcesAsNumbers);
       }
-      materialData.value = existingResources;
+      materialData.value = resourcesAsNumbers;
     }
 
     // Handle equipment initialization - store ALL equipment
@@ -597,10 +607,12 @@ export function useStudentData() {
   async function preloadStudentStore() {
     try {
       const allFormData = await getAllFormData();
-      // Populate the studentStore with all form data
+      // Convert string keys to numbers and batch update for better performance
+      const numericKeyData: Record<number, any> = {};
       Object.entries(allFormData).forEach(([studentId, formData]) => {
-        studentDataStore.value[studentId] = formData;
+        numericKeyData[Number(studentId)] = formData;
       });
+      batchSetStudentData(numericKeyData);
     } catch (error) {
       console.error('Error preloading student store:', error);
     }
@@ -626,13 +638,13 @@ export function useStudentData() {
       }
     );
 
-    // Watch for changes in studentStore and re-sort when it updates (only once)
+    // Watch for changes in studentStore and re-sort when it updates
+    // Using version counter instead of deep watch for better performance
     watch(
-      () => studentDataStore.value,
+      studentDataVersion,
       () => {
         updateSortedStudents();
-      },
-      { deep: true }
+      }
     );
   }
 

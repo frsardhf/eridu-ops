@@ -19,7 +19,7 @@
     Material,
   } from '../../types/upgrade';
   import { consolidateAndSortMaterials } from '../utils/materialUtils';
-  import { updateStudentData, studentDataStore } from '../stores/studentStore';
+  import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
   import { updateGearsData } from '../stores/equipmentsStore';
   import { useGearCalculation } from './useGearCalculation';
 
@@ -356,7 +356,7 @@
         const savedData = await saveFormData(props.student!.Id, dataToSave);
         if (savedData) {
           // Update store immediately with sanitized data for reactive overlay updates
-          studentDataStore.value[props.student!.Id] = savedData;
+          setStudentDataDirect(props.student!.Id, savedData);
         }
       })();
 
@@ -376,7 +376,7 @@
           equipmentLevels,
           gradeLevels,
           gradeInfos
-        }
+        };
 
         const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
           acc[type as EquipmentType] = { current: 1, target: 1 };
@@ -388,18 +388,12 @@
         const defaultValues = {
           equipmentLevels: defaultEquipmentLevels,
           gradeLevels: { current: starGrade, target: starGrade },
-          gradeInfos: { owned: 0, price: 1, purchasable: 20}
+          gradeInfos: { owned: 0, price: 1, purchasable: 20 }
         };
 
-        const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
-
-        if (!success || Object.keys(equipmentLevels.value).length === 0) {
-          equipmentLevels.value = defaultEquipmentLevels;
-          gradeLevels.value = defaultValues.gradeLevels;
-          gradeInfos.value = defaultValues.gradeInfos;
-
-          await saveToIndexedDB();
-        }
+        // Load data - defaults are initialized by StudentModal before composables load
+        // No need to save here; initializeStudentFormData handles atomic default creation
+        await loadFormDataToRefs(props.student.Id, refs, defaultValues);
 
         if (props.student) {
           await updateStudentData(props.student.Id);

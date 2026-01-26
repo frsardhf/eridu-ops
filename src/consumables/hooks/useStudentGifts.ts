@@ -4,7 +4,7 @@ import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import { getAllResourcesFromCache } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
-import { updateStudentData, studentDataStore } from '../stores/studentStore';
+import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
 
 export function useStudentGifts(props: {
@@ -16,6 +16,8 @@ export function useStudentGifts(props: {
   const boxFormData = ref<Record<string, number>>({});
   const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
   const isCalculating = ref(false);
+  // Track loading state to prevent watch from triggering saves during load
+  const isLoading = ref(false);
   
   // Add previous state storage for undo functionality
   const previousGiftFormData = ref<Record<string, number>>({});
@@ -56,7 +58,7 @@ export function useStudentGifts(props: {
 
   // Watch for changes to form data and save to IndexedDB
   watch([giftFormData, boxFormData, bondDetailData], () => {
-    if (props.student && props.isVisible) {
+    if (props.student && props.isVisible && !isLoading.value) {
       saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
@@ -74,30 +76,36 @@ export function useStudentGifts(props: {
     const savedData = await saveFormData(props.student.Id, dataToSave);
     if (savedData) {
       // Update store immediately with sanitized data for reactive overlay updates
-      studentDataStore.value[props.student.Id] = savedData;
+      setStudentDataDirect(props.student.Id, savedData);
     }
   }
 
   async function loadFromIndexedDB() {
     if (!props.student) return;
 
-    // Define the refs and their default values
-    const refs = {
-      giftFormData,
-      boxFormData,
-      bondDetailData
-    };
+    isLoading.value = true;
 
-    const defaultValues = {
-      giftFormData: {},
-      boxFormData: {},
-      bondDetailData: DEFAULT_BOND_DETAIL
-    };
+    try {
+      // Define the refs and their default values
+      const refs = {
+        giftFormData,
+        boxFormData,
+        bondDetailData
+      };
 
-    await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+      const defaultValues = {
+        giftFormData: {},
+        boxFormData: {},
+        bondDetailData: DEFAULT_BOND_DETAIL
+      };
 
-    // Store initial state for undo after loading
-    savePreviousState();
+      await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+
+      // Store initial state for undo after loading
+      savePreviousState();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   // Calculate individual item EXP

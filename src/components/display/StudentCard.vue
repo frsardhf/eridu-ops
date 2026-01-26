@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { StudentProps } from '../../types/student'
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { getStudentData } from '../../consumables/stores/studentStore'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useStudentFormData } from '../../consumables/stores/studentStore'
 import { SkillType, SkillTypeName } from '../../types/upgrade'
 import { EquipmentType } from '../../types/gear'
-import { 
-  isStudentPinned, 
-  togglePinnedStudent 
+import {
+  isStudentPinned,
+  togglePinnedStudent
 } from '../../consumables/utils/studentStorage'
 import { currentLanguage } from '../../consumables/stores/localizationStore'
 
@@ -17,7 +17,8 @@ const emit = defineEmits<{
 }>();
 
 const isMobile = ref(false);
-const studentData = computed(() => getStudentData(props.student.Id));
+// Use the composable for proper reactivity - no need for empty deep watch workaround
+const studentData = useStudentFormData(computed(() => props.student.Id));
 const forceUpdate = ref(0);
 const isPinned = computed(() => {
   const _ = forceUpdate.value;
@@ -25,10 +26,6 @@ const isPinned = computed(() => {
 });
 const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 const skillTypeNames: SkillTypeName[] = ['Ex', 'Basic', 'Enhanced', 'Sub'];
-
-// Watch for changes in the store
-watch(() => studentData.value, () => {
-}, { deep: true });
 
 function checkScreenWidth() {
   isMobile.value = window.innerWidth <= 768;

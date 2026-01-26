@@ -2,11 +2,13 @@ import { ref, watch } from 'vue';
 import { ModalProps, StudentProps } from '../../types/student';
 import { getEquipments, saveEquipmentsFromStudent } from '../utils/studentStorage';
 
-export function useStudentEquipment(props: { 
+export function useStudentEquipment(props: {
   student: ModalProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   const equipmentFormData = ref<Record<string, number>>({});
+  // Track loading state to prevent watch from triggering saves during load
+  const isLoading = ref(false);
 
   function handleEquipmentInput(id: string, event: Event) {
     const input = event.target as HTMLInputElement;
@@ -34,12 +36,13 @@ export function useStudentEquipment(props: {
 
   // Watch for changes to form data and save to IndexedDB
   watch([equipmentFormData], () => {
-    if (props.student && props.isVisible) {
+    if (props.student && props.isVisible && !isLoading.value) {
       saveEquipments();
     }
   }, { deep: true });
 
   async function loadEquipments() {
+    isLoading.value = true;
     try {
       const equipments = await getEquipments();
       if (equipments) {
@@ -56,6 +59,8 @@ export function useStudentEquipment(props: {
       }
     } catch (error) {
       console.error('Error retrieving equipments from IndexedDB:', error);
+    } finally {
+      isLoading.value = false;
     }
   }
 

@@ -9,10 +9,10 @@ import {
   CREDITS_ID,
   WORKBOOK_ID,
   SECRET_TECH_NOTE_ID,
-  DEFAULT_SKILL_LEVELS,
-  DEFAULT_POTENTIAL_LEVELS,
+  CharacterLevels,
   DEFAULT_CHARACTER_LEVELS,
-  CharacterLevels
+  DEFAULT_SKILL_LEVELS,
+  DEFAULT_POTENTIAL_LEVELS
 } from '../../types/upgrade';
 import {
   loadFormDataToRefs,
@@ -22,7 +22,7 @@ import { getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import { consolidateAndSortMaterials } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
 import { updateMaterialsData } from '../stores/materialsStore';
-import { updateStudentData, studentDataStore } from '../stores/studentStore';
+import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 
 export function calculateLevelMaterials(
   student: StudentProps | null,
@@ -349,9 +349,18 @@ export function useStudentUpgrade(props: {
   };
 
   function resetFormData() {
-    characterLevels.value = {...DEFAULT_CHARACTER_LEVELS};
-    skillLevels.value = {...DEFAULT_SKILL_LEVELS};
-    potentialLevels.value = {...DEFAULT_POTENTIAL_LEVELS};
+    characterLevels.value = { current: 1, target: 1};
+    skillLevels.value = {
+      Ex: { current: 1, target: 1 },
+      Public: { current: 1, target: 1 },
+      Passive: { current: 1, target: 1 },
+      ExtraPassive: { current: 1, target: 1 }
+    };
+    potentialLevels.value = {
+      attack: { current: 0, target: 0 },
+      maxhp: { current: 0, target: 0 },
+      healpower: { current: 0, target: 0 }
+    };
   }
 
   // Watch for changes to isVisible to load data when modal opens
@@ -405,7 +414,7 @@ export function useStudentUpgrade(props: {
       const savedData = await saveFormData(props.student!.Id, dataToSave);
       if (savedData) {
         // Update store immediately with sanitized data for reactive overlay updates
-        studentDataStore.value[props.student!.Id] = savedData;
+        setStudentDataDirect(props.student!.Id, savedData);
       }
     })();
 
@@ -427,28 +436,23 @@ export function useStudentUpgrade(props: {
       };
 
       const defaultValues = {
-        characterLevels: DEFAULT_CHARACTER_LEVELS,
-        skillLevels: DEFAULT_SKILL_LEVELS,
-        potentialLevels: DEFAULT_POTENTIAL_LEVELS
+        characterLevels: { current: 1, target: 1 },
+        skillLevels: {
+          Ex: { current: 1, target: 1 },
+          Public: { current: 1, target: 1 },
+          Passive: { current: 1, target: 1 },
+          ExtraPassive: { current: 1, target: 1 }
+        },
+        potentialLevels: {
+          attack: { current: 0, target: 0 },
+          maxhp: { current: 0, target: 0 },
+          healpower: { current: 0, target: 0 }
+        }
       };
 
-      const success = await loadFormDataToRefs(props.student.Id, refs, defaultValues);
-
-      // More robust check for uninitialized data
-      if (!success ||
-          !skillLevels.value ||
-          !skillLevels.value.ex ||
-          !characterLevels.value ||
-          !characterLevels.value.current ||
-          !potentialLevels.value) {
-
-        // Use structuredClone to avoid reference issues
-        characterLevels.value = structuredClone(DEFAULT_CHARACTER_LEVELS);
-        skillLevels.value = structuredClone(DEFAULT_SKILL_LEVELS);
-        potentialLevels.value = structuredClone(DEFAULT_POTENTIAL_LEVELS);
-
-        await saveToIndexedDB();
-      }
+      // Load data - defaults are initialized by StudentModal before composables load
+      // No need to save here; initializeStudentFormData handles atomic default creation
+      await loadFormDataToRefs(props.student.Id, refs, defaultValues);
     } finally {
       isLoading.value = false;
     }
@@ -481,20 +485,24 @@ export function useStudentUpgrade(props: {
   });
 
   // Create a computed property for all materials needed for this student
+  // NOTE: This computed is now pure - side effects are handled in a separate watcher below
   const allMaterialsNeeded = computed<Material[]>(() => {
     if (!props.student) return [];
 
-    const sortedMaterials = calculateAllMaterials(
+    return calculateAllMaterials(
       props.student,
       characterLevels.value,
       skillLevels.value,
       potentialLevels.value,
     );
-
-    updateMaterialsData(props.student.Id, sortedMaterials);
-
-    return sortedMaterials;
   });
+
+  // Update materials store when materials change (side effects belong in watchers, not computed)
+  watch(allMaterialsNeeded, (materials) => {
+    if (props.student && materials.length > 0) {
+      updateMaterialsData(props.student.Id, materials);
+    }
+  }, { immediate: true });
 
   // Function to handle both current and target level updates
   const handleLevelUpdate = (current: number, target: number) => {

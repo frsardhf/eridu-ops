@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { ModalProps, StudentProps } from '../../../types/student';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
 import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
+import { initializeStudentFormData } from '../../../consumables/services/studentFormService';
+import { setStudentDataDirect } from '../../../consumables/stores/studentStore';
 import { $t } from '../../../locales';
 import StudentModalHeader from './StudentModalHeader.vue';
 import StudentBondSection from './studentBond/StudentBondSection.vue';
@@ -34,7 +36,17 @@ type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
 const emit = defineEmits<EmitFn>();
 
 // 'bond', 'upgrade', 'gear', 'resources', 'equipment', or 'summary'
-const activeTab = ref('bond'); 
+const activeTab = ref('bond');
+
+// Initialize student form data atomically BEFORE composables load
+// This prevents race conditions where multiple composables try to save defaults simultaneously
+watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
+  if (visible && student) {
+    const formData = await initializeStudentFormData(student);
+    // Update the store with the initialized data so overlay shows immediately
+    setStudentDataDirect(student.Id, formData);
+  }
+}, { immediate: true }); 
 
 const {
   closeModal,
