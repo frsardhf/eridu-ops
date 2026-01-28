@@ -1,6 +1,8 @@
 import { ref, watch } from 'vue';
 import { ModalProps, StudentProps } from '../../types/student';
 import { getEquipments, saveEquipmentsFromStudent } from '../utils/studentStorage';
+import { updateEquipmentInCache, getEquipmentDataByIdSync } from '../stores/resourceCacheStore';
+import type { CachedResource } from '../../types/resource';
 
 export function useStudentEquipment(props: {
   student: ModalProps | null,
@@ -67,6 +69,19 @@ export function useStudentEquipment(props: {
   async function saveEquipments() {
     if (!props.student?.Equipments) return;
     await saveEquipmentsFromStudent(props.student, equipmentFormData);
+
+    // Update the in-memory cache so calculations get current values
+    Object.values(props.student.Equipments).forEach((equipment: any) => {
+      if (equipment && equipment.Id !== undefined) {
+        const existingData = getEquipmentDataByIdSync(equipment.Id);
+        if (existingData) {
+          updateEquipmentInCache(equipment.Id, {
+            ...existingData,
+            QuantityOwned: equipmentFormData.value[equipment.Id] || 0
+          } as CachedResource);
+        }
+      }
+    });
   }
 
   return {

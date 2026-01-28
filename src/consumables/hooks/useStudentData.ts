@@ -22,11 +22,9 @@ import {
 } from '../utils/studentStorage';
 import {
   getSettings,
-  saveSettings,
   getPinnedStudents,
   updateSetting,
-  updateSortSettings,
-  type AppSettings
+  updateSortSettings
 } from '../utils/settingsStorage';
 import {
   getAllStudents,

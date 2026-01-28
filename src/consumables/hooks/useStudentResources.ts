@@ -1,6 +1,8 @@
 import { ref, watch } from 'vue';
 import { StudentProps, ModalProps } from '../../types/student';
 import { getResources, saveResourcesFromStudent } from '../utils/studentStorage';
+import { updateResourceInCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
+import type { CachedResource } from '../../types/resource';
 
 export function useStudentResources(props: {
   student: ModalProps | null,
@@ -67,6 +69,19 @@ export function useStudentResources(props: {
   async function saveResources() {
     if (!props.student?.Materials) return;
     await saveResourcesFromStudent(props.student, resourceFormData);
+
+    // Update the in-memory cache so autoFillGifts gets current values
+    Object.values(props.student.Materials).forEach((material: any) => {
+      if (material && material.Id !== undefined) {
+        const existingData = getResourceDataByIdSync(material.Id);
+        if (existingData) {
+          updateResourceInCache(material.Id, {
+            ...existingData,
+            QuantityOwned: resourceFormData.value[material.Id] || 0
+          } as CachedResource);
+        }
+      }
+    });
   }
 
   return {
