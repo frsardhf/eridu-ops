@@ -94,7 +94,7 @@
    ========================================================================== */
 .tab-content {
   display: grid;
-  grid-template-columns: 225px 1fr;
+  grid-template-columns: 375px 1fr;
   gap: 20px;
   width: 100%;
 }

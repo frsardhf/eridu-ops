@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, onMounted } from 'vue';
-import { ModalProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import { applyFilters } from '../../../../consumables/utils/filterUtils';
 import { MATERIAL } from '../../../../types/resource';
+import { getAllResourcesFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
-  student: ModalProps | null,
   resourceFormData: Record<string, number>,
 }>();
 
@@ -25,10 +24,11 @@ const slideOffset = ref(0);
 const containerWidth = ref(0);
 
 const resources = computed(() => {
-  if (!props.student) return [];
+  // Read directly from resource cache instead of props
+  const allMaterials = getAllResourcesFromCache();
+  if (!allMaterials || Object.keys(allMaterials).length === 0) return [];
 
   // Apply MATERIAL filters to show only planner-relevant resources
-  const allMaterials = props.student.Materials;
   const filteredMaterials = applyFilters(allMaterials, MATERIAL);
 
   return Object.values(filteredMaterials);

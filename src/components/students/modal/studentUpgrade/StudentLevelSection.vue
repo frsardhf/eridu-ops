@@ -84,7 +84,6 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
       
       <!-- Keep the level input for maxed version -->
       <div class="maxed-input-container">
-        <label for="current-level-input-maxed">{{ $t('currentLevel') }}</label>
         <input
           id="current-level-input-maxed"
           name="current-level-input"

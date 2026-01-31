@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { $t } from '../../../../locales';
 
-defineProps<{
+const props = defineProps<{
   currentBond: number,
   newBondLevel: number,
   remainingXp: number,
@@ -10,6 +11,8 @@ defineProps<{
 
 const emit = defineEmits(['update-bond']);
 
+const isMaxBond = computed(() => props.currentBond === 100);
+
 function handleBondInput(event: Event) {
   emit('update-bond', event);
 }
@@ -17,54 +20,95 @@ function handleBondInput(event: Event) {
 
 <template>
   <div class="bond-section">
-    <!-- Bond input moved to the top -->
-    <div class="bond-input-container">
-      <label for="bond-input">{{ $t('currentBond') }}</label>
-      <input
-        id="bond-input"
-        name="bond-input"
-        type="number"
-        :value="currentBond"
-        @input="handleBondInput"
-        class="bond-input"
-        min="1"
-        max="100"
-      />
-    </div>
-    
-    <div class="bond-container">
-      <div class="bond-display">
-        <div class="bond-icon-container">
-          <img 
-            src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
-            alt="Current Bond"
-            class="bond-icon"
-          />
-          <span class="bond-number">{{ currentBond }}</span>
+    <!-- Maxed Version -->
+    <div v-if="isMaxBond" class="maxed-section">
+      <div class="maxed-content">
+        <div class="maxed-icon">
+          <div class="max-bond-badge">
+            <img
+              src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+              alt="Max Bond"
+              class="max-bond-icon"
+            />
+            <span class="max-bond-number">100</span>
+          </div>
+        </div>
+        <div class="maxed-text">
+          <h3 class="maxed-title">{{ $t('maxBond') }}</h3>
+          <p class="maxed-subtitle">{{ $t('noUpgradeNeeded') }}</p>
         </div>
       </div>
-      
-      <div class="bond-arrow">→</div>
-      
-      <div class="bond-display">
-        <div class="bond-icon-container">
-          <img 
-            src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
-            alt="New Bond"
-            class="bond-icon"
-          />
-          <span class="bond-number">{{ newBondLevel }}</span>
-        </div>
+
+      <!-- Keep the bond input for maxed version -->
+      <div class="maxed-input-container">
+          <input
+          id="bond-input-maxed"
+          name="bond-input"
+          type="number"
+          :value="currentBond"
+          @input="handleBondInput"
+          class="bond-input maxed-input"
+          min="1"
+          max="100"
+        />
+      </div>
+
+      <div class="maxed-decorative">
+        <div class="shine-effect"></div>
       </div>
     </div>
-    
-    <div class="exp-info" v-if="remainingXp > 0">
-      {{ remainingXp }} {{ $t('expToNextLevel') }}
-    </div>
-    
-    <div class="total-exp">
-      {{ $t('totalExp') }}: {{ totalExp }}
-    </div>
+
+    <!-- Normal Version -->
+    <template v-else>
+      <!-- Bond input moved to the top -->
+      <div class="bond-input-container">
+        <label for="bond-input">{{ $t('currentBond') }}</label>
+        <input
+          id="bond-input"
+          name="bond-input"
+          type="number"
+          :value="currentBond"
+          @input="handleBondInput"
+          class="bond-input"
+          min="1"
+          max="100"
+        />
+      </div>
+
+      <div class="bond-container">
+        <div class="bond-display">
+          <div class="bond-icon-container">
+            <img
+              src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+              alt="Current Bond"
+              class="bond-icon"
+            />
+            <span class="bond-number">{{ currentBond }}</span>
+          </div>
+        </div>
+
+        <div class="bond-arrow">→</div>
+
+        <div class="bond-display">
+          <div class="bond-icon-container">
+            <img
+              src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+              alt="New Bond"
+              class="bond-icon"
+            />
+            <span class="bond-number">{{ newBondLevel }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="exp-info" v-if="remainingXp > 0">
+        {{ remainingXp }} {{ $t('expToNextLevel') }}
+      </div>
+
+      <div class="total-exp">
+        {{ $t('totalExp') }}: {{ totalExp }}
+      </div>
+    </template>
   </div>
 </template>
 
@@ -166,5 +210,188 @@ function handleBondInput(event: Event) {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Maxed Section Styles */
+.maxed-section {
+  position: relative;
+  background: linear-gradient(135deg,
+    rgba(255, 105, 180, 0.1),
+    rgba(255, 201, 51, 0.1),
+    rgba(255, 105, 180, 0.05)
+  );
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  gap: 15px;
+}
+
+.maxed-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+  position: relative;
+}
+
+.maxed-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.max-bond-badge {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.max-bond-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(255, 105, 180, 0.5));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.max-bond-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  font-weight: bold;
+  font-size: 0.85em;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.maxed-text {
+  text-align: center;
+}
+
+.maxed-title {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+  background: linear-gradient(135deg, rgb(255, 105, 180), rgb(255, 201, 51));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+}
+
+.maxed-subtitle {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  opacity: 0.8;
+}
+
+.maxed-input-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+  z-index: 2;
+  position: relative;
+}
+
+.maxed-input-container label {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.maxed-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 105, 180, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.maxed-input:focus {
+  outline: none;
+  border-color: rgb(255, 105, 180);
+  box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.2);
+}
+
+.maxed-decorative {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shine-effect {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 60%,
+    transparent 70%
+  );
+  animation: shine 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes shine {
+  0% { transform: rotate(0deg) translate(-100%, -100%); }
+  100% { transform: rotate(360deg) translate(-100%, -100%); }
+}
+
+/* Hide number input arrows */
+.bond-input::-webkit-outer-spin-button,
+.bond-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bond-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .maxed-title {
+    font-size: 1.1em;
+  }
+
+  .max-bond-badge {
+    width: 45px;
+    height: 45px;
+  }
+
+  .max-bond-number {
+    font-size: 0.8em;
+  }
+
+  .maxed-section {
+    min-height: 120px;
+    padding: 15px;
+  }
 }
 </style>

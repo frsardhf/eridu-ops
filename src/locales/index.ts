@@ -88,6 +88,7 @@ export const translations = {
     targetLevel: "Target Level",
     xpRequired: "XP Required",
     maxLevel: "MAX LEVEL",
+    maxBond: "MAX BOND",
 
     // Upgrade component - Potential/Talent
     talent: "Talent",
@@ -152,6 +153,10 @@ export const translations = {
     targetGrade: "Target",
     maxGrade: "MAX",
     
+    // Inventory modal
+    inventory: "Inventory",
+    studentDetails: "Student Details",
+
     // Buttons and actions
     reset: "Reset",
     save: "Save",
@@ -245,6 +250,7 @@ export const translations = {
     targetLevel: "目標のレベル",
     xpRequired: "必要な経験値",
     maxLevel: "最大レベル",
+    maxBond: "最大絆",
 
     // Upgrade component - Potential/Talent
     talent: "能力",
@@ -309,6 +315,10 @@ export const translations = {
     targetGrade: "目標",
     maxGrade: "最大",
     
+    // Inventory modal
+    inventory: "所持品",
+    studentDetails: "生徒詳細",
+
     // Buttons and actions
     reset: "リセット",
     save: "保存",

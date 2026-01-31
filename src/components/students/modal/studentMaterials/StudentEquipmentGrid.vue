@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, onMounted } from 'vue';
-import { ModalProps } from '../../../../types/student';
 import StudentResourceCard from './StudentResourceCard.vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import { applyFilters } from '../../../../consumables/utils/filterUtils';
 import { EQUIPMENT } from '../../../../types/resource';
+import { getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
-  student: ModalProps | null,
   equipmentFormData: Record<string, number>,
 }>();
 
@@ -25,10 +24,11 @@ const slideOffset = ref(0);
 const containerWidth = ref(0);
 
 const equipments = computed(() => {
-  if (!props.student) return [];
+  // Read directly from equipment cache instead of props
+  const allEquipments = getAllEquipmentFromCache();
+  if (!allEquipments || Object.keys(allEquipments).length === 0) return [];
 
   // Apply EQUIPMENT filters to show only planner-relevant equipment
-  const allEquipments = props.student.Equipments || {};
   const filteredEquipments = applyFilters(allEquipments, EQUIPMENT);
 
   return Object.values(filteredEquipments);

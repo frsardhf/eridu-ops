@@ -167,6 +167,7 @@ const updateValue = (event: Event, field: 'owned' | 'price' | 'purchasable') => 
 
 <style scoped>
 .eleph-eligma-card {
+  align-self: center;
   background: var(--card-background);
   border-radius: 8px;
   padding: 16px;

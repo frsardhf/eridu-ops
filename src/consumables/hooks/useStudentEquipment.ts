@@ -1,11 +1,11 @@
 import { ref, watch } from 'vue';
-import { ModalProps, StudentProps } from '../../types/student';
-import { getEquipments, saveEquipmentsFromStudent } from '../utils/studentStorage';
-import { updateEquipmentInCache, getEquipmentDataByIdSync } from '../stores/resourceCacheStore';
+import { StudentProps } from '../../types/student';
+import { getEquipments, saveEquipmentInventories } from '../utils/studentStorage';
+import { getAllEquipmentFromCache, updateEquipmentInCache } from '../stores/resourceCacheStore';
 import type { CachedResource } from '../../types/resource';
 
 export function useStudentEquipment(props: {
-  student: ModalProps | null,
+  student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   const equipmentFormData = ref<Record<string, number>>({});
@@ -38,7 +38,7 @@ export function useStudentEquipment(props: {
 
   // Watch for changes to form data and save to IndexedDB
   watch([equipmentFormData], () => {
-    if (props.student && props.isVisible && !isLoading.value) {
+    if (props.isVisible && !isLoading.value) {
       saveEquipments();
     }
   }, { deep: true });
@@ -67,25 +67,26 @@ export function useStudentEquipment(props: {
   }
 
   async function saveEquipments() {
-    if (!props.student?.Equipments) return;
-    await saveEquipmentsFromStudent(props.student, equipmentFormData);
+    // Build inventory records from cache keys + form data
+    const cache = getAllEquipmentFromCache();
+    if (!cache || Object.keys(cache).length === 0) return;
+
+    await saveEquipmentInventories(equipmentFormData.value);
 
     // Update the in-memory cache so calculations get current values
-    Object.values(props.student.Equipments).forEach((equipment: any) => {
-      if (equipment && equipment.Id !== undefined) {
-        const existingData = getEquipmentDataByIdSync(equipment.Id);
-        if (existingData) {
-          updateEquipmentInCache(equipment.Id, {
-            ...existingData,
-            QuantityOwned: equipmentFormData.value[equipment.Id] || 0
-          } as CachedResource);
-        }
+    for (const [id, equipment] of Object.entries(cache)) {
+      const numericId = Number(id);
+      if (equipmentFormData.value[numericId] !== undefined) {
+        updateEquipmentInCache(numericId, {
+          ...equipment,
+          QuantityOwned: equipmentFormData.value[numericId] || 0
+        } as CachedResource);
       }
-    });
+    }
   }
 
   return {
     equipmentFormData,
     handleEquipmentInput
   };
-} 
+}

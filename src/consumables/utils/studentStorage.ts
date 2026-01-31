@@ -8,8 +8,8 @@ import {
   getAllEquipmentInventories,
   setResourceInventory,
   setEquipmentInventory,
-  saveResourceInventories,
-  saveEquipmentInventories,
+  saveResourceInventories as dbSaveResourceInventories,
+  saveEquipmentInventories as dbSaveEquipmentInventories,
   getAllItemsAsRecord,
   getAllEquipmentAsRecord,
   getAllStudents,
@@ -227,7 +227,7 @@ export async function saveResources(
       })
     );
 
-    return await saveResourceInventories(inventories);
+    return await dbSaveResourceInventories(inventories);
   } catch (error) {
     console.error('Error saving resources to IndexedDB:', error);
     return false;
@@ -235,26 +235,25 @@ export async function saveResources(
 }
 
 /**
- * Saves resources inventory from student materials
- * @param student The student object containing materials
- * @param resourceFormData The form data with updated quantities
+ * Saves resource inventory from form data (id → quantity mapping)
+ * No student dependency — reads directly from form data
+ * @param formData Record of resource ID → quantity owned
  * @returns Promise<boolean> indicating success or failure
  */
-export async function saveResourcesFromStudent(
-  student: { Materials?: Record<string, any> },
-  resourceFormData: { value: Record<string, number> }
+export async function saveResourceInventories(
+  formData: Record<string, number>
 ): Promise<boolean> {
   try {
-    if (!student?.Materials) return false;
+    const inventories: ResourceInventoryRecord[] = Object.entries(formData).map(
+      ([id, quantity]) => ({
+        id: Number(id),
+        QuantityOwned: quantity || 0
+      })
+    );
 
-    const inventories: ResourceInventoryRecord[] = Object.values(student.Materials).map((material: any) => ({
-      id: material.Id,
-      QuantityOwned: resourceFormData.value[material.Id] || 0
-    }));
-
-    return await saveResourceInventories(inventories);
+    return await dbSaveResourceInventories(inventories);
   } catch (error) {
-    console.error('Error processing and saving resources to IndexedDB:', error);
+    console.error('Error saving resource inventories to IndexedDB:', error);
     return false;
   }
 }
@@ -286,7 +285,7 @@ export async function saveEquipments(
       })
     );
 
-    return await saveEquipmentInventories(inventories);
+    return await dbSaveEquipmentInventories(inventories);
   } catch (error) {
     console.error('Error saving equipments to IndexedDB:', error);
     return false;
@@ -294,26 +293,25 @@ export async function saveEquipments(
 }
 
 /**
- * Saves equipment inventory from student equipment
- * @param student The student object containing equipment
- * @param equipmentFormData The form data with updated quantities
+ * Saves equipment inventory from form data (id → quantity mapping)
+ * No student dependency — reads directly from form data
+ * @param formData Record of equipment ID → quantity owned
  * @returns Promise<boolean> indicating success or failure
  */
-export async function saveEquipmentsFromStudent(
-  student: { Equipments?: Record<string, any> },
-  equipmentFormData: { value: Record<string, number> }
+export async function saveEquipmentInventories(
+  formData: Record<string, number>
 ): Promise<boolean> {
   try {
-    if (!student?.Equipments) return false;
+    const inventories: EquipmentInventoryRecord[] = Object.entries(formData).map(
+      ([id, quantity]) => ({
+        id: Number(id),
+        QuantityOwned: quantity || 0
+      })
+    );
 
-    const inventories: EquipmentInventoryRecord[] = Object.values(student.Equipments).map((equipment: any) => ({
-      id: equipment.Id,
-      QuantityOwned: equipmentFormData.value[equipment.Id] || 0
-    }));
-
-    return await saveEquipmentInventories(inventories);
+    return await dbSaveEquipmentInventories(inventories);
   } catch (error) {
-    console.error('Error processing and saving equipment to IndexedDB:', error);
+    console.error('Error saving equipment inventories to IndexedDB:', error);
     return false;
   }
 }

@@ -21,10 +21,10 @@ export interface StudentProps {
   SkillMaterialAmount: number[][];
 }
 
-export interface ModalProps extends StudentProps {
-  Materials: ResourceProps[];
-  Equipments: ResourceProps[];
-}
+// ModalProps is now identical to StudentProps after removing Materials/Equipments
+// (which are global data read from resourceCacheStore, not student-specific)
+// Kept as alias for backward compatibility with existing component props
+export type ModalProps = StudentProps;
 
 export interface FetchedData {
   students: Record<string, StudentProps>;

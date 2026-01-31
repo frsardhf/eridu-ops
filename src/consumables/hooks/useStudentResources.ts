@@ -1,11 +1,11 @@
 import { ref, watch } from 'vue';
-import { StudentProps, ModalProps } from '../../types/student';
-import { getResources, saveResourcesFromStudent } from '../utils/studentStorage';
-import { updateResourceInCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
+import { StudentProps } from '../../types/student';
+import { getResources, saveResourceInventories } from '../utils/studentStorage';
+import { getAllResourcesFromCache, updateResourceInCache } from '../stores/resourceCacheStore';
 import type { CachedResource } from '../../types/resource';
 
 export function useStudentResources(props: {
-  student: ModalProps | null,
+  student: StudentProps | null,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   const resourceFormData = ref<Record<string, number>>({});
@@ -38,7 +38,7 @@ export function useStudentResources(props: {
 
   // Watch for changes to form data and save to IndexedDB
   watch([resourceFormData], () => {
-    if (props.student && props.isVisible && !isLoading.value) {
+    if (props.isVisible && !isLoading.value) {
       saveResources();
     }
   }, { deep: true });
@@ -67,21 +67,22 @@ export function useStudentResources(props: {
   }
 
   async function saveResources() {
-    if (!props.student?.Materials) return;
-    await saveResourcesFromStudent(props.student, resourceFormData);
+    // Build inventory records from cache keys + form data
+    const cache = getAllResourcesFromCache();
+    if (!cache || Object.keys(cache).length === 0) return;
+
+    await saveResourceInventories(resourceFormData.value);
 
     // Update the in-memory cache so autoFillGifts gets current values
-    Object.values(props.student.Materials).forEach((material: any) => {
-      if (material && material.Id !== undefined) {
-        const existingData = getResourceDataByIdSync(material.Id);
-        if (existingData) {
-          updateResourceInCache(material.Id, {
-            ...existingData,
-            QuantityOwned: resourceFormData.value[material.Id] || 0
-          } as CachedResource);
-        }
+    for (const [id, resource] of Object.entries(cache)) {
+      const numericId = Number(id);
+      if (resourceFormData.value[numericId] !== undefined) {
+        updateResourceInCache(numericId, {
+          ...resource,
+          QuantityOwned: resourceFormData.value[numericId] || 0
+        } as CachedResource);
       }
-    });
+    }
   }
 
   return {

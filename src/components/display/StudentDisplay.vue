@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ModalProps, StudentProps } from '../../types/student';
-import { ResourceProps } from '../../types/resource';
 import { SortOption } from '../../types/header';
 import { GiftProps } from '../../types/gift';
 import { useStudentData } from '../../consumables/hooks/useStudentData';
@@ -11,8 +10,6 @@ import StudentGrid from './StudentGrid.vue';
 import StudentModal from '../students/modal/StudentModal.vue'
 
 const {
-  materialData,
-  equipmentData,
   favoredGift,
   giftBoxData,
   isDarkMode,
@@ -58,8 +55,6 @@ function prepareStudentForModal(student: StudentProps): ModalProps {
     ...student,
     Gifts: giftsObject as GiftProps[],
     Boxes: boxesObject as GiftProps[],
-    Materials: Object.values(materialData.value) as ResourceProps[],
-    Equipments: Object.values(equipmentData.value) as ResourceProps[],
     ElephIcon: student.ElephIcon || ''
   };
 }
