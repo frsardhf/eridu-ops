@@ -252,13 +252,8 @@ export function useStudentGifts(props: {
     boxFormData.value[boxId] = parseInt(input.value) || 0;
   };
 
-  const handleBondInput = (event: Event) => {
-    removeLeadingZeros(event);
-    const input = event.target as HTMLInputElement;
-    const value = parseInt(input.value);
-    if (!isNaN(value) && value >= 1 && value <= 100) {
-      bondDetailData.value.currentBond = value;
-    }
+  const handleBondInput = (value: number) => {
+    bondDetailData.value.currentBond = value;
   };
 
   const convertBoxes = () => {

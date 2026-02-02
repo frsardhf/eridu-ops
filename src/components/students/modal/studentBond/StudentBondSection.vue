@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
@@ -9,13 +9,83 @@ const props = defineProps<{
   totalExp: number
 }>();
 
-const emit = defineEmits(['update-bond']);
+const emit = defineEmits<(e: 'update-bond', value: number) => void>();
 
-const isMaxBond = computed(() => props.currentBond === 100);
+// Local state for the actual bond value
+const bondState = ref(props.currentBond);
 
-function handleBondInput(event: Event) {
-  emit('update-bond', event);
-}
+// Separate display value for input (can be empty during typing)
+const inputDisplayValue = ref(props.currentBond.toString());
+
+// Sync with prop changes from parent
+watch(() => props.currentBond, (newVal) => {
+  bondState.value = newVal;
+  inputDisplayValue.value = newVal.toString();
+}, { immediate: true });
+
+const isMaxBond = computed(() => bondState.value === 100);
+
+// Handle input changes during typing
+const handleInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const rawValue = input.value;
+
+  // Update display value (allow empty during typing)
+  inputDisplayValue.value = rawValue;
+
+  // If empty or just a dash, don't update state yet (will be handled on blur)
+  if (rawValue === '' || rawValue === '-') {
+    return;
+  }
+
+  // Remove leading zeros and parse
+  const cleanedValue = rawValue.replace(/^0+(?=\d)/, '');
+  const value = parseInt(cleanedValue, 10);
+
+  // Handle NaN - don't update state
+  if (isNaN(value)) {
+    return;
+  }
+
+  // Apply clamping and update state
+  processBondUpdate(value);
+};
+
+// Handle blur - ensure valid value when leaving input
+const handleBlur = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const rawValue = input.value.trim();
+
+  let value: number;
+
+  // If empty or invalid, default to 1
+  if (rawValue === '' || rawValue === '-' || isNaN(parseInt(rawValue, 10))) {
+    value = 1;
+  } else {
+    value = parseInt(rawValue, 10);
+  }
+
+  processBondUpdate(value);
+
+  // Sync input display with actual state
+  inputDisplayValue.value = bondState.value.toString();
+  input.value = bondState.value.toString();
+};
+
+// Centralized logic for processing bond updates
+const processBondUpdate = (value: number) => {
+  // Clamp between 1 and 100
+  value = Math.max(1, Math.min(100, value));
+  bondState.value = value;
+  emit('update-bond', value);
+};
+
+// Prevent invalid characters (e, +, -, .)
+const handleKeydown = (event: KeyboardEvent) => {
+  if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+    event.preventDefault();
+  }
+};
 </script>
 
 <template>
@@ -41,12 +111,14 @@ function handleBondInput(event: Event) {
 
       <!-- Keep the bond input for maxed version -->
       <div class="maxed-input-container">
-          <input
+        <input
           id="bond-input-maxed"
           name="bond-input"
           type="number"
-          :value="currentBond"
-          @input="handleBondInput"
+          :value="inputDisplayValue"
+          @input="handleInput"
+          @blur="handleBlur"
+          @keydown="handleKeydown"
           class="bond-input maxed-input"
           min="1"
           max="100"
@@ -67,8 +139,10 @@ function handleBondInput(event: Event) {
           id="bond-input"
           name="bond-input"
           type="number"
-          :value="currentBond"
-          @input="handleBondInput"
+          :value="inputDisplayValue"
+          @input="handleInput"
+          @blur="handleBlur"
+          @keydown="handleKeydown"
           class="bond-input"
           min="1"
           max="100"
@@ -83,7 +157,7 @@ function handleBondInput(event: Event) {
               alt="Current Bond"
               class="bond-icon"
             />
-            <span class="bond-number">{{ currentBond }}</span>
+            <span class="bond-number">{{ bondState }}</span>
           </div>
         </div>
 
@@ -106,7 +180,7 @@ function handleBondInput(event: Event) {
       </div>
 
       <div class="total-exp">
-        {{ $t('totalExp') }}: {{ totalExp }}
+        {{ $t('totalExp') }}: {{ totalExp.toLocaleString() }}
       </div>
     </template>
   </div>

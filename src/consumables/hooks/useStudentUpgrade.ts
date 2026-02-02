@@ -507,13 +507,11 @@ export function useStudentUpgrade(props: {
 
   // Function to handle both current and target level updates
   const handleLevelUpdate = (current: number, target: number) => {
-    if (current >= 1 && target >= current) {
-      characterLevels.value.current = current;
-      characterLevels.value.target = target;
+    characterLevels.value.current = current;
+    characterLevels.value.target = target;
 
-      if (props.student && props.isVisible) {
-        updateStudentData(props.student.Id);
-      }
+    if (props.student && props.isVisible) {
+      updateStudentData(props.student.Id);
     }
   };
 

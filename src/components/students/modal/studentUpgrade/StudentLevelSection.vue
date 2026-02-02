@@ -11,57 +11,116 @@ const emit = defineEmits<(
   e: 'update-level', current: number, target: number
 ) => void>();
 
-// Create potential settings for each type
 const levelState = ref({
   current: props.characterLevels.current,
   target: props.characterLevels.target,
 });
 
-// Watch for prop changes to update local state
+// Track temporary display values (can be empty string during editing)
+const inputDisplayValues = ref({
+  current: props.characterLevels.current.toString(),
+  target: props.characterLevels.target.toString(),
+});
+
 watch(() => props.characterLevels, (newVal) => {
   if (newVal) {
     levelState.value.current = newVal.current;
     levelState.value.target = newVal.target;
+    inputDisplayValues.value.current = newVal.current.toString();
+    inputDisplayValues.value.target = newVal.target.toString();
   }
 }, { deep: true, immediate: true });
 
-// Single function to handle both current and target level updates
-const updateLevel = (event: Event, isTarget: boolean) => {
+// Handle input changes during typing
+const handleInput = (event: Event, isTarget: boolean) => {
   const input = event.target as HTMLInputElement;
+  const rawValue = input.value;
 
-  // If the input is empty or just a dash, don't process yet
-  if (input.value === '' || input.value === '-') {
-    return;
-  }
-  
-  // Remove leading zeros and parse the value
-  input.value = input.value.replace(/^0+(?=\d)/, '');
-  let value = parseInt(input.value);
-  
-  // Handle NaN case
-  if (isNaN(value)) {
-    input.value = isTarget ? levelState.value.target.toString() 
-      : levelState.value.current.toString();
-    return;
-  }
-  
-  // Clamp the value based on whether it's for target or current
+  // Update display value (allow empty during typing)
   if (isTarget) {
+    inputDisplayValues.value.target = rawValue;
+  } else {
+    inputDisplayValues.value.current = rawValue;
+  }
+
+  // If empty, don't update levelState yet (will be handled on blur)
+  if (rawValue === '' || rawValue === '-') {
+    return;
+  }
+
+  // Remove leading zeros and parse
+  const cleanedValue = rawValue.replace(/^0+(?=\d)/, '');
+  const value = parseInt(cleanedValue, 10);
+
+  // Handle NaN - don't update state
+  if (isNaN(value)) {
+    return;
+  }
+
+  // Apply clamping and update state
+  processLevelUpdate(value, isTarget);
+};
+
+// Handle blur - ensure valid value when leaving input
+const handleBlur = (event: Event, isTarget: boolean) => {
+  const input = event.target as HTMLInputElement;
+  const rawValue = input.value.trim();
+
+  let value: number;
+
+  // If empty or invalid, default to appropriate value
+  if (rawValue === '' || rawValue === '-' || isNaN(parseInt(rawValue, 10))) {
+    if (isTarget) {
+      // Default target to current level when empty
+      value = levelState.value.current;
+    } else {
+      // Default current to 1 when empty
+      value = 1;
+    }
+  } else {
+    value = parseInt(rawValue, 10);
+  }
+
+  processLevelUpdate(value, isTarget);
+
+  // Sync input display with actual state
+  if (isTarget) {
+    inputDisplayValues.value.target = levelState.value.target.toString();
+    input.value = levelState.value.target.toString();
+  } else {
+    inputDisplayValues.value.current = levelState.value.current.toString();
+    input.value = levelState.value.current.toString();
+  }
+};
+
+// Centralized logic for processing level updates
+const processLevelUpdate = (value: number, isTarget: boolean) => {
+  if (isTarget) {
+    // Target must be between current and 90
     value = Math.max(levelState.value.current, Math.min(90, value));
     levelState.value.target = value;
   } else {
+    // Current must be between 1 and 90
     value = Math.max(1, Math.min(90, value));
     levelState.value.current = value;
+    
+    // If target is now less than current, bump it up
     if (levelState.value.target < value) {
       levelState.value.target = value;
+      inputDisplayValues.value.target = value.toString();
     }
   }
-  
-  input.value = value.toString();
+
   emit('update-level', levelState.value.current, levelState.value.target);
 };
 
-// Add computed property to check if level is maxed
+// Prevent invalid characters (e, +, -, .)
+const handleKeydown = (event: KeyboardEvent) => {
+  if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+    event.preventDefault();
+  }
+};
+
 const isMaxLevel = computed(() => props.characterLevels.current === 90);
 </script>
 
@@ -82,14 +141,15 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
         </div>
       </div>
       
-      <!-- Keep the level input for maxed version -->
       <div class="maxed-input-container">
         <input
           id="current-level-input-maxed"
           name="current-level-input"
           type="number"
-          :value="levelState.current"
-          @input="(e) => updateLevel(e, false)"
+          :value="inputDisplayValues.current"
+          @input="(e) => handleInput(e, false)"
+          @blur="(e) => handleBlur(e, false)"
+          @keydown="handleKeydown"
           class="level-input maxed-input"
           min="1"
           max="90"
@@ -103,15 +163,16 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 
     <!-- Normal Version -->
     <template v-else>
-      <!-- Level input moved to the top -->
       <div class="level-input-container">
         <label for="current-level-input">{{ $t('currentLevel') }}</label>
         <input
           id="current-level-input"
           name="current-level-input"
           type="number"
-          :value="levelState.current"
-          @input="(e) => updateLevel(e, false)"
+          :value="inputDisplayValues.current"
+          @input="(e) => handleInput(e, false)"
+          @blur="(e) => handleBlur(e, false)"
+          @keydown="handleKeydown"
           class="level-input"
           min="1"
           max="90"
@@ -144,8 +205,10 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
           id="target-level-input"
           name="target-level-input"
           type="number"
-          :value="levelState.target"
-          @input="(e) => updateLevel(e, true)"
+          :value="inputDisplayValues.target"
+          @input="(e) => handleInput(e, true)"
+          @blur="(e) => handleBlur(e, true)"
+          @keydown="handleKeydown"
           class="level-input"
           min="1"
           max="90"
