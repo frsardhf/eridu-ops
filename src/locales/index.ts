@@ -45,6 +45,7 @@ export const translations = {
     importEmptyText: "Please paste data",
     
     // Student modal tabs
+    info: "Info",
     bond: "Bond",
     upgrade: "Skills",
     gear: "Weapons",
@@ -153,6 +154,14 @@ export const translations = {
     targetGrade: "Target",
     maxGrade: "MAX",
     
+    // Info tab
+    exclusiveGear: "Exclusive Gear",
+    comingSoon: "Coming Soon",
+    atk: "ATK",
+    def: "DEF",
+    school: "School",
+    club: "Club",
+
     // Inventory modal
     inventory: "Inventory",
     studentDetails: "Student Details",
@@ -207,6 +216,7 @@ export const translations = {
     importEmptyText: "データを貼り付けてください",
     
     // Student modal tabs
+    info: "情報",
     bond: "絆",
     upgrade: "育成",
     gear: "武器",
@@ -315,6 +325,14 @@ export const translations = {
     targetGrade: "目標",
     maxGrade: "最大",
     
+    // Info tab
+    exclusiveGear: "固有装備",
+    comingSoon: "準備中",
+    atk: "ATK",
+    def: "DEF",
+    school: "学園",
+    club: "部活",
+
     // Inventory modal
     inventory: "所持品",
     studentDetails: "生徒詳細",
