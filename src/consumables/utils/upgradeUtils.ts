@@ -118,10 +118,11 @@ export function fetchLocalizedBuffName(key: string, cache?: Record<string, any> 
 
 /**
  * Fetch localization data from the server
+ * @param lang Language code (e.g. 'en', 'jp')
  * @returns Promise that resolves with the localization data
  */
-export function fetchLocalizationData(): Promise<Record<string, any>> {
-  return fetch('https://schaledb.com/data/en/localization.json')
+export function fetchLocalizationData(lang: string = 'en'): Promise<Record<string, any>> {
+  return fetch(`https://schaledb.com/data/${lang}/localization.json`)
     .then(response => response.json())
     .then(data => {
       localizationCache = data;

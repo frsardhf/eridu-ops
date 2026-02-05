@@ -8,6 +8,14 @@ import '../../../../styles/studentUpgrade.css';
 import { currentLanguage } from '../../../../consumables/stores/localizationStore';
 import { $t } from '../../../../locales';
 import { getStudentData } from '../../../../consumables/stores/studentStore';
+import {
+  formatSkillDescription as sharedFormatSkillDescription,
+  formatSkillCost as sharedFormatSkillCost,
+  fetchLocalizedBuffName as sharedFetchLocalizedBuffName,
+  calculateTooltipPosition,
+  fetchLocalizationData
+} from '../../../../consumables/utils/upgradeUtils';
+import { getBulletTypeColor } from '../../../../consumables/utils/colorUtils';
 
 const props = defineProps<{
   student: Record<string, any> | null,
@@ -176,78 +184,15 @@ const getSkillIconUrl = (iconName: string) => {
   return `https://schaledb.com/images/skill/${iconName}.webp`;
 };
 
-// Refactored function to format the skill description
-const formatSkillDescription = (skill: any, current: number, target: number) => {
-  if (!skill || !skill.Desc || !skill.Parameters) return '';
-  
-  let formattedDesc = skill.Desc;
-  const parameters = skill.Parameters;
-  
-  // First replace parameter placeholders with current/target values
-  parameters.forEach((paramGroup: any[], groupIndex: number) => {
-    const currentValue = paramGroup[current - 1] || paramGroup[0];
-    const targetValue = paramGroup[target - 1] || paramGroup[0];
-    const placeholder = `<?${groupIndex + 1}>`;
-    
-    // If current and target are the same, just show a single value
-    if (current === target) {
-      formattedDesc = formattedDesc.replace(
-        placeholder,
-        `<span style="color: var(--accent-color)">${currentValue}</span>`
-      );
-    } else {
-      formattedDesc = formattedDesc.replace(
-        placeholder,
-        `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`
-      );
-    }
+// Cache for localization data to avoid repeated fetching
+const localizationCache = ref<Record<string, any> | null>(null);
+
+// Load localization data on component mount
+onMounted(() => {
+  fetchLocalizationData(currentLanguage.value).then(data => {
+    localizationCache.value = data;
   });
-  
-  // Handle knockback tag <kb:value> by finding Knockback effect and its scale value
-  formattedDesc = formattedDesc.replace(/<kb:(\d+)>/g, (match: string, valueIndex: string) => {
-    const indexNum = parseInt(valueIndex);
-    if (!skill.Effects) return match;
-    
-    // Find the Knockback effect
-    const knockbackEffect = skill.Effects.find((effect: any) => effect.Type === "Knockback");
-    if (!knockbackEffect || !knockbackEffect.Scale) {
-      return match;
-    }
-    
-    // Calculate the sum of all knockback values up to the specified index
-    let knockbackSum = 0;
-    for (let i = 0; i <= indexNum && i < knockbackEffect.Scale.length; i++) {
-      knockbackSum += knockbackEffect.Scale[i] || 0;
-    }
-    
-    // Return a fixed format with the sum value and "units"
-    return `${knockbackSum} units`;
-  });
-  
-  // Process special tags with localization data
-  formattedDesc = formattedDesc.replace(/<([bcds]):([^>]+)>/g, 
-    (match: string, tagType: string, value: string) => {
-    // Handle special tags according to the rules
-    let prefix = '';
-    
-    switch (tagType) {
-      case 'b': prefix = 'Buff_'; break;
-      case 'd': prefix = 'Debuff_'; break;
-      case 'c': prefix = 'CC_'; break;
-      case 's': prefix = 'Special_'; break;
-    }
-    
-    // Fetch the localized name
-    const key = prefix + value;
-    const localizedName = fetchLocalizedBuffName(key);
-    
-    if (localizedName) {
-      return localizedName;
-    }
-  });
-  
-  return formattedDesc;
-};
+});
 
 // Get the appropriate skill data - use WeaponPassive when enhanced, otherwise use the original skill
 const getSkillData = (skillType: SkillType) => {
@@ -265,10 +210,10 @@ const getSkillData = (skillType: SkillType) => {
 // Get skill description - use WeaponPassive description when enhanced
 const getSkillDescription = (skillType: SkillType, current: number, target: number) => {
   const skill = getSkillData(skillType);
-  return formatSkillDescription(skill, current, target);
+  return sharedFormatSkillDescription(skill, current, target, localizationCache.value);
 };
 
-// Get skill cost - use ExtraSkills cost when Ex skill toggle is active, 
+// Get skill cost - use ExtraSkills cost when Ex skill toggle is active,
 // WeaponPassive doesn't have cost for Passive
 interface SkillData {
   Cost?: number[];
@@ -283,72 +228,12 @@ const getSkillCost = (skillType: SkillType, current: number, target: number): st
     useExtraExSkill.value &&
     props.student?.Skills?.Ex?.ExtraSkills?.[0]
   ) {
-    // Use ExtraSkills cost when toggle is active
     skill = props.student.Skills.Ex.ExtraSkills[0] as SkillData;
   } else {
-    // Use original skill cost for all other cases
     skill = props.student?.Skills?.[skillType] as SkillData;
   }
 
-  return skill?.Cost ? formatSkillCost(skill.Cost, current, target) : '';
-};
-
-// Cache for localization data to avoid repeated fetching
-const localizationCache = ref<Record<string, any> | null>(null);
-
-// Function to fetch localized buff names from the schaledb
-const fetchLocalizedBuffName = (key: string) => {
-  // If we already have the data cached, use it
-  if (localizationCache.value && localizationCache.value.BuffName && localizationCache.value.BuffName[key]) {
-    return localizationCache.value.BuffName[key];
-  }
-  
-  // If cache is empty, fetch the data
-  if (!localizationCache.value) {
-    // We'll use a Promise to handle this asynchronously
-    const lang = currentLanguage.value;
-    fetch(`https://schaledb.com/data/${lang}/localization.json`)
-      .then(response => response.json())
-      .then(data => {
-        localizationCache.value = data;
-      })
-      .catch(error => {
-        console.error('Error fetching localization data:', error);
-      });
-    
-    // Return the original key for now until we have the data
-    return key.replace(/^(Buff_|Debuff_|CC_|Special_)/, '');
-  }
-  
-  // If we have the cache but the key doesn't exist
-  return key.replace(/^(Buff_|Debuff_|CC_|Special_)/, '');
-};
-
-// Load localization data on component mount
-onMounted(() => {
-  const lang = currentLanguage.value;
-  fetch(`https://schaledb.com/data/${lang}/localization.json`)
-    .then(response => response.json())
-    .then(data => {
-      localizationCache.value = data;
-    })
-    .catch(error => {
-      console.error('Error fetching localization data:', error);
-    });
-});
-
-// Add this function to format the skill cost
-const formatSkillCost = (cost: number[], current: number, target: number) => {
-  if (!cost || !cost.length) return '';
-  const currentValue = cost[current - 1] || cost[0];
-  const targetValue = cost[target - 1] || cost[0];
-  
-  // If current and target are the same, just show a single value
-  if (current === target) {
-    return `<span style="color: var(--accent-color)">${currentValue}</span>`;
-  } else {
-    return `${currentValue}/<span style="color: var(--accent-color)">${targetValue}</span>`;
-  }
+  return skill?.Cost ? sharedFormatSkillCost(skill.Cost, current, target) : '';
 };
 
 // Add these refs for tooltip positioning
@@ -358,32 +243,9 @@ const tooltipStyle = ref({
   left: '0px'
 });
 
-// Add these methods for tooltip handling
+// Tooltip handling using shared utility
 const showTooltip = (event: MouseEvent, skillType: SkillType) => {
-  const rect = (event.target as HTMLElement).getBoundingClientRect();
-  const tooltipWidth = 250; // Approximate width of tooltip
-  const tooltipHeight = 100; // Approximate height of tooltip
-  
-  // Calculate position
-  let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-  let top = rect.top - tooltipHeight - 10; // 10px gap
-  
-  // Adjust if tooltip would go off screen
-  if (left < 0) left = 0;
-  if (left + tooltipWidth > window.innerWidth) {
-    left = window.innerWidth - tooltipWidth;
-  }
-  
-  // If tooltip would go off top of screen, show below instead
-  if (top < 0) {
-    top = rect.bottom + 10;
-  }
-  
-  tooltipStyle.value = {
-    top: `${top}px`,
-    left: `${left}px`
-  };
-  
+  tooltipStyle.value = calculateTooltipPosition(event, 250, 100);
   activeTooltip.value = skillType;
 };
 
@@ -443,19 +305,14 @@ watch(() => props.student, () => {
 
 // Watch for language changes and update localization data
 watch(currentLanguage, (newLanguage) => {
-  // Clear current cache to force a reload
   localizationCache.value = null;
-  
-  // Reload localization data with the new language
-  fetch(`https://schaledb.com/data/${newLanguage}/localization.json`)
-    .then(response => response.json())
-    .then(data => {
-      localizationCache.value = data;
-    })
-    .catch(error => {
-      console.error(`Error fetching localization data for language ${newLanguage}:`, error);
-    });
+  fetchLocalizationData(newLanguage).then(data => {
+    localizationCache.value = data;
+  });
 });
+
+// Get BulletType color using colorUtils
+const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletType));
 </script>
 
 <template>
@@ -568,24 +425,17 @@ watch(currentLanguage, (newLanguage) => {
           
           <div class="content-container">
             <div class="skill-icon-wrapper">
-              <svg 
-                data-v-0f12ca96="" 
-                xml:space="preserve" 
-                viewBox="0 0 37.6 37.6" 
-                version="1.1" 
-                height="64" 
-                width="64" 
-                xmlns="http://www.w3.org/2000/svg" 
+              <svg
+                xml:space="preserve"
+                viewBox="0 0 37.6 37.6"
+                version="1.1"
+                height="64"
+                width="64"
+                xmlns="http://www.w3.org/2000/svg"
                 class="skill-bg"
-                :class="{
-                  'bg-explosive': props.student?.BulletType === 'Explosion',
-                  'bg-piercing': props.student?.BulletType === 'Pierce',
-                  'bg-mystic': props.student?.BulletType === 'Mystic',
-                  'bg-sonic': props.student?.BulletType === 'Sonic'
-                }"
               >
-                <path 
-                  xmlns="http://www.w3.org/2000/svg" 
+                <path
+                  :style="{ fill: bulletTypeColor }"
                   d="m18.8 0c-0.96 0-1.92 0.161-2.47 0.481l-13.1 7.98c-1.13 0.653-1.81 1.8-1.81 3.03v14.6c0 1.23 0.684 2.37 1.81 3.03l13.1 7.98c1.11 0.642 3.85 0.665 4.95 0l13.1-7.98c1.11-0.677 1.81-1.8 1.81-3.03v-14.6c0-1.23-0.699-2.35-1.81-3.03l-13.1-7.98c-0.554-0.321-1.51-0.481-2.47-0.481z"
                 />
               </svg>
@@ -597,18 +447,20 @@ watch(currentLanguage, (newLanguage) => {
                 @mouseleave="hideTooltip"
               />
               <!-- Enhanced overlay for Passive and ExtraPassive skills -->
-              <div 
+              <div
                 v-if="(skillType === 'Passive') && isPassiveEnhanced"
                 class="enhanced-overlay"
+                :style="{ backgroundColor: bulletTypeColor }"
               >
                 +
               </div>
-              <div 
+              <div
                 class="skill-tooltip"
                 :style="tooltipStyle"
                 v-show="activeTooltip === skillType"
               >
                 <div class="tooltip-content">
+                  <div class="tooltip-name">{{ skillTypes[skillType].name }}</div>
                   <div class="tooltip-cost" v-if="getSkillCost(skillType, skillTypes[skillType].current, skillTypes[skillType].target)">
                     {{ $t('cost') }}: <span v-html="getSkillCost(
                       skillType,
@@ -737,22 +589,6 @@ watch(currentLanguage, (newLanguage) => {
   z-index: 1;
 }
 
-.skill-bg.bg-explosive path {
-  fill: rgb(167, 12, 25);
-}
-
-.skill-bg.bg-piercing path {
-  fill: rgb(178, 109, 31);
-}
-
-.skill-bg.bg-mystic path {
-  fill: rgb(33, 111, 156);
-}
-
-.skill-bg.bg-sonic path {
-  fill: rgb(148, 49, 165);
-}
-
 .skill-fg {
   position: absolute;
   top: 0;
@@ -789,23 +625,6 @@ img, svg {
   line-height: 1;
 }
 
-/* Background colors based on bullet type */
-.bg-explosive + .skill-fg + .enhanced-overlay {
-  background-color: rgb(167, 12, 25);
-}
-
-.bg-piercing + .skill-fg + .enhanced-overlay {
-  background-color: rgb(178, 109, 31);
-}
-
-.bg-mystic + .skill-fg + .enhanced-overlay {
-  background-color: rgb(33, 111, 156);
-}
-
-.bg-sonic + .skill-fg + .enhanced-overlay {
-  background-color: rgb(148, 49, 165);
-}
-
 .skill-tooltip {
   position: fixed;
   background: var(--card-background);
@@ -823,6 +642,14 @@ img, svg {
   font-size: 0.9em;
   line-height: 1.4;
   color: var(--text-primary);
+}
+
+.tooltip-name {
+  font-weight: bold;
+  font-size: 1em;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tooltip-cost {

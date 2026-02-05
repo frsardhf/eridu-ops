@@ -21,6 +21,9 @@ import StudentEquipmentGrowth from './studentGear/EquipmentGrowthSection.vue';
 import StudentGradeGrowth from './studentGear/ExclusiveWeaponSection.vue';
 import EquipmentMaterialsSection from './studentGear/EquipmentMaterialsSection.vue';
 import ElephEligmaSection from './studentGear/ElephEligmaSection.vue';
+import StudentInfoMini from './studentInfo/StudentInfoMini.vue';
+import StudentInfoSkills from './studentInfo/StudentInfoSkills.vue';
+import StudentInfoGear from './studentInfo/StudentInfoGear.vue';
 import StudentStrip from './StudentStrip.vue';
 import GlobalInventoryModal from '../../inventory/GlobalInventoryModal.vue';
 import '../../../styles/studentModal.css'
@@ -34,7 +37,7 @@ const props = defineProps<{
 type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
 const emit = defineEmits<EmitFn>();
 
-const activeTab = ref('bond');
+const activeTab = ref('info');
 const isInventoryOpen = ref(false);
 
 // Initialize student form data atomically BEFORE composables load
@@ -197,6 +200,12 @@ onUnmounted(() => {
     <!-- TAB BAR (below title row) -->
     <div class="modal-tabs">
       <button
+        :class="['tab-button', { active: activeTab === 'info' }]"
+        @click="activeTab = 'info'"
+      >
+        {{ $t('info') }}
+      </button>
+      <button
         :class="['tab-button', { active: activeTab === 'bond' }]"
         @click="activeTab = 'bond'"
       >
@@ -219,6 +228,33 @@ onUnmounted(() => {
     <!-- MIDDLE: Active Tab Content -->
     <div class="modal-body">
       <div class="modal-grid">
+        <!-- Info Tab (default) -->
+        <div v-if="activeTab === 'info'" class="tab-content">
+          <div class="left-column">
+            <StudentModalHeader :student="student" />
+
+            <StudentInfoMini
+              :student="student"
+              :character-levels="characterLevels"
+              :current-bond="currentBond"
+              :new-bond-level="newBondLevel"
+            />
+          </div>
+
+          <div class="right-column">
+            <StudentInfoSkills
+              :student="student"
+              :skill-levels="skillLevels"
+            />
+
+            <StudentInfoGear
+              :student="student"
+              :grade-levels="gradeLevels"
+              :equipment-levels="equipmentLevels"
+            />
+          </div>
+        </div>
+
         <!-- Bond Calculator Tab -->
         <div v-if="activeTab === 'bond'" class="tab-content">
           <div class="left-column">
