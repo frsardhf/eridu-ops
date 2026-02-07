@@ -279,7 +279,10 @@ export function useStudentUpgrade(props: {
   const potentialLevels = ref<PotentialLevels>({...DEFAULT_POTENTIAL_LEVELS});
   const allSkillsMaxed = ref(false);
   const targetSkillsMaxed = ref(false);
-  
+  const allPotentialsMaxed = ref(false);
+  const targetPotentialsMaxed = ref(false);
+
+  const MAX_POTENTIAL_LEVEL = 25;
   const characterXpTable = dataTable.character_xp;
   const potentialMaterials = dataTable.potential;
 
@@ -296,6 +299,18 @@ export function useStudentUpgrade(props: {
       const student = props.student as Record<string, any>;
       const maxLevel = student?.Skills?.[type]?.Parameters?.[0]?.length;
       return levels.target === maxLevel;
+    });
+  };
+
+  const checkAllPotentialsMaxed = () => {
+    return Object.values(potentialLevels.value).every((levels) => {
+      return levels.current === MAX_POTENTIAL_LEVEL && levels.target === MAX_POTENTIAL_LEVEL;
+    });
+  };
+
+  const checkTargetPotentialsMaxed = () => {
+    return Object.values(potentialLevels.value).every((levels) => {
+      return levels.target === MAX_POTENTIAL_LEVEL;
     });
   };
 
@@ -341,7 +356,47 @@ export function useStudentUpgrade(props: {
     
     targetSkillsMaxed.value = checked;
     allSkillsMaxed.value = checkAllSkillsMaxed();
-    
+
+    saveToIndexedDB();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+    }
+  };
+
+  const toggleMaxAllPotentials = (checked: boolean) => {
+    Object.keys(potentialLevels.value).forEach((type) => {
+      const potentialType = type as PotentialType;
+      if (checked) {
+        potentialLevels.value[potentialType].current = MAX_POTENTIAL_LEVEL;
+        potentialLevels.value[potentialType].target = MAX_POTENTIAL_LEVEL;
+      } else {
+        potentialLevels.value[potentialType].current = 0;
+        potentialLevels.value[potentialType].target = 0;
+      }
+    });
+
+    allPotentialsMaxed.value = checked;
+    targetPotentialsMaxed.value = checked;
+
+    saveToIndexedDB();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+    }
+  };
+
+  const toggleMaxTargetPotentials = (checked: boolean) => {
+    Object.keys(potentialLevels.value).forEach((type) => {
+      const potentialType = type as PotentialType;
+      if (checked) {
+        potentialLevels.value[potentialType].target = MAX_POTENTIAL_LEVEL;
+      } else {
+        potentialLevels.value[potentialType].target = potentialLevels.value[potentialType].current;
+      }
+    });
+
+    targetPotentialsMaxed.value = checked;
+    allPotentialsMaxed.value = checkAllPotentialsMaxed();
+
     saveToIndexedDB();
     if (props.student) {
       updateStudentData(props.student.Id);
@@ -393,6 +448,11 @@ export function useStudentUpgrade(props: {
   watch(skillLevels, () => {
     allSkillsMaxed.value = checkAllSkillsMaxed();
     targetSkillsMaxed.value = checkTargetSkillsMaxed();
+  }, { deep: true });
+
+  watch(potentialLevels, () => {
+    allPotentialsMaxed.value = checkAllPotentialsMaxed();
+    targetPotentialsMaxed.value = checkTargetPotentialsMaxed();
   }, { deep: true });
 
   async function saveToIndexedDB() {
@@ -579,6 +639,10 @@ export function useStudentUpgrade(props: {
     toggleMaxAllSkills,
     toggleMaxTargetSkills,
     targetSkillsMaxed,
-    checkTargetSkillsMaxed
+    checkTargetSkillsMaxed,
+    allPotentialsMaxed,
+    targetPotentialsMaxed,
+    toggleMaxAllPotentials,
+    toggleMaxTargetPotentials
   };
 }

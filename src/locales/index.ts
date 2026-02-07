@@ -99,6 +99,8 @@ export const translations = {
     attack: "Attack",
     maxHp: "Max HP",
     healPower: "Heal Power",
+    maxAllPotentials: "Max All",
+    maxTargetPotentials: "Max Target",
     
     // Upgrade/Gear component - Materials
     totalMaterialsNeeded: "Total Materials Needed",
@@ -141,6 +143,9 @@ export const translations = {
       Necklace: "Necklace"
     },
     tier: "T",
+    gears: "Gears",
+    maxAllGears: "Max All",
+    maxTargetGears: "Max Target",
     currentEquipment: "Current",
     targetEquipment: "Target",
     setMinLevel: "Set to minimum level",
@@ -270,7 +275,9 @@ export const translations = {
     attack: "攻撃力",
     maxHp: "最大HP",
     healPower: "回復力",
-    
+    maxAllPotentials: "全て最大化",
+    maxTargetPotentials: "目標を最大化",
+
     // Upgrade/Gear component - Materials
     totalMaterialsNeeded: "必要な素材の合計",
     noMaterialsNeeded: "アップグレードに必要な素材はありません",
@@ -312,13 +319,16 @@ export const translations = {
       Necklace: "ネックレス"
     },
     tier: "T",
+    gears: "装備",
+    maxAllGears: "全て最大化",
+    maxTargetGears: "目標を最大化",
     currentEquipment: "現在",
     targetEquipment: "目標",
     setMinLevel: "最小レベルに設定",
     setMaxLevel: "最大レベルに設定",
     decreaseLevel: "レベルを下げる",
     increaseLevel: "レベルを上げる",
-    
+
     // Weapon Grade component
     exclusiveWeapon: "固有武器",
     currentGrade: "現在",

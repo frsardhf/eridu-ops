@@ -1,68 +1,52 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { 
-  PotentialType, 
-  PotentialSettings,
-} from '../../../../types/upgrade';
-import '../../../../styles/studentUpgrade.css';
+import { ref } from 'vue';
+import { PotentialType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
   potentialLevels: Record<PotentialType, { current: number; target: number }>;
+  allPotentialsMaxed: boolean;
+  targetPotentialsMaxed: boolean;
 }>();
 
-const emit = defineEmits<(
-  e: 'update-potential', type: PotentialType, current: number, target: number
-) => void>();
+const emit = defineEmits<{
+  (e: 'update-potential', type: PotentialType, current: number, target: number): void;
+  (e: 'toggle-max-potentials', checked: boolean): void;
+  (e: 'toggle-max-target-potentials', checked: boolean): void;
+}>();
 
 // State for collapsible section
 const isExpanded = ref(false);
 
-// Toggle expansion
 const toggleExpand = () => {
   isExpanded.value = !isExpanded.value;
 };
 
-// Create potential settings for each type
-const potentialTypes = ref<Record<PotentialType, PotentialSettings>>({
-  attack: {
-    current: props.potentialLevels.attack.current,
-    target: props.potentialLevels.attack.target,
-    icon: 'item_icon_workbook_potentialattack',
-    name: $t('attack')
-  },
-  maxhp: {
-    current: props.potentialLevels.maxhp.current,
-    target: props.potentialLevels.maxhp.target,
-    icon: 'item_icon_workbook_potentialmaxhp',
-    name: $t('maxHp')
-  },
-  healpower: {
-    current: props.potentialLevels.healpower.current,
-    target: props.potentialLevels.healpower.target,
-    icon: 'item_icon_workbook_potentialhealpower',
-    name: $t('healPower')
-  }
-});
-
-// Watch for changes to potentialLevels to update all potential types
-watch(() => props.potentialLevels, (newVal) => {
-  if (newVal) {
-    // Update all potential types from potentialLevels prop
-    Object.entries(newVal).forEach(([type, levels]) => {
-      const potType = type as PotentialType;
-      if (potentialTypes.value[potType]) {
-        potentialTypes.value[potType].current = levels.current;
-        potentialTypes.value[potType].target = levels.target;
-      }
-    });
-  }
-}, { deep: true, immediate: true });
-
 // Constants
 const MAX_POTENTIAL_LEVEL = 25;
 
-// Add this function to handle level display state
+// Static icon mapping for potential types
+const POTENTIAL_ICONS: Record<PotentialType, string> = {
+  attack: 'item_icon_workbook_potentialattack',
+  maxhp: 'item_icon_workbook_potentialmaxhp',
+  healpower: 'item_icon_workbook_potentialhealpower'
+};
+
+// Helper functions to derive properties from props (no internal state)
+const getPotentialIcon = (potType: PotentialType): string => {
+  return POTENTIAL_ICONS[potType];
+};
+
+const getPotentialName = (potType: PotentialType): string => {
+  const names: Record<PotentialType, string> = {
+    attack: $t('attack'),
+    maxhp: $t('maxHp'),
+    healpower: $t('healPower')
+  };
+  return names[potType];
+};
+
+// Level display helpers
 const getLevelDisplayState = (current: number, target: number) => {
   if (current === MAX_POTENTIAL_LEVEL && target === MAX_POTENTIAL_LEVEL) {
     return 'max';
@@ -73,178 +57,256 @@ const getLevelDisplayState = (current: number, target: number) => {
   }
 };
 
-// Add this function to check if target is at max level
 const isTargetMaxLevel = (target: number) => {
   return target === MAX_POTENTIAL_LEVEL;
 };
 
-// Handle potential type changes
+// Handle potential type changes (using props directly, no internal state)
 const updatePotentialCurrent = (type: PotentialType, value: number) => {
-  if (value >= 0 && value <= 25) {
-    potentialTypes.value[type].current = value;
-    
+  if (value >= 0 && value <= MAX_POTENTIAL_LEVEL) {
+    const currentTarget = props.potentialLevels[type]?.target ?? 0;
     // Ensure target is always >= current
-    if (potentialTypes.value[type].target < value) {
-      potentialTypes.value[type].target = value;
-    }
-    
-    // Emit the update event
-    emit('update-potential', type, value, potentialTypes.value[type].target);
+    const newTarget = Math.max(value, currentTarget);
+    emit('update-potential', type, value, newTarget);
   }
 };
 
 const updatePotentialTarget = (type: PotentialType, value: number) => {
-  if (value >= 0 && value <= 25) {
-    // Ensure target is always >= current
-    const finalValue = Math.max(value, 0);
-    potentialTypes.value[type].target = finalValue;
-    
+  if (value >= 0 && value <= MAX_POTENTIAL_LEVEL) {
+    const currentLevel = props.potentialLevels[type]?.current ?? 0;
     // Ensure current is always <= target
-    if (potentialTypes.value[type].current > finalValue) {
-      potentialTypes.value[type].current = finalValue;
-      
-      // Emit the update event for current as well
-      emit('update-potential', type, finalValue, finalValue);
+    if (currentLevel > value) {
+      emit('update-potential', type, value, value);
     } else {
-      // Only emit target update
-      emit('update-potential', type, potentialTypes.value[type].current, finalValue);
+      emit('update-potential', type, currentLevel, value);
     }
   }
 };
 
-// Track which potential sliders are being hovered
-const hoveredPotential = ref<PotentialType | null>(null);
-
-// Set the currently hovered potential
-const setHoveredPotential = (potType: PotentialType | null) => {
-  hoveredPotential.value = potType;
+// Checkbox handlers
+const handleMaxAllPotentialsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-potentials', checked);
 };
 
-// Check if a slider should be shown (either always show current, or show target only when hovered or current !== target)
-const shouldShowTargetSlider = (potType: PotentialType) => {
-  const potential = potentialTypes.value[potType];
-  return hoveredPotential.value === potType || potential.current !== potential.target;
+const handleMaxTargetPotentialsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-target-potentials', checked);
 };
 </script>
 
 <template>
-  <div class="upgrade-section">
+  <div class="potential-section">
     <h3 class="section-title collapsible-header" @click="toggleExpand">
       <div class="collapsible-title">
         <span>{{ $t('talent') }}</span>
-        <div 
-          class="material-summary" 
-          v-if="!isExpanded">
+        <div class="options-container" v-if="isExpanded" @click.stop>
+          <div class="max-all-container">
+            <input
+              type="checkbox"
+              id="max-all-potentials"
+              name="max-all-potentials"
+              :checked="props.allPotentialsMaxed"
+              @change="handleMaxAllPotentialsChange"
+            />
+            <label for="max-all-potentials">{{ $t('maxAllPotentials') }}</label>
+          </div>
+          <div class="max-all-container">
+            <input
+              type="checkbox"
+              id="max-target-potentials"
+              name="max-target-potentials"
+              :checked="props.targetPotentialsMaxed"
+              @change="handleMaxTargetPotentialsChange"
+            />
+            <label for="max-target-potentials">{{ $t('maxTargetPotentials') }}</label>
+          </div>
         </div>
-        <span 
-          class="collapsible-hint" 
-          v-else>({{ $t('clickTo') }} {{ isExpanded ? $t('collapse') : $t('expand') }})
-        </span>
+        <span
+          class="collapsible-hint"
+          v-if="!isExpanded"
+        >({{ $t('clickTo') }} {{ $t('expand') }})</span>
       </div>
       <div class="expand-icon" :class="{ 'rotated': isExpanded }">
-        <svg 
-          width="12" 
-          height="12" 
-          viewBox="0 0 12 12" 
-          fill="none" 
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path 
-            d="M2 4L6 8L10 4" 
-            stroke="currentColor" 
-            stroke-width="2" 
-            stroke-linecap="round" 
+          <path
+            d="M2 4L6 8L10 4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
             stroke-linejoin="round"
           />
         </svg>
       </div>
     </h3>
-    
-    <div class="sliders-column" v-show="isExpanded">
-      <template v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]" :key="potType">
-        <div class="type-section">
-          <div class="type-header">
-            <h4>{{ potentialTypes[potType].name }}</h4>
-            <div class="level-display">
-              <template v-if="getLevelDisplayState(
-                potentialTypes[potType].current, 
-                potentialTypes[potType].target
-              ) === 'max'">
-                <span class="max-level">{{ $t('max') }}</span>
-              </template>
-              
-              <template v-else-if="getLevelDisplayState(
-                potentialTypes[potType].current, 
-                potentialTypes[potType].target
-              ) === 'same'">
-                <span class="target-level">{{ potentialTypes[potType].current }}</span>
-              </template>
-              
-              <template v-else>
-                <span class="current-level">{{ potentialTypes[potType].current }}</span>
-                <span class="level-arrow">→</span>
-                <span class="target-level">{{ potentialTypes[potType].target }}</span>
-                <span class="max-indicator" 
-                      v-if="isTargetMaxLevel(potentialTypes[potType].target)">
-                  {{ $t('max') }}
-                </span>
-              </template>
-            </div>
-          </div>
-          
-          <div class="content-container">
-            <img 
-              :src="`https://schaledb.com/images/item/icon/${potentialTypes[potType].icon}.webp`" 
-              :alt="potentialTypes[potType].name"
-              class="type-icon"
-            />
-            
-            <div 
-              class="sliders" 
-              @mouseenter="setHoveredPotential(potType)" 
-              @mouseleave="setHoveredPotential(null)"
+
+    <div class="potential-grid" v-show="isExpanded">
+      <div
+        v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]"
+        :key="potType"
+        class="potential-item"
+      >
+        <!-- Current Level Control -->
+        <div class="level-control">
+          <div class="custom-number-input">
+            <button
+              class="control-button min-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.current ?? 0) <= 0 }"
+              @click="updatePotentialCurrent(potType, 0)"
+              :disabled="(props.potentialLevels[potType]?.current ?? 0) <= 0"
+              :aria-label="$t('setMinLevel')"
             >
-              <!-- Current Potential Level Slider -->
-              <div class="slider-row">
-                <span class="slider-label">{{ potentialTypes[potType].current === potentialTypes[potType].target ? $t('level') : $t('current') }}</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="25"
-                  class="slider"
-                  :name="`potential-current-${potType}`"
-                  :value="potentialTypes[potType].current"
-                  @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
-                />
-              </div>
-              
-              <!-- Target Potential Level Slider - Only show when hovering or current !== target -->
-              <div 
-                class="slider-row target-slider"
-                v-show="shouldShowTargetSlider(potType)"
-                :class="{ 'fade-in': hoveredPotential === potType }"
-              >
-                <span class="slider-label">{{ $t('target') }}</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="25"
-                  class="slider"
-                  :name="`potential-target-${potType}`"
-                  :value="potentialTypes[potType].target"
-                  @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
-                />
-              </div>
-            </div>
+              <span>«</span>
+            </button>
+            <button
+              class="control-button decrement-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.current ?? 0) <= 0 }"
+              @click="updatePotentialCurrent(potType, (props.potentialLevels[potType]?.current ?? 0) - 1)"
+              :disabled="(props.potentialLevels[potType]?.current ?? 0) <= 0"
+              :aria-label="$t('decreaseLevel')"
+            >
+              <span>−</span>
+            </button>
+            <input
+              type="number"
+              :name="`potential-current-${potType}`"
+              :value="props.potentialLevels[potType]?.current ?? 0"
+              @input="(e) => updatePotentialCurrent(potType, parseInt((e.target as HTMLInputElement).value))"
+              :min="0"
+              :max="MAX_POTENTIAL_LEVEL"
+              class="level-input current-level"
+              :aria-label="`${$t('current')} ${getPotentialName(potType)}`"
+            />
+            <button
+              class="control-button increment-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.current ?? 0) >= MAX_POTENTIAL_LEVEL }"
+              @click="updatePotentialCurrent(potType, (props.potentialLevels[potType]?.current ?? 0) + 1)"
+              :disabled="(props.potentialLevels[potType]?.current ?? 0) >= MAX_POTENTIAL_LEVEL"
+              :aria-label="$t('increaseLevel')"
+            >
+              <span>+</span>
+            </button>
+            <button
+              class="control-button max-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.current ?? 0) >= MAX_POTENTIAL_LEVEL }"
+              @click="updatePotentialCurrent(potType, MAX_POTENTIAL_LEVEL)"
+              :disabled="(props.potentialLevels[potType]?.current ?? 0) >= MAX_POTENTIAL_LEVEL"
+              :aria-label="$t('setMaxLevel')"
+            >
+              <span>»</span>
+            </button>
           </div>
         </div>
-      </template>
+
+        <!-- Potential Icon -->
+        <div class="potential-icon-container">
+          <div class="potential-icon">
+            <img
+              :src="`https://schaledb.com/images/item/icon/${getPotentialIcon(potType)}.webp`"
+              :alt="getPotentialName(potType)"
+              class="potential-image"
+            />
+          </div>
+
+          <!-- Level Display -->
+          <div class="level-indicator">
+            <template v-if="getLevelDisplayState(
+              props.potentialLevels[potType]?.current ?? 0,
+              props.potentialLevels[potType]?.target ?? 0
+            ) === 'max'">
+              <span class="max-level">{{ $t('max') }}</span>
+            </template>
+            <template v-else-if="getLevelDisplayState(
+              props.potentialLevels[potType]?.current ?? 0,
+              props.potentialLevels[potType]?.target ?? 0
+            ) === 'same'">
+              <span>Lv.{{ props.potentialLevels[potType]?.current ?? 0 }}</span>
+            </template>
+            <template v-else>
+              <span class="current-level-text">Lv.{{ props.potentialLevels[potType]?.current ?? 0 }}</span>
+              <span class="level-arrow">→</span>
+              <span class="target-level-text" :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0) }">
+                {{ props.potentialLevels[potType]?.target ?? 0 }}
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- Target Level Control -->
+        <div class="level-control">
+          <div class="custom-number-input">
+            <button
+              class="control-button min-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.target ?? 0) <= 0 }"
+              @click="updatePotentialTarget(potType, 0)"
+              :disabled="(props.potentialLevels[potType]?.target ?? 0) <= 0"
+              :aria-label="$t('setMinLevel')"
+            >
+              <span>«</span>
+            </button>
+            <button
+              class="control-button decrement-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.target ?? 0) <= 0 }"
+              @click="updatePotentialTarget(potType, (props.potentialLevels[potType]?.target ?? 0) - 1)"
+              :disabled="(props.potentialLevels[potType]?.target ?? 0) <= 0"
+              :aria-label="$t('decreaseLevel')"
+            >
+              <span>−</span>
+            </button>
+            <input
+              type="number"
+              :name="`potential-target-${potType}`"
+              :value="props.potentialLevels[potType]?.target ?? 0"
+              @input="(e) => updatePotentialTarget(potType, parseInt((e.target as HTMLInputElement).value))"
+              :min="0"
+              :max="MAX_POTENTIAL_LEVEL"
+              class="level-input target-level"
+              :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0) }"
+              :aria-label="`${$t('target')} ${getPotentialName(potType)}`"
+            />
+            <button
+              class="control-button increment-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.target ?? 0) >= MAX_POTENTIAL_LEVEL }"
+              @click="updatePotentialTarget(potType, (props.potentialLevels[potType]?.target ?? 0) + 1)"
+              :disabled="(props.potentialLevels[potType]?.target ?? 0) >= MAX_POTENTIAL_LEVEL"
+              :aria-label="$t('increaseLevel')"
+            >
+              <span>+</span>
+            </button>
+            <button
+              class="control-button max-button"
+              :class="{ disabled: (props.potentialLevels[potType]?.target ?? 0) >= MAX_POTENTIAL_LEVEL }"
+              @click="updatePotentialTarget(potType, MAX_POTENTIAL_LEVEL)"
+              :disabled="(props.potentialLevels[potType]?.target ?? 0) >= MAX_POTENTIAL_LEVEL"
+              :aria-label="$t('setMaxLevel')"
+            >
+              <span>»</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Potential Name -->
+        <div class="potential-name">{{ getPotentialName(potType) }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Component-specific styles */
+.potential-section {
+  padding: 1rem;
+  margin-bottom: 15px;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 .collapsible-header {
   cursor: pointer;
   display: flex;
@@ -252,7 +314,14 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
   align-items: center;
   user-select: none;
   transition: background-color 0.2s ease;
-  margin-bottom: 0;
+  margin: 0;
+  font-size: 1.1em;
+  color: var(--text-primary);
+}
+
+.collapsible-header:hover {
+  background-color: rgba(var(--background-hover-rgb, 60, 60, 60), 0.15);
+  border-radius: 4px;
 }
 
 .collapsible-title {
@@ -269,28 +338,6 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
   opacity: 0.7;
 }
 
-.material-summary {
-  max-width: 400px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.material-hint {
-  font-size: 0.75em;
-  font-weight: normal;
-  color: var(--text-secondary);
-}
-
-.material-item {
-  color: var(--accent-color);
-}
-
-.collapsible-header:hover {
-  background-color: rgba(var(--background-hover-rgb, 60, 60, 60), 0.15);
-  border-radius: 4px;
-}
-
 .expand-icon {
   display: flex;
   align-items: center;
@@ -300,37 +347,212 @@ const shouldShowTargetSlider = (potType: PotentialType) => {
   transform: rotate(180deg);
 }
 
-.content-container {
+.options-container {
   display: flex;
-  gap: 15px;
   align-items: center;
+  gap: 6px;
 }
 
-.type-icon {
+.max-all-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.max-all-container input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.max-all-container label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.potential-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.potential-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  padding: 0.5rem;
+}
+
+.level-control {
+  width: 100%;
+}
+
+.custom-number-input {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  height: 36px;
+}
+
+.level-input {
+  flex: 1;
+  height: 100%;
+  padding: 0 0.25rem;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  min-width: 0;
+}
+
+.level-input::-webkit-outer-spin-button,
+.level-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.level-input:focus {
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.level-input.max-level {
+  color: var(--accent-color, #4a8af4);
+}
+
+.control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.1rem;
+  transition: background-color 0.2s, color 0.2s;
   flex-shrink: 0;
 }
 
-.sliders {
-  flex: 1;
+.control-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--accent-color, #4a8af4);
 }
 
-/* Add these styles to your existing styles */
-.target-slider {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.control-button:active {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
-.fade-in {
-  animation: fadeIn 0.2s ease forwards;
+.control-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
+.control-button.disabled:hover {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.min-button,
+.max-button {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.potential-icon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.potential-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-background);
+  border-radius: 12px;
+}
+
+.potential-image {
+  max-width: 115%;
+  max-height: 115%;
+  object-fit: contain;
+}
+
+.level-indicator {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.level-indicator .max-level {
+  color: var(--accent-color, #4a8af4);
+}
+
+.level-indicator .level-arrow {
+  margin: 0 2px;
+  color: var(--text-secondary);
+}
+
+.level-indicator .target-level-text.max-level {
+  color: var(--accent-color, #4a8af4);
+}
+
+.potential-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  .potential-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+}
+
+@media (max-width: 500px) {
+  .collapsible-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .options-container {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0px;
+  }
+
+  .potential-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .control-button {
+    width: 20px;
   }
 }
-</style> 
+
+@media (max-width: 350px) {
+  .potential-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

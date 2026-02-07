@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
-import {
-  SkillType,
-  SkillSettings
-} from '../../../../types/upgrade';
-import '../../../../styles/studentUpgrade.css';
+import { SkillType } from '../../../../types/upgrade';
 import { currentLanguage } from '../../../../consumables/stores/localizationStore';
 import { $t } from '../../../../locales';
 import { getStudentData } from '../../../../consumables/stores/studentStore';
 import {
   formatSkillDescription as sharedFormatSkillDescription,
   formatSkillCost as sharedFormatSkillCost,
-  fetchLocalizedBuffName as sharedFetchLocalizedBuffName,
   calculateTooltipPosition,
   fetchLocalizationData
 } from '../../../../consumables/utils/upgradeUtils';
@@ -30,6 +25,17 @@ const emit = defineEmits<{
   (e: 'toggle-max-target', checked: boolean): void;
 }>();
 
+// Checkbox handlers
+const handleMaxAllSkillsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-skills', checked);
+};
+
+const handleMaxTargetSkillsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-target', checked);
+};
+
 const studentData = computed(() => {
   if (!props.student?.Id) return null;
   return getStudentData(props.student.Id);
@@ -38,105 +44,33 @@ const studentData = computed(() => {
 const useExtraExSkill = ref(false);
 
 const hasExtraExSkill = computed(() => {
-  return props.student?.Skills?.Ex?.ExtraSkills && props.student.Skills.Ex.ExtraSkills.length > 0;
+  return props.student?.Skills?.Ex?.ExtraSkills
+    && props.student.Skills.Ex.ExtraSkills.length > 0;
 });
 
-// Create skill settings for each type
-const skillTypes = ref<Record<SkillType, SkillSettings>>({
-  Ex: {
-    current: props.skillLevels.Ex?.current || 1,
-    target: props.skillLevels.Ex?.target || 1,
-    icon: props.student?.Skills?.Ex?.Icon,
-    name: 'EX Skill',
-    maxLevel: props.student?.Skills?.Ex?.Parameters?.[0]?.length ||
-      props.student?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length || 5
-  },
-  Public: {
-    current: props.skillLevels.Public?.current || 1,
-    target: props.skillLevels.Public?.target || 1,
-    icon: props.student?.Skills?.Public?.Icon,
-    name: 'Basic Skill',
-    maxLevel: props.student?.Skills?.Public?.Parameters?.[0]?.length || 10
-  },
-  Passive: {
-    current: props.skillLevels.Passive?.current || 1,
-    target: props.skillLevels.Passive?.target || 1,
-    icon: props.student?.Skills?.Passive?.Icon,
-    name: 'Passive Skill',
-    maxLevel: props.student?.Skills?.Passive?.Parameters?.[0]?.length || 10
-  },
-  ExtraPassive: {
-    current: props.skillLevels.ExtraPassive?.current || 1,
-    target: props.skillLevels.ExtraPassive?.target || 1,
-    icon: props.student?.Skills?.ExtraPassive?.Icon,
-    name: 'Sub Skill',
-    maxLevel: props.student?.Skills?.ExtraPassive?.Parameters?.[0]?.length || 10
+// Helper functions to derive skill properties from props
+const getSkillIcon = (skillType: SkillType): string => {
+  if (skillType === 'Ex' && useExtraExSkill.value && props.student?.Skills?.Ex?.ExtraSkills?.[0]) {
+    return props.student.Skills.Ex.ExtraSkills[0].Icon ?? '';
   }
-});
+  return props.student?.Skills?.[skillType]?.Icon ?? '';
+};
 
-// Watch for prop changes to update skill levels
-watch(() => props.skillLevels, (newVal) => {
-  Object.entries(newVal).forEach(([type, levels]) => {
-    if (skillTypes.value[type as SkillType]) {
-      skillTypes.value[type as SkillType].current = levels.current;
-      skillTypes.value[type as SkillType].target = levels.target;
-    }
-  });
-}, { deep: true, immediate: true });
-
-// Update skill icons and names from student data if available
-watch(() => props.student, (student) => {
-  if (student?.Skills) {
-    // Update EX skill
-    if (student.Skills.Ex) {
-      const skillData = useExtraExSkill.value && student.Skills.Ex.ExtraSkills?.[0] 
-        ? student.Skills.Ex.ExtraSkills[0] 
-        : student.Skills.Ex;
-
-      skillTypes.value.Ex.icon = skillData.Icon;
-      skillTypes.value.Ex.name = skillData.Name;
-      skillTypes.value.Ex.maxLevel = student.Skills.Ex.Parameters?.[0]?.length ||
-        student.Skills.Ex.ExtraSkills?.[0]?.Parameters?.[0]?.length || 5;
-    }
-    
-    // Update Public skill
-    if (student.Skills.Public) {
-      skillTypes.value.Public.icon = student.Skills.Public.Icon;
-      skillTypes.value.Public.name = student.Skills.Public.Name;
-      skillTypes.value.Public.maxLevel = student.Skills.Public.Parameters?.[0]?.length;
-    }
-    
-    // Update Passive skill
-    if (student.Skills.Passive) {
-      skillTypes.value.Passive.icon = student.Skills.Passive.Icon;
-      skillTypes.value.Passive.name = student.Skills.Passive.Name;
-      skillTypes.value.Passive.maxLevel = student.Skills.Passive.Parameters?.[0]?.length;
-    }
-    
-    // Update Extra Passive skill
-    if (student.Skills.ExtraPassive) {
-      skillTypes.value.ExtraPassive.icon = student.Skills.ExtraPassive.Icon;
-      skillTypes.value.ExtraPassive.name = student.Skills.ExtraPassive.Name;
-      skillTypes.value.ExtraPassive.maxLevel = student.Skills.ExtraPassive.Parameters?.[0]?.length;
-    }
+const getSkillName = (skillType: SkillType): string => {
+  if (skillType === 'Ex' && useExtraExSkill.value && props.student?.Skills?.Ex?.ExtraSkills?.[0]) {
+    return props.student.Skills.Ex.ExtraSkills[0].Name ?? 'EX Skill';
   }
-}, { immediate: true });
+  return props.student?.Skills?.[skillType]?.Name ?? skillType;
+};
 
-// Watch for toggle state changes to update icon/name immediately
-watch(useExtraExSkill, () => {
-  if (props.student?.Skills?.Ex) {
-    const skillData = useExtraExSkill.value && props.student.Skills.Ex.ExtraSkills?.[0] 
-      ? props.student.Skills.Ex.ExtraSkills[0] 
-      : props.student.Skills.Ex;
-    
-    skillTypes.value.Ex.icon = skillData.Icon;
-    skillTypes.value.Ex.name = skillData.Name;
+const getMaxLevel = (skillType: SkillType): number => {
+  const skill = props.student?.Skills?.[skillType];
+  if (skillType === 'Ex') {
+    return skill?.Parameters?.[0]?.length ||
+      props.student?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length || 5;
   }
-});
-
-// Watch for changes in the store
-watch(() => studentData.value, () => {
-}, { deep: true });
+  return skill?.Parameters?.[0]?.length ?? 10;
+};
 
 const gradeLevel = computed(() => {
   return studentData.value?.gradeLevels?.current || 0;
@@ -146,35 +80,26 @@ const isPassiveEnhanced = computed(() => {
   return gradeLevel.value >= 7;
 });
 
-// Handle skill level changes
+// Handle skill level changes (using props directly, no internal state)
 const updateSkillCurrent = (type: SkillType, value: number) => {
-  if (value >= 1 && value <= skillTypes.value[type].maxLevel) {
-    skillTypes.value[type].current = value;
-    
+  const maxLevel = getMaxLevel(type);
+  if (value >= 1 && value <= maxLevel) {
+    const currentTarget = props.skillLevels[type]?.target ?? 1;
     // Ensure target is always >= current
-    if (skillTypes.value[type].target < value) {
-      skillTypes.value[type].target = value;
-    }
-    
-    // Emit the update event
-    emit('update-skill', type, value, skillTypes.value[type].target);
+    const newTarget = Math.max(value, currentTarget);
+    emit('update-skill', type, value, newTarget);
   }
 };
 
 const updateSkillTarget = (type: SkillType, value: number) => {
-  if (value >= 1 && value <= skillTypes.value[type].maxLevel) {
-    const finalValue = Math.max(value, 1);
-    skillTypes.value[type].target = finalValue;
-    
+  const maxLevel = getMaxLevel(type);
+  if (value >= 1 && value <= maxLevel) {
+    const currentLevel = props.skillLevels[type]?.current ?? 1;
     // Ensure current is always <= target
-    if (skillTypes.value[type].current > finalValue) {
-      skillTypes.value[type].current = finalValue;
-      
-      // Emit the update event for both current and target
-      emit('update-skill', type, finalValue, finalValue);
+    if (currentLevel > value) {
+      emit('update-skill', type, value, value);
     } else {
-      // Emit the update event for target only
-      emit('update-skill', type, skillTypes.value[type].current, finalValue);
+      emit('update-skill', type, currentLevel, value);
     }
   }
 };
@@ -184,17 +109,16 @@ const getSkillIconUrl = (iconName: string) => {
   return `https://schaledb.com/images/skill/${iconName}.webp`;
 };
 
-// Cache for localization data to avoid repeated fetching
+// Cache for localization data
 const localizationCache = ref<Record<string, any> | null>(null);
 
-// Load localization data on component mount
 onMounted(() => {
   fetchLocalizationData(currentLanguage.value).then(data => {
     localizationCache.value = data;
   });
 });
 
-// Get the appropriate skill data - use WeaponPassive when enhanced, otherwise use the original skill
+// Get the appropriate skill data
 const getSkillData = (skillType: SkillType) => {
   if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
     return props.student.Skills.WeaponPassive;
@@ -207,14 +131,11 @@ const getSkillData = (skillType: SkillType) => {
   return props.student?.Skills?.[skillType];
 };
 
-// Get skill description - use WeaponPassive description when enhanced
 const getSkillDescription = (skillType: SkillType, current: number, target: number) => {
   const skill = getSkillData(skillType);
   return sharedFormatSkillDescription(skill, current, target, localizationCache.value);
 };
 
-// Get skill cost - use ExtraSkills cost when Ex skill toggle is active,
-// WeaponPassive doesn't have cost for Passive
 interface SkillData {
   Cost?: number[];
   [key: string]: any;
@@ -236,14 +157,10 @@ const getSkillCost = (skillType: SkillType, current: number, target: number): st
   return skill?.Cost ? sharedFormatSkillCost(skill.Cost, current, target) : '';
 };
 
-// Add these refs for tooltip positioning
+// Tooltip handling
 const activeTooltip = ref<SkillType | null>(null);
-const tooltipStyle = ref({
-  top: '0px',
-  left: '0px'
-});
+const tooltipStyle = ref({ top: '0px', left: '0px' });
 
-// Tooltip handling using shared utility
 const showTooltip = (event: MouseEvent, skillType: SkillType) => {
   tooltipStyle.value = calculateTooltipPosition(event, 250, 100);
   activeTooltip.value = skillType;
@@ -253,19 +170,7 @@ const hideTooltip = () => {
   activeTooltip.value = null;
 };
 
-// Handle max all skills checkbox change
-const handleMaxAllSkillsChange = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  emit('toggle-max-skills', checked);
-};
-
-// Handle max target skills checkbox change
-const handleMaxTargetSkillsChange = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  emit('toggle-max-target', checked);
-};
-
-// Add this function to handle level display state
+// Level display helpers
 const getLevelDisplayState = (current: number, target: number, maxLevel: number) => {
   if (current === maxLevel && target === maxLevel) {
     return 'max';
@@ -276,23 +181,8 @@ const getLevelDisplayState = (current: number, target: number, maxLevel: number)
   }
 };
 
-// Add this function to check if target is at max level
 const isTargetMaxLevel = (target: number, maxLevel: number) => {
   return target === maxLevel;
-};
-
-// Track which skill sliders are being hovered
-const hoveredSkill = ref<SkillType | null>(null);
-
-// Set the currently hovered skill
-const setHoveredSkill = (skillType: SkillType | null) => {
-  hoveredSkill.value = skillType;
-};
-
-// Check if a slider should be shown (either always show current, or show target only when hovered or current !== target)
-const shouldShowTargetSlider = (skillType: SkillType) => {
-  const skill = skillTypes.value[skillType];
-  return hoveredSkill.value === skillType || skill.current !== skill.target;
 };
 
 const toggleExtraExSkill = () => {
@@ -303,7 +193,6 @@ watch(() => props.student, () => {
   useExtraExSkill.value = false;
 });
 
-// Watch for language changes and update localization data
 watch(currentLanguage, (newLanguage) => {
   localizationCache.value = null;
   fetchLocalizationData(newLanguage).then(data => {
@@ -311,12 +200,11 @@ watch(currentLanguage, (newLanguage) => {
   });
 });
 
-// Get BulletType color using colorUtils
 const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletType));
 </script>
 
 <template>
-  <div class="upgrade-section">
+  <div class="skill-section">
     <h3 class="section-title">
       {{ $t('skills') }}
       <div class="options-container">
@@ -342,207 +230,236 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
         </div>
       </div>
     </h3>
-    
-    <div class="sliders-column">
-      <template 
-        v-for="(skillType, index) in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]" :key="index">
-        <div class="type-section">
-          <!-- Special header for Ex skill with toggle -->
-          <div class="type-header" v-if="skillType === 'Ex'">
-            <div class="skill-name-container">
-              <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
-              <!-- Toggle button for ExtraSkills - only show if available -->
-              <button 
-                v-if="hasExtraExSkill"
-                @click="toggleExtraExSkill"
-                class="ex-toggle-btn"
-                :class="{ active: useExtraExSkill }"
-                :title="useExtraExSkill ? $t('skillToggle.normal') : $t('skillToggle.enhanced')"
-              >
-                {{ useExtraExSkill ? 'II' : 'I' }}
-              </button>
-            </div>
-            <div class="level-display">
-              <template v-if="getLevelDisplayState(
-                skillTypes[skillType].current, 
-                skillTypes[skillType].target, 
-                skillTypes[skillType].maxLevel
-              ) === 'max'">
-                <span class="max-level">{{ $t('max') }}</span>
-              </template>
-              
-              <template v-else-if="getLevelDisplayState(
-                skillTypes[skillType].current, 
-                skillTypes[skillType].target, 
-                skillTypes[skillType].maxLevel
-              ) === 'same'">
-                <span class="target-level">{{ skillTypes[skillType].current }}</span>
-              </template>
-              
-              <template v-else>
-                <span class="current-level">{{ skillTypes[skillType].current }}</span>
-                <span class="level-arrow">→</span>
-                <span class="target-level">{{ skillTypes[skillType].target }}</span>
-                <span class="max-indicator" 
-                  v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
-                  {{ $t('max') }}
-                </span>
-              </template>
-            </div>
-          </div>
 
-          <!-- Regular header for other skills -->
-          <div class="type-header" v-else>
-            <h4 class="skill-name">{{ skillTypes[skillType].name }}</h4>
-            <div class="level-display">
-              <template v-if="getLevelDisplayState(
-                skillTypes[skillType].current, 
-                skillTypes[skillType].target, 
-                skillTypes[skillType].maxLevel
-              ) === 'max'">
-                <span class="max-level">{{ $t('max') }}</span>
-              </template>
-              
-              <template v-else-if="getLevelDisplayState(
-                skillTypes[skillType].current, 
-                skillTypes[skillType].target, 
-                skillTypes[skillType].maxLevel
-              ) === 'same'">
-                <span class="target-level">{{ skillTypes[skillType].current }}</span>
-              </template>
-              
-              <template v-else>
-                <span class="current-level">{{ skillTypes[skillType].current }}</span>
-                <span class="level-arrow">→</span>
-                <span class="target-level">{{ skillTypes[skillType].target }}</span>
-                <span class="max-indicator" 
-                  v-if="isTargetMaxLevel(skillTypes[skillType].target, skillTypes[skillType].maxLevel)">
-                  {{ $t('max') }}
-                </span>
-              </template>
-            </div>
-          </div>
-          
-          <div class="content-container">
-            <div class="skill-icon-wrapper">
-              <svg
-                xml:space="preserve"
-                viewBox="0 0 37.6 37.6"
-                version="1.1"
-                height="64"
-                width="64"
-                xmlns="http://www.w3.org/2000/svg"
-                class="skill-bg"
-              >
-                <path
-                  :style="{ fill: bulletTypeColor }"
-                  d="m18.8 0c-0.96 0-1.92 0.161-2.47 0.481l-13.1 7.98c-1.13 0.653-1.81 1.8-1.81 3.03v14.6c0 1.23 0.684 2.37 1.81 3.03l13.1 7.98c1.11 0.642 3.85 0.665 4.95 0l13.1-7.98c1.11-0.677 1.81-1.8 1.81-3.03v-14.6c0-1.23-0.699-2.35-1.81-3.03l-13.1-7.98c-0.554-0.321-1.51-0.481-2.47-0.481z"
-                />
-              </svg>
-              <img 
-                :src="getSkillIconUrl(skillTypes[skillType].icon)"
-                :alt="skillTypes[skillType].name"
-                class="skill-fg"
-                @mouseenter="showTooltip($event, skillType)"
-                @mouseleave="hideTooltip"
-              />
-              <!-- Enhanced overlay for Passive and ExtraPassive skills -->
-              <div
-                v-if="(skillType === 'Passive') && isPassiveEnhanced"
-                class="enhanced-overlay"
-                :style="{ backgroundColor: bulletTypeColor }"
-              >
-                +
-              </div>
-              <div
-                class="skill-tooltip"
-                :style="tooltipStyle"
-                v-show="activeTooltip === skillType"
-              >
-                <div class="tooltip-content">
-                  <div class="tooltip-name">{{ skillTypes[skillType].name }}</div>
-                  <div class="tooltip-cost" v-if="getSkillCost(skillType, skillTypes[skillType].current, skillTypes[skillType].target)">
-                    {{ $t('cost') }}: <span v-html="getSkillCost(
-                      skillType,
-                      skillTypes[skillType].current,
-                      skillTypes[skillType].target
-                    )"></span>
-                  </div>
-                  <div class="tooltip-desc" v-html="getSkillDescription(
-                    skillType,
-                    skillTypes[skillType].current,
-                    skillTypes[skillType].target
-                  )"></div>
-                </div>
-              </div>
-            </div>
-            
-            <div 
-              class="sliders" 
-              @mouseenter="setHoveredSkill(skillType)" 
-              @mouseleave="setHoveredSkill(null)"
+    <div class="skill-grid">
+      <div
+        v-for="skillType in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]"
+        :key="skillType"
+        class="skill-item"
+      >
+        <!-- Current Level Control -->
+        <div class="level-control">
+          <div class="custom-number-input">
+            <button
+              class="control-button min-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) <= 1 }"
+              @click="updateSkillCurrent(skillType, 1)"
+              :disabled="(props.skillLevels[skillType]?.current ?? 1) <= 1"
+              :aria-label="$t('setMinLevel')"
             >
-              <!-- Current Skill Level Slider -->
-              <div class="slider-row">
-                <span class="slider-label">{{ skillTypes[skillType].current === skillTypes[skillType].target ? $t('level') : $t('current') }}</span>
-                <input
-                  type="range"
-                  min="1"
-                  :max="skillTypes[skillType].maxLevel"
-                  class="slider"
-                  :name="`skill-current-${skillType}`"
-                  :value="skillTypes[skillType].current"
-                  @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
-                />
-              </div>
-              
-              <!-- Target Skill Level Slider - Only show when hovering or current !== target -->
-              <div 
-                class="slider-row target-slider"
-                v-show="shouldShowTargetSlider(skillType)"
-                :class="{ 'fade-in': hoveredSkill === skillType }"
-              >
-                <span class="slider-label">{{ $t('target') }}</span>
-                <input
-                  type="range"
-                  min="1"
-                  :max="skillTypes[skillType].maxLevel"
-                  class="slider"
-                  :name="`skill-target-${skillType}`"
-                  :value="skillTypes[skillType].target"
-                  @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
-                />
-              </div>
-            </div>
+              <span>«</span>
+            </button>
+            <button
+              class="control-button decrement-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) <= 1 }"
+              @click="updateSkillCurrent(skillType, (props.skillLevels[skillType]?.current ?? 1) - 1)"
+              :disabled="(props.skillLevels[skillType]?.current ?? 1) <= 1"
+              :aria-label="$t('decreaseLevel')"
+            >
+              <span>−</span>
+            </button>
+            <input
+              type="number"
+              :name="`skill-current-${skillType}`"
+              :value="props.skillLevels[skillType]?.current ?? 1"
+              @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
+              :min="1"
+              :max="getMaxLevel(skillType)"
+              class="level-input current-level"
+              :aria-label="`${$t('current')} ${getSkillName(skillType)}`"
+            />
+            <button
+              class="control-button increment-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType) }"
+              @click="updateSkillCurrent(skillType, (props.skillLevels[skillType]?.current ?? 1) + 1)"
+              :disabled="(props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType)"
+              :aria-label="$t('increaseLevel')"
+            >
+              <span>+</span>
+            </button>
+            <button
+              class="control-button max-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType) }"
+              @click="updateSkillCurrent(skillType, getMaxLevel(skillType))"
+              :disabled="(props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType)"
+              :aria-label="$t('setMaxLevel')"
+            >
+              <span>»</span>
+            </button>
           </div>
         </div>
-      </template>
+
+        <!-- Skill Icon -->
+        <div class="skill-icon-container">
+          <div class="skill-icon-wrapper">
+            <svg
+              xml:space="preserve"
+              viewBox="0 0 37.6 37.6"
+              version="1.1"
+              height="64"
+              width="64"
+              xmlns="http://www.w3.org/2000/svg"
+              class="skill-bg"
+            >
+              <path
+                :style="{ fill: bulletTypeColor }"
+                d="m18.8 0c-0.96 0-1.92 0.161-2.47 0.481l-13.1 7.98c-1.13 0.653-1.81 1.8-1.81 3.03v14.6c0 1.23 0.684 2.37 1.81 3.03l13.1 7.98c1.11 0.642 3.85 0.665 4.95 0l13.1-7.98c1.11-0.677 1.81-1.8 1.81-3.03v-14.6c0-1.23-0.699-2.35-1.81-3.03l-13.1-7.98c-0.554-0.321-1.51-0.481-2.47-0.481z"
+              />
+            </svg>
+            <img
+              :src="getSkillIconUrl(getSkillIcon(skillType))"
+              :alt="getSkillName(skillType)"
+              class="skill-fg"
+              @mouseenter="showTooltip($event, skillType)"
+              @mouseleave="hideTooltip"
+            />
+            <!-- Enhanced overlay for Passive skill -->
+            <div
+              v-if="skillType === 'Passive' && isPassiveEnhanced"
+              class="enhanced-overlay"
+              :style="{ backgroundColor: bulletTypeColor }"
+            >
+              +
+            </div>
+            <!-- EX skill toggle -->
+            <button
+              v-if="skillType === 'Ex' && hasExtraExSkill"
+              @click="toggleExtraExSkill"
+              class="ex-toggle-btn"
+              :class="{ active: useExtraExSkill }"
+              :title="useExtraExSkill ? $t('skillToggle.normal') : $t('skillToggle.enhanced')"
+            >
+              {{ useExtraExSkill ? 'II' : 'I' }}
+            </button>
+          </div>
+
+          <!-- Level Display -->
+          <div class="level-indicator">
+            <template v-if="getLevelDisplayState(
+              props.skillLevels[skillType]?.current ?? 1,
+              props.skillLevels[skillType]?.target ?? 1,
+              getMaxLevel(skillType)
+            ) === 'max'">
+              <span class="max-level">{{ $t('max') }}</span>
+            </template>
+            <template v-else-if="getLevelDisplayState(
+              props.skillLevels[skillType]?.current ?? 1,
+              props.skillLevels[skillType]?.target ?? 1,
+              getMaxLevel(skillType)
+            ) === 'same'">
+              <span>Lv.{{ props.skillLevels[skillType]?.current ?? 1 }}</span>
+            </template>
+            <template v-else>
+              <span class="current-level-text">Lv.{{ props.skillLevels[skillType]?.current ?? 1 }}</span>
+              <span class="level-arrow">→</span>
+              <span class="target-level-text" :class="{ 'max-level': isTargetMaxLevel(props.skillLevels[skillType]?.target ?? 1, getMaxLevel(skillType)) }">
+                {{ props.skillLevels[skillType]?.target ?? 1 }}
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- Target Level Control -->
+        <div class="level-control">
+          <div class="custom-number-input">
+            <button
+              class="control-button min-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) <= 1 }"
+              @click="updateSkillTarget(skillType, 1)"
+              :disabled="(props.skillLevels[skillType]?.target ?? 1) <= 1"
+              :aria-label="$t('setMinLevel')"
+            >
+              <span>«</span>
+            </button>
+            <button
+              class="control-button decrement-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) <= 1 }"
+              @click="updateSkillTarget(skillType, (props.skillLevels[skillType]?.target ?? 1) - 1)"
+              :disabled="(props.skillLevels[skillType]?.target ?? 1) <= 1"
+              :aria-label="$t('decreaseLevel')"
+            >
+              <span>−</span>
+            </button>
+            <input
+              type="number"
+              :name="`skill-target-${skillType}`"
+              :value="props.skillLevels[skillType]?.target ?? 1"
+              @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
+              :min="1"
+              :max="getMaxLevel(skillType)"
+              class="level-input target-level"
+              :class="{ 'max-level': isTargetMaxLevel(props.skillLevels[skillType]?.target ?? 1, getMaxLevel(skillType)) }"
+              :aria-label="`${$t('target')} ${getSkillName(skillType)}`"
+            />
+            <button
+              class="control-button increment-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType) }"
+              @click="updateSkillTarget(skillType, (props.skillLevels[skillType]?.target ?? 1) + 1)"
+              :disabled="(props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType)"
+              :aria-label="$t('increaseLevel')"
+            >
+              <span>+</span>
+            </button>
+            <button
+              class="control-button max-button"
+              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType) }"
+              @click="updateSkillTarget(skillType, getMaxLevel(skillType))"
+              :disabled="(props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType)"
+              :aria-label="$t('setMaxLevel')"
+            >
+              <span>»</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Skill Name -->
+        <div class="skill-name">{{ getSkillName(skillType) }}</div>
+      </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div
+      class="skill-tooltip"
+      :style="tooltipStyle"
+      v-show="activeTooltip !== null"
+    >
+      <div class="tooltip-content" v-if="activeTooltip">
+        <div class="tooltip-name">{{ getSkillName(activeTooltip) }}</div>
+        <div class="tooltip-cost" v-if="getSkillCost(activeTooltip, props.skillLevels[activeTooltip]?.current ?? 1, props.skillLevels[activeTooltip]?.target ?? 1)">
+          {{ $t('cost') }}: <span v-html="getSkillCost(
+            activeTooltip,
+            props.skillLevels[activeTooltip]?.current ?? 1,
+            props.skillLevels[activeTooltip]?.target ?? 1
+          )"></span>
+        </div>
+        <div class="tooltip-desc" v-html="getSkillDescription(
+          activeTooltip,
+          props.skillLevels[activeTooltip]?.current ?? 1,
+          props.skillLevels[activeTooltip]?.target ?? 1
+        )"></div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Add these styles to your existing styles */
-.target-slider {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.skill-section {
+  padding: 1rem;
+  margin-bottom: 15px;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.fade-in {
-  animation: fadeIn 0.2s ease forwards;
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 1rem 0;
+  font-size: 1.1em;
+  color: var(--text-primary);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Component-specific styles */
 .options-container {
   display: flex;
   align-items: center;
@@ -566,18 +483,117 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
   user-select: none;
 }
 
-.content-container {
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.skill-item {
   display: flex;
-  gap: 15px;
+  flex-direction: column;
   align-items: center;
-  padding-right: 20px;
+  gap: 0.5rem;
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  padding: 0.5rem;
+}
+
+.level-control {
+  width: 100%;
+}
+
+.custom-number-input {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  height: 36px;
+}
+
+.level-input {
+  flex: 1;
+  height: 100%;
+  padding: 0 0.25rem;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  min-width: 0;
+}
+
+.level-input::-webkit-outer-spin-button,
+.level-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.level-input:focus {
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.level-input.max-level {
+  color: var(--accent-color, #4a8af4);
+}
+
+.control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.1rem;
+  transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.control-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--accent-color, #4a8af4);
+}
+
+.control-button:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.control-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-button.disabled:hover {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.min-button,
+.max-button {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.skill-icon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .skill-icon-wrapper {
   position: relative;
-  flex-shrink: 0;
-  width: 54px;
-  height: 54px;
+  width: 64px;
+  height: 64px;
 }
 
 .skill-bg {
@@ -599,13 +615,9 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
   object-position: center;
   z-index: 2;
   padding: 2px;
+  cursor: pointer;
 }
 
-img, svg {
-  vertical-align: middle;
-}
-
-/* Modified style for the enhanced overlay */
 .enhanced-overlay {
   position: absolute;
   top: 2px;
@@ -623,6 +635,68 @@ img, svg {
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   line-height: 1;
+}
+
+.ex-toggle-btn {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  z-index: 3;
+}
+
+.ex-toggle-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
+}
+
+.ex-toggle-btn.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.level-indicator {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.level-indicator .max-level {
+  color: var(--accent-color, #4a8af4);
+}
+
+.level-indicator .level-arrow {
+  margin: 0 2px;
+  color: var(--text-secondary);
+}
+
+.level-indicator .target-level-text.max-level {
+  color: var(--accent-color, #4a8af4);
+}
+
+.skill-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .skill-tooltip {
@@ -661,94 +735,39 @@ img, svg {
   white-space: pre-wrap;
 }
 
-.skill-name {
-  font-size: 0.95em;
-  white-space: normal;
-  font-weight: bold;
-}
-
-.skill-name-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ex-toggle-btn {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
-}
-
-.ex-toggle-btn:hover {
-  background: var(--hover-bg);
-  border-color: var(--accent-color);
-}
-
-.ex-toggle-btn.active {
-  background: var(--accent-color);
-  border-color: var(--accent-color);
-  color: white;
-}
-
-.ex-toggle-btn.active:hover {
-  background: var(--accent-color-hover);
-}
-
-.ex-toggle-btn:focus {
-  outline: none;
-}
-
-.sliders {
-  flex: 1;
-}
-
-.slider-value {
-  font-size: 0.9em;
-  color: var(--text-primary);
-  width: 20px;
-  text-align: center;
-}
-
 @media (max-width: 768px) {
-  .content-container {
-    padding-right: 10px;
-  }
-  
-  .skill-icon-wrapper {
-    align-self: center;
-  }
-  
-  .sliders {
-    width: 100%;
+  .skill-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 }
 
 @media (max-width: 500px) {
-  :deep(.section-title) {
+  .section-title {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
   }
-  
+
   .options-container {
     width: 100%;
-    gap: 0px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 0px;
+  }
+
+  .skill-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .control-button {
+    width: 20px;
   }
 }
 
 @media (max-width: 350px) {
-  .sliders {
-    gap: 3px;
+  .skill-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

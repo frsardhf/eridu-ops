@@ -191,7 +191,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   align-self: center;
   background: var(--card-background);
   border-radius: 8px;
-  padding: 20px;
+  padding: 16px;
   border: 1px solid var(--border-color);
 }
 
