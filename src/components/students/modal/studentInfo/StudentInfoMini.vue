@@ -68,7 +68,7 @@ const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value
   <div class="info-mini">
     <!-- Row 1: Combined Level + Bond Pill -->
     <div class="info-row level-row">
-      <div class="level-pill" :class="{ 'maxed': isMaxLevel, 'no-target': !showLevelArrow }">
+      <div class="level-pill" :class="{ 'maxed': isMaxLevel }">
         <!-- Bond inside level pill (left side) -->
         <div class="bond-inline">
           <img
@@ -79,13 +79,15 @@ const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value
           <span class="bond-number-inline">{{ currentBond }}</span>
         </div>
 
-        <!-- Level display -->
-        <span class="level-label">LEVEL</span>
-        <span class="level-number">{{ characterLevels.current }}</span>
-        <template v-if="showLevelArrow">
-          <span class="arrow">→</span>
-          <span class="level-number target">{{ characterLevels.target }}</span>
-        </template>
+        <!-- Level display wrapper for centering -->
+        <div class="level-content">
+          <span class="level-label">LEVEL</span>
+          <span class="level-number">{{ characterLevels.current }}</span>
+          <template v-if="showLevelArrow">
+            <span class="arrow">→</span>
+            <span class="level-number target">{{ characterLevels.target }}</span>
+          </template>
+        </div>
       </div>
     </div>
 
@@ -165,18 +167,12 @@ const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value
 .level-pill {
   display: flex;
   align-items: center;
-  gap: 4px;
   background: var(--header-gradient-start);
   border: 2px solid #4e7eff;
   border-radius: 20px;
-  padding: 4px 14px;
+  padding: 4px 8px 4px 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   width: 170px;
-  justify-content: center;
-}
-
-.level-pill.no-target {
-  justify-content: flex-start;
 }
 
 .level-pill.maxed {
@@ -184,7 +180,7 @@ const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value
   border-color: rgba(255, 201, 51, 0.6);
 }
 
-/* Bond inline inside level pill */
+/* Bond inline inside level pill - fixed on left (~20% width) */
 .bond-inline {
   position: relative;
   width: 38px;
@@ -207,6 +203,14 @@ const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value
   font-size: 0.75em;
   color: white;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.level-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .level-label {

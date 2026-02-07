@@ -7,11 +7,26 @@ import { $t } from '../../../../locales';
 const props = defineProps<{
   student: ModalProps | null;
   equipmentLevels: Record<string, { current: number; target: number; }>;
+  allGearsMaxed: boolean;
+  targetGearsMaxed: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'update-equipment', type: EquipmentType, current: number, target: number): void;
+  (e: 'toggle-max-gears', checked: boolean): void;
+  (e: 'toggle-max-target-gears', checked: boolean): void;
 }>();
+
+// Checkbox handlers
+const handleMaxAllGearsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-gears', checked);
+};
+
+const handleMaxTargetGearsChange = (event: Event) => {
+  const checked = (event.target as HTMLInputElement).checked;
+  emit('toggle-max-target-gears', checked);
+};
 
 // Equipment type mapping for display
 const equipmentTypes = {
@@ -113,6 +128,32 @@ function isTargetMaxLevel(target: number, type: string) {
 
 <template>
   <div class="equipment-growth-section">
+    <h3 class="section-title">
+      {{ $t('gears') }}
+      <div class="options-container">
+        <div class="max-all-container">
+          <input
+            type="checkbox"
+            id="max-all-gears"
+            name="max-all-gears"
+            :checked="props.allGearsMaxed"
+            @change="handleMaxAllGearsChange"
+          />
+          <label for="max-all-gears">{{ $t('maxAllGears') }}</label>
+        </div>
+        <div class="max-all-container">
+          <input
+            type="checkbox"
+            id="max-target-gears"
+            name="max-target-gears"
+            :checked="props.targetGearsMaxed"
+            @change="handleMaxTargetGearsChange"
+          />
+          <label for="max-target-gears">{{ $t('maxTargetGears') }}</label>
+        </div>
+      </div>
+    </h3>
+
     <div class="equipment-grid">
       <div v-for="type in student?.Equipment" :key="type" class="equipment-item">
         <div class="level-control">
@@ -245,6 +286,38 @@ function isTargetMaxLevel(target: number, type: string) {
   background-color: var(--card-background);
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 1rem 0;
+  font-size: 1.1em;
+  color: var(--text-primary);
+}
+
+.options-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.max-all-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.max-all-container input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.max-all-container label {
+  cursor: pointer;
+  user-select: none;
 }
 
 .equipment-grid {
@@ -434,24 +507,39 @@ function isTargetMaxLevel(target: number, type: string) {
   }
 }
 
+@media (max-width: 500px) {
+  .section-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .options-container {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0px;
+  }
+}
+
 @media (max-width: 480px) {
   .equipment-growth-section {
     padding: 1rem;
   }
-  
+
   .equipment-item {
     padding: 0.75rem;
   }
-  
+
   .equipment-icon {
     width: 70px;
     height: 70px;
   }
-  
+
   .control-button {
     width: 24px;
   }
-  
+
   .min-button,
   .max-button {
     font-size: 0.875rem;

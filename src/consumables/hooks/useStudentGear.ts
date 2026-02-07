@@ -294,6 +294,88 @@ export function useStudentGear(props: {
   const gradeLevels = ref<GradeLevels>({});
   const gradeInfos = ref<GradeInfos>({});
 
+  // Max gear states
+  const allGearsMaxed = ref(false);
+  const targetGearsMaxed = ref(false);
+
+  // Synchronous version of getMaxTierForType using cached data
+  function getMaxTierForTypeSync(type: string): number {
+    const equipments = getAllEquipmentFromCache();
+    if (!equipments || Object.keys(equipments).length === 0) return 10;
+
+    const matchingEquipments = Object.values(equipments)
+      .filter((item: any) => item.Category === type)
+      .sort((a: any, b: any) => b.Id - a.Id);
+
+    const highestTierEquipment = matchingEquipments[0];
+    return highestTierEquipment?.Tier || 10;
+  }
+
+  const checkAllGearsMaxed = () => {
+    if (!props.student?.Equipment) return false;
+    return props.student.Equipment.every((type) => {
+      const maxTier = getMaxTierForTypeSync(type);
+      const levels = equipmentLevels.value[type as EquipmentType];
+      return levels?.current === maxTier && levels?.target === maxTier;
+    });
+  };
+
+  const checkTargetGearsMaxed = () => {
+    if (!props.student?.Equipment) return false;
+    return props.student.Equipment.every((type) => {
+      const maxTier = getMaxTierForTypeSync(type);
+      const levels = equipmentLevels.value[type as EquipmentType];
+      return levels?.target === maxTier;
+    });
+  };
+
+  const toggleMaxAllGears = (checked: boolean) => {
+    if (!props.student?.Equipment) return;
+
+    props.student.Equipment.forEach((type) => {
+      const equipmentType = type as EquipmentType;
+      const maxTier = getMaxTierForTypeSync(type);
+
+      if (checked) {
+        equipmentLevels.value[equipmentType] = { current: maxTier, target: maxTier };
+      } else {
+        equipmentLevels.value[equipmentType] = { current: 1, target: 1 };
+      }
+    });
+
+    allGearsMaxed.value = checked;
+    targetGearsMaxed.value = checked;
+
+    saveToIndexedDB();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+    }
+  };
+
+  const toggleMaxTargetGears = (checked: boolean) => {
+    if (!props.student?.Equipment) return;
+
+    props.student.Equipment.forEach((type) => {
+      const equipmentType = type as EquipmentType;
+      const maxTier = getMaxTierForTypeSync(type);
+      const currentLevel = equipmentLevels.value[equipmentType]?.current || 1;
+
+      if (checked) {
+        equipmentLevels.value[equipmentType] = { current: currentLevel, target: maxTier };
+      } else {
+        equipmentLevels.value[equipmentType] = { current: currentLevel, target: currentLevel };
+      }
+    });
+
+    targetGearsMaxed.value = checked;
+    allGearsMaxed.value = checkAllGearsMaxed();
+
+    saveToIndexedDB();
+    if (props.student) {
+      updateStudentData(props.student.Id);
+    }
+  };
+
   // Reset form data
   function resetFormData() {
     // Reset equipment levels based on student's equipment
@@ -335,6 +417,12 @@ export function useStudentGear(props: {
       await saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
+  }, { deep: true });
+
+  // Watch for equipment level changes to update maxed flags
+  watch(equipmentLevels, () => {
+    allGearsMaxed.value = checkAllGearsMaxed();
+    targetGearsMaxed.value = checkTargetGearsMaxed();
   }, { deep: true });
 
   // Save current form data to IndexedDB
@@ -487,8 +575,12 @@ export function useStudentGear(props: {
     handleEquipmentUpdate,
     handleGradeUpdate,
     handleGradeInfoUpdate,
-    getElephsForGrade, 
-    getEligmasForGrade, 
-    calculateGradeMaterialsNeeded
+    getElephsForGrade,
+    getEligmasForGrade,
+    calculateGradeMaterialsNeeded,
+    allGearsMaxed,
+    targetGearsMaxed,
+    toggleMaxAllGears,
+    toggleMaxTargetGears
   };
 }

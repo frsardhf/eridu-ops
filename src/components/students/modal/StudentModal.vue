@@ -74,11 +74,15 @@ const {
   remainingXp: characterRemainingXp,
   allSkillsMaxed,
   targetSkillsMaxed,
+  allPotentialsMaxed,
+  targetPotentialsMaxed,
   handleLevelUpdate,
   handlePotentialUpdate,
   handleSkillUpdate,
   toggleMaxAllSkills,
   toggleMaxTargetSkills,
+  toggleMaxAllPotentials,
+  toggleMaxTargetPotentials,
 } = useStudentUpgrade(props, emit);
 
 // Keep resource/equipment hooks alive for data persistence
@@ -101,6 +105,10 @@ const {
   handleGradeInfoUpdate,
   equipmentMaterialsNeeded,
   getElephsForGrade,
+  allGearsMaxed,
+  targetGearsMaxed,
+  toggleMaxAllGears,
+  toggleMaxTargetGears,
 } = useStudentGear(props, emit);
 
 // Navigation
@@ -315,7 +323,11 @@ onUnmounted(() => {
 
             <StudentPotentialSection
               :potential-levels="potentialLevels"
+              :all-potentials-maxed="allPotentialsMaxed"
+              :target-potentials-maxed="targetPotentialsMaxed"
               @update-potential="handlePotentialUpdate"
+              @toggle-max-potentials="toggleMaxAllPotentials"
+              @toggle-max-target-potentials="toggleMaxTargetPotentials"
             />
 
             <StudentMaterialsSection
@@ -342,7 +354,11 @@ onUnmounted(() => {
             <StudentEquipmentGrowth
               :student="student"
               :equipment-levels="equipmentLevels"
+              :all-gears-maxed="allGearsMaxed"
+              :target-gears-maxed="targetGearsMaxed"
               @update-equipment="handleEquipmentUpdate"
+              @toggle-max-gears="toggleMaxAllGears"
+              @toggle-max-target-gears="toggleMaxTargetGears"
             />
 
             <StudentGradeGrowth
