@@ -198,7 +198,7 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
 .info-skills {
   background: var(--card-background);
   border-radius: 10px;
-  padding: 1rem;
+  padding: 0.75rem;
   border: 1px solid var(--border-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 5px;
@@ -207,7 +207,7 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .skill-card {

@@ -4,6 +4,7 @@ import { Material } from '../../../../types/upgrade';
 import { EquipmentType } from '../../../../types/gear';
 import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
+import { useGiftCalculation } from '../../../../consumables/hooks/useGiftCalculation';
 import { getAllResourcesFromCache, getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import { 
   formatLargeNumber, 
@@ -17,13 +18,20 @@ import {
 import { $t } from '../../../../locales';
 import '../../../../styles/resourceDisplay.css';
 
-// Define view options - simplified to 2 main tabs
-type ViewTab = 'materials' | 'equipment';
+// Define view options - 3 main tabs
+type ViewTab = 'materials' | 'equipment' | 'gifts';
 type ViewMode = 'needed' | 'missing';
 
 // Define types for material items with remaining property
 interface MaterialWithRemaining extends Material {
   remaining: number;
+}
+
+// Define type for student usage data
+interface StudentUsage {
+  student: { Id: number; Name: string; [key: string]: any };
+  quantity: number;
+  equipmentTypes?: EquipmentType[];
 }
 
 // UI state
@@ -39,20 +47,27 @@ const {
 
 // Get equipment resource data
 const {
-  totalEquipmentsNeeded, 
-  equipmentsLeftover, 
+  totalEquipmentsNeeded,
+  equipmentsLeftover,
   getEquipmentUsageByStudents,
   calculateExpNeeds: calculateEquipmentExpNeeds
 } = useGearCalculation();
 
+// Get gift resource data (Student → Gifts pattern)
+const {
+  getStudentsWithGifts,
+  getGiftsForStudent
+} = useGiftCalculation();
+
 // Track the currently hovered item for tooltip
 const hoveredItemId = ref<number | null>(null);
+const hoveredStudentId = ref<number | null>(null); // For gifts tab - student hover
 const tooltipPosition = ref({ x: 0, y: 0 });
 const isHoveringTooltip = ref(false);
 
 // Add a cache for material usage data
-const materialUsageCache = ref<Map<string, any[]>>(new Map());
-const equipmentUsageCache = ref<Map<string, any[]>>(new Map());
+const materialUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
+const equipmentUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
 
 // Add cache for XP calculation results
 const xpCalculationCache = ref<{
@@ -148,15 +163,27 @@ const missingEquipments = computed<MaterialWithRemaining[]>(() =>
   )
 );
 
+// Students with gifts for the Gifts tab (Student → Gifts pattern)
+const studentsWithGifts = computed(() => {
+  return getStudentsWithGifts(activeMode.value);
+});
+
+// Gifts for the hovered student in Gifts tab tooltip
+const giftsForHoveredStudent = computed(() => {
+  if (hoveredStudentId.value === null) return [];
+  return getGiftsForStudent(hoveredStudentId.value, activeMode.value);
+});
+
 // Computed property to get the resources based on active tab and mode
 const displayResources = computed(() => {
   let resources: any[] = [];
 
   if (activeTab.value === 'materials') {
     resources = activeMode.value === 'needed' ? totalMaterialsNeeded.value : missingMaterials.value;
-  } else {
+  } else if (activeTab.value === 'equipment') {
     resources = activeMode.value === 'needed' ? totalEquipmentsNeeded.value : missingEquipments.value;
   }
+  // Note: Gifts tab uses studentsWithGifts computed, not displayResources
 
   const filtered = resources.filter(r => (r.materialQuantity ?? 0) > 0);
 
@@ -164,21 +191,25 @@ const displayResources = computed(() => {
   return filtered.sort((a, b) => {
     const aId = a.material?.Id || 0;
     const bId = b.material?.Id || 0;
-    
+
     // Always put credits (ID: 5) first
     if (aId === 5) return -1;
     if (bId === 5) return 1;
-    
+
     // Put exp reports next (IDs: 10, 11, 12, 13)
     if (isExpReport(aId) && !isExpReport(bId)) return -1;
     if (!isExpReport(aId) && isExpReport(bId)) return 1;
-    
+
     // For all other materials, sort by ID
     return aId - bId;
   });
 });
 
 const totalMaterialQuantity = computed(() => {
+  // For gifts tab, count students with gifts
+  if (activeTab.value === 'gifts') {
+    return studentsWithGifts.value.length;
+  }
   return displayResources.value.reduce((sum, item) => {
     return sum + (item.materialQuantity ?? 0);
   }, 0);
@@ -203,7 +234,7 @@ onMounted(() => {
   });
 });
 
-// Helper function to get material icon source and alt text
+// Helper function to get material icon source and alt text (Materials and Equipment tabs)
 const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
   const isEquipmentTab = activeTab.value === 'equipment';
   return {
@@ -239,11 +270,12 @@ const setTab = (tab: ViewTab) => {
   // Clear hover state and caches when switching tabs
   if (activeTab.value !== tab) {
     hoveredItemId.value = null;
+    hoveredStudentId.value = null;
     materialUsageCache.value.clear();
     equipmentUsageCache.value.clear();
     xpCalculationCache.value = null;
   }
-  
+
   activeTab.value = tab;
 };
 
@@ -252,6 +284,7 @@ const toggleMode = () => {
   activeMode.value = activeMode.value === 'needed' ? 'missing' : 'needed';
   // Clear hover state when switching modes
   hoveredItemId.value = null;
+  hoveredStudentId.value = null;
 };
 
 const showTooltip = async (event: MouseEvent, materialId: number) => {
@@ -287,6 +320,31 @@ const handleTooltipMouseEnter = () => {
 const handleTooltipMouseLeave = () => {
   isHoveringTooltip.value = false;
   hoveredItemId.value = null;
+  hoveredStudentId.value = null;
+};
+
+// Show tooltip for student (Gifts tab - Student → Gifts pattern)
+const showStudentTooltip = async (event: MouseEvent, studentId: number) => {
+  hoveredStudentId.value = studentId;
+
+  // Set initial position
+  tooltipPosition.value = adjustTooltipPosition(event);
+
+  // Wait for the tooltip to be rendered
+  await nextTick();
+
+  // Adjust tooltip position after it's rendered
+  const tooltip = document.querySelector('.material-tooltip') as HTMLElement;
+  if (tooltip) {
+    tooltipPosition.value = adjustTooltipPosition(event, tooltip);
+  }
+};
+
+// Hide student tooltip
+const hideStudentTooltip = () => {
+  if (!isHoveringTooltip.value) {
+    hoveredStudentId.value = null;
+  }
 };
 
 // Helper function to get tooltip grid columns
@@ -300,6 +358,9 @@ const getTooltipGridColumns = (count: number): string => {
 // Add a computed property to determine the appropriate grid width based on student count
 const tooltipGridColumns = computed(() => getTooltipGridColumns(studentUsageForMaterial.value.length));
 
+// Tooltip grid columns for gift display (Student → Gifts pattern)
+const giftTooltipGridColumns = computed(() => getTooltipGridColumns(giftsForHoveredStudent.value.length));
+
 // Helper function to format usage quantity
 const formatUsageQuantity = (quantity: number, materialId?: number | null, equipmentTypes?: EquipmentType[]): string => {
   if (materialId && (isExpReport(materialId) || isExpBall(materialId))) {
@@ -308,32 +369,33 @@ const formatUsageQuantity = (quantity: number, materialId?: number | null, equip
   return formatLargeNumber(quantity);
 };
 
-// Student usage data for the hovered material
+// Student usage data for the hovered material (Materials and Equipment tabs only)
+// Gifts tab uses Student → Gifts pattern with giftsForHoveredStudent
 const studentUsageForMaterial = computed(() => {
   if (hoveredItemId.value === null) return [];
-  
+
   const materialId = hoveredItemId.value;
-  
-  // Use different cache based on the active tab
   const isEquipmentView = activeTab.value === 'equipment';
+
+  // Use different cache based on the active tab
   const cache = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
-  
+
   // Create a cache key that includes both material ID and current view
   const cacheKey = `${materialId}-${activeTab.value}-${activeMode.value}`;
-  
+
   // For XP reports, credits, and XP balls, always get fresh data
   if (isExpReport(materialId) || materialId === 5 || isExpBall(materialId)) {
-    const usage = isEquipmentView 
+    const usage = isEquipmentView
       ? getEquipmentUsageByStudents(materialId, activeMode.value)
       : getMaterialUsageByStudents(materialId, activeMode.value);
     return usage.sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
   }
-  
+
   // Check if we already have cached data for this material and view mode
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey)!;
   }
-  
+
   // If not in cache, calculate and store in cache
   let usage: any[] = [];
   if (isEquipmentView) {
@@ -345,7 +407,7 @@ const studentUsageForMaterial = computed(() => {
       .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
     materialUsageCache.value.set(cacheKey, usage);
   }
-  
+
   return usage;
 });
 
@@ -385,7 +447,7 @@ const expInfo = createExpInfo(() => calculateExpNeeds());
 // Add computed properties for EXP balls quantities
 const expBallInfo = createExpInfo(() => calculateEquipmentExpNeeds());
 
-// Add computed property to get leftover quantity for a material
+// Add computed property to get leftover quantity for a material (Materials and Equipment tabs)
 const getMaterialLeftover = (materialId: number) => {
   const isEquipmentView = activeTab.value === 'equipment';
   const leftover = isEquipmentView ? equipmentsLeftover.value : materialsLeftover.value;
@@ -398,19 +460,26 @@ const getMaterialLeftover = (materialId: number) => {
   <div class="resource-summary">
     <!-- Main Tabs -->
     <div class="main-tabs">
-      <button 
-        class="main-tab" 
+      <button
+        class="main-tab"
         :class="{ active: activeTab === 'materials' }"
         @click="setTab('materials')"
       >
         {{ $t('items') }}
       </button>
-      <button 
-        class="main-tab" 
+      <button
+        class="main-tab"
         :class="{ active: activeTab === 'equipment' }"
         @click="setTab('equipment')"
       >
         {{ $t('equipments') }}
+      </button>
+      <button
+        class="main-tab"
+        :class="{ active: activeTab === 'gifts' }"
+        @click="setTab('gifts')"
+      >
+        {{ $t('gifts') }}
       </button>
     </div>
 
@@ -449,10 +518,11 @@ const getMaterialLeftover = (materialId: number) => {
         <span v-if="activeMode === 'needed'">{{ $t('noResourcesNeeded') }}</span>
         <span v-else>{{ $t('allMaterialsAvailable') }}</span>
       </div>
-      
-      <div v-else class="resources-grid">
-        <div 
-          v-for="(item, index) in displayResources" 
+
+      <!-- Materials and Equipment tabs: Show resource icons -->
+      <div v-else-if="activeTab !== 'gifts'" class="resources-grid">
+        <div
+          v-for="(item, index) in displayResources"
           :key="`resource-${item.material?.Id || index}`"
           class="resource-item"
           :title="getMaterialName(item, activeTab === 'equipment')"
@@ -460,22 +530,48 @@ const getMaterialLeftover = (materialId: number) => {
           @mouseleave="hideTooltip()"
         >
           <div class="resource-content">
-            <img 
+            <img
               v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-              :src="getMaterialIconSrcAndAlt(item).src" 
+              :src="getMaterialIconSrcAndAlt(item).src"
               :alt="getMaterialIconSrcAndAlt(item).alt"
               class="resource-icon"
             />
-            <div 
+            <div
               v-else
               class="resource-icon missing-icon"
             >?</div>
-            
-            <div 
-              class="resource-quantity" 
+
+            <div
+              class="resource-quantity"
               :class="getQuantityClass()"
             >
               {{ formatQuantity(item) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gifts tab: Show student icons (Student → Gifts pattern) -->
+      <div v-else class="resources-grid">
+        <div
+          v-for="studentGift in studentsWithGifts"
+          :key="`student-${studentGift.student.Id}`"
+          class="resource-item student-gift-item"
+          :title="studentGift.student.Name"
+          @mousemove="showStudentTooltip($event, studentGift.student.Id)"
+          @mouseleave="hideStudentTooltip()"
+        >
+          <div class="resource-content">
+            <img
+              :src="`https://schaledb.com/images/student/icon/${studentGift.student.Id}.webp`"
+              :alt="studentGift.student.Name"
+              class="resource-icon student-icon-gift"
+            />
+            <div
+              class="resource-quantity"
+              :class="getQuantityClass()"
+            >
+              {{ formatLargeNumber(studentGift.totalGifts) }}
             </div>
           </div>
         </div>
@@ -518,7 +614,7 @@ const getMaterialLeftover = (materialId: number) => {
         </div>
 
         <!-- EXP Information Section -->
-        <div v-if="hoveredItemId !== null && isExpReport(hoveredItemId as number)" class="credit-info">
+        <div v-if="hoveredItemId !== null && isExpReport(hoveredItemId)" class="credit-info">
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('owned') }}</span>
@@ -542,7 +638,7 @@ const getMaterialLeftover = (materialId: number) => {
         </div>
 
         <!-- EXP Balls Information Section -->
-        <div v-if="hoveredItemId !== null && isExpBall(hoveredItemId as number)" class="credit-info">
+        <div v-if="hoveredItemId !== null && isExpBall(hoveredItemId)" class="credit-info">
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('owned') }}</span>
@@ -566,9 +662,9 @@ const getMaterialLeftover = (materialId: number) => {
         </div>
 
         <!-- Material Information Section -->
-        <div 
-          v-if="hoveredItemId !== null && !isExpReport(hoveredItemId as number) 
-            && hoveredItemId !== 5 && !isExpBall(hoveredItemId as number)" 
+        <div
+          v-if="hoveredItemId !== null && !isExpReport(hoveredItemId)
+            && hoveredItemId !== 5 && !isExpBall(hoveredItemId)"
           class="credit-info"
         >
           <div class="credit-stats">
@@ -586,18 +682,48 @@ const getMaterialLeftover = (materialId: number) => {
         </div>
 
         <div class="student-icons-grid">
-          <div 
-            v-for="(usage, i) in studentUsageForMaterial" 
+          <div
+            v-for="(usage, i) in studentUsageForMaterial"
             :key="`usage-${i}`"
             class="student-usage-item"
           >
-            <img 
-              :src="`https://schaledb.com/images/student/icon/${usage.student.Id}.webp`" 
-              :alt="usage.student.Name" 
+            <img
+              :src="`https://schaledb.com/images/student/icon/${usage.student.Id}.webp`"
+              :alt="usage.student.Name"
               class="student-icon"
             />
             <span class="usage-quantity">
               {{ formatUsageQuantity(usage.quantity, hoveredItemId, usage.equipmentTypes) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student → Gifts Tooltip (for Gifts tab) -->
+      <div
+        v-if="hoveredStudentId !== null && giftsForHoveredStudent.length > 0"
+        class="material-tooltip"
+        :style="{
+          left: `${tooltipPosition.x}px`,
+          top: `${tooltipPosition.y}px`,
+          '--grid-columns': giftTooltipGridColumns
+        }"
+        @mouseenter="handleTooltipMouseEnter"
+        @mouseleave="handleTooltipMouseLeave"
+      >
+        <div class="gift-icons-grid">
+          <div
+            v-for="(giftItem, i) in giftsForHoveredStudent"
+            :key="`gift-${i}`"
+            class="gift-usage-item"
+          >
+            <img
+              :src="`https://schaledb.com/images/item/icon/${giftItem.gift?.Icon}.webp`"
+              :alt="giftItem.gift?.Name || 'Gift'"
+              class="gift-icon"
+            />
+            <span class="usage-quantity">
+              {{ formatLargeNumber(giftItem.quantity) }}
             </span>
           </div>
         </div>
@@ -797,6 +923,53 @@ const getMaterialLeftover = (materialId: number) => {
 
 .material-tooltip::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Student icon in Gifts tab grid */
+.student-gift-item {
+  margin: 4px;
+}
+
+.student-icon-gift {
+  border-radius: 50%;
+  border: 2px solid var(--accent-color);
+}
+
+.student-gift-item:hover .student-icon-gift {
+  transform: scale(1.05);
+}
+
+/* Gift icons grid in Student tooltip */
+.gift-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 3), minmax(40px, 1fr));
+  gap: 2px;
+  padding: 1px;
+}
+
+.gift-usage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 1px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.gift-usage-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.gift-icon {
+  width: 80%;
+  height: 80%;
+  border-radius: 4px;
+  transition: transform 0.2s;
+}
+
+.gift-usage-item:hover .gift-icon {
+  transform: scale(1.05);
 }
 
 @media (max-width: 768px) {

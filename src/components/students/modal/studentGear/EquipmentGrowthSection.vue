@@ -155,6 +155,7 @@ function isTargetMaxLevel(target: number, type: string) {
     </h3>
 
     <div class="equipment-grid">
+      <!-- Regular Equipment Items -->
       <div v-for="type in student?.Equipment" :key="type" class="equipment-item">
         <div class="level-control">
           <div class="custom-number-input">
@@ -275,6 +276,38 @@ function isTargetMaxLevel(target: number, type: string) {
           </div>
         </div>
       </div>
+
+      <!-- Exclusive Gear Placeholder -->
+      <div class="equipment-item placeholder-item">
+        <div class="level-control placeholder-control">
+          <div class="custom-number-input disabled">
+            <button class="control-button min-button disabled" disabled><span>«</span></button>
+            <button class="control-button decrement-button disabled" disabled><span>−</span></button>
+            <input type="number" value="1" disabled class="level-input current-level disabled" />
+            <button class="control-button increment-button disabled" disabled><span>+</span></button>
+            <button class="control-button max-button disabled" disabled><span>»</span></button>
+          </div>
+        </div>
+
+        <div class="equipment-icon placeholder-icon">
+          <div class="equipment-type-badge placeholder-badge">{{ $t('exclusiveGear') }}</div>
+          <svg class="lock-icon-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <div class="tier-indicator placeholder-tier">{{ $t('comingSoon') }}</div>
+        </div>
+
+        <div class="level-control placeholder-control">
+          <div class="custom-number-input disabled">
+            <button class="control-button min-button disabled" disabled><span>«</span></button>
+            <button class="control-button decrement-button disabled" disabled><span>−</span></button>
+            <input type="number" value="1" disabled class="level-input current-level disabled" />
+            <button class="control-button increment-button disabled" disabled><span>+</span></button>
+            <button class="control-button max-button disabled" disabled><span>»</span></button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -334,6 +367,7 @@ function isTargetMaxLevel(target: number, type: string) {
   border-radius: 8px;
   background-color: var(--background-primary);
   position: relative;
+  padding: 0.5rem;
 }
 
 .equipment-icon {
@@ -544,5 +578,44 @@ function isTargetMaxLevel(target: number, type: string) {
   .max-button {
     font-size: 0.875rem;
   }
+}
+
+/* Exclusive Gear Placeholder Styles */
+.placeholder-item {
+  border: 2px dashed var(--border-color);
+  opacity: 0.6;
+}
+
+.placeholder-icon {
+  background: transparent !important;
+}
+
+.placeholder-badge {
+  background-color: var(--text-secondary) !important;
+}
+
+.lock-icon-placeholder {
+  width: 32px;
+  height: 32px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.placeholder-tier {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.placeholder-control {
+  opacity: 0.5;
+}
+
+.custom-number-input.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.level-input.disabled {
+  cursor: not-allowed;
 }
 </style>
