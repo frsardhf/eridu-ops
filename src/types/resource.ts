@@ -11,6 +11,7 @@ export interface ResourceProps {
   Tier?: number;
   Tags: string[];
   Description?: string;
+  LevelUpFeedExp?: number;
 }
 
 /**

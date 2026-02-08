@@ -56,8 +56,8 @@ export function useResourceCalculation() {
 
     // Calculate XP needed for each student
     allStudentIds.forEach(studentId => {
-      const form = studentDataStore.value[studentId];
-      if (!form) return;
+      const form = studentDataStore.value[parseInt(studentId)];
+      if (!form || !form.characterLevels) return;
 
       const currentLevel = form.characterLevels.current ?? 1;
       const targetLevel = form.characterLevels.target ?? currentLevel;
@@ -228,8 +228,8 @@ export function useResourceCalculation() {
         const student = studentsCollection[detail.studentId];
         if (!student) return;
         
-        const form = studentDataStore.value[detail.studentId];
-        if (!form) return;
+        const form = studentDataStore.value[parseInt(detail.studentId)];
+        if (!form || !form.characterLevels) return;
 
         const currentLevel = form.characterLevels.current ?? 1;
         const targetLevel = form.characterLevels.target ?? currentLevel;

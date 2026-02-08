@@ -36,7 +36,7 @@ export function useGearCalculation() {
 
     // Calculate XP needed for each student's equipment
     allStudentIds.forEach(studentId => {
-      const form = studentDataStore.value[studentId];
+      const form = studentDataStore.value[parseInt(studentId)];
       if (!form?.equipmentLevels) return;
 
       const equipmentLevels = form.equipmentLevels as EquipmentLevels;
@@ -206,7 +206,7 @@ export function useGearCalculation() {
         const student = studentsCollection[detail.studentId];
         if (!student) return;
         
-        const form = studentDataStore.value[detail.studentId];
+        const form = studentDataStore.value[parseInt(detail.studentId)];
         if (!form?.equipmentLevels) return;
 
         const equipmentLevels = form.equipmentLevels as EquipmentLevels;

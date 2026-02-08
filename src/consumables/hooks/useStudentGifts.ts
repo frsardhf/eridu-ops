@@ -6,6 +6,7 @@ import { getAllResourcesFromCache } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
 import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
+import { getAllocatedGifts } from './useGiftCalculation';
 
 export function useStudentGifts(props: {
   student: StudentProps | null,
@@ -14,20 +15,23 @@ export function useStudentGifts(props: {
 
   const giftFormData = ref<Record<string, number>>({});
   const boxFormData = ref<Record<string, number>>({});
+  const nonFavorGiftsMap = ref<Record<number, number>>({}); // Track individual non-favor gifts for Gifts tab display
   const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
   const isCalculating = ref(false);
   // Track loading state to prevent watch from triggering saves during load
   const isLoading = ref(false);
-  
+
   // Add previous state storage for undo functionality
   const previousGiftFormData = ref<Record<string, number>>({});
   const previousBoxFormData = ref<Record<string, number>>({});
+  const previousNonFavorGiftsMap = ref<Record<number, number>>({});
 
   const bondXpTable = bondData.bond_xp;
 
   function resetFormData() {
     giftFormData.value = {};
     boxFormData.value = {};
+    nonFavorGiftsMap.value = {};
     bondDetailData.value = {...DEFAULT_BOND_DETAIL};
   }
 
@@ -54,10 +58,11 @@ export function useStudentGifts(props: {
   const savePreviousState = () => {
     previousGiftFormData.value = JSON.parse(JSON.stringify(giftFormData.value));
     previousBoxFormData.value = JSON.parse(JSON.stringify(boxFormData.value));
+    previousNonFavorGiftsMap.value = JSON.parse(JSON.stringify(nonFavorGiftsMap.value));
   };
 
   // Watch for changes to form data and save to IndexedDB
-  watch([giftFormData, boxFormData, bondDetailData], () => {
+  watch([giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData], () => {
     if (props.student && props.isVisible && !isLoading.value) {
       saveToIndexedDB();
       updateStudentData(props.student.Id);
@@ -70,6 +75,7 @@ export function useStudentGifts(props: {
     const dataToSave = {
       giftFormData: giftFormData.value,
       boxFormData: boxFormData.value,
+      nonFavorGiftsMap: nonFavorGiftsMap.value,
       bondDetailData: bondDetailData.value
     }
 
@@ -90,12 +96,14 @@ export function useStudentGifts(props: {
       const refs = {
         giftFormData,
         boxFormData,
+        nonFavorGiftsMap,
         bondDetailData
       };
 
       const defaultValues = {
         giftFormData: {},
         boxFormData: {},
+        nonFavorGiftsMap: {},
         bondDetailData: DEFAULT_BOND_DETAIL
       };
 
@@ -331,17 +339,19 @@ export function useStudentGifts(props: {
   const resetGifts = () => {
     // Save current state before resetting
     savePreviousState();
-    
+
     // Reset all gift and box data to empty objects (zero values)
     giftFormData.value = {};
     boxFormData.value = {};
+    nonFavorGiftsMap.value = {};
   };
-  
+
   // Undo changes to previous state
   const undoChanges = () => {
     // Restore from previous state
     giftFormData.value = JSON.parse(JSON.stringify(previousGiftFormData.value));
     boxFormData.value = JSON.parse(JSON.stringify(previousBoxFormData.value));
+    nonFavorGiftsMap.value = JSON.parse(JSON.stringify(previousNonFavorGiftsMap.value));
   };
 
   const autoFillGifts = () => {
@@ -349,15 +359,20 @@ export function useStudentGifts(props: {
     savePreviousState();
 
     const resources = getAllResourcesFromCache();
+    // Get gifts already allocated by other students to prevent autofill abuse
+    const allocatedByOthers = getAllocatedGifts(props.student?.Id);
 
     // Filter out gifts from the resources
-    const gifts = Object.values(resources ?? {}).filter(resource => 
+    const gifts = Object.values(resources ?? {}).filter(resource =>
       resource && resource.Category === 'Favor'
     );
 
     if (!giftFormData.value) {
       giftFormData.value = {};
     }
+
+    // Reset nonFavorGiftsMap for fresh autofill
+    nonFavorGiftsMap.value = {};
 
     let nonFavorGiftsSr = 0;
     let nonFavorGiftsSsr = 0;
@@ -368,29 +383,40 @@ export function useStudentGifts(props: {
       // Loop through all gifts from resources
       gifts.forEach(gift => {
         if (gift.Id) {
+          // Calculate available quantity (owned - allocated by others)
+          const owned = gift.QuantityOwned ?? 0;
+          const alreadyAllocated = allocatedByOthers[gift.Id] ?? 0;
+          const available = Math.max(0, owned - alreadyAllocated);
+
           // Check if this gift ID exists in the student's Gifts
           // This depends on the structure of student.Gifts
           const isStudentGift = Object.values(props.student?.Gifts ?? {}).some(
             g => g.gift.Id === gift.Id
           );
-          
+
           if (isStudentGift) {
-            // Set the quantity in giftFormData based on what's owned
-            giftFormData.value[gift.Id] = gift.QuantityOwned ?? 0;
+            // Set the quantity in giftFormData based on what's available
+            giftFormData.value[gift.Id] = available;
           } else {
+            // Track individual non-favor gifts for Gifts tab display
+            if (available > 0) {
+              nonFavorGiftsMap.value[gift.Id] = available;
+            }
+
+            // Also aggregate for bond calculation
             if (gift.Rarity === 'SR') {
-              nonFavorGiftsSr += gift.QuantityOwned ?? 0;
+              nonFavorGiftsSr += available;
             }
             if (gift.Rarity === 'SSR' && !blackListIds.includes(gift.Id)) {
               // Exclude specific IDs from SSR count
-              nonFavorGiftsSsr += gift.QuantityOwned ?? 0;
+              nonFavorGiftsSsr += available;
             }
           }
         }
       });
     }
 
-    // Set the quantities for non-favor gifts in boxFormData
+    // Set the quantities for non-favor gifts in boxFormData (aggregated for bond calculation)
     boxFormData.value[100000] = nonFavorGiftsSr;
     boxFormData.value[100009] = nonFavorGiftsSsr;
   }
