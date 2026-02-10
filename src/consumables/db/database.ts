@@ -54,6 +54,11 @@ export interface FormRecord {
   };
   giftFormData?: Record<string, number>;
   boxFormData?: Record<string, number>;
+  nonFavorGiftsMap?: Record<string, number>;
+  exclusiveGearLevel?: {
+    current: number;
+    target: number;
+  };
 }
 
 export interface ResourceInventoryRecord {

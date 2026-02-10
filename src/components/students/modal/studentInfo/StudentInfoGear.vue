@@ -7,6 +7,8 @@ const props = defineProps<{
   student: Record<string, any> | null;
   gradeLevels: { current?: number; target?: number };
   equipmentLevels: Record<string, { current: number; target: number }>;
+  exclusiveGearLevel: { current?: number; target?: number };
+  hasExclusiveGear: boolean;
 }>();
 
 const equipmentTypes: Record<string, () => string> = {
@@ -58,6 +60,23 @@ function getEquipmentDisplay(type: string): { current: number; target: number; i
   const current = props.equipmentLevels[type]?.current || 1;
   const target = props.equipmentLevels[type]?.target || 1;
   return { current, target, isSame: current === target };
+}
+
+// Exclusive Gear
+function getExclusiveGearIconUrl(): string {
+  if (!props.student?.Id) return '';
+  return `https://schaledb.com/images/gear/full/${props.student.Id}.webp`;
+}
+
+function getExclusiveGearDisplay(): { current: number; target: number; isSame: boolean; isLocked: boolean } {
+  const current = props.exclusiveGearLevel?.current || 0;
+  const target = props.exclusiveGearLevel?.target || 0;
+  return {
+    current,
+    target,
+    isSame: current === target,
+    isLocked: current === 0
+  };
 }
 </script>
 
@@ -135,14 +154,44 @@ function getEquipmentDisplay(type: string): { current: number; target: number; i
           </div>
         </div>
 
-        <!-- Exclusive Gear Placeholder -->
-        <div class="equipment-card placeholder-card">
-          <div class="equipment-icon placeholder-icon">
-            <div class="equipment-type-badge placeholder-badge">{{ $t('exclusiveGear') }}</div>
-            <svg class="lock-icon-small" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-              <path fill="currentColor" d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
-            </svg>
-            <div class="tier-indicator placeholder-tier">{{ $t('comingSoon') }}</div>
+        <!-- Exclusive Gear -->
+        <div class="equipment-card" :class="{ 'placeholder-card': !hasExclusiveGear }">
+          <div class="equipment-icon" :class="{ 'placeholder-icon': !hasExclusiveGear }">
+            <div class="equipment-type-badge" :class="{ 'placeholder-badge': !hasExclusiveGear }">
+              {{ $t('exclusiveGear') }}
+            </div>
+
+            <!-- Show gear image if student has gear -->
+            <template v-if="hasExclusiveGear">
+              <img
+                :src="getExclusiveGearIconUrl()"
+                :alt="student?.Gear?.Name || $t('exclusiveGear')"
+                class="equipment-image exclusive-gear-image"
+                loading="lazy"
+              />
+            </template>
+
+            <!-- Placeholder if no gear data -->
+            <template v-else>
+              <svg class="lock-icon-small" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                <path fill="currentColor" d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
+              </svg>
+            </template>
+
+            <div class="tier-indicator" :class="{ 'placeholder-tier': !hasExclusiveGear }">
+              <template v-if="!hasExclusiveGear">
+                {{ $t('comingSoon') }}
+              </template>
+              <template v-else-if="getExclusiveGearDisplay().isLocked">
+                {{ $t('locked') }}
+              </template>
+              <template v-else>
+                {{ $t('tier') }}{{ getExclusiveGearDisplay().current }}
+                <span class="tier-target" v-if="!getExclusiveGearDisplay().isSame">
+                  → {{ $t('tier') }}{{ getExclusiveGearDisplay().target }}
+                </span>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -368,6 +417,12 @@ function getEquipmentDisplay(type: string): { current: number; target: number; i
   max-width: 85%;
   max-height: 85%;
   object-fit: cover;
+}
+
+.exclusive-gear-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .tier-indicator {

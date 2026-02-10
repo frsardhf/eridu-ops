@@ -12,6 +12,7 @@ import { updateGearsData } from '../stores/equipmentsStore';
 import { calculateAllMaterials } from '../hooks/useStudentUpgrade';
 import { calculateAllGears } from '../hooks/useStudentGear';
 import { getEquipmentDataByIdSync, getResourceDataByIdSync } from '../stores/resourceCacheStore';
+import { ResourceProps } from '../../types/resource';
 
 /**
  * Utility function to consolidate and sort materials
@@ -85,12 +86,14 @@ export async function preloadAllStudentsData() {
       const characterLevels = formData.characterLevels ?? DEFAULT_CHARACTER_LEVELS;
       const equipmentLevels = formData.equipmentLevels ?? {};
       const gradeLevels = formData.gradeLevels ?? {};
-      const gradeInfos = formData.gradeInfos ?? {};      
+      const gradeInfos = formData.gradeInfos ?? {};
+      const exclusiveGearLevel = formData.exclusiveGearLevel ?? {};      
       
       // Check if student has any upgrades
-      const hasAnyUpgrades = hasTargetUpgrades(characterLevels) || 
+      const hasAnyUpgrades = hasTargetUpgrades(characterLevels) ||
         hasTargetUpgrades(skillLevels) || hasTargetUpgrades(potentialLevels) ||
-        hasTargetUpgrades(equipmentLevels) || hasTargetUpgrades(gradeLevels);
+        hasTargetUpgrades(equipmentLevels) || hasTargetUpgrades(gradeLevels) ||
+        hasTargetUpgrades(exclusiveGearLevel);
 
       // Process student gears (if ANY upgrade type exists)
       if (hasAnyUpgrades) {
@@ -112,7 +115,8 @@ export async function preloadAllStudentsData() {
           student,
           equipmentLevels,
           gradeLevels,
-          gradeInfos
+          gradeInfos,
+          exclusiveGearLevel
         );
 
         // Add to store
@@ -130,10 +134,22 @@ export async function preloadAllStudentsData() {
  * Helper function to check if a student has any target upgrades
  */
 function hasTargetUpgrades(
-  levels: { current: number; target: number } | 
-  Record<string, { current: number; target: number }>
-) {
-  return Object.values(levels).some(level => level.target > level.current);
+  levels: { current?: number; target?: number } |
+  { [key: string]: { current?: number; target?: number } }
+): boolean {
+  // Handle single level object (like CharacterLevels or ExclusiveGearLevel)
+  if ('current' in levels && 'target' in levels) {
+    const current = (levels as { current?: number; target?: number }).current ?? 0;
+    const target = (levels as { current?: number; target?: number }).target ?? 0;
+    return target > current;
+  }
+  // Handle record of levels (like SkillLevels, PotentialLevels, EquipmentLevels)
+  return Object.values(levels).some(level => {
+    if (level && typeof level === 'object' && 'current' in level && 'target' in level) {
+      return (level.target ?? 0) > (level.current ?? 0);
+    }
+    return false;
+  });
 } 
 
 /**
@@ -243,30 +259,53 @@ export function getMaterialName(item: any, isEquipmentTab: boolean): string {
 }
 
 /**
+ * Check if a material uses item icons (not equipment blueprint icons)
+ * - Credits (5) and Eligma (23) use item icons
+ * - Gifts (Category === 'Favor') use item icons
+ * - Artifact items (SubCategory === 'Artifact') use item icons
+ * - Equipment blueprints use equipment icons with _piece suffix
+ */
+export function isItemIconMaterial(
+  material: Partial<ResourceProps> | undefined
+): boolean {
+
+  if (!material?.Id) return false;
+  // Credits and Eligma always use item icons
+  if ([5, 23].includes(material.Id)) return true;
+  // Gifts use item icons
+  if (material.Category === 'Favor') return true;
+  // Artifact items (exclusive gear materials) use item icons
+  if (material.SubCategory === 'Artifact') return true;
+  return false;
+}
+
+/**
  * Helper function to get material icon source
  */
 export function getMaterialIconSrc(
-  item: any, 
-  isEquipmentTab: boolean, 
-  currentExpIcon: number, 
-  currentExpBall: number
+  item: any,
+  isEquipmentTab?: boolean,
+  currentExpIcon?: number,
+  currentExpBall?: number
 ): string {
   if (!item.material?.Icon) return '';
-  
+
   const isExp = isExpReport(item.material?.Id);
   const isBall = isExpBall(item.material?.Id);
-  
-  if (isExp) {
+
+  if (isExp && currentExpIcon) {
     const expResource = getResourceDataByIdSync(currentExpIcon);
     return `https://schaledb.com/images/item/icon/${expResource?.Icon}.webp`;
   }
-  
-  if (isBall) {
+
+  if (isBall && currentExpBall) {
     const expBallResource = getEquipmentDataByIdSync(currentExpBall);
     return `https://schaledb.com/images/equipment/icon/${expBallResource?.Icon}.webp`;
   }
-  
-  const baseUrl = isEquipmentTab ? 'equipment' : 'item';
-  const suffix = isEquipmentTab && item.material?.Id !== 5 ? '_piece' : '';
+
+  // For equipment tab, check if it's a material that uses item icons
+  const useItemIcon = !isEquipmentTab || isItemIconMaterial(item.material);
+  const baseUrl = useItemIcon ? 'item' : 'equipment';
+  const suffix = !useItemIcon ? '_piece' : '';
   return `https://schaledb.com/images/${baseUrl}/icon/${item.material.Icon}${suffix}.webp`;
 }

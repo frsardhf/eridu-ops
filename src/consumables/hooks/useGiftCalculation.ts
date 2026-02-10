@@ -2,6 +2,8 @@ import { getResourceDataByIdSync, getAllResourcesFromCache } from '../stores/res
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
+import { getAllGearsData } from '../stores/equipmentsStore';
+import { Material } from '../../types/upgrade';
 
 // Student gift usage for Student → Gifts display
 interface StudentGiftUsage {
@@ -119,6 +121,47 @@ export function useGiftCalculation() {
       }
     });
 
+    // Also include exclusive gear gift materials (Category === 'Favor') from gears store
+    const allGearsData = getAllGearsData();
+    Object.entries(allGearsData).forEach(([studentId, materials]) => {
+      const student = studentsCollection[studentId];
+      if (!student) return;
+
+      (materials as Material[]).forEach(material => {
+        const materialId = material.material?.Id;
+        const category = material.material?.Category;
+        // Only process gift materials (Category === 'Favor')
+        if (!materialId || category !== 'Favor') return;
+
+        const gift = getResourceDataByIdSync(materialId);
+        if (!gift) return;
+
+        const quantity = material.materialQuantity;
+        if (quantity <= 0) return;
+
+        const owned = resources[materialId]?.QuantityOwned ?? 0;
+
+        let displayQuantity = quantity;
+        if (viewMode === 'missing') {
+          if (owned >= quantity) return; // Not missing
+          displayQuantity = quantity - owned;
+        }
+
+        // Add to existing student entry or create new one
+        if (studentGiftsMap.has(studentId)) {
+          const existing = studentGiftsMap.get(studentId)!;
+          existing.gifts.push({ gift, quantity: displayQuantity });
+          existing.totalGifts += displayQuantity;
+        } else {
+          studentGiftsMap.set(studentId, {
+            student,
+            totalGifts: displayQuantity,
+            gifts: [{ gift, quantity: displayQuantity }]
+          });
+        }
+      });
+    });
+
     return Array.from(studentGiftsMap.values())
       .sort((a, b) => b.totalGifts - a.totalGifts);
   };
@@ -161,6 +204,32 @@ export function useGiftCalculation() {
       if (!gift) return;
 
       const owned = resources[parseInt(giftId)]?.QuantityOwned ?? 0;
+
+      if (viewMode === 'missing') {
+        if (owned < quantity) {
+          gifts.push({ gift, quantity: quantity - owned });
+        }
+      } else {
+        gifts.push({ gift, quantity });
+      }
+    });
+
+    // Process exclusive gear gift materials (Category === 'Favor') from gears store
+    const allGearsData = getAllGearsData();
+    const studentGearMaterials = allGearsData[studentId] || [];
+    (studentGearMaterials as Material[]).forEach(material => {
+      const materialId = material.material?.Id;
+      const category = material.material?.Category;
+      // Only process gift materials (Category === 'Favor')
+      if (!materialId || category !== 'Favor') return;
+
+      const gift = getResourceDataByIdSync(materialId);
+      if (!gift) return;
+
+      const quantity = material.materialQuantity;
+      if (quantity <= 0) return;
+
+      const owned = resources[materialId]?.QuantityOwned ?? 0;
 
       if (viewMode === 'missing') {
         if (owned < quantity) {

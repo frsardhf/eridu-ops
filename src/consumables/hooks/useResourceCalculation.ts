@@ -141,13 +141,23 @@ export function useResourceCalculation() {
       });
     });
 
-    // Combine credits from gears to materials
+    // Combine credits and eligma from gears to materials
+    // Also include exclusive gear's normal materials (non-gift items)
     Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {
+        const materialId = material.material?.Id;
+        const subcategory = material.material?.SubCategory;
         if (material.type === 'credits') {
           creditsQuantity += material.materialQuantity;
-        } else if (material.type === 'materials') {
+        } else if (materialId === ELIGMAS_ID) {
           eligmasQuantity += material.materialQuantity;
+        } else if (subcategory === 'Artifact' && materialId) {
+          if (materialMap.has(materialId)) {
+            const existing = materialMap.get(materialId)!;
+            existing.materialQuantity += material.materialQuantity;
+          } else {
+            materialMap.set(materialId, { ...material });
+          }
         }
       });
     });

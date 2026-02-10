@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
-import '../../../../styles/resourceDisplay.css';
-import { Material } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
+import { 
+  formatLargeNumber, 
+  getMaterialIconSrc 
+} from '../../../../consumables/utils/materialUtils';
+import { Material } from '../../../../types/upgrade';
+import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
   materials: Material[];
@@ -69,11 +72,9 @@ const hasMaterials = computed(() => {
           :title="item.material?.Name || $t('material')"
         >
           <div class="resource-content">
-            <img 
+            <img
               v-if="item.material?.Icon"
-              :src="[5, 23].includes(item.material?.Id) 
-                ? `https://schaledb.com/images/item/icon/${item.material.Icon}.webp`
-                : `https://schaledb.com/images/equipment/icon/${item.material.Icon}_piece.webp`"
+              :src="getMaterialIconSrc(item, true)"
               :alt="item.material?.Name || $t('material')"
               class="resource-icon"
             />
