@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { ModalProps } from '../../../../types/student';
 import { EquipmentType } from '../../../../types/gear';
 import { getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
@@ -7,12 +8,16 @@ import { $t } from '../../../../locales';
 const props = defineProps<{
   student: ModalProps | null;
   equipmentLevels: Record<string, { current: number; target: number; }>;
+  exclusiveGearLevel: { current?: number; target?: number };
+  hasExclusiveGear: boolean;
+  maxUnlockableGearTier: number;
   allGearsMaxed: boolean;
   targetGearsMaxed: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'update-equipment', type: EquipmentType, current: number, target: number): void;
+  (e: 'update-exclusive-gear', current: number, target: number): void;
   (e: 'toggle-max-gears', checked: boolean): void;
   (e: 'toggle-max-target-gears', checked: boolean): void;
 }>();
@@ -123,6 +128,34 @@ function updateEquipmentTarget(type: string, value: number) {
 function isTargetMaxLevel(target: number, type: string) {
   const maxTier = getMaxTierForType(type);
   return target === maxTier;
+}
+
+// Exclusive gear computed with defaults
+const gearCurrent = computed(() => props.exclusiveGearLevel?.current ?? 0);
+const gearTarget = computed(() => props.exclusiveGearLevel?.target ?? 0);
+
+// Exclusive gear functions
+function getExclusiveGearIconUrl(studentId: number): string {
+  return `https://schaledb.com/images/gear/full/${studentId}.webp`;
+}
+
+function updateExclusiveGearCurrent(value: number) {
+  const maxTier = props.maxUnlockableGearTier;
+  if (value >= 0 && value <= maxTier) {
+    const newTarget = Math.max(value, gearTarget.value);
+    emit('update-exclusive-gear', value, newTarget);
+  }
+}
+
+function updateExclusiveGearTarget(value: number) {
+  if (value >= 0 && value <= 2) {
+    const current = gearCurrent.value;
+    if (current > value) {
+      emit('update-exclusive-gear', value, value);
+    } else {
+      emit('update-exclusive-gear', current, value);
+    }
+  }
 }
 </script>
 
@@ -277,34 +310,134 @@ function isTargetMaxLevel(target: number, type: string) {
         </div>
       </div>
 
-      <!-- Exclusive Gear Placeholder -->
-      <div class="equipment-item placeholder-item">
-        <div class="level-control placeholder-control">
-          <div class="custom-number-input disabled">
-            <button class="control-button min-button disabled" disabled><span>«</span></button>
-            <button class="control-button decrement-button disabled" disabled><span>−</span></button>
-            <input type="number" value="1" disabled class="level-input current-level disabled" />
-            <button class="control-button increment-button disabled" disabled><span>+</span></button>
-            <button class="control-button max-button disabled" disabled><span>»</span></button>
+      <!-- Exclusive Gear -->
+      <div class="equipment-item" :class="{ 'placeholder-item': !hasExclusiveGear }">
+        <!-- Current Level Control -->
+        <div class="level-control" :class="{ 'placeholder-control': !hasExclusiveGear }">
+          <div class="custom-number-input" :class="{ disabled: !hasExclusiveGear || maxUnlockableGearTier === 0 }">
+            <button
+              class="control-button min-button"
+              :class="{ disabled: !hasExclusiveGear || gearCurrent <= 0 }"
+              @click="updateExclusiveGearCurrent(0)"
+              :disabled="!hasExclusiveGear || gearCurrent <= 0"
+            ><span>«</span></button>
+            <button
+              class="control-button decrement-button"
+              :class="{ disabled: !hasExclusiveGear || gearCurrent <= 0 }"
+              @click="updateExclusiveGearCurrent(gearCurrent - 1)"
+              :disabled="!hasExclusiveGear || gearCurrent <= 0"
+            ><span>−</span></button>
+            <input
+              type="number"
+              name="exclusive-gear-current"
+              :value="gearCurrent"
+              @input="(e) => updateExclusiveGearCurrent(parseInt((e.target as HTMLInputElement).value))"
+              :min="0"
+              :max="maxUnlockableGearTier"
+              class="level-input current-level"
+              :disabled="!hasExclusiveGear || maxUnlockableGearTier === 0"
+            />
+            <button
+              class="control-button increment-button"
+              :class="{ disabled: !hasExclusiveGear || gearCurrent >= maxUnlockableGearTier }"
+              @click="updateExclusiveGearCurrent(gearCurrent + 1)"
+              :disabled="!hasExclusiveGear || gearCurrent >= maxUnlockableGearTier"
+            ><span>+</span></button>
+            <button
+              class="control-button max-button"
+              :class="{ disabled: !hasExclusiveGear || gearCurrent >= maxUnlockableGearTier }"
+              @click="updateExclusiveGearCurrent(maxUnlockableGearTier)"
+              :disabled="!hasExclusiveGear || gearCurrent >= maxUnlockableGearTier"
+            ><span>»</span></button>
           </div>
         </div>
 
-        <div class="equipment-icon placeholder-icon">
-          <div class="equipment-type-badge placeholder-badge">{{ $t('exclusiveGear') }}</div>
-          <svg class="lock-icon-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <div class="tier-indicator placeholder-tier">{{ $t('comingSoon') }}</div>
+        <!-- Gear Icon -->
+        <div class="equipment-icon" :class="{ 'placeholder-icon': !hasExclusiveGear }">
+          <div class="equipment-type-badge" :class="{ 'placeholder-badge': !hasExclusiveGear }">
+            {{ $t('exclusiveGear') }}
+          </div>
+
+          <!-- Show gear image if student has gear -->
+          <template v-if="hasExclusiveGear">
+            <img
+              :src="getExclusiveGearIconUrl(student?.Id || 0)"
+              :alt="student?.Gear?.Name || $t('exclusiveGear')"
+              class="equipment-image"
+              loading="lazy"
+            />
+            <!-- Lock overlay when bond too low -->
+            <div v-if="maxUnlockableGearTier === 0" class="gear-lock-overlay">
+              <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <span class="lock-text">{{ $t('bondRequired') }}</span>
+            </div>
+          </template>
+
+          <!-- Empty placeholder if no gear data -->
+          <template v-else>
+            <svg class="lock-icon-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </template>
+
+          <div class="tier-indicator" :class="{ 'placeholder-tier': !hasExclusiveGear }">
+            <template v-if="!hasExclusiveGear">
+              {{ $t('comingSoon') }}
+            </template>
+            <template v-else-if="gearCurrent === 0">
+              {{ $t('locked') }}
+            </template>
+            <template v-else>
+              {{ $t('tier') }}{{ gearCurrent }}
+              <span class="tier-target" v-if="gearCurrent !== gearTarget">
+                → {{ $t('tier') }}{{ gearTarget }}
+              </span>
+            </template>
+          </div>
         </div>
 
-        <div class="level-control placeholder-control">
-          <div class="custom-number-input disabled">
-            <button class="control-button min-button disabled" disabled><span>«</span></button>
-            <button class="control-button decrement-button disabled" disabled><span>−</span></button>
-            <input type="number" value="1" disabled class="level-input current-level disabled" />
-            <button class="control-button increment-button disabled" disabled><span>+</span></button>
-            <button class="control-button max-button disabled" disabled><span>»</span></button>
+        <!-- Target Level Control -->
+        <div class="level-control" :class="{ 'placeholder-control': !hasExclusiveGear }">
+          <div class="custom-number-input" :class="{ disabled: !hasExclusiveGear }">
+            <button
+              class="control-button min-button"
+              :class="{ disabled: !hasExclusiveGear || gearTarget <= 0 }"
+              @click="updateExclusiveGearTarget(0)"
+              :disabled="!hasExclusiveGear || gearTarget <= 0"
+            ><span>«</span></button>
+            <button
+              class="control-button decrement-button"
+              :class="{ disabled: !hasExclusiveGear || gearTarget <= 0 }"
+              @click="updateExclusiveGearTarget(gearTarget - 1)"
+              :disabled="!hasExclusiveGear || gearTarget <= 0"
+            ><span>−</span></button>
+            <input
+              type="number"
+              name="exclusive-gear-target"
+              :value="gearTarget"
+              @input="(e) => updateExclusiveGearTarget(parseInt((e.target as HTMLInputElement).value))"
+              :min="0"
+              :max="2"
+              class="level-input target-level"
+              :class="{ 'max-level': gearTarget === 2 }"
+              :disabled="!hasExclusiveGear"
+            />
+            <button
+              class="control-button increment-button"
+              :class="{ disabled: !hasExclusiveGear || gearTarget >= 2 }"
+              @click="updateExclusiveGearTarget(gearTarget + 1)"
+              :disabled="!hasExclusiveGear || gearTarget >= 2"
+            ><span>+</span></button>
+            <button
+              class="control-button max-button"
+              :class="{ disabled: !hasExclusiveGear || gearTarget >= 2 }"
+              @click="updateExclusiveGearTarget(2)"
+              :disabled="!hasExclusiveGear || gearTarget >= 2"
+            ><span>»</span></button>
           </div>
         </div>
       </div>
@@ -617,5 +750,35 @@ function isTargetMaxLevel(target: number, type: string) {
 
 .level-input.disabled {
   cursor: not-allowed;
+}
+
+/* Gear Lock Overlay (when bond too low) */
+.gear-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  z-index: 3;
+}
+
+.lock-icon {
+  width: 24px;
+  height: 24px;
+  color: white;
+  opacity: 0.8;
+}
+
+.lock-text {
+  font-size: 0.7rem;
+  color: white;
+  margin-top: 4px;
+  text-align: center;
 }
 </style>

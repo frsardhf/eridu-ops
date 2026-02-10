@@ -30,6 +30,14 @@ const isPassiveEnhanced = computed(() => {
   return gradeLevel.value >= 7;
 });
 
+const exclusiveGearLevel = computed(() => {
+  return studentData.value?.exclusiveGearLevel?.current || 0;
+});
+
+const isBasicEnhanced = computed(() => {
+  return exclusiveGearLevel.value >= 2;
+});
+
 const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 
 const skillLabels: Record<SkillType, string> = {
@@ -96,10 +104,13 @@ function getLevelDisplay(skillType: SkillType): { current: number; target: numbe
   };
 }
 
-// Get the appropriate skill data (handles WeaponPassive for enhanced Passive)
+// Get the appropriate skill data (handles WeaponPassive for enhanced Passive, GearPublic for enhanced Basic)
 function getSkillData(skillType: SkillType) {
   if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
     return props.student.Skills.WeaponPassive;
+  }
+  if (skillType === 'Public' && isBasicEnhanced.value && props.student?.Skills?.GearPublic) {
+    return props.student.Skills.GearPublic;
   }
   return props.student?.Skills?.[skillType];
 }
@@ -154,6 +165,14 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
           <!-- Enhanced overlay for Passive -->
           <div
             v-if="skillType === 'Passive' && isPassiveEnhanced"
+            class="enhanced-overlay"
+            :style="{ backgroundColor: bulletTypeColor }"
+          >
+            +
+          </div>
+          <!-- Enhanced overlay for Public (GearPublic) -->
+          <div
+            v-if="skillType === 'Public' && isBasicEnhanced"
             class="enhanced-overlay"
             :style="{ backgroundColor: bulletTypeColor }"
           >

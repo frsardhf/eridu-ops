@@ -42,3 +42,19 @@ export interface EquipmentSettings {
   icon: string;
   name: string;
 }
+
+export interface ExclusiveGearLevel {
+  current?: number;  // 0 = locked, 1 = T1, 2 = T2
+  target?: number;
+}
+
+export interface StudentGear {
+  Released: number[];        // [0] = JP release, [1] = Global release
+  StatType: string[];        // e.g., ["AttackPower", "MaxHP"]
+  StatValue: number[][];     // Stats per tier [[T1 values], [T2 values]]
+  TierUpMaterial: number[];  // [giftId, itemId1, itemId2]
+  TierUpMaterialAmount: number[]; // [giftQty, itemQty1, itemQty2]
+  Name: string;              // Gear name
+  Desc: string;              // Gear description
+  Icon: string;              // Icon name
+}

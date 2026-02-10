@@ -19,9 +19,9 @@ import {
   Material,
 } from '../../types/upgrade';
 import { consolidateAndSortMaterials } from '../utils/materialUtils';
-import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
+import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { updateGearsData } from '../stores/equipmentsStore';
-import { useGearCalculation } from './useGearCalculation';
+import type { ExclusiveGearLevel } from '../../types/gear';
 
 // Function to get maximum tier for each equipment type
 async function getMaxTierForType(type: string): Promise<number> {
@@ -262,11 +262,70 @@ export function calculateGradeMaterialsNeeded(
   return materialsNeeded;
 }
 
+// Calculate materials needed for exclusive gear upgrade (T1→T2)
+export function calculateExclusiveGearMaterials(
+  student: StudentProps | null,
+  exclusiveGearLevel: ExclusiveGearLevel | null | undefined
+): Material[] {
+  const materialsNeeded: Material[] = [];
+
+  // Guard against undefined/null exclusiveGearLevel
+  if (!exclusiveGearLevel) {
+    return materialsNeeded;
+  }
+
+  // Check if student has gear data and upgrade is needed
+  if (!student?.Gear || Object.keys(student.Gear).length === 0) {
+    return materialsNeeded;
+  }
+
+  const current = exclusiveGearLevel.current ?? 0;
+  const target = exclusiveGearLevel.target ?? 0;
+
+  if (current >= target) {
+    return materialsNeeded;
+  }
+
+  // Only T1→T2 upgrade costs materials (T0→T1 is free, just needs bond)
+  // TierUpMaterial/TierUpMaterialAmount are nested arrays: [[tier1 materials], [tier2 materials], ...]
+  // Index 0 = T1→T2 upgrade materials
+  if (current < 2 && target >= 2) {
+    const gearData = student.Gear as any;
+    const tierUpMaterials = gearData.TierUpMaterial?.[0] || []; // First array = T1→T2 materials
+    const tierUpAmounts = gearData.TierUpMaterialAmount?.[0] || []; // First array = T1→T2 amounts
+
+    // Add the upgrade materials (typically 3: 1 gift + 2 items)
+    tierUpMaterials.forEach((materialId: number, index: number) => {
+      const materialData = getResourceDataByIdSync(materialId);
+      if (materialData && tierUpAmounts[index]) {
+        materialsNeeded.push({
+          material: materialData,
+          materialQuantity: tierUpAmounts[index],
+          type: 'materials'
+        });
+      }
+    });
+
+    // Add 500k credits for T1→T2 upgrade
+    const creditsData = getResourceDataByIdSync(CREDITS_ID);
+    if (creditsData) {
+      materialsNeeded.push({
+        material: creditsData,
+        materialQuantity: 500000,
+        type: 'credits'
+      });
+    }
+  }
+
+  return materialsNeeded;
+}
+
 export function calculateAllGears(
   student: StudentProps | null,
   equipmentLevels: EquipmentLevels,
   gradeLevels: GradeLevels,
-  gradeInfos: GradeInfos
+  gradeInfos: GradeInfos,
+  exclusiveGearLevel: ExclusiveGearLevel
 ): Material[] {
   // Collect all materials
   const materials: Material[] = [];
@@ -275,6 +334,7 @@ export function calculateAllGears(
   materials.push(...calculateGradeMaterialsNeeded(gradeLevels, gradeInfos));
   materials.push(...calculateEquipmentCreditsNeeded(equipmentLevels));
   materials.push(...calculateEquipmentMaterialsNeeded(student, equipmentLevels));
+  materials.push(...calculateExclusiveGearMaterials(student, exclusiveGearLevel));
 
   // Consolidate and sort materials
   return consolidateAndSortMaterials(materials);
@@ -293,10 +353,32 @@ export function useStudentGear(props: {
   const equipmentLevels = ref<EquipmentLevels>({});
   const gradeLevels = ref<GradeLevels>({});
   const gradeInfos = ref<GradeInfos>({});
+  const exclusiveGearLevel = ref<ExclusiveGearLevel>({});
 
   // Max gear states
   const allGearsMaxed = ref(false);
   const targetGearsMaxed = ref(false);
+
+  // Exclusive gear computed properties
+  const hasExclusiveGear = computed(() => {
+    return !!(props.student?.Gear && Object.keys(props.student.Gear).length > 0);
+  });
+
+  const currentBond = computed(() => {
+    if (!props.student?.Id) return 0;
+    const form = studentDataStore.value[props.student.Id];
+    return form?.bondDetailData?.currentBond ?? 0;
+  });
+
+  const canUnlockT1 = computed(() => currentBond.value > 15);
+  const canUnlockT2 = computed(() => currentBond.value > 20);
+
+  const maxUnlockableGearTier = computed(() => {
+    if (!hasExclusiveGear.value) return 0;
+    if (canUnlockT2.value) return 2;
+    if (canUnlockT1.value) return 1;
+    return 0;
+  });
 
   // Synchronous version of getMaxTierForType using cached data
   function getMaxTierForTypeSync(type: string): number {
@@ -389,7 +471,8 @@ export function useStudentGear(props: {
 
     const starGrade = props.student?.StarGrade ?? 1;
     gradeLevels.value = { current: starGrade, target: starGrade };
-    gradeInfos.value = { owned: 0, price: 1, purchasable: 20};
+    gradeInfos.value = { owned: 0, price: 1, purchasable: 20 };
+    exclusiveGearLevel.value = { current: 0, target: 0 };
   }
 
   // Watch for changes to isVisible to load data when modal opens
@@ -412,7 +495,7 @@ export function useStudentGear(props: {
   });
 
   // Watch for changes to form data and save to IndexedDB
-  watch([equipmentLevels, gradeLevels, gradeInfos], async () => {
+  watch([equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel], async () => {
     if (props.student && props.isVisible && !isLoading.value) {
       await saveToIndexedDB();
       updateStudentData(props.student.Id);
@@ -439,7 +522,8 @@ export function useStudentGear(props: {
       const dataToSave = {
         equipmentLevels: { ...equipmentLevels.value },
         gradeLevels: { ...gradeLevels.value },
-        gradeInfos: { ...gradeInfos.value }
+        gradeInfos: { ...gradeInfos.value },
+        exclusiveGearLevel: { ...exclusiveGearLevel.value }
       };
 
       const savedData = await saveFormData(props.student!.Id, dataToSave);
@@ -464,7 +548,8 @@ export function useStudentGear(props: {
       const refs = {
         equipmentLevels,
         gradeLevels,
-        gradeInfos
+        gradeInfos,
+        exclusiveGearLevel
       };
 
       const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
@@ -477,7 +562,8 @@ export function useStudentGear(props: {
       const defaultValues = {
         equipmentLevels: defaultEquipmentLevels,
         gradeLevels: { current: starGrade, target: starGrade },
-        gradeInfos: { owned: 0, price: 1, purchasable: 20 }
+        gradeInfos: { owned: 0, price: 1, purchasable: 20 },
+        exclusiveGearLevel: { current: 0, target: 0 }
       };
 
       // Load data - defaults are initialized by StudentModal before composables load
@@ -501,7 +587,8 @@ export function useStudentGear(props: {
       props.student,
       equipmentLevels.value,
       gradeLevels.value,
-      gradeInfos.value
+      gradeInfos.value,
+      exclusiveGearLevel.value
     );
   });
 
@@ -561,6 +648,23 @@ export function useStudentGear(props: {
     }
   };
 
+  // Function to handle updates for exclusive gear level
+  const handleExclusiveGearUpdate = (current: number, target: number) => {
+    const maxTier = maxUnlockableGearTier.value;
+
+    // Clamp current to valid range (0 to maxUnlockable)
+    current = Math.min(Math.max(0, current), maxTier);
+    // Clamp target to valid range (current to 2)
+    target = Math.min(Math.max(current, target), 2);
+
+    exclusiveGearLevel.value = { current, target };
+
+    if (props.student && props.isVisible) {
+      saveToIndexedDB();
+      updateStudentData(props.student.Id);
+    }
+  };
+
   function closeModal() {
     saveToIndexedDB();
     emit('close');
@@ -581,6 +685,11 @@ export function useStudentGear(props: {
     allGearsMaxed,
     targetGearsMaxed,
     toggleMaxAllGears,
-    toggleMaxTargetGears
+    toggleMaxTargetGears,
+    // Exclusive gear
+    exclusiveGearLevel,
+    hasExclusiveGear,
+    maxUnlockableGearTier,
+    handleExclusiveGearUpdate
   };
 }

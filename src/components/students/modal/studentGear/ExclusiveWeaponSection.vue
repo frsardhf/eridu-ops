@@ -244,6 +244,8 @@ const isWeaponLocked = computed(() => gradeState.value.current <= 5);
   display: flex;
   justify-content: center;
   background: var(--background-primary);
+  max-height: 160px;
+  overflow: hidden;
 }
 
 .weapon-preview {
@@ -282,8 +284,9 @@ const isWeaponLocked = computed(() => gradeState.value.current <= 5);
 }
 
 .weapon-icon {
-  min-width: 100%;
-  min-height: 100%;
+  width: 100%;
+  height: auto;
+  max-height: 160px;
   object-fit: contain;
 }
 

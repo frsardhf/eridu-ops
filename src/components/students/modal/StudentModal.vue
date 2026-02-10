@@ -109,6 +109,11 @@ const {
   targetGearsMaxed,
   toggleMaxAllGears,
   toggleMaxTargetGears,
+  // Exclusive gear
+  exclusiveGearLevel,
+  hasExclusiveGear,
+  maxUnlockableGearTier,
+  handleExclusiveGearUpdate,
 } = useStudentGear(props, emit);
 
 // Navigation
@@ -259,6 +264,8 @@ onUnmounted(() => {
               :student="student"
               :grade-levels="gradeLevels"
               :equipment-levels="equipmentLevels"
+              :exclusive-gear-level="exclusiveGearLevel"
+              :has-exclusive-gear="hasExclusiveGear"
             />
           </div>
         </div>
@@ -354,9 +361,13 @@ onUnmounted(() => {
             <StudentEquipmentGrowth
               :student="student"
               :equipment-levels="equipmentLevels"
+              :exclusive-gear-level="exclusiveGearLevel"
+              :has-exclusive-gear="hasExclusiveGear"
+              :max-unlockable-gear-tier="maxUnlockableGearTier"
               :all-gears-maxed="allGearsMaxed"
               :target-gears-maxed="targetGearsMaxed"
               @update-equipment="handleEquipmentUpdate"
+              @update-exclusive-gear="handleExclusiveGearUpdate"
               @toggle-max-gears="toggleMaxAllGears"
               @toggle-max-target-gears="toggleMaxTargetGears"
             />

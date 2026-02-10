@@ -12,6 +12,7 @@ export interface ResourceProps {
   Tags: string[];
   Description?: string;
   LevelUpFeedExp?: number;
+  SubCategory?: string;
 }
 
 /**

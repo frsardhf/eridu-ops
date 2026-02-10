@@ -1,4 +1,4 @@
-import { EquipmentType } from "./gear";
+import { EquipmentType, StudentGear } from "./gear";
 import { GiftProps } from "./gift";
 import { ResourceProps } from "./resource";
 
@@ -11,6 +11,7 @@ export interface StudentProps {
   ElephIcon: string;
   Gifts: GiftProps[];
   Boxes: GiftProps[];
+  Gear: StudentGear;
   Equipment: string[] | EquipmentType[];
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];

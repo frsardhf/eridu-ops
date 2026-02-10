@@ -109,7 +109,10 @@ export function useGearCalculation() {
     Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
-        if (!materialId || [5, 23].includes(materialId)) return; // Skip credits and eligmas (ID: 5, 23)
+        // Skip credits (5) and eligma (23) - they go to Items tab
+        // Skip exclusive gear materials (type materials) - they go to Items/Gifts tabs
+        if (!materialId || [5, 23].includes(materialId)) return;
+        if (material.type === 'materials') return;
 
         if (materialMap.has(materialId)) {
           const existing = materialMap.get(materialId)!;
