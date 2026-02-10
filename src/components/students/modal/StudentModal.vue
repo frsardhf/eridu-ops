@@ -16,10 +16,9 @@ import StudentGiftGrid from './studentBond/StudentGiftGrid.vue';
 import StudentLevelSection from './studentUpgrade/StudentLevelSection.vue';
 import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vue';
 import StudentSkillSection from './studentUpgrade/StudentSkillSection.vue';
-import StudentMaterialsSection from './studentUpgrade/StudentMaterialsSection.vue';
+import MaterialsSection from './shared/MaterialsSection.vue';
 import StudentEquipmentGrowth from './studentGear/EquipmentGrowthSection.vue';
 import StudentGradeGrowth from './studentGear/ExclusiveWeaponSection.vue';
-import EquipmentMaterialsSection from './studentGear/EquipmentMaterialsSection.vue';
 import ElephEligmaSection from './studentGear/ElephEligmaSection.vue';
 import StudentInfoMini from './studentInfo/StudentInfoMini.vue';
 import StudentInfoSkills from './studentInfo/StudentInfoSkills.vue';
@@ -337,9 +336,8 @@ onUnmounted(() => {
               @toggle-max-target-potentials="toggleMaxTargetPotentials"
             />
 
-            <StudentMaterialsSection
-              :all-materials="allMaterialsNeeded"
-              :student="student"
+            <MaterialsSection
+              :materials="allMaterialsNeeded"
             />
           </div>
         </div>
@@ -378,9 +376,9 @@ onUnmounted(() => {
               @update-grade="handleGradeUpdate"
             />
 
-            <EquipmentMaterialsSection
+            <MaterialsSection
               :materials="equipmentMaterialsNeeded"
-              :student="student"
+              :is-equipment-tab="true"
             />
           </div>
         </div>

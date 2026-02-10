@@ -1,54 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { $t } from '../../../../locales';
-import { 
-  formatLargeNumber, 
-  getMaterialIconSrc 
+import {
+  formatLargeNumber,
+  getMaterialIconSrc,
+  buildMaterialMap,
+  sortMaterials
 } from '../../../../consumables/utils/materialUtils';
 import { Material } from '../../../../types/upgrade';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
   materials: Material[];
-  student?: Record<string, any> | null;
+  isEquipmentTab?: boolean;
 }>();
 
-// Calculate cumulative materials needed by combining all equipment types
 const cumulativeMaterials = computed(() => {
   if (!props.materials.length) return [];
-
-  // Group materials by ID
-  const materialMap = new Map();
-  
-  // Process equipment materials
-  props.materials.forEach(item => {
-    const materialId = item.material?.Id;
-    // Skip if material is invalid
-    if (!materialId) return;
-    
-    // If this material type already exists in the map, update quantities
-    if (materialMap.has(materialId)) {
-      const existingEntry = materialMap.get(materialId);
-      existingEntry.materialQuantity += item.materialQuantity;
-    } else {
-      // Create a new entry for this material type
-      materialMap.set(materialId, {
-        material: item.material,
-        materialQuantity: item.materialQuantity
-      });
-    }
-  });
-  
-  // Convert map to array and sort by material ID
-  return Array.from(materialMap.values())
-    .sort((a, b) => {
-      const aId = a.material?.Id || 0;
-      const bId = b.material?.Id || 0;
-      return aId - bId;
-    });
+  return Array.from(buildMaterialMap(props.materials).values()).sort(sortMaterials);
 });
 
-// Determine if any materials are needed
 const hasMaterials = computed(() => {
   return cumulativeMaterials.value.length > 0;
 });
@@ -57,16 +28,15 @@ const hasMaterials = computed(() => {
 <template>
   <div class="materials-section">
     <h3 class="section-title">{{ $t('totalMaterialsNeeded') }}</h3>
-    
-    <!-- No materials message -->
+
     <div v-if="!hasMaterials" class="no-materials">
       {{ $t('noMaterialsNeeded') }}
     </div>
-    
+
     <div v-else class="materials-content">
       <div class="resources-grid">
-        <div 
-          v-for="(item, index) in cumulativeMaterials" 
+        <div
+          v-for="(item, index) in cumulativeMaterials"
           :key="index"
           class="resource-item"
           :title="item.material?.Name || $t('material')"
@@ -74,7 +44,7 @@ const hasMaterials = computed(() => {
           <div class="resource-content">
             <img
               v-if="item.material?.Icon"
-              :src="getMaterialIconSrc(item, true)"
+              :src="getMaterialIconSrc(item, props.isEquipmentTab)"
               :alt="item.material?.Name || $t('material')"
               class="resource-icon"
             />
@@ -120,4 +90,4 @@ const hasMaterials = computed(() => {
   border-radius: 8px;
   padding: 10px;
 }
-</style> 
+</style>

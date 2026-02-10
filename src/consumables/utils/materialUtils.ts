@@ -1,12 +1,13 @@
-import { getResourceDataById, getEquipmentDataById } from './studentStorage';
 import { getAllFormData } from '../services/dbService';
 import { useStudentData } from '../hooks/useStudentData';
-import { 
+import {
   Material,
-  DEFAULT_SKILL_LEVELS, 
+  DEFAULT_SKILL_LEVELS,
   DEFAULT_POTENTIAL_LEVELS,
-  DEFAULT_CHARACTER_LEVELS
+  DEFAULT_CHARACTER_LEVELS,
+  ELIGMAS_ID
 } from '../../types/upgrade';
+import { CREDITS_ID } from '../constants/syntheticEntities';
 import { updateMaterialsData } from '../stores/materialsStore';
 import { updateGearsData } from '../stores/equipmentsStore';
 import { calculateAllMaterials } from '../hooks/useStudentUpgrade';
@@ -15,48 +16,60 @@ import { getEquipmentDataByIdSync, getResourceDataByIdSync } from '../stores/res
 import { ResourceProps } from '../../types/resource';
 
 /**
- * Utility function to consolidate and sort materials
- * Combines duplicate materials and sorts them by priority (credits first, then exp reports, then by ID)
+ * Builds a consolidated material map by summing quantities for duplicate IDs
  */
-export function consolidateAndSortMaterials(materials: Material[]): Material[] {
-  // Consolidate materials by ID
+export function buildMaterialMap(materials: Material[]): Map<number, Material> {
   const materialMap = new Map<number, Material>();
-  
   materials.forEach(item => {
     const materialId = item.material?.Id;
     if (!materialId) return;
-    
     if (materialMap.has(materialId)) {
-      // Update quantity for existing material
-      const existing = materialMap.get(materialId)!;
-      existing.materialQuantity += item.materialQuantity;
+      materialMap.get(materialId)!.materialQuantity += item.materialQuantity;
     } else {
-      // Create a new entry with a copy of the item
       materialMap.set(materialId, { ...item });
     }
   });
-  
-  // Convert map to array and sort by ID
-  return Array.from(materialMap.values())
-    .sort((a, b) => {
-      const aId = a.material?.Id ?? 0;
-      const bId = b.material?.Id ?? 0;
-      
-      // Always put credits (ID: 5) first
-      if (aId === 5) return -1;
-      if (bId === 5) return 1;
-      
-      // Put exp reports next (IDs: 10, 11, 12, 13)
-      const isExpReport = (id: number) => [10, 11, 12, 13].includes(id);
-      const isExpReportA = isExpReport(aId);
-      const isExpReportB = isExpReport(bId);
-      
-      if (isExpReportA && !isExpReportB) return -1;
-      if (!isExpReportA && isExpReportB) return 1;
-      
-      // For all other materials, sort by ID
-      return aId - bId;
-    });
+  return materialMap;
+}
+
+/**
+ * Sort comparator for materials by display priority:
+ * 1) Credits (id=5), 2) Eligma (id=23), 3) Exp reports & exp balls,
+ * 4) Gifts (Category='Favor'), 5) Artifacts (SubCategory='Artifact'), 6) rest by ID
+ */
+export function sortMaterials(a: Material, b: Material): number {
+  const aId = a.material?.Id ?? 0;
+  const bId = b.material?.Id ?? 0;
+
+  if (aId === CREDITS_ID) return -1;
+  if (bId === CREDITS_ID) return 1;
+
+  if (aId === ELIGMAS_ID) return -1;
+  if (bId === ELIGMAS_ID) return 1;
+
+  const aIsExp = isExpReport(aId) || isExpBall(aId);
+  const bIsExp = isExpReport(bId) || isExpBall(bId);
+  if (aIsExp && !bIsExp) return -1;
+  if (!aIsExp && bIsExp) return 1;
+
+  const aIsGift = a.material?.Category === 'Favor';
+  const bIsGift = b.material?.Category === 'Favor';
+  if (aIsGift && !bIsGift) return -1;
+  if (!aIsGift && bIsGift) return 1;
+
+  const aIsArtifact = a.material?.SubCategory === 'Artifact';
+  const bIsArtifact = b.material?.SubCategory === 'Artifact';
+  if (aIsArtifact && !bIsArtifact) return -1;
+  if (!aIsArtifact && bIsArtifact) return 1;
+
+  return aId - bId;
+}
+
+/**
+ * Consolidates duplicate materials and sorts them by display priority
+ */
+export function consolidateAndSortMaterials(materials: Material[]): Material[] {
+  return Array.from(buildMaterialMap(materials).values()).sort(sortMaterials);
 }
 
 /**

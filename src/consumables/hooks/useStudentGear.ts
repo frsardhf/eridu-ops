@@ -104,8 +104,8 @@ export function getEligmasForGrade(needed: number, price: number = 1, purchasabl
   return totalEligma || 0;
 }
 
-// Exported function to calculate equipment materials needed
-export function calculateEquipmentMaterialsNeeded(
+// Exported function to calculate equipment materials
+export function calculateEquipmentMaterials(
   student: StudentProps | null,
   equipmentLevels: EquipmentLevels
 ): Material[] {
@@ -176,7 +176,7 @@ export function calculateEquipmentMaterialsNeeded(
 }
 
 // Calculate credits needed for equipment upgrades
-export function calculateEquipmentCreditsNeeded(
+export function calculateEquipmentCredits(
   equipmentLevels: EquipmentLevels
 ): Material[] {
   const materialsNeeded: Material[] = [];
@@ -203,8 +203,8 @@ export function calculateEquipmentCreditsNeeded(
   return materialsNeeded;
 }
 
-// Calculate credits needed for equipment upgrades
-export function calculateGradeCreditsNeeded(
+// Calculate credits for grade upgrades
+export function calculateGradeCredits(
   gradeLevels: GradeLevels
 ): Material[] {
   const materialsNeeded: Material[] = [];
@@ -230,8 +230,8 @@ export function calculateGradeCreditsNeeded(
   return materialsNeeded;
 }
 
-// Calculate eligmas needed for equipment upgrades
-export function calculateGradeMaterialsNeeded(
+// Calculate materials for grade upgrades
+export function calculateGradeMaterials(
   gradeLevels: GradeLevels,
   gradeInfos: GradeInfos
 ): Material[] {
@@ -330,10 +330,10 @@ export function calculateAllGears(
   // Collect all materials
   const materials: Material[] = [];
 
-  materials.push(...calculateGradeCreditsNeeded(gradeLevels));
-  materials.push(...calculateGradeMaterialsNeeded(gradeLevels, gradeInfos));
-  materials.push(...calculateEquipmentCreditsNeeded(equipmentLevels));
-  materials.push(...calculateEquipmentMaterialsNeeded(student, equipmentLevels));
+  materials.push(...calculateGradeCredits(gradeLevels));
+  materials.push(...calculateGradeMaterials(gradeLevels, gradeInfos));
+  materials.push(...calculateEquipmentCredits(equipmentLevels));
+  materials.push(...calculateEquipmentMaterials(student, equipmentLevels));
   materials.push(...calculateExclusiveGearMaterials(student, exclusiveGearLevel));
 
   // Consolidate and sort materials
@@ -681,7 +681,7 @@ export function useStudentGear(props: {
     handleGradeInfoUpdate,
     getElephsForGrade,
     getEligmasForGrade,
-    calculateGradeMaterialsNeeded,
+    calculateGradeMaterials,
     allGearsMaxed,
     targetGearsMaxed,
     toggleMaxAllGears,
