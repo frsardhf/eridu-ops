@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue';
 import { StudentProps } from '../../types/student';
-import { getResources, saveResourceInventories } from '../utils/studentStorage';
+import { saveResourceInventories } from '../utils/studentStorage';
+import { getAllResourceInventories } from '../services/dbService';
 import { getAllResourcesFromCache, updateResourceInCache } from '../stores/resourceCacheStore';
 import type { CachedResource } from '../../types/resource';
 
@@ -46,19 +47,8 @@ export function useStudentResources(props: {
   async function loadResources() {
     isLoading.value = true;
     try {
-      const resources = await getResources();
-      if (resources) {
-        const quantities: Record<string, number> = {};
-
-        // Extract quantities from the stored material objects
-        Object.values(resources).forEach((material: any) => {
-          if (material && material.Id !== undefined && material.QuantityOwned !== undefined) {
-            quantities[material.Id] = material.QuantityOwned;
-          }
-        });
-
-        resourceFormData.value = quantities;
-      }
+      const inventories = await getAllResourceInventories();
+      resourceFormData.value = { ...inventories };
     } catch (error) {
       console.error('Error retrieving resources from IndexedDB:', error);
     } finally {

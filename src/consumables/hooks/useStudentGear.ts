@@ -3,8 +3,7 @@ import { ModalProps, StudentProps } from '../../types/student';
 import dataTable from '../../data/data.json';
 import {
   loadFormDataToRefs,
-  saveFormData,
-  getEquipments
+  saveFormData
 } from '../utils/studentStorage';
 import { getResourceDataByIdSync, getEquipmentDataByIdSync, getAllEquipmentFromCache } from '../stores/resourceCacheStore';
 import { 
@@ -22,19 +21,6 @@ import { consolidateAndSortMaterials } from '../utils/materialUtils';
 import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { updateGearsData } from '../stores/equipmentsStore';
 import type { ExclusiveGearLevel } from '../../types/gear';
-
-// Function to get maximum tier for each equipment type
-async function getMaxTierForType(type: string): Promise<number> {
-  const equipments = await getEquipments();
-  if (!equipments) return 10; // Default to 10 if data not found
-
-  // Find the equipment that matches the type
-  const equipment = Object.values(equipments).find(
-    (item: any) => item.Category === type
-  );
-
-  return equipment?.Tier ?? 10; // Return the tier if found, otherwise default to 10
-}
 
 // Get credits required for a specific equipment tier
 export function getCreditsForEquipmentTier(current: number, target: number) {
@@ -601,8 +587,8 @@ export function useStudentGear(props: {
   }, { immediate: true });
 
   // Function to handle updates for equipment levels
-  const handleEquipmentUpdate = async (type: EquipmentType, current: number, target: number) => {
-    const maxTier = await getMaxTierForType(type);
+  const handleEquipmentUpdate = (type: EquipmentType, current: number, target: number) => {
+    const maxTier = getMaxTierForTypeSync(type);
 
     if (current >= 1 && current <= maxTier && target >= current && target <= maxTier) {
       // Update the specified equipment type

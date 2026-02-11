@@ -1,7 +1,8 @@
 import { ref, watch } from 'vue';
 import { StudentProps } from '../../types/student';
-import { getEquipments, saveEquipmentInventories } from '../utils/studentStorage';
+import { saveEquipmentInventories } from '../utils/studentStorage';
 import { getAllEquipmentFromCache, updateEquipmentInCache } from '../stores/resourceCacheStore';
+import { getAllEquipmentInventories } from '../services/dbService';
 import type { CachedResource } from '../../types/resource';
 
 export function useStudentEquipment(props: {
@@ -46,19 +47,8 @@ export function useStudentEquipment(props: {
   async function loadEquipments() {
     isLoading.value = true;
     try {
-      const equipments = await getEquipments();
-      if (equipments) {
-        const quantities: Record<string, number> = {};
-
-        // Extract quantities from the stored equipment objects
-        Object.values(equipments).forEach((equipment: any) => {
-          if (equipment && equipment.Id !== undefined && equipment.QuantityOwned !== undefined) {
-            quantities[equipment.Id] = equipment.QuantityOwned;
-          }
-        });
-
-        equipmentFormData.value = quantities;
-      }
+      const inventories = await getAllEquipmentInventories();
+      equipmentFormData.value = { ...inventories };
     } catch (error) {
       console.error('Error retrieving equipments from IndexedDB:', error);
     } finally {

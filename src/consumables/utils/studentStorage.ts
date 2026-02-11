@@ -6,18 +6,11 @@ import {
   saveFormData as dbSaveFormData,
   getAllResourceInventories,
   getAllEquipmentInventories,
-  setResourceInventory,
-  setEquipmentInventory,
   saveResourceInventories as dbSaveResourceInventories,
   saveEquipmentInventories as dbSaveEquipmentInventories,
   getAllItemsAsRecord,
   getAllEquipmentAsRecord,
-  getAllStudents,
-  getAllItems,
-  getAllEquipment,
   getAllFormData,
-  getMetadata,
-  setMetadata,
   getAllStudentsAsRecord
 } from '../services/dbService';
 import type { ResourceInventoryRecord, EquipmentInventoryRecord } from '../db/database';
@@ -30,7 +23,8 @@ import { db } from '../db/database';
  * @param data The data to save
  * @returns Promise<boolean> indicating success or failure
  */
-export async function saveFormData(studentId: string | number, data: Record<string, any>): Promise<any | null> {
+export async function saveFormData(studentId: string | number, data: Record<string, any>)
+  : Promise<any | null> {
   if (!studentId) return null;
 
   try {
@@ -42,9 +36,28 @@ export async function saveFormData(studentId: string | number, data: Record<stri
   }
 }
 
+/**
+ * Merges item records with their inventory quantities
+ * @param items Record of items keyed by ID
+ * @param inventories Record of inventory quantities keyed by numeric ID
+ * @returns Merged record with QuantityOwned added to each item
+ */
+function mergeWithInventory<T extends Record<string, any>>(
+  items: Record<string, T>,
+  inventories: Record<number, number>
+): Record<string, T & { QuantityOwned: number }> {
+  const result: Record<string, T & { QuantityOwned: number }> = {};
+  for (const [id, item] of Object.entries(items)) {
+    result[id] = {
+      ...item,
+      QuantityOwned: inventories[Number(id)] || 0
+    };
+  }
+  return result;
+}
 
 /**
- * Retrieves resources data with inventory from IndexedDB
+ * Retrieves resources (items) data with inventory from IndexedDB
  * @returns Promise<Record> The resources data with QuantityOwned
  */
 export async function getResources(): Promise<Record<string, any> | null> {
@@ -54,16 +67,7 @@ export async function getResources(): Promise<Record<string, any> | null> {
       getAllResourceInventories()
     ]);
 
-    // Merge item data with inventory quantities
-    const result: Record<string, any> = {};
-    for (const [id, item] of Object.entries(items)) {
-      result[id] = {
-        ...item,
-        QuantityOwned: inventories[Number(id)] || 0
-      };
-    }
-
-    return result;
+    return mergeWithInventory(items, inventories);
   } catch (error) {
     console.error('Error retrieving resources from IndexedDB:', error);
     return null;
@@ -81,16 +85,7 @@ export async function getEquipments(): Promise<Record<string, any> | null> {
       getAllEquipmentInventories()
     ]);
 
-    // Merge equipment data with inventory quantities
-    const result: Record<string, any> = {};
-    for (const [id, item] of Object.entries(equipment)) {
-      result[id] = {
-        ...item,
-        QuantityOwned: inventories[Number(id)] || 0
-      };
-    }
-
-    return result;
+    return mergeWithInventory(equipment, inventories);
   } catch (error) {
     console.error('Error retrieving equipment from IndexedDB:', error);
     return null;
@@ -319,16 +314,6 @@ export async function saveEquipmentInventories(
 export { togglePinnedStudent } from './settingsStorage';
 export { isStudentPinned } from './settingsStorage';
 export { getPinnedStudents } from './settingsStorage';
-
-export async function getResourceDataById(id: string | number): Promise<Record<string, any> | null> {
-  const resources = await getResources();
-  return resources?.[id] ?? null;
-}
-
-export async function getEquipmentDataById(id: string | number): Promise<Record<string, any> | null> {
-  const equipment = await getEquipments();
-  return equipment?.[id] ?? null;
-}
 
 /**
  * Exports all IndexedDB data and settings to a downloadable JSON file

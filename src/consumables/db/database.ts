@@ -87,6 +87,7 @@ export class EriduOpsDatabase extends Dexie {
 
     // Define schema version 1
     // Note: resources and equipments_inventory use lowercase 'id' as primary key
+    // They only store id and quantity owned of items and equipment respectively
     // This is intentional - Dexie does not support changing primary keys after creation
     this.version(1).stores({
       students: 'Id, Name, DefaultOrder, StarGrade',
