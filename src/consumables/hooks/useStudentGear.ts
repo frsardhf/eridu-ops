@@ -19,7 +19,7 @@ import {
 } from '../../types/upgrade';
 import { consolidateAndSortMaterials } from '../utils/materialUtils';
 import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
-import { updateGearsData } from '../stores/equipmentsStore';
+import { updateGearsData } from '../stores/gearsStore';
 import type { ExclusiveGearLevel } from '../../types/gear';
 
 // Get credits required for a specific equipment tier

@@ -9,7 +9,7 @@ import {
 } from '../../types/upgrade';
 import { CREDITS_ID } from '../constants/syntheticEntities';
 import { updateMaterialsData } from '../stores/materialsStore';
-import { updateGearsData } from '../stores/equipmentsStore';
+import { updateGearsData } from '../stores/gearsStore';
 import { calculateAllMaterials } from '../hooks/useStudentUpgrade';
 import { calculateAllGears } from '../hooks/useStudentGear';
 import { getEquipmentDataByIdSync, getResourceDataByIdSync } from '../stores/resourceCacheStore';

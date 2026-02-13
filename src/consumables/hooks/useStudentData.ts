@@ -45,7 +45,7 @@ import { filterByProperty } from '../utils/filterUtils';
 
 // Singleton state (shared across all calls)
 let _studentData: Ref<{ [key: string]: StudentProps }>;
-let _materialData: Ref<Record<string, ResourceProps>>;
+let _resourceData: Ref<Record<string, ResourceProps>>;
 let _equipmentData: Ref<Record<string, ResourceProps>>;
 let _giftData: Ref<Record<string, ResourceProps>>;
 let _boxData: Ref<Record<string, ResourceProps>>;
@@ -65,7 +65,7 @@ export function useStudentData() {
   // Initialize refs on first call only
   if (!_studentData) {
     _studentData = ref<{ [key: string]: StudentProps }>({});
-    _materialData = ref<Record<string, ResourceProps>>({});
+    _resourceData = ref<Record<string, ResourceProps>>({});
     _equipmentData = ref<Record<string, ResourceProps>>({});
     _giftData = ref<Record<string, ResourceProps>>({});
     _boxData = ref<Record<string, ResourceProps>>({});
@@ -82,7 +82,7 @@ export function useStudentData() {
 
   // Use local aliases for singleton refs
   const studentData = _studentData;
-  const materialData = _materialData;
+  const resourceData = _resourceData;
   const equipmentData = _equipmentData;
   const giftData = _giftData;
   const boxData = _boxData;
@@ -553,7 +553,7 @@ export function useStudentData() {
 
       // Save inventories to resources table
       await saveItemsInventory(allItems);
-      materialData.value = allItems;
+      resourceData.value = allItems;
     } else {
       // Ensure synthetic entities exist (credits, etc.)
       const resourcesAsNumbers: Record<number, any> = {};
@@ -570,7 +570,7 @@ export function useStudentData() {
         // Save inventory to resources table
         await saveItemsInventory(resourcesAsNumbers);
       }
-      materialData.value = resourcesAsNumbers;
+      resourceData.value = resourcesAsNumbers;
     }
 
     // Handle equipment initialization - store ALL equipment
@@ -657,7 +657,7 @@ export function useStudentData() {
     studentData,
     giftData,
     boxData,
-    materialData,
+    resourceData,
     equipmentData,
     favoredGift,
     giftBoxData,

@@ -50,7 +50,7 @@ export const translations = {
     upgrade: "Skills",
     gear: "Weapons",
     items: "Items",
-    equipments: "Equipments",
+    equipment: "Equipment",
     summary: "Summary",
     
     // Bond component
@@ -231,7 +231,7 @@ export const translations = {
     upgrade: "育成",
     gear: "武器",
     items: "アイテム",
-    equipments: "装備",
+    equipment: "装備",
     summary: "要約",
 
     // Bond component

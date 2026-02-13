@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Material } from '../../../../types/upgrade';
 import { EquipmentType } from '../../../../types/gear';
-import { useResourceCalculation } from '../../../../consumables/hooks/useResourceCalculation';
+import { useMaterialCalculation } from '../../../../consumables/hooks/useMaterialCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
 import { useGiftCalculation } from '../../../../consumables/hooks/useGiftCalculation';
 import { getAllResourcesFromCache, getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
@@ -43,7 +43,7 @@ const {
   materialsLeftover, 
   getMaterialUsageByStudents,
   calculateExpNeeds 
-} = useResourceCalculation();
+} = useMaterialCalculation();
 
 // Get equipment resource data
 const {
@@ -472,7 +472,7 @@ const getMaterialLeftover = (materialId: number) => {
         :class="{ active: activeTab === 'equipment' }"
         @click="setTab('equipment')"
       >
-        {{ $t('equipments') }}
+        {{ $t('equipment') }}
       </button>
       <button
         class="main-tab"

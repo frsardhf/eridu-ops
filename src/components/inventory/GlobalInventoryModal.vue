@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { $t } from '../../locales';
-import StudentResourceGrid from '../students/modal/studentMaterials/StudentResourceGrid.vue';
-import StudentEquipmentGrid from '../students/modal/studentMaterials/StudentEquipmentGrid.vue';
-import StudentResourceSummary from '../students/modal/studentMaterials/StudentResourceSummary.vue';
+import StudentItemsGrid from '../students/modal/studentInventory/StudentItemsGrid.vue';
+import StudentEquipmentGrid from '../students/modal/studentInventory/StudentEquipmentGrid.vue';
+import StudentResourceSummary from '../students/modal/studentInventory/StudentResourceSummary.vue';
 
 const props = defineProps<{
   resourceFormData: Record<string, number>,
@@ -16,7 +16,7 @@ const emit = defineEmits<{
   (e: 'update-equipment', id: string, event: Event): void
 }>();
 
-const activeTab = ref('resources');
+const activeTab = ref('items');
 
 function handleResourceInput(id: string, event: Event) {
   emit('update-resource', id, event);
@@ -43,8 +43,8 @@ function handleEquipmentInput(id: string, event: Event) {
       <!-- Tab bar -->
       <div class="inventory-tabs">
         <button
-          :class="['inv-tab-btn', { active: activeTab === 'resources' }]"
-          @click="activeTab = 'resources'"
+          :class="['inv-tab-btn', { active: activeTab === 'items' }]"
+          @click="activeTab = 'items'"
         >
           {{ $t('items') }}
         </button>
@@ -52,7 +52,7 @@ function handleEquipmentInput(id: string, event: Event) {
           :class="['inv-tab-btn', { active: activeTab === 'equipment' }]"
           @click="activeTab = 'equipment'"
         >
-          {{ $t('equipments') }}
+          {{ $t('equipment') }}
         </button>
         <button
           :class="['inv-tab-btn', { active: activeTab === 'summary' }]"
@@ -64,8 +64,8 @@ function handleEquipmentInput(id: string, event: Event) {
 
       <!-- Content -->
       <div class="inventory-content">
-        <div v-if="activeTab === 'resources'" class="inventory-tab-content">
-          <StudentResourceGrid
+        <div v-if="activeTab === 'items'" class="inventory-tab-content">
+          <StudentItemsGrid
             :resource-form-data="resourceFormData"
             @update-resource="handleResourceInput"
           />

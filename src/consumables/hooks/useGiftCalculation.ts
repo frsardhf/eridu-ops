@@ -2,7 +2,7 @@ import { getResourceDataByIdSync, getAllResourcesFromCache } from '../stores/res
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
-import { getAllGearsData } from '../stores/equipmentsStore';
+import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 
 // Student gift usage for Student → Gifts display

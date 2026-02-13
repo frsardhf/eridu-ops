@@ -6,7 +6,7 @@ import { StudentProps } from '../../types/student';
 import { Material } from '../../types/upgrade';
 import { EquipmentMaterial, EquipmentType, EquipmentLevels } from '../../types/gear';
 import { getAllMaterialsData } from '../stores/materialsStore';
-import { getAllGearsData } from '../stores/equipmentsStore';
+import { getAllGearsData } from '../stores/gearsStore';
 import { isExpBall } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
 

@@ -5,7 +5,7 @@ import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
 import { Material, CREDITS_ID, ELIGMAS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
-import { getAllGearsData } from '../stores/equipmentsStore';
+import { getAllGearsData } from '../stores/gearsStore';
 import { isExpReport } from '../utils/materialUtils';
 import dataTable from '../../data/data.json';
 
@@ -36,7 +36,7 @@ const getStudentCredits = (studentId: string, materials: Material[], gears: Mate
   return quantity;
 };
 
-export function useResourceCalculation() {
+export function useMaterialCalculation() {
   const { studentData } = useStudentData();
 
   // Helper function to get student XP details
