@@ -15,10 +15,10 @@ import {
   injectSyntheticEntities
 } from '../constants/syntheticEntities';
 import {
-  saveResources,
-  getResources,
-  getEquipments,
-  saveEquipments,
+  saveItemsInventory,
+  getItems,
+  getEquipment,
+  saveEquipmentInventory,
 } from '../utils/studentStorage';
 import {
   getSettings,
@@ -538,7 +538,7 @@ export function useStudentData() {
     });
 
     // Handle resources initialization - store ALL items
-    const existingResources = await getResources();
+    const existingResources = await getItems();
 
     if (!existingResources || Object.keys(existingResources).length === 0) {
       // Initialize with all items including synthetic entities (credits)
@@ -552,7 +552,7 @@ export function useStudentData() {
       await saveItems(Object.values(allItems));
 
       // Save inventories to resources table
-      await saveResources(allItems);
+      await saveItemsInventory(allItems);
       materialData.value = allItems;
     } else {
       // Ensure synthetic entities exist (credits, etc.)
@@ -568,16 +568,16 @@ export function useStudentData() {
         await saveItems([creditsEntry]);
 
         // Save inventory to resources table
-        await saveResources(resourcesAsNumbers);
+        await saveItemsInventory(resourcesAsNumbers);
       }
       materialData.value = resourcesAsNumbers;
     }
 
     // Handle equipment initialization - store ALL equipment
-    const existingEquipments = await getEquipments();
+    const existingEquipments = await getEquipment();
 
     if (!existingEquipments || Object.keys(existingEquipments).length === 0) {
-      await saveEquipments(equipment);
+      await saveEquipmentInventory(equipment);
       equipmentData.value = equipment;
     } else {
       // Merge with existing (preserve QuantityOwned)
@@ -590,7 +590,7 @@ export function useStudentData() {
         }
       });
 
-      await saveEquipments(mergedEquipments);
+      await saveEquipmentInventory(mergedEquipments);
       equipmentData.value = mergedEquipments;
     }
 

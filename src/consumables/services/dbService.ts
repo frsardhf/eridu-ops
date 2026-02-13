@@ -6,7 +6,7 @@ import type {
   ItemRecord,
   EquipmentRecord,
   FormRecord,
-  ResourceInventoryRecord,
+  ItemsInventoryRecord,
   EquipmentInventoryRecord
 } from '../db/database';
 
@@ -325,59 +325,59 @@ export async function getAllFormData(): Promise<Record<number, FormRecord>> {
   }
 }
 
-// ========== Resource Inventory Operations ==========
+// ========== Items Inventory Operations ==========
 
 /**
- * Get resource inventory
+ * Get items inventory quantity for a single item
  */
-export async function getResourceInventory(id: number): Promise<number> {
+export async function getItemsInventory(id: number): Promise<number> {
   try {
-    const record = await db.resources.get(id);
+    const record = await db.items_inventory.get(id);
     return record?.QuantityOwned || 0;
   } catch (error) {
-    console.error(`Error getting resource inventory ${id}:`, error);
+    console.error(`Error getting items inventory ${id}:`, error);
     return 0;
   }
 }
 
 /**
- * Set resource inventory
+ * Set items inventory quantity for a single item
  */
-export async function setResourceInventory(id: number, quantity: number): Promise<boolean> {
+export async function setItemsInventory(id: number, quantity: number): Promise<boolean> {
   try {
-    await db.resources.put({ id, QuantityOwned: quantity });
+    await db.items_inventory.put({ Id: id, QuantityOwned: quantity });
     return true;
   } catch (error) {
-    console.error(`Error setting resource inventory ${id}:`, error);
+    console.error(`Error setting items inventory ${id}:`, error);
     return false;
   }
 }
 
 /**
- * Get all resource inventories
+ * Get all items inventories as id→quantity record
  */
-export async function getAllResourceInventories(): Promise<Record<number, number>> {
+export async function getAllItemsInventories(): Promise<Record<number, number>> {
   try {
-    const records = await db.resources.toArray();
+    const records = await db.items_inventory.toArray();
     return records.reduce((acc, record) => {
-      acc[record.id] = record.QuantityOwned;
+      acc[record.Id] = record.QuantityOwned;
       return acc;
     }, {} as Record<number, number>);
   } catch (error) {
-    console.error('Error getting all resource inventories:', error);
+    console.error('Error getting all items inventories:', error);
     return {};
   }
 }
 
 /**
- * Save multiple resource inventories (bulk upsert)
+ * Save multiple items inventories (bulk upsert)
  */
-export async function saveResourceInventories(inventories: ResourceInventoryRecord[]): Promise<boolean> {
+export async function saveItemsInventories(inventories: ItemsInventoryRecord[]): Promise<boolean> {
   try {
-    await db.resources.bulkPut(inventories);
+    await db.items_inventory.bulkPut(inventories);
     return true;
   } catch (error) {
-    console.error('Error saving resource inventories:', error);
+    console.error('Error saving items inventories:', error);
     return false;
   }
 }
@@ -389,7 +389,7 @@ export async function saveResourceInventories(inventories: ResourceInventoryReco
  */
 export async function getEquipmentInventory(id: number): Promise<number> {
   try {
-    const record = await db.equipments_inventory.get(id);
+    const record = await db.equipment_inventory.get(id);
     return record?.QuantityOwned || 0;
   } catch (error) {
     console.error(`Error getting equipment inventory ${id}:`, error);
@@ -402,7 +402,7 @@ export async function getEquipmentInventory(id: number): Promise<number> {
  */
 export async function setEquipmentInventory(id: number, quantity: number): Promise<boolean> {
   try {
-    await db.equipments_inventory.put({ id, QuantityOwned: quantity });
+    await db.equipment_inventory.put({ Id: id, QuantityOwned: quantity });
     return true;
   } catch (error) {
     console.error(`Error setting equipment inventory ${id}:`, error);
@@ -415,9 +415,9 @@ export async function setEquipmentInventory(id: number, quantity: number): Promi
  */
 export async function getAllEquipmentInventories(): Promise<Record<number, number>> {
   try {
-    const records = await db.equipments_inventory.toArray();
+    const records = await db.equipment_inventory.toArray();
     return records.reduce((acc, record) => {
-      acc[record.id] = record.QuantityOwned;
+      acc[record.Id] = record.QuantityOwned;
       return acc;
     }, {} as Record<number, number>);
   } catch (error) {
@@ -431,57 +431,10 @@ export async function getAllEquipmentInventories(): Promise<Record<number, numbe
  */
 export async function saveEquipmentInventories(inventories: EquipmentInventoryRecord[]): Promise<boolean> {
   try {
-    await db.equipments_inventory.bulkPut(inventories);
+    await db.equipment_inventory.bulkPut(inventories);
     return true;
   } catch (error) {
     console.error('Error saving equipment inventories:', error);
     return false;
   }
-}
-
-// ========== Utility Operations ==========
-
-/**
- * Clear all data from database (for testing/debugging)
- */
-export async function clearAllData(): Promise<void> {
-  await Promise.all([
-    db.students.clear(),
-    db.items.clear(),
-    db.equipment.clear(),
-    db.forms.clear(),
-    db.resources.clear(),
-    db.equipments_inventory.clear()
-    // Note: Don't clear metadata to preserve migration state
-  ]);
-}
-
-/**
- * Get database statistics
- */
-export async function getDatabaseStats(): Promise<{
-  students: number;
-  items: number;
-  equipment: number;
-  forms: number;
-  resources: number;
-  equipmentInventories: number;
-}> {
-  const [students, items, equipment, forms, resources, equipmentInventories] = await Promise.all([
-    db.students.count(),
-    db.items.count(),
-    db.equipment.count(),
-    db.forms.count(),
-    db.resources.count(),
-    db.equipments_inventory.count()
-  ]);
-
-  return {
-    students,
-    items,
-    equipment,
-    forms,
-    resources,
-    equipmentInventories
-  };
 }

@@ -4,16 +4,16 @@ import { ResourceProps } from "../../types/resource";
 import {
   getFormData as dbGetFormData,
   saveFormData as dbSaveFormData,
-  getAllResourceInventories,
+  getAllItemsInventories,
   getAllEquipmentInventories,
-  saveResourceInventories as dbSaveResourceInventories,
-  saveEquipmentInventories as dbSaveEquipmentInventories,
+  saveItemsInventories,
+  saveEquipmentInventories,
   getAllItemsAsRecord,
   getAllEquipmentAsRecord,
   getAllFormData,
   getAllStudentsAsRecord
 } from '../services/dbService';
-import type { ResourceInventoryRecord, EquipmentInventoryRecord } from '../db/database';
+import type { ItemsInventoryRecord, EquipmentInventoryRecord } from '../db/database';
 import { getSettings, saveSettings } from './settingsStorage';
 import { db } from '../db/database';
 
@@ -57,19 +57,19 @@ function mergeWithInventory<T extends Record<string, any>>(
 }
 
 /**
- * Retrieves resources (items) data with inventory from IndexedDB
- * @returns Promise<Record> The resources data with QuantityOwned
+ * Retrieves items data with inventory from IndexedDB
+ * @returns Promise<Record> The items data with QuantityOwned
  */
-export async function getResources(): Promise<Record<string, any> | null> {
+export async function getItems(): Promise<Record<string, any> | null> {
   try {
     const [items, inventories] = await Promise.all([
       getAllItemsAsRecord(),
-      getAllResourceInventories()
+      getAllItemsInventories()
     ]);
 
     return mergeWithInventory(items, inventories);
   } catch (error) {
-    console.error('Error retrieving resources from IndexedDB:', error);
+    console.error('Error retrieving items from IndexedDB:', error);
     return null;
   }
 }
@@ -78,7 +78,7 @@ export async function getResources(): Promise<Record<string, any> | null> {
  * Retrieves equipment data with inventory from IndexedDB
  * @returns Promise<Record> The equipment data with QuantityOwned
  */
-export async function getEquipments(): Promise<Record<string, any> | null> {
+export async function getEquipment(): Promise<Record<string, any> | null> {
   try {
     const [equipment, inventories] = await Promise.all([
       getAllEquipmentAsRecord(),
@@ -196,117 +196,47 @@ export async function loadFormDataToRefs(
 
 
 /**
- * Saves resources inventory to IndexedDB
- * @param resources The resources data with QuantityOwned, or a function to transform existing resources
+ * Saves items inventory to IndexedDB.
+ * Accepts either a plain id→quantity map or a full item record map with QuantityOwned.
  * @returns Promise<boolean> indicating success or failure
  */
-export async function saveResources(
-  resources: Record<string, any> | ((existing: Record<string, any>) => Record<string, any>)
+export async function saveItemsInventory(
+  data: Record<string, number> | Record<string, any>
 ): Promise<boolean> {
   try {
-    let resourcesData: Record<string, any>;
-
-    // If resources is a function, apply it to existing resources
-    if (typeof resources === 'function') {
-      const existingResources = await getResources() || {};
-      resourcesData = resources(existingResources);
-    } else {
-      resourcesData = resources;
-    }
-
-    // Extract inventory records (only QuantityOwned)
-    const inventories: ResourceInventoryRecord[] = Object.entries(resourcesData).map(
-      ([id, data]: [string, any]) => ({
-        id: Number(id),
-        QuantityOwned: data.QuantityOwned || 0
+    const inventories: ItemsInventoryRecord[] = Object.entries(data).map(
+      ([id, value]) => ({
+        Id: Number(id),
+        QuantityOwned: (typeof value === 'number' ? value : value?.QuantityOwned) || 0
       })
     );
 
-    return await dbSaveResourceInventories(inventories);
+    return await saveItemsInventories(inventories);
   } catch (error) {
-    console.error('Error saving resources to IndexedDB:', error);
+    console.error('Error saving items inventory to IndexedDB:', error);
     return false;
   }
 }
 
 /**
- * Saves resource inventory from form data (id → quantity mapping)
- * No student dependency — reads directly from form data
- * @param formData Record of resource ID → quantity owned
+ * Saves equipment inventory to IndexedDB.
+ * Accepts either a plain id→quantity map or a full equipment record map with QuantityOwned.
  * @returns Promise<boolean> indicating success or failure
  */
-export async function saveResourceInventories(
-  formData: Record<string, number>
+export async function saveEquipmentInventory(
+  data: Record<string, number> | Record<string, any>
 ): Promise<boolean> {
   try {
-    const inventories: ResourceInventoryRecord[] = Object.entries(formData).map(
-      ([id, quantity]) => ({
-        id: Number(id),
-        QuantityOwned: quantity || 0
+    const inventories: EquipmentInventoryRecord[] = Object.entries(data).map(
+      ([id, value]) => ({
+        Id: Number(id),
+        QuantityOwned: (typeof value === 'number' ? value : value?.QuantityOwned) || 0
       })
     );
 
-    return await dbSaveResourceInventories(inventories);
+    return await saveEquipmentInventories(inventories);
   } catch (error) {
-    console.error('Error saving resource inventories to IndexedDB:', error);
-    return false;
-  }
-}
-
-/**
- * Saves equipment inventory to IndexedDB
- * @param equipments The equipment data with QuantityOwned, or a function to transform existing equipments
- * @returns Promise<boolean> indicating success or failure
- */
-export async function saveEquipments(
-  equipments: Record<string, any> | ((existing: Record<string, any>) => Record<string, any>)
-): Promise<boolean> {
-  try {
-    let equipmentsData: Record<string, any>;
-
-    // If equipments is a function, apply it to existing equipments
-    if (typeof equipments === 'function') {
-      const existingEquipments = await getEquipments() || {};
-      equipmentsData = equipments(existingEquipments);
-    } else {
-      equipmentsData = equipments;
-    }
-
-    // Extract inventory records (only QuantityOwned)
-    const inventories: EquipmentInventoryRecord[] = Object.entries(equipmentsData).map(
-      ([id, data]: [string, any]) => ({
-        id: Number(id),
-        QuantityOwned: data.QuantityOwned || 0
-      })
-    );
-
-    return await dbSaveEquipmentInventories(inventories);
-  } catch (error) {
-    console.error('Error saving equipments to IndexedDB:', error);
-    return false;
-  }
-}
-
-/**
- * Saves equipment inventory from form data (id → quantity mapping)
- * No student dependency — reads directly from form data
- * @param formData Record of equipment ID → quantity owned
- * @returns Promise<boolean> indicating success or failure
- */
-export async function saveEquipmentInventories(
-  formData: Record<string, number>
-): Promise<boolean> {
-  try {
-    const inventories: EquipmentInventoryRecord[] = Object.entries(formData).map(
-      ([id, quantity]) => ({
-        id: Number(id),
-        QuantityOwned: quantity || 0
-      })
-    );
-
-    return await dbSaveEquipmentInventories(inventories);
-  } catch (error) {
-    console.error('Error saving equipment inventories to IndexedDB:', error);
+    console.error('Error saving equipment inventory to IndexedDB:', error);
     return false;
   }
 }
@@ -324,13 +254,9 @@ export async function exportLocalStorageData(): Promise<string> {
     // Export ONLY user data (v3.0 format)
     const [forms, resources, equipments] = await Promise.all([
       getAllFormData(),              // User progression
-      getAllResourceInventories(),   // Resource quantities
+      getAllItemsInventories(),      // Item quantities
       getAllEquipmentInventories()   // Equipment quantities
     ]);
-
-    console.log('Export - Forms count:', Object.keys(forms).length);
-    console.log('Export - Resources count:', Object.keys(resources).length);
-    console.log('Export - Equipments count:', Object.keys(equipments).length);
 
     const settings = getSettings();
 
@@ -345,15 +271,8 @@ export async function exportLocalStorageData(): Promise<string> {
       }
     };
 
-    console.log('Export - userData structure:', {
-      formsKeys: Object.keys(exportData.userData.forms).length,
-      resourcesKeys: Object.keys(exportData.userData.resources).length,
-      equipmentsKeys: Object.keys(exportData.userData.equipments).length
-    });
-
     // Create a JSON string of the data
     const exportString = JSON.stringify(exportData, null, 2);
-    console.log('Export - JSON string length:', exportString.length);
 
     // Create a blob and return its URL
     const blob = new Blob([exportString], { type: 'application/json' });
@@ -390,18 +309,12 @@ export async function downloadLocalStorageData(): Promise<void> {
 async function importV3Format(importData: any): Promise<void> {
   const { userData, settings } = importData;
 
-  console.log('Importing v3.0 user data...');
-  console.log('Forms:', userData.forms ? Object.keys(userData.forms).length : 0);
-  console.log('Resources:', userData.resources ? Object.keys(userData.resources).length : 0);
-  console.log('Equipments:', userData.equipments ? Object.keys(userData.equipments).length : 0);
-
   // Clear existing user data to prevent stale overlays
   await Promise.all([
     db.forms.clear(),
-    db.resources.clear(),
-    db.equipments_inventory.clear()
+    db.items_inventory.clear(),
+    db.equipment_inventory.clear()
   ]);
-  console.log('Cleared existing user data');
 
   // Convert forms from Record to Array
   let formsArray: any[] = [];
@@ -409,34 +322,29 @@ async function importV3Format(importData: any): Promise<void> {
     if (Array.isArray(userData.forms)) {
       formsArray = userData.forms;
     } else if (typeof userData.forms === 'object') {
-      formsArray = Object.entries(userData.forms).map(([studentId, formData]) => ({
-        studentId: Number(studentId),
-        ...(formData as any)
-      }));
+      formsArray = Object.entries(userData.forms).map(([studentId, formData]) => {
+        const { id, ...rest } = formData as any;
+        return { studentId: Number(studentId), ...rest };
+      });
     }
-    console.log('Forms array to import:', formsArray.length, 'records');
   }
 
   // Import user data into IndexedDB
   await Promise.all([
     formsArray.length > 0 ? db.forms.bulkPut(formsArray) : Promise.resolve(),
-    userData.resources ? db.resources.bulkPut(
+    userData.resources ? db.items_inventory.bulkPut(
       Object.entries(userData.resources).map(([id, quantity]) => ({
-        id: Number(id),
+        Id: Number(id),
         QuantityOwned: quantity as number
       }))
     ) : Promise.resolve(),
-    userData.equipments ? db.equipments_inventory.bulkPut(
+    userData.equipments ? db.equipment_inventory.bulkPut(
       Object.entries(userData.equipments).map(([id, quantity]) => ({
-        id: Number(id),
+        Id: Number(id),
         QuantityOwned: quantity as number
       }))
     ) : Promise.resolve()
   ]);
-
-  console.log('Import completed, verifying forms...');
-  const importedForms = await db.forms.toArray();
-  console.log('Forms in database after import:', importedForms.length);
 
   // Merge settings with existing ones to preserve new/default keys
   if (settings) {
@@ -535,9 +443,10 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
         }
       };
 
-      // Merge with existing data
+      // Merge with existing data (strip ghost id from existing records)
+      const { id: _id, ...existingClean } = (existingForms[char.id] ?? {}) as any;
       const merged = {
-        ...(existingForms[char.id] ?? {}),
+        ...existingClean,
         ...formData
       };
       formDataArray.push(merged);
@@ -582,18 +491,6 @@ export function importLocalStorageData(file: File): Promise<boolean> {
         if (importData.version === '3.0' && importData.userData) {
           await importV3Format(importData);
           resolve(true);
-          return;
-        }
-
-        // REMOVED: v2.0 format support (breaking change)
-        if (importData.version === '2.0') {
-          reject(new Error('Old format detected (v2.0). Please export your data again using the latest version.'));
-          return;
-        }
-
-        // REMOVED: Legacy localStorage dump format (breaking change)
-        if (importData.forms || importData.resources || importData.theme || importData.language) {
-          reject(new Error('Old format detected. Please export your data again using the latest version.'));
           return;
         }
 

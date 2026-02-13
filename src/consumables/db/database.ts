@@ -61,13 +61,13 @@ export interface FormRecord {
   };
 }
 
-export interface ResourceInventoryRecord {
-  id: number; // Primary key (lowercase for inventory tables)
+export interface ItemsInventoryRecord {
+  Id: number; // Primary key
   QuantityOwned: number;
 }
 
 export interface EquipmentInventoryRecord {
-  id: number; // Primary key (lowercase for inventory tables)
+  Id: number; // Primary key
   QuantityOwned: number;
 }
 
@@ -79,16 +79,13 @@ export class EriduOpsDatabase extends Dexie {
   equipment!: Table<EquipmentRecord, number>;
   metadata!: Table<MetadataRecord, string>;
   forms!: Table<FormRecord, number>;
-  resources!: Table<ResourceInventoryRecord, number>;
-  equipments_inventory!: Table<EquipmentInventoryRecord, number>;
+  items_inventory!: Table<ItemsInventoryRecord, number>;
+  equipment_inventory!: Table<EquipmentInventoryRecord, number>;
 
   constructor() {
     super('eridu-ops-db');
 
     // Define schema version 1
-    // Note: resources and equipments_inventory use lowercase 'id' as primary key
-    // They only store id and quantity owned of items and equipment respectively
-    // This is intentional - Dexie does not support changing primary keys after creation
     this.version(1).stores({
       students: 'Id, Name, DefaultOrder, StarGrade',
       items: 'Id, Name, Category, Rarity',
@@ -97,6 +94,41 @@ export class EriduOpsDatabase extends Dexie {
       forms: 'studentId',
       resources: 'id',
       equipments_inventory: 'id'
+    });
+
+    // Version 2: Rename stores and fix primary key casing
+    this.version(2).stores({
+      items_inventory: 'Id',
+      equipment_inventory: 'Id',
+      resources: null,
+      equipments_inventory: null
+    }).upgrade(async (tx) => {
+      // Migrate resources → items_inventory with id → Id transform
+      const resourceRows = await tx.table('resources').toArray();
+      if (resourceRows.length > 0) {
+        await tx.table('items_inventory').bulkAdd(
+          resourceRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned }))
+        );
+      }
+
+      // Migrate equipments_inventory → equipment_inventory with id → Id transform
+      const equipmentRows = await tx.table('equipments_inventory').toArray();
+      if (equipmentRows.length > 0) {
+        await tx.table('equipment_inventory').bulkAdd(
+          equipmentRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned }))
+        );
+      }
+
+      // Clean ghost 'id' property from forms records
+      const formRows = await tx.table('forms').toArray();
+      const dirtyForms = formRows.filter((row: any) => 'id' in row);
+      if (dirtyForms.length > 0) {
+        const cleaned = dirtyForms.map((row: any) => {
+          const { id, ...rest } = row;
+          return rest;
+        });
+        await tx.table('forms').bulkPut(cleaned);
+      }
     });
   }
 }
@@ -112,15 +144,4 @@ export function arrayToRecord<T extends { Id: number }>(
     acc[item.Id] = item;
     return acc;
   }, {} as Record<number, T>);
-}
-
-// Helper function to check if database is accessible
-export async function isDatabaseAccessible(): Promise<boolean> {
-  try {
-    await db.open();
-    return true;
-  } catch (error) {
-    console.error('Database is not accessible:', error);
-    return false;
-  }
 }

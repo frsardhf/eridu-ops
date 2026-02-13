@@ -3,7 +3,7 @@ import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import { ModalProps, StudentProps } from '../../../types/student';
 import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
 import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
-import { useStudentResources } from '../../../consumables/hooks/useStudentResources';
+import { useStudentItems } from '../../../consumables/hooks/useStudentItems';
 import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
 import { initializeStudentFormData } from '../../../consumables/services/studentFormService';
@@ -86,14 +86,14 @@ const {
 
 // Keep resource/equipment hooks alive for data persistence
 const {
-  resourceFormData,
-  handleResourceInput
-} = useStudentResources(props, emit);
+  itemFormData,
+  handleItemInput
+} = useStudentItems(props);
 
 const {
   equipmentFormData,
   handleEquipmentInput
-} = useStudentEquipment(props, emit);
+} = useStudentEquipment(props);
 
 const {
   equipmentLevels,
@@ -398,10 +398,10 @@ onUnmounted(() => {
     <!-- Level 2: Global Inventory Modal -->
     <GlobalInventoryModal
       v-if="isInventoryOpen"
-      :resource-form-data="resourceFormData"
+      :resource-form-data="itemFormData"
       :equipment-form-data="equipmentFormData"
       @close="closeInventory"
-      @update-resource="handleResourceInput"
+      @update-resource="handleItemInput"
       @update-equipment="handleEquipmentInput"
     />
   </div>

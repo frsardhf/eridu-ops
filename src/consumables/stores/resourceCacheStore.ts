@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { getResources, getEquipments } from '../utils/studentStorage';
+import { getItems, getEquipment } from '../utils/studentStorage';
 import type { CachedResource } from '../../types/resource';
 
 /**
@@ -23,7 +23,7 @@ const isEquipmentLoaded = ref(false);
  */
 export async function initializeResourcesCache() {
   try {
-    const resources = await getResources();
+    const resources = await getItems();
     if (resources) {
       // Convert string keys to numbers for type safety
       const typedResources: Record<number, CachedResource> = {};
@@ -44,7 +44,7 @@ export async function initializeResourcesCache() {
  */
 export async function initializeEquipmentCache() {
   try {
-    const equipment = await getEquipments();
+    const equipment = await getEquipment();
     if (equipment) {
       // Convert string keys to numbers for type safety
       const typedEquipment: Record<number, CachedResource> = {};

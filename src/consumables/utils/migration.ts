@@ -6,16 +6,12 @@ import type {
   ItemRecord,
   EquipmentRecord,
   FormRecord,
-  ResourceInventoryRecord,
+  ItemsInventoryRecord,
   EquipmentInventoryRecord
 } from '../db/database';
 import {
   isMigrationCompleted,
-  setMetadata,
-  getAllStudents,
-  getAllItems,
-  getAllEquipment,
-  getAllFormData
+  setMetadata
 } from '../services/dbService';
 import { saveSettings, getSettings, type AppSettings } from './settingsStorage';
 
@@ -142,15 +138,15 @@ async function migrateResourceInventories(): Promise<void> {
     }
 
     const resourcesData = JSON.parse(resourcesJson);
-    const inventories: ResourceInventoryRecord[] = Object.entries(resourcesData).map(
+    const inventories: ItemsInventoryRecord[] = Object.entries(resourcesData).map(
       ([id, data]: [string, any]) => ({
-        id: Number(id),
+        Id: Number(id),
         QuantityOwned: data.QuantityOwned || 0
       })
     );
 
     if (inventories.length > 0) {
-      await db.resources.bulkPut(inventories);
+      await db.items_inventory.bulkPut(inventories);
       console.log(`Migrated ${inventories.length} resource inventories`);
 
       // Also save full item data to items table
@@ -177,13 +173,13 @@ async function migrateEquipmentInventories(): Promise<void> {
     const equipmentsData = JSON.parse(equipmentsJson);
     const inventories: EquipmentInventoryRecord[] = Object.entries(equipmentsData).map(
       ([id, data]: [string, any]) => ({
-        id: Number(id),
+        Id: Number(id),
         QuantityOwned: data.QuantityOwned || 0
       })
     );
 
     if (inventories.length > 0) {
-      await db.equipments_inventory.bulkPut(inventories);
+      await db.equipment_inventory.bulkPut(inventories);
       console.log(`Migrated ${inventories.length} equipment inventories`);
 
       // Also save full equipment data to equipment table
@@ -209,10 +205,10 @@ async function migrateForms(): Promise<void> {
 
     const formsData = JSON.parse(formsJson);
     const formsArray: FormRecord[] = Object.entries(formsData).map(
-      ([studentId, data]: [string, any]) => ({
-        studentId: Number(studentId),
-        ...data
-      })
+      ([studentId, data]: [string, any]) => {
+        const { id, ...rest } = data as any;
+        return { studentId: Number(studentId), ...rest };
+      }
     );
 
     if (formsArray.length > 0) {
@@ -285,142 +281,4 @@ function cleanupLegacyStorage(): void {
   } catch (error) {
     console.error('Error cleaning up legacy storage:', error);
   }
-}
-
-/**
- * Export all data from IndexedDB (for backup/transfer)
- */
-export async function exportAllData(): Promise<{
-  version: string;
-  timestamp: number;
-  settings: AppSettings;
-  data: {
-    students: StudentRecord[];
-    items: ItemRecord[];
-    equipment: EquipmentRecord[];
-    forms: FormRecord[];
-    resources: ResourceInventoryRecord[];
-    equipments: EquipmentInventoryRecord[];
-  };
-}> {
-  const [students, items, equipment, forms, resources, equipments] = await Promise.all([
-    db.students.toArray(),
-    db.items.toArray(),
-    db.equipment.toArray(),
-    db.forms.toArray(),
-    db.resources.toArray(),
-    db.equipments_inventory.toArray()
-  ]);
-
-  const settings = getSettings();
-
-  return {
-    version: '2.0',
-    timestamp: Date.now(),
-    settings,
-    data: {
-      students,
-      items,
-      equipment,
-      forms,
-      resources,
-      equipments
-    }
-  };
-}
-
-/**
- * Triggers download of all data as a JSON file
- */
-export async function downloadExportData(): Promise<void> {
-  try {
-    const exportData = await exportAllData();
-    const exportString = JSON.stringify(exportData, null, 2);
-
-    const blob = new Blob([exportString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `eridu-ops-export-${timestamp}.json`;
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-
-    setTimeout(() => URL.revokeObjectURL(url), 100);
-
-    console.log('Export downloaded successfully');
-  } catch (error) {
-    console.error('Error exporting data:', error);
-    throw error;
-  }
-}
-
-/**
- * Import data from exported JSON file
- */
-export async function importData(fileContent: string): Promise<boolean> {
-  try {
-    const importData = JSON.parse(fileContent);
-
-    // Validate format
-    if (!importData.version || !importData.data) {
-      throw new Error('Invalid import data format');
-    }
-
-    // Import data
-    const { students, items, equipment, forms, resources, equipments } = importData.data;
-
-    await Promise.all([
-      students && db.students.bulkPut(students),
-      items && db.items.bulkPut(items),
-      equipment && db.equipment.bulkPut(equipment),
-      forms && db.forms.bulkPut(forms),
-      resources && db.resources.bulkPut(resources),
-      equipments && db.equipments_inventory.bulkPut(equipments)
-    ]);
-
-    // Import settings if present
-    if (importData.settings) {
-      saveSettings(importData.settings);
-    }
-
-    // Update metadata
-    await setMetadata('lastFetched', Date.now());
-    await setMetadata('dataSource', 'api');
-
-    console.log('Import completed successfully');
-    return true;
-  } catch (error) {
-    console.error('Error importing data:', error);
-    return false;
-  }
-}
-
-/**
- * Import data from file
- */
-export function importDataFromFile(file: File): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = async (e) => {
-      try {
-        const fileContent = e.target?.result as string;
-        const success = await importData(fileContent);
-        resolve(success);
-      } catch (error) {
-        console.error('Error reading import file:', error);
-        reject(error);
-      }
-    };
-
-    reader.onerror = (error) => {
-      console.error('Error reading file:', error);
-      reject(error);
-    };
-
-    reader.readAsText(file);
-  });
 }

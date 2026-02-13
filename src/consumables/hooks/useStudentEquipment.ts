@@ -1,14 +1,12 @@
 import { ref, watch } from 'vue';
-import { StudentProps } from '../../types/student';
-import { saveEquipmentInventories } from '../utils/studentStorage';
+import { saveEquipmentInventory } from '../utils/studentStorage';
 import { getAllEquipmentFromCache, updateEquipmentInCache } from '../stores/resourceCacheStore';
 import { getAllEquipmentInventories } from '../services/dbService';
 import type { CachedResource } from '../../types/resource';
 
 export function useStudentEquipment(props: {
-  student: StudentProps | null,
   isVisible?: boolean
-}, emit: (event: 'close') => void) {
+}) {
   const equipmentFormData = ref<Record<string, number>>({});
   // Track loading state to prevent watch from triggering saves during load
   const isLoading = ref(false);
@@ -21,21 +19,12 @@ export function useStudentEquipment(props: {
 
   // Watch for changes to isVisible to load data when modal opens
   watch(() => props.isVisible, (newValue) => {
-    if (newValue && props.student) {
+    if (newValue) {
       setTimeout(() => {
         loadEquipments();
       }, 50);
     }
   }, { immediate: true });
-
-  // Watch for changes to the student prop to reset form when student changes
-  watch(() => props.student, (newValue) => {
-    if (newValue) {
-      if (props.isVisible) {
-        loadEquipments();
-      }
-    }
-  });
 
   // Watch for changes to form data and save to IndexedDB
   watch([equipmentFormData], () => {
@@ -57,13 +46,10 @@ export function useStudentEquipment(props: {
   }
 
   async function saveEquipments() {
-    // Build inventory records from cache keys + form data
-    const cache = getAllEquipmentFromCache();
-    if (!cache || Object.keys(cache).length === 0) return;
-
-    await saveEquipmentInventories(equipmentFormData.value);
+    await saveEquipmentInventory(equipmentFormData.value);
 
     // Update the in-memory cache so calculations get current values
+    const cache = getAllEquipmentFromCache();
     for (const [id, equipment] of Object.entries(cache)) {
       const numericId = Number(id);
       if (equipmentFormData.value[numericId] !== undefined) {
