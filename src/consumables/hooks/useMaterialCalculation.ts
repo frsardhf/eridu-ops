@@ -1,5 +1,5 @@
 import { computed, ComputedRef } from 'vue';
-import { getResourceDataByIdSync, getAllResourcesFromCache } from '../stores/resourceCacheStore';
+import { getResourceDataByIdSync, getAllItemsFromCache } from '../stores/resourceCacheStore';
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
@@ -84,7 +84,7 @@ export function useMaterialCalculation() {
 
   // Helper function to calculate XP needs and report allocations
   const calculateExpNeeds = () => {
-    const resources = getAllResourcesFromCache();
+    const resources = getAllItemsFromCache();
     const studentXpDetails = getStudentXpDetails();
 
     // Calculate total XP needed
@@ -193,7 +193,7 @@ export function useMaterialCalculation() {
   // Calculate materials leftover
   if (!_materialsLeftover) {
     _materialsLeftover = computed(() => {
-    const resources = getAllResourcesFromCache();
+    const resources = getAllItemsFromCache();
     const leftover: Material[] = [];
 
     totalMaterialsNeeded.value.forEach(needed => {
@@ -254,7 +254,7 @@ export function useMaterialCalculation() {
     } else if (isCredits) {
       // Handle credits
       const studentCredits = new Map<string, number>();
-      const resources = getAllResourcesFromCache();
+      const resources = getAllItemsFromCache();
       const ownedCredits = resources[CREDITS_ID]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed credits
@@ -314,7 +314,7 @@ export function useMaterialCalculation() {
     } else {
       // Handle regular materials
       const materialNeeds = new Map<string, number>();
-      const resources = getAllResourcesFromCache();
+      const resources = getAllItemsFromCache();
       const ownedQuantity = resources[materialId]?.QuantityOwned ?? 0;
       
       // First pass: collect all needed quantities

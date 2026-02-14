@@ -5,7 +5,7 @@ import { EquipmentType } from '../../../../types/gear';
 import { useMaterialCalculation } from '../../../../consumables/hooks/useMaterialCalculation';
 import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
 import { useGiftCalculation } from '../../../../consumables/hooks/useGiftCalculation';
-import { getAllResourcesFromCache, getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
+import { getAllItemsFromCache, getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import { 
   formatLargeNumber, 
   formatLargeNumberAmount, 
@@ -147,7 +147,7 @@ const calculateMissingItems = (
 const missingMaterials = computed<MaterialWithRemaining[]>(() =>
   calculateMissingItems(
     totalMaterialsNeeded.value,
-    getAllResourcesFromCache,
+    getAllItemsFromCache,
     isExpReport,
     calculateExpNeeds
   )
@@ -413,7 +413,7 @@ const studentUsageForMaterial = computed(() => {
 
 // Add computed properties for credit quantities
 const creditOwned = computed(() => {
-  const resources = getAllResourcesFromCache();
+  const resources = getAllItemsFromCache();
   return resources[5]?.QuantityOwned || 0;
 });
 

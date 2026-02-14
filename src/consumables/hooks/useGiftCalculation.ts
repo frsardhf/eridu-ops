@@ -1,4 +1,4 @@
-import { getResourceDataByIdSync, getAllResourcesFromCache } from '../stores/resourceCacheStore';
+import { getResourceDataByIdSync, getAllItemsFromCache } from '../stores/resourceCacheStore';
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
@@ -54,7 +54,7 @@ export function useGiftCalculation() {
   // Get all students with their gift allocations (for Student → Gifts display)
   const getStudentsWithGifts = (viewMode: 'needed' | 'missing' = 'needed'): StudentGiftUsage[] => {
     const studentsCollection = studentData.value || {};
-    const resources = getAllResourcesFromCache();
+    const resources = getAllItemsFromCache();
     const studentGiftsMap = new Map<string, StudentGiftUsage>();
 
     Object.entries(studentDataStore.value).forEach(([studentId, form]) => {
@@ -171,7 +171,7 @@ export function useGiftCalculation() {
     const form = studentDataStore.value[studentId];
     if (!form) return [];
 
-    const resources = getAllResourcesFromCache();
+    const resources = getAllItemsFromCache();
     const gifts: { gift: any; quantity: number }[] = [];
 
     // Process giftFormData (favored gifts)

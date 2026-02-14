@@ -4,7 +4,7 @@ import StudentResourceCard from './StudentResourceCard.vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import { applyFilters } from '../../../../consumables/utils/filterUtils';
 import { MATERIAL } from '../../../../types/resource';
-import { getAllResourcesFromCache } from '../../../../consumables/stores/resourceCacheStore';
+import { getAllItemsFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
@@ -25,7 +25,7 @@ const containerWidth = ref(0);
 
 const resources = computed(() => {
   // Read directly from resource cache instead of props
-  const allMaterials = getAllResourcesFromCache();
+  const allMaterials = getAllItemsFromCache();
   if (!allMaterials || Object.keys(allMaterials).length === 0) return [];
 
   // Apply MATERIAL filters to show only planner-relevant resources

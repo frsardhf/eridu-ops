@@ -2,7 +2,7 @@ import { ref, computed, watch } from 'vue';
 import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
-import { getAllResourcesFromCache } from '../stores/resourceCacheStore';
+import { getAllItemsFromCache } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
 import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
@@ -353,7 +353,7 @@ export function useStudentGifts(props: {
     // Save current state before autofilling
     savePreviousState();
 
-    const resources = getAllResourcesFromCache();
+    const resources = getAllItemsFromCache();
     // Get gifts already allocated by other students to prevent autofill abuse
     const allocatedByOthers = getAllocatedGifts(props.student?.Id);
 

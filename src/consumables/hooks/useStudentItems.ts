@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue';
 import { saveItemsInventory } from '../utils/studentStorage';
 import { getAllItemsInventories } from '../services/dbService';
-import { getAllResourcesFromCache, updateResourceInCache } from '../stores/resourceCacheStore';
+import { getAllItemsFromCache, updateItemInCache } from '../stores/resourceCacheStore';
 import type { CachedResource } from '../../types/resource';
 
 export function useStudentItems(props: {
@@ -49,11 +49,11 @@ export function useStudentItems(props: {
     await saveItemsInventory(itemFormData.value);
 
     // Update the in-memory cache so autoFillGifts gets current values
-    const cache = getAllResourcesFromCache();
+    const cache = getAllItemsFromCache();
     for (const [id, item] of Object.entries(cache)) {
       const numericId = Number(id);
       if (itemFormData.value[numericId] !== undefined) {
-        updateResourceInCache(numericId, {
+        updateItemInCache(numericId, {
           ...item,
           QuantityOwned: itemFormData.value[numericId] || 0
         } as CachedResource);

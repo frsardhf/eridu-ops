@@ -4,37 +4,38 @@ import type { CachedResource } from '../../types/resource';
 
 /**
  * Resource Cache Store - In-memory cache for IndexedDB data
- * Loads resources and equipment data once at startup for synchronous access
+ * Loads items and equipment data once at startup for synchronous access
+ * Note: "resources" is the umbrella term covering both items and equipment.
  */
 
-// Reactive cache for resources (items from IndexedDB)
-const resourcesCache = ref<Record<number, CachedResource>>({});
+// Reactive cache for items (from IndexedDB)
+const itemsCache = ref<Record<number, CachedResource>>({});
 
 // Reactive cache for equipment (from IndexedDB)
 const equipmentCache = ref<Record<number, CachedResource>>({});
 
 // Loading state
-const isResourcesLoaded = ref(false);
+const isItemsLoaded = ref(false);
 const isEquipmentLoaded = ref(false);
 
 /**
- * Initialize resources cache from IndexedDB
+ * Initialize items cache from IndexedDB
  * Should be called once at app startup
  */
-export async function initializeResourcesCache() {
+export async function initializeItemsCache() {
   try {
-    const resources = await getItems();
-    if (resources) {
+    const items = await getItems();
+    if (items) {
       // Convert string keys to numbers for type safety
-      const typedResources: Record<number, CachedResource> = {};
-      for (const [id, resource] of Object.entries(resources)) {
-        typedResources[Number(id)] = resource as CachedResource;
+      const typedItems: Record<number, CachedResource> = {};
+      for (const [id, item] of Object.entries(items)) {
+        typedItems[Number(id)] = item as CachedResource;
       }
-      resourcesCache.value = typedResources;
-      isResourcesLoaded.value = true;
+      itemsCache.value = typedItems;
+      isItemsLoaded.value = true;
     }
   } catch (error) {
-    console.error('Failed to initialize resources cache:', error);
+    console.error('Failed to initialize items cache:', error);
   }
 }
 
@@ -65,18 +66,18 @@ export async function initializeEquipmentCache() {
  */
 export async function initializeAllCaches() {
   await Promise.all([
-    initializeResourcesCache(),
+    initializeItemsCache(),
     initializeEquipmentCache()
   ]);
 }
 
 /**
- * Get resource data by ID (synchronous)
+ * Get item data by ID (synchronous)
  * Returns the cached data immediately
  */
 export function getResourceDataByIdSync(id: string | number): CachedResource | null {
   const numericId = typeof id === 'string' ? Number(id) : id;
-  return resourcesCache.value[numericId] ?? null;
+  return itemsCache.value[numericId] ?? null;
 }
 
 /**
@@ -89,12 +90,12 @@ export function getEquipmentDataByIdSync(id: string | number): CachedResource | 
 }
 
 /**
- * Update a resource in the cache
+ * Update an item in the cache
  * Call this after saving to IndexedDB to keep cache in sync
  */
-export function updateResourceInCache(id: string | number, data: CachedResource) {
+export function updateItemInCache(id: string | number, data: CachedResource) {
   const numericId = typeof id === 'string' ? Number(id) : id;
-  resourcesCache.value[numericId] = data;
+  itemsCache.value[numericId] = data;
 }
 
 /**
@@ -107,12 +108,12 @@ export function updateEquipmentInCache(id: string | number, data: CachedResource
 }
 
 /**
- * Update all resources in cache
+ * Update all items in cache
  * Call this after bulk import or updates
  */
-export function updateResourcesCache(resources: Record<number, CachedResource>) {
-  resourcesCache.value = resources;
-  isResourcesLoaded.value = true;
+export function updateItemsCache(items: Record<number, CachedResource>) {
+  itemsCache.value = items;
+  isItemsLoaded.value = true;
 }
 
 /**
@@ -128,14 +129,14 @@ export function updateEquipmentCache(equipment: Record<number, CachedResource>) 
  * Check if caches are loaded
  */
 export function areCachesLoaded(): boolean {
-  return isResourcesLoaded.value && isEquipmentLoaded.value;
+  return isItemsLoaded.value && isEquipmentLoaded.value;
 }
 
 /**
- * Get all resources from cache
+ * Get all items from cache
  */
-export function getAllResourcesFromCache(): Record<number, CachedResource> {
-  return resourcesCache.value;
+export function getAllItemsFromCache(): Record<number, CachedResource> {
+  return itemsCache.value;
 }
 
 /**
