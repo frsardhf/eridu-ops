@@ -40,7 +40,7 @@ import {
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { studentDataStore, studentDataVersion, batchSetStudentData } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
-import { currentLanguage } from '../stores/localizationStore';
+import { currentLanguage, initializeLocalizationData } from '../stores/localizationStore';
 import { filterByProperty } from '../utils/filterUtils';
 
 // Singleton state (shared across all calls)
@@ -425,8 +425,11 @@ export function useStudentData() {
     try {
       isLoading.value = true;
 
-      // 1. Run migration once (checks internally if already completed)
-      await migrateFromLocalStorageToIndexedDB();
+      // 1. Run migration + prefetch localization in parallel (independent tasks)
+      await Promise.all([
+        migrateFromLocalStorageToIndexedDB(),
+        initializeLocalizationData()
+      ]);
 
       // 2. Load settings from localStorage
       loadSettings();

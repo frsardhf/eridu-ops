@@ -1,5 +1,6 @@
 import { ref, watch } from 'vue';
 import { getSettings, updateSetting } from '../utils/settingsStorage';
+import { fetchLocalizationData, localizationData } from '../utils/localizationUtils';
 
 export type Language = 'en' | 'jp';
 
@@ -37,3 +38,16 @@ watch(currentLanguage, (newLanguage) => {
 export function setLanguage(language: Language) {
   currentLanguage.value = language;
 }
+
+// Re-export the shared localization data ref for consumers
+export { localizationData };
+
+// Fetch and populate the shared localization data
+export async function initializeLocalizationData(lang?: string): Promise<void> {
+  await fetchLocalizationData(lang ?? currentLanguage.value);
+}
+
+// Re-fetch when language changes
+watch(currentLanguage, (newLang) => {
+  initializeLocalizationData(newLang);
+});

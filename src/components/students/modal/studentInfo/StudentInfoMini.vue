@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { currentLanguage } from '../../../../consumables/stores/localizationStore';
-import { fetchLocalizationData } from '../../../../consumables/utils/upgradeUtils';
+import { computed } from 'vue';
+import { localizationData } from '../../../../consumables/stores/localizationStore';
 import { getBulletTypeColor, getArmorTypeColor, getSquadTypeColor, colorWithOpacity } from '../../../../consumables/utils/colorUtils';
 import { $t } from '../../../../locales';
 
@@ -12,46 +11,34 @@ const props = defineProps<{
   newBondLevel: number;
 }>();
 
-// Localization cache for SchaleDB data
-const localizationCache = ref<Record<string, any> | null>(null);
-
-// Fetch localization on mount and language change
-onMounted(async () => {
-  localizationCache.value = await fetchLocalizationData(currentLanguage.value);
-});
-
-watch(currentLanguage, async (newLang) => {
-  localizationCache.value = await fetchLocalizationData(newLang);
-});
-
 // Level computations
 const isMaxLevel = computed(() => props.characterLevels.current === 90 && props.characterLevels.target === 90);
 const showLevelArrow = computed(() => props.characterLevels.current !== props.characterLevels.target);
 
 // Localized names from SchaleDB
 const squadTypeName = computed(() => {
-  if (!props.student?.SquadType || !localizationCache.value?.SquadType) return '';
-  return localizationCache.value.SquadType[props.student.SquadType] || props.student.SquadType;
+  if (!props.student?.SquadType || !localizationData.value?.SquadType) return '';
+  return localizationData.value.SquadType[props.student.SquadType] || props.student.SquadType;
 });
 
 const bulletTypeName = computed(() => {
-  if (!props.student?.BulletType || !localizationCache.value?.BulletType) return '';
-  return localizationCache.value.BulletType[props.student.BulletType] || props.student.BulletType;
+  if (!props.student?.BulletType || !localizationData.value?.BulletType) return '';
+  return localizationData.value.BulletType[props.student.BulletType] || props.student.BulletType;
 });
 
 const armorTypeName = computed(() => {
-  if (!props.student?.ArmorType || !localizationCache.value?.ArmorType) return '';
-  return localizationCache.value.ArmorType[props.student.ArmorType] || props.student.ArmorType;
+  if (!props.student?.ArmorType || !localizationData.value?.ArmorType) return '';
+  return localizationData.value.ArmorType[props.student.ArmorType] || props.student.ArmorType;
 });
 
 const schoolName = computed(() => {
-  if (!props.student?.School || !localizationCache.value?.School) return '';
-  return localizationCache.value.School[props.student.School] || props.student.School;
+  if (!props.student?.School || !localizationData.value?.School) return '';
+  return localizationData.value.School[props.student.School] || props.student.School;
 });
 
 const clubName = computed(() => {
-  if (!props.student?.Club || !localizationCache.value?.Club) return '';
-  return localizationCache.value.Club[props.student.Club] || props.student.Club;
+  if (!props.student?.Club || !localizationData.value?.Club) return '';
+  return localizationData.value.Club[props.student.Club] || props.student.Club;
 });
 
 // Colors

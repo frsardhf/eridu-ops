@@ -264,17 +264,17 @@ function handlePinToggle(event: MouseEvent) {
                   class="equipment-value"
                   :title="type + ' Equipment Level'"
                 >
-                  {{ formatEquipmentTier(studentData.equipmentLevels[type]?.current) }}
+                  {{ formatEquipmentTier(studentData?.equipmentLevels?.[type]?.current) }}
                 </span>
               </div>
               <div class="equipment-row" v-if="hasAnyEquipmentDifference">
-                <span 
-                  v-for="type in displayEquipment" 
-                  :key="`target-${type}`" 
+                <span
+                  v-for="type in displayEquipment"
+                  :key="`target-${type}`"
                   class="equipment-value target-value"
                   :title="'Target ' + type + ' Equipment Level'"
                 >
-                  {{ formatEquipmentTier(studentData.equipmentLevels[type]?.target) }}
+                  {{ formatEquipmentTier(studentData?.equipmentLevels?.[type]?.target) }}
                 </span>
               </div>
             </div>

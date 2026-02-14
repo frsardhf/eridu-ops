@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { SkillType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
 import { getStudentData } from '../../../../consumables/stores/studentStore';
-import { currentLanguage } from '../../../../consumables/stores/localizationStore';
 import {
-  formatSkillDescription,
+  formatSkillDescription
+} from '../../../../consumables/utils/localizationUtils';
+import {
   formatSkillCost,
-  calculateTooltipPosition,
-  fetchLocalizationData
+  calculateTooltipPosition
 } from '../../../../consumables/utils/upgradeUtils';
 import { getBulletTypeColor } from '../../../../consumables/utils/colorUtils';
 
@@ -46,22 +46,6 @@ const skillLabels: Record<SkillType, string> = {
   Passive: 'Passive',
   ExtraPassive: 'Sub'
 };
-
-// Localization cache for buff name resolution
-const localizationCache = ref<Record<string, any> | null>(null);
-
-onMounted(() => {
-  fetchLocalizationData(currentLanguage.value).then(data => {
-    localizationCache.value = data;
-  });
-});
-
-watch(currentLanguage, (newLanguage) => {
-  localizationCache.value = null;
-  fetchLocalizationData(newLanguage).then(data => {
-    localizationCache.value = data;
-  });
-});
 
 // Tooltip state
 const activeTooltip = ref<SkillType | null>(null);
@@ -119,7 +103,7 @@ function getSkillData(skillType: SkillType) {
 function getSkillDescription(skillType: SkillType): string {
   const skill = getSkillData(skillType);
   const levels = getLevelDisplay(skillType);
-  return formatSkillDescription(skill, levels.current, levels.target, localizationCache.value);
+  return formatSkillDescription(skill, levels.current, levels.target);
 }
 
 // Get skill cost (only for Ex skills)

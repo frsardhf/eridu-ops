@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { SkillType } from '../../../../types/upgrade';
-import { currentLanguage } from '../../../../consumables/stores/localizationStore';
 import { $t } from '../../../../locales';
 import { getStudentData } from '../../../../consumables/stores/studentStore';
 import {
-  formatSkillDescription as sharedFormatSkillDescription,
+  formatSkillDescription as sharedFormatSkillDescription
+} from '../../../../consumables/utils/localizationUtils';
+import {
   formatSkillCost as sharedFormatSkillCost,
-  calculateTooltipPosition,
-  fetchLocalizationData
+  calculateTooltipPosition
 } from '../../../../consumables/utils/upgradeUtils';
 import { getBulletTypeColor } from '../../../../consumables/utils/colorUtils';
 
@@ -117,15 +117,6 @@ const getSkillIconUrl = (iconName: string) => {
   return `https://schaledb.com/images/skill/${iconName}.webp`;
 };
 
-// Cache for localization data
-const localizationCache = ref<Record<string, any> | null>(null);
-
-onMounted(() => {
-  fetchLocalizationData(currentLanguage.value).then(data => {
-    localizationCache.value = data;
-  });
-});
-
 // Get the appropriate skill data
 const getSkillData = (skillType: SkillType) => {
   if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
@@ -145,7 +136,7 @@ const getSkillData = (skillType: SkillType) => {
 
 const getSkillDescription = (skillType: SkillType, current: number, target: number) => {
   const skill = getSkillData(skillType);
-  return sharedFormatSkillDescription(skill, current, target, localizationCache.value);
+  return sharedFormatSkillDescription(skill, current, target);
 };
 
 interface SkillData {
@@ -203,13 +194,6 @@ const toggleExtraExSkill = () => {
 
 watch(() => props.student, () => {
   useExtraExSkill.value = false;
-});
-
-watch(currentLanguage, (newLanguage) => {
-  localizationCache.value = null;
-  fetchLocalizationData(newLanguage).then(data => {
-    localizationCache.value = data;
-  });
 });
 
 const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletType));
