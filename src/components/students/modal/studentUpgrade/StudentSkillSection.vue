@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, toRef } from 'vue';
 import { SkillType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
-import { getStudentData } from '../../../../consumables/stores/studentStore';
-import {
-  formatSkillDescription as sharedFormatSkillDescription
-} from '../../../../consumables/utils/localizationUtils';
-import {
-  formatSkillCost as sharedFormatSkillCost,
-  calculateTooltipPosition
-} from '../../../../consumables/utils/upgradeUtils';
-import { getBulletTypeColor } from '../../../../consumables/utils/colorUtils';
+import { calculateTooltipPosition } from '../../../../consumables/utils/upgradeUtils';
+import { useStudentSkillEnhancements } from '../../../../composables/student/useStudentSkillEnhancements';
+import { useStudentSkillDisplay } from '../../../../composables/student/useStudentSkillDisplay';
+import { useStudentColors } from '../../../../composables/student/useStudentColors';
 
 const props = defineProps<{
   student: Record<string, any> | null,
@@ -25,6 +20,28 @@ const emit = defineEmits<{
   (e: 'toggle-max-target', checked: boolean): void;
 }>();
 
+const studentRef = toRef(() => props.student);
+const { isPassiveEnhanced, isBasicEnhanced } = useStudentSkillEnhancements(studentRef);
+const { bulletTypeColor } = useStudentColors(studentRef);
+const {
+  useExtraExSkill,
+  hasExtraExSkill,
+  toggleExtraExSkill,
+  getSkillIcon,
+  getSkillName,
+  getMaxLevel,
+  getLevelDisplayState,
+  isTargetMaxLevel,
+  getSkillDescription,
+  getSkillCostDisplay,
+  getSkillIconUrl
+} = useStudentSkillDisplay(
+  studentRef,
+  toRef(() => props.skillLevels),
+  isPassiveEnhanced,
+  isBasicEnhanced
+);
+
 // Checkbox handlers
 const handleMaxAllSkillsChange = (event: Event) => {
   const checked = (event.target as HTMLInputElement).checked;
@@ -35,58 +52,6 @@ const handleMaxTargetSkillsChange = (event: Event) => {
   const checked = (event.target as HTMLInputElement).checked;
   emit('toggle-max-target', checked);
 };
-
-const studentData = computed(() => {
-  if (!props.student?.Id) return null;
-  return getStudentData(props.student.Id);
-});
-
-const useExtraExSkill = ref(false);
-
-const hasExtraExSkill = computed(() => {
-  return props.student?.Skills?.Ex?.ExtraSkills
-    && props.student.Skills.Ex.ExtraSkills.length > 0;
-});
-
-// Helper functions to derive skill properties from props
-const getSkillIcon = (skillType: SkillType): string => {
-  if (skillType === 'Ex' && useExtraExSkill.value && props.student?.Skills?.Ex?.ExtraSkills?.[0]) {
-    return props.student.Skills.Ex.ExtraSkills[0].Icon ?? '';
-  }
-  return props.student?.Skills?.[skillType]?.Icon ?? '';
-};
-
-const getSkillName = (skillType: SkillType): string => {
-  if (skillType === 'Ex' && useExtraExSkill.value && props.student?.Skills?.Ex?.ExtraSkills?.[0]) {
-    return props.student.Skills.Ex.ExtraSkills[0].Name ?? 'EX Skill';
-  }
-  return props.student?.Skills?.[skillType]?.Name ?? skillType;
-};
-
-const getMaxLevel = (skillType: SkillType): number => {
-  const skill = props.student?.Skills?.[skillType];
-  if (skillType === 'Ex') {
-    return skill?.Parameters?.[0]?.length ||
-      props.student?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length || 5;
-  }
-  return skill?.Parameters?.[0]?.length ?? 10;
-};
-
-const gradeLevel = computed(() => {
-  return studentData.value?.gradeLevels?.current || 0;
-});
-
-const isPassiveEnhanced = computed(() => {
-  return gradeLevel.value >= 7;
-});
-
-const exclusiveGearLevel = computed(() => {
-  return studentData.value?.exclusiveGearLevel?.current || 0;
-});
-
-const isBasicEnhanced = computed(() => {
-  return exclusiveGearLevel.value >= 2;
-});
 
 // Handle skill level changes (using props directly, no internal state)
 const updateSkillCurrent = (type: SkillType, value: number) => {
@@ -112,54 +77,6 @@ const updateSkillTarget = (type: SkillType, value: number) => {
   }
 };
 
-// Format skill icon URL
-const getSkillIconUrl = (iconName: string) => {
-  return `https://schaledb.com/images/skill/${iconName}.webp`;
-};
-
-// Get the appropriate skill data
-const getSkillData = (skillType: SkillType) => {
-  if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
-    return props.student.Skills.WeaponPassive;
-  }
-
-  if (skillType === 'Public' && isBasicEnhanced.value && props.student?.Skills?.GearPublic) {
-    return props.student.Skills.GearPublic;
-  }
-
-  if (skillType === 'Ex' && useExtraExSkill.value && props.student?.Skills?.Ex?.ExtraSkills?.[0]) {
-    return props.student.Skills.Ex.ExtraSkills[0];
-  }
-
-  return props.student?.Skills?.[skillType];
-};
-
-const getSkillDescription = (skillType: SkillType, current: number, target: number) => {
-  const skill = getSkillData(skillType);
-  return sharedFormatSkillDescription(skill, current, target);
-};
-
-interface SkillData {
-  Cost?: number[];
-  [key: string]: any;
-}
-
-const getSkillCost = (skillType: SkillType, current: number, target: number): string => {
-  let skill: SkillData | undefined;
-
-  if (
-    skillType === 'Ex' &&
-    useExtraExSkill.value &&
-    props.student?.Skills?.Ex?.ExtraSkills?.[0]
-  ) {
-    skill = props.student.Skills.Ex.ExtraSkills[0] as SkillData;
-  } else {
-    skill = props.student?.Skills?.[skillType] as SkillData;
-  }
-
-  return skill?.Cost ? sharedFormatSkillCost(skill.Cost, current, target) : '';
-};
-
 // Tooltip handling
 const activeTooltip = ref<SkillType | null>(null);
 const tooltipStyle = ref({ top: '0px', left: '0px' });
@@ -172,31 +89,6 @@ const showTooltip = (event: MouseEvent, skillType: SkillType) => {
 const hideTooltip = () => {
   activeTooltip.value = null;
 };
-
-// Level display helpers
-const getLevelDisplayState = (current: number, target: number, maxLevel: number) => {
-  if (current === maxLevel && target === maxLevel) {
-    return 'max';
-  } else if (current === target) {
-    return 'same';
-  } else {
-    return 'different';
-  }
-};
-
-const isTargetMaxLevel = (target: number, maxLevel: number) => {
-  return target === maxLevel;
-};
-
-const toggleExtraExSkill = () => {
-  useExtraExSkill.value = !useExtraExSkill.value;
-};
-
-watch(() => props.student, () => {
-  useExtraExSkill.value = false;
-});
-
-const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletType));
 </script>
 
 <template>
@@ -429,18 +321,10 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
     >
       <div class="tooltip-content" v-if="activeTooltip">
         <div class="tooltip-name">{{ getSkillName(activeTooltip) }}</div>
-        <div class="tooltip-cost" v-if="getSkillCost(activeTooltip, props.skillLevels[activeTooltip]?.current ?? 1, props.skillLevels[activeTooltip]?.target ?? 1)">
-          {{ $t('cost') }}: <span v-html="getSkillCost(
-            activeTooltip,
-            props.skillLevels[activeTooltip]?.current ?? 1,
-            props.skillLevels[activeTooltip]?.target ?? 1
-          )"></span>
+        <div class="tooltip-cost" v-if="getSkillCostDisplay(activeTooltip)">
+          {{ $t('cost') }}: <span v-html="getSkillCostDisplay(activeTooltip)"></span>
         </div>
-        <div class="tooltip-desc" v-html="getSkillDescription(
-          activeTooltip,
-          props.skillLevels[activeTooltip]?.current ?? 1,
-          props.skillLevels[activeTooltip]?.target ?? 1
-        )"></div>
+        <div class="tooltip-desc" v-html="getSkillDescription(activeTooltip)"></div>
       </div>
     </div>
   </div>

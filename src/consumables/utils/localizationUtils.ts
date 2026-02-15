@@ -1,8 +1,17 @@
 import { ref } from 'vue';
 import { formatValueWithTarget } from './upgradeUtils';
 
+type Localization = {
+  SquadType: Record<string, string>;
+  BulletType: Record<string, string>;
+  ArmorType: Record<string, string>;
+  School: Record<string, string>;
+  Club: Record<string, string>;
+  BuffName: Record<string, string>;
+};
+
 // Shared reactive cache for localization data fetched from SchaleDB
-export const localizationData = ref<Record<string, any> | null>(null);
+export const localizationData = ref<Localization | null>(null);
 
 /**
  * Fetch localization data from SchaleDB and populate the shared store
@@ -17,6 +26,19 @@ export function fetchLocalizationData(lang: string = 'en'): Promise<Record<strin
       return data;
     });
 }
+
+/**
+ * Returns the localized display name for a given localization category and key.
+ * @param category The localization group (e.g. 'School', 'Club', 'SquadType').
+ * @param key The raw key from the student data.
+ * @returns The localized string if found; otherwise the original key or an empty string.
+ */
+export function resolveLocalized (category: keyof Localization, key?: string) {
+  if (!key) return '';
+  const map = localizationData.value?.[category];
+  if (!map) return '';
+  return map[key] ?? key;
+};
 
 /**
  * Fetch localized buff name from the shared localization store

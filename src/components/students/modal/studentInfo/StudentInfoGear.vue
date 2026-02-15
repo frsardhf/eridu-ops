@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { toRef } from 'vue';
 import { EquipmentType } from '../../../../types/gear';
 import { $t } from '../../../../locales';
+import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
 
 const props = defineProps<{
   student: Record<string, any> | null;
@@ -23,61 +24,27 @@ const equipmentTypes: Record<string, () => string> = {
   Necklace: () => $t('equipmentTypes.Necklace')
 };
 
-// Weapon
-function getWeaponIconUrl(): string {
-  if (!props.student?.WeaponImg) return '';
-  return `https://schaledb.com/images/weapon/${props.student.WeaponImg}.webp`;
-}
-
-const currentGrade = computed(() => props.gradeLevels?.current ?? 1);
-const targetGrade = computed(() => props.gradeLevels?.target ?? 1);
-const isMaxGrade = computed(() => currentGrade.value === 9);
-const isWeaponLocked = computed(() => currentGrade.value <= 5);
-
-// Blue stars only (positions 6-9), shown only when weapon is unlocked
-const blueStars = computed(() => {
-  const arr: { position: number; active: boolean }[] = [];
-  for (let i = 6; i <= 9; i++) {
-    arr.push({
-      position: i,
-      active: i <= currentGrade.value
-    });
-  }
-  return arr;
-});
-
-// Equipment
-function getEquipmentIconUrl(type: string, tier: number): string {
-  const formattedType = type.toLowerCase();
-  return `https://schaledb.com/images/equipment/icon/equipment_icon_${formattedType}_tier${tier}.webp`;
-}
-
 function getEquipmentTypeName(type: string): string {
   return equipmentTypes[type]?.() || type;
 }
 
-function getEquipmentDisplay(type: string): { current: number; target: number; isSame: boolean } {
-  const current = props.equipmentLevels[type]?.current || 1;
-  const target = props.equipmentLevels[type]?.target || 1;
-  return { current, target, isSame: current === target };
-}
-
-// Exclusive Gear
-function getExclusiveGearIconUrl(): string {
-  if (!props.student?.Id) return '';
-  return `https://schaledb.com/images/gear/full/${props.student.Id}.webp`;
-}
-
-function getExclusiveGearDisplay(): { current: number; target: number; isSame: boolean; isLocked: boolean } {
-  const current = props.exclusiveGearLevel?.current || 0;
-  const target = props.exclusiveGearLevel?.target || 0;
-  return {
-    current,
-    target,
-    isSame: current === target,
-    isLocked: current === 0
-  };
-}
+const {
+  currentGrade,
+  targetGrade,
+  isMaxGrade,
+  isWeaponLocked,
+  blueStars,
+  getWeaponIconUrl,
+  getEquipmentIconUrl,
+  getEquipmentDisplay,
+  getExclusiveGearIconUrl,
+  getExclusiveGearDisplay
+} = useStudentGearDisplay(
+  toRef(() => props.student),
+  toRef(() => props.gradeLevels),
+  toRef(() => props.equipmentLevels),
+  toRef(() => props.exclusiveGearLevel)
+);
 </script>
 
 <template>

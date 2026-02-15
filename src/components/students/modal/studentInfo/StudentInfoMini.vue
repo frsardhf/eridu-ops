@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { localizationData } from '../../../../consumables/stores/localizationStore';
-import { getBulletTypeColor, getArmorTypeColor, getSquadTypeColor, colorWithOpacity } from '../../../../consumables/utils/colorUtils';
+import { toRef } from 'vue';
 import { $t } from '../../../../locales';
+import { useStudentLevels } from '../../../../composables/student/useStudentLevels';
+import { useStudentLocalization } from '../../../../composables/student/useStudentLocalization';
+import { useStudentColors } from '../../../../composables/student/useStudentColors';
 
 const props = defineProps<{
   student: Record<string, any> | null;
@@ -11,44 +12,12 @@ const props = defineProps<{
   newBondLevel: number;
 }>();
 
-// Level computations
-const isMaxLevel = computed(() => props.characterLevels.current === 90 && props.characterLevels.target === 90);
-const showLevelArrow = computed(() => props.characterLevels.current !== props.characterLevels.target);
-
-// Localized names from SchaleDB
-const squadTypeName = computed(() => {
-  if (!props.student?.SquadType || !localizationData.value?.SquadType) return '';
-  return localizationData.value.SquadType[props.student.SquadType] || props.student.SquadType;
-});
-
-const bulletTypeName = computed(() => {
-  if (!props.student?.BulletType || !localizationData.value?.BulletType) return '';
-  return localizationData.value.BulletType[props.student.BulletType] || props.student.BulletType;
-});
-
-const armorTypeName = computed(() => {
-  if (!props.student?.ArmorType || !localizationData.value?.ArmorType) return '';
-  return localizationData.value.ArmorType[props.student.ArmorType] || props.student.ArmorType;
-});
-
-const schoolName = computed(() => {
-  if (!props.student?.School || !localizationData.value?.School) return '';
-  return localizationData.value.School[props.student.School] || props.student.School;
-});
-
-const clubName = computed(() => {
-  if (!props.student?.Club || !localizationData.value?.Club) return '';
-  return localizationData.value.Club[props.student.Club] || props.student.Club;
-});
-
-// Colors
-const squadTypeColor = computed(() => getSquadTypeColor(props.student?.SquadType));
-const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletType));
-const armorTypeColor = computed(() => getArmorTypeColor(props.student?.ArmorType));
-
-// 80% opacity variants for pill labels
-const bulletTypeColorLight = computed(() => colorWithOpacity(bulletTypeColor.value, 0.8));
-const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value, 0.8));
+const studentRef = toRef(() => props.student);
+const { isMaxLevel, showLevelArrow } = useStudentLevels(() => props.characterLevels);
+const { squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName 
+} = useStudentLocalization(studentRef);
+const { squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight 
+} = useStudentColors(studentRef);
 </script>
 
 <template>
@@ -93,16 +62,24 @@ const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value
       <!-- ATK badge with divider -->
       <div class="type-row" v-if="bulletTypeName">
         <div class="type-pill-divided">
-          <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">{{ $t('atk') }}</span>
-          <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">{{ bulletTypeName }}</span>
+          <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
+            {{ $t('atk') }}
+          </span>
+          <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
+            {{ bulletTypeName }}
+          </span>
         </div>
       </div>
 
       <!-- DEF badge with divider -->
       <div class="type-row" v-if="armorTypeName">
         <div class="type-pill-divided">
-          <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">{{ $t('def') }}</span>
-          <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">{{ armorTypeName }}</span>
+          <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
+            {{ $t('def') }}
+          </span>
+          <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
+            {{ armorTypeName }}
+          </span>
         </div>
       </div>
     </div>

@@ -21,6 +21,7 @@ import { consolidateAndSortMaterials } from '../utils/materialUtils';
 import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { updateGearsData } from '../stores/gearsStore';
 import type { ExclusiveGearLevel } from '../../types/gear';
+import { CachedResource } from '../../types/resource';
 
 // Get credits required for a specific equipment tier
 export function getCreditsForEquipmentTier(current: number, target: number) {
@@ -326,6 +327,20 @@ export function calculateAllGears(
   return consolidateAndSortMaterials(materials);
 }
 
+export function getMaxTierForTypeSync(type: string): number {
+  const equipments = getAllEquipmentFromCache();
+  const matchingEquipments = Object.values(equipments)
+    .filter((item: any) => item.Category === type)
+    .filter(
+      (item): item is CachedResource & { Tier: number } =>
+        typeof item.Tier === 'number'
+    )
+    .sort((a: any, b: any) => b.Id - a.Id);
+
+  const highestTierEquipment = matchingEquipments[0];
+  return highestTierEquipment.Tier;
+}
+
 export function useStudentGear(props: {
   student: ModalProps | null,
   isVisible?: boolean
@@ -365,19 +380,6 @@ export function useStudentGear(props: {
     if (canUnlockT1.value) return 1;
     return 0;
   });
-
-  // Synchronous version of getMaxTierForType using cached data
-  function getMaxTierForTypeSync(type: string): number {
-    const equipments = getAllEquipmentFromCache();
-    if (!equipments || Object.keys(equipments).length === 0) return 10;
-
-    const matchingEquipments = Object.values(equipments)
-      .filter((item: any) => item.Category === type)
-      .sort((a: any, b: any) => b.Id - a.Id);
-
-    const highestTierEquipment = matchingEquipments[0];
-    return highestTierEquipment?.Tier || 10;
-  }
 
   const checkAllGearsMaxed = () => {
     if (!props.student?.Equipment) return false;

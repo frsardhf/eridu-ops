@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { PotentialType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
+import { getLevelDisplayState, isTargetMaxLevel } from '../../../../composables/student/useStudentSkillDisplay';
 
 const props = defineProps<{
   potentialLevels: Record<PotentialType, { current: number; target: number }>;
@@ -44,21 +45,6 @@ const getPotentialName = (potType: PotentialType): string => {
     healpower: $t('healPower')
   };
   return names[potType];
-};
-
-// Level display helpers
-const getLevelDisplayState = (current: number, target: number) => {
-  if (current === MAX_POTENTIAL_LEVEL && target === MAX_POTENTIAL_LEVEL) {
-    return 'max';
-  } else if (current === target) {
-    return 'same';
-  } else {
-    return 'different';
-  }
-};
-
-const isTargetMaxLevel = (target: number) => {
-  return target === MAX_POTENTIAL_LEVEL;
 };
 
 // Handle potential type changes (using props directly, no internal state)
@@ -218,20 +204,22 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
           <div class="level-indicator">
             <template v-if="getLevelDisplayState(
               props.potentialLevels[potType]?.current ?? 0,
-              props.potentialLevels[potType]?.target ?? 0
+              props.potentialLevels[potType]?.target ?? 0,
+              MAX_POTENTIAL_LEVEL
             ) === 'max'">
               <span class="max-level">{{ $t('max') }}</span>
             </template>
             <template v-else-if="getLevelDisplayState(
               props.potentialLevels[potType]?.current ?? 0,
-              props.potentialLevels[potType]?.target ?? 0
+              props.potentialLevels[potType]?.target ?? 0,
+              MAX_POTENTIAL_LEVEL
             ) === 'same'">
               <span>Lv.{{ props.potentialLevels[potType]?.current ?? 0 }}</span>
             </template>
             <template v-else>
               <span class="current-level-text">Lv.{{ props.potentialLevels[potType]?.current ?? 0 }}</span>
               <span class="level-arrow">→</span>
-              <span class="target-level-text" :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0) }">
+              <span class="target-level-text" :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0, MAX_POTENTIAL_LEVEL) }">
                 {{ props.potentialLevels[potType]?.target ?? 0 }}
               </span>
             </template>
@@ -267,7 +255,7 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
               :min="0"
               :max="MAX_POTENTIAL_LEVEL"
               class="level-input target-level"
-              :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0) }"
+              :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0, MAX_POTENTIAL_LEVEL) }"
               :aria-label="`${$t('target')} ${getPotentialName(potType)}`"
             />
             <button

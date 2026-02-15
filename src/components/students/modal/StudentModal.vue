@@ -351,6 +351,7 @@ onUnmounted(() => {
               :student="student"
               :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
               :grade-infos="gradeInfos"
+              :grade-levels="gradeLevels"
               @update-info="handleGradeInfoUpdate"
             />
           </div>

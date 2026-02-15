@@ -1,29 +1,33 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, toRef } from 'vue';
 import { $t } from '../../../../locales';
 import { ModalProps } from '../../../../types/student';
-import { getStudentData } from '../../../../consumables/stores/studentStore';
+import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
 
 const props = defineProps<{
   student: ModalProps | null;
   elephNeeded: number;
   gradeInfos: { owned?: number; price?: number; purchasable?: number; };
+  gradeLevels: { current?: number; target?: number };
 }>();
 
 const emit = defineEmits<{
   (e: 'update-info', owned: number, price: number, purchasable: number): void;
 }>();
 
-// Local state to track levels
+const studentRef = toRef(() => props.student);
+const { isMaxGrade } = useStudentGearDisplay(
+  studentRef,
+  toRef(() => props.gradeLevels),
+  () => ({}),
+  () => ({})
+);
+
+// Local state to track form inputs
 const gradeState = ref({
   owned: props.gradeInfos?.owned || 0,
   price: props.gradeInfos?.price || 1,
   purchasable: props.gradeInfos?.purchasable || 20
-});
-
-const studentData = computed(() => {
-  if (!props.student?.Id) return null;
-  return getStudentData(props.student.Id);
 });
 
 // Computed property for ElephIcon
@@ -45,35 +49,20 @@ watch(() => props.gradeInfos, (newVal) => {
   }
 }, { deep: true, immediate: true });
 
-// Watch for changes in the store
-watch(() => studentData.value, () => {
-}, { deep: true });
-
-const gradeLevel = computed(() => {
-  return studentData.value?.gradeLevels?.current || 0;
-});
-
-const isMaxGrade = computed(() => {
-  return gradeLevel.value === 9;
-});
-
 // Update handlers
 const updateValue = (event: Event, field: 'owned' | 'price' | 'purchasable') => {
   const input = event.target as HTMLInputElement;
   const value = parseInt(input.value) || 0;
-  
-  // Define min and max values for each field
+
   const limits = {
     owned: { min: 0, max: 520 },
     price: { min: 1, max: 5 },
     purchasable: { min: 1, max: 20 }
   };
-  
-  // Clamp the value based on field limits
+
   const clampedValue = Math.max(limits[field].min, Math.min(limits[field].max, value));
   gradeState.value[field] = clampedValue;
-  
-  // Emit the complete state
+
   emit('update-info', gradeState.value.owned, gradeState.value.price, gradeState.value.purchasable);
 };
 </script>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, toRef } from 'vue';
 import { ModalProps } from '../../../../types/student';
 import { EquipmentType } from '../../../../types/gear';
-import { getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import { $t } from '../../../../locales';
+import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
+import { getMaxTierForTypeSync } from '../../../../consumables/hooks/useStudentGear';
 
 const props = defineProps<{
   student: ModalProps | null;
@@ -21,6 +22,13 @@ const emit = defineEmits<{
   (e: 'toggle-max-gears', checked: boolean): void;
   (e: 'toggle-max-target-gears', checked: boolean): void;
 }>();
+
+const { getEquipmentIconUrl, getExclusiveGearIconUrl } = useStudentGearDisplay(
+  toRef(() => props.student),
+  () => ({}),
+  toRef(() => props.equipmentLevels),
+  toRef(() => props.exclusiveGearLevel)
+);
 
 // Checkbox handlers
 const handleMaxAllGearsChange = (event: Event) => {
@@ -48,77 +56,35 @@ const equipmentTypes = {
 
 type EquipmentKey = keyof typeof equipmentTypes;
 
-// Format equipment type to lowercase for image URL
-function formatEquipmentType(type: string): string {
-  return type.toLowerCase();
-}
-
-// Get equipment icon URL
-function getEquipmentIconUrl(type: string, tier: number): string {
-  const baseUrl = 'https://schaledb.com/images/equipment/icon';
-  const formattedType = formatEquipmentType(type);
-  return `${baseUrl}/equipment_icon_${formattedType}_tier${tier}.webp`;
-}
-
-// Function to get maximum tier for each equipment type
-function getMaxTierForType(type: string): number {
-  const equipments = getAllEquipmentFromCache();
-  if (!equipments || Object.keys(equipments).length === 0) return 10; // Default to 10 if data not found
-
-  // Find all equipment that matches the type and sort by ID in descending order
-  const matchingEquipments = Object.values(equipments)
-    .filter((item: any) => item.Category === type)
-    .sort((a: any, b: any) => b.Id - a.Id);
-
-  // Get the first item (highest tier) or default to 10
-  const highestTierEquipment = matchingEquipments[0];
-
-  return highestTierEquipment?.Tier || 10;
-}
-
 // Function to handle current level changes
 function updateEquipmentCurrent(type: string, value: number) {
-  const maxTier = getMaxTierForType(type);
+  const maxTier = getMaxTierForTypeSync(type);
   if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
-    
-    if (!props.equipmentLevels[equipmentType]) {
-      return;
-    }
-    
+    if (!props.equipmentLevels[equipmentType]) return;
+
     props.equipmentLevels[equipmentType].current = value;
-    
-    // Ensure target is always >= current
     if (props.equipmentLevels[equipmentType].target < value) {
       props.equipmentLevels[equipmentType].target = value;
     }
-    
-    // Emit the update event
     emit('update-equipment', equipmentType, value, props.equipmentLevels[equipmentType].target);
   }
 }
 
 // Function to handle target level changes
 function updateEquipmentTarget(type: string, value: number) {
-  const maxTier = getMaxTierForType(type);
+  const maxTier = getMaxTierForTypeSync(type);
   if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
-    
-    if (!props.equipmentLevels[equipmentType]) {
-      return;
-    }
-    
+    if (!props.equipmentLevels[equipmentType]) return;
+
     const finalValue = Math.max(value, 1);
     props.equipmentLevels[equipmentType].target = finalValue;
-    
-    // Ensure current is always <= target
+
     if (props.equipmentLevels[equipmentType].current > finalValue) {
       props.equipmentLevels[equipmentType].current = finalValue;
-      
-      // Emit the update event for both current and target
       emit('update-equipment', equipmentType, finalValue, finalValue);
     } else {
-      // Emit the update event for target only
       emit('update-equipment', equipmentType, props.equipmentLevels[equipmentType].current, finalValue);
     }
   }
@@ -126,18 +92,12 @@ function updateEquipmentTarget(type: string, value: number) {
 
 // Function to check if target is at max level
 function isTargetMaxLevel(target: number, type: string) {
-  const maxTier = getMaxTierForType(type);
-  return target === maxTier;
+  return target === getMaxTierForTypeSync(type);
 }
 
 // Exclusive gear computed with defaults
 const gearCurrent = computed(() => props.exclusiveGearLevel?.current ?? 0);
 const gearTarget = computed(() => props.exclusiveGearLevel?.target ?? 0);
-
-// Exclusive gear functions
-function getExclusiveGearIconUrl(studentId: number): string {
-  return `https://schaledb.com/images/gear/full/${studentId}.webp`;
-}
 
 function updateExclusiveGearCurrent(value: number) {
   const maxTier = props.maxUnlockableGearTier;
@@ -216,24 +176,24 @@ function updateExclusiveGearTarget(value: number) {
               :value="equipmentLevels[type]?.current || 1"
               @input="(e) => updateEquipmentCurrent(type, parseInt((e.target as HTMLInputElement).value))"
               :min="1"
-              :max="getMaxTierForType(type)"
+              :max="getMaxTierForTypeSync(type)"
               class="level-input current-level"
               :aria-label="`${$t('currentEquipment')} ${equipmentTypes[type as EquipmentKey]}`"
             />
             <button 
               class="control-button increment-button"
-              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForType(type) }"
+              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForTypeSync(type) }"
               @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) + 1)"
-              :disabled="equipmentLevels[type]?.current >= getMaxTierForType(type)"
+              :disabled="equipmentLevels[type]?.current >= getMaxTierForTypeSync(type)"
               :aria-label="$t('increaseLevel')"
             >
               <span>+</span>
             </button>
             <button 
               class="control-button max-button"
-              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForType(type) }"
-              @click="updateEquipmentCurrent(type, getMaxTierForType(type))"
-              :disabled="equipmentLevels[type]?.current >= getMaxTierForType(type)"
+              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForTypeSync(type) }"
+              @click="updateEquipmentCurrent(type, getMaxTierForTypeSync(type))"
+              :disabled="equipmentLevels[type]?.current >= getMaxTierForTypeSync(type)"
               :aria-label="$t('setMaxLevel')"
             >
               <span>»</span>
@@ -283,25 +243,25 @@ function updateExclusiveGearTarget(value: number) {
               :value="equipmentLevels[type]?.target || 1"
               @input="(e) => updateEquipmentTarget(type, parseInt((e.target as HTMLInputElement).value))"
               :min="1"
-              :max="getMaxTierForType(type)"
+              :max="getMaxTierForTypeSync(type)"
               class="level-input target-level"
               :class="{ 'max-level': isTargetMaxLevel(equipmentLevels[type]?.target || 1, type) }"
               :aria-label="`${$t('targetEquipment')} ${equipmentTypes[type as EquipmentKey]}`"
             />
             <button 
               class="control-button increment-button"
-              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForType(type) }"
+              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForTypeSync(type) }"
               @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) + 1)"
-              :disabled="equipmentLevels[type]?.target >= getMaxTierForType(type)"
+              :disabled="equipmentLevels[type]?.target >= getMaxTierForTypeSync(type)"
               :aria-label="$t('increaseLevel')"
             >
               <span>+</span>
             </button>
             <button 
               class="control-button max-button"
-              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForType(type) }"
-              @click="updateEquipmentTarget(type, getMaxTierForType(type))"
-              :disabled="equipmentLevels[type]?.target >= getMaxTierForType(type)"
+              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForTypeSync(type) }"
+              @click="updateEquipmentTarget(type, getMaxTierForTypeSync(type))"
+              :disabled="equipmentLevels[type]?.target >= getMaxTierForTypeSync(type)"
               :aria-label="$t('setMaxLevel')"
             >
               <span>»</span>
@@ -361,7 +321,7 @@ function updateExclusiveGearTarget(value: number) {
           <!-- Show gear image if student has gear -->
           <template v-if="hasExclusiveGear">
             <img
-              :src="getExclusiveGearIconUrl(student?.Id || 0)"
+              :src="getExclusiveGearIconUrl()"
               :alt="student?.Gear?.Name || $t('exclusiveGear')"
               class="equipment-image"
               loading="lazy"

@@ -1,51 +1,38 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, toRef } from 'vue';
 import { SkillType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
-import { getStudentData } from '../../../../consumables/stores/studentStore';
-import {
-  formatSkillDescription
-} from '../../../../consumables/utils/localizationUtils';
-import {
-  formatSkillCost,
-  calculateTooltipPosition
-} from '../../../../consumables/utils/upgradeUtils';
-import { getBulletTypeColor } from '../../../../consumables/utils/colorUtils';
+import { calculateTooltipPosition } from '../../../../consumables/utils/upgradeUtils';
+import { useStudentSkillEnhancements } from '../../../../composables/student/useStudentSkillEnhancements';
+import { useStudentSkillDisplay } from '../../../../composables/student/useStudentSkillDisplay';
+import { useStudentColors } from '../../../../composables/student/useStudentColors';
 
 const props = defineProps<{
   student: Record<string, any> | null;
   skillLevels: Record<string, { current: number; target: number }>;
 }>();
 
-const studentData = computed(() => {
-  if (!props.student?.Id) return null;
-  return getStudentData(props.student.Id);
-});
-
-const gradeLevel = computed(() => {
-  return studentData.value?.gradeLevels?.current || 0;
-});
-
-const isPassiveEnhanced = computed(() => {
-  return gradeLevel.value >= 7;
-});
-
-const exclusiveGearLevel = computed(() => {
-  return studentData.value?.exclusiveGearLevel?.current || 0;
-});
-
-const isBasicEnhanced = computed(() => {
-  return exclusiveGearLevel.value >= 2;
-});
+const studentRef = toRef(() => props.student);
+const { isPassiveEnhanced, isBasicEnhanced } = useStudentSkillEnhancements(studentRef);
+const { bulletTypeColor } = useStudentColors(studentRef);
+const {
+  useExtraExSkill,
+  hasExtraExSkill,
+  toggleExtraExSkill,
+  getSkillIcon,
+  getSkillName,
+  getLevelDisplay,
+  getSkillDescription,
+  getSkillCostDisplay,
+  getSkillIconUrl
+} = useStudentSkillDisplay(
+  studentRef,
+  toRef(() => props.skillLevels),
+  isPassiveEnhanced,
+  isBasicEnhanced
+);
 
 const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
-
-const skillLabels: Record<SkillType, string> = {
-  Ex: 'EX',
-  Public: 'Basic',
-  Passive: 'Passive',
-  ExtraPassive: 'Sub'
-};
 
 // Tooltip state
 const activeTooltip = ref<SkillType | null>(null);
@@ -59,63 +46,6 @@ function showTooltip(event: MouseEvent, skillType: SkillType) {
 function hideTooltip() {
   activeTooltip.value = null;
 }
-
-function getSkillIconUrl(iconName: string): string {
-  return `https://schaledb.com/images/skill/${iconName}.webp`;
-}
-
-function getSkillIcon(skillType: SkillType): string {
-  return props.student?.Skills?.[skillType]?.Icon || '';
-}
-
-function getSkillName(skillType: SkillType): string {
-  return props.student?.Skills?.[skillType]?.Name || skillLabels[skillType];
-}
-
-function getMaxLevel(skillType: SkillType): number {
-  return props.student?.Skills?.[skillType]?.Parameters?.[0]?.length || (skillType === 'Ex' ? 5 : 10);
-}
-
-function getLevelDisplay(skillType: SkillType): { current: number; target: number; isMax: boolean; isSame: boolean } {
-  const current = props.skillLevels[skillType]?.current || 1;
-  const target = props.skillLevels[skillType]?.target || 1;
-  const maxLevel = getMaxLevel(skillType);
-  return {
-    current,
-    target,
-    isMax: current === maxLevel && target === maxLevel,
-    isSame: current === target
-  };
-}
-
-// Get the appropriate skill data (handles WeaponPassive for enhanced Passive, GearPublic for enhanced Basic)
-function getSkillData(skillType: SkillType) {
-  if (skillType === 'Passive' && isPassiveEnhanced.value && props.student?.Skills?.WeaponPassive) {
-    return props.student.Skills.WeaponPassive;
-  }
-  if (skillType === 'Public' && isBasicEnhanced.value && props.student?.Skills?.GearPublic) {
-    return props.student.Skills.GearPublic;
-  }
-  return props.student?.Skills?.[skillType];
-}
-
-// Get skill description using shared util
-function getSkillDescription(skillType: SkillType): string {
-  const skill = getSkillData(skillType);
-  const levels = getLevelDisplay(skillType);
-  return formatSkillDescription(skill, levels.current, levels.target);
-}
-
-// Get skill cost (only for Ex skills)
-function getSkillCostDisplay(skillType: SkillType): string {
-  const skill = props.student?.Skills?.[skillType];
-  if (!skill?.Cost) return '';
-  const levels = getLevelDisplay(skillType);
-  return formatSkillCost(skill.Cost, levels.current, levels.target);
-}
-
-// Get BulletType color using colorUtils
-const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletType));
 </script>
 
 <template>
@@ -177,6 +107,20 @@ const bulletTypeColor = computed(() => getBulletTypeColor(props.student?.BulletT
             </div>
           </div>
         </div>
+
+        <!-- ExtraEx toggle (EX skill card only) -->
+        <button
+          v-if="skillType === 'Ex' && hasExtraExSkill"
+          class="ex-toggle-btn"
+          :class="{ active: useExtraExSkill }"
+          :style="{ borderColor: bulletTypeColor, color: useExtraExSkill ? 
+            'white' : bulletTypeColor, backgroundColor: useExtraExSkill ? 
+            bulletTypeColor : 'transparent' }"
+          @click="toggleExtraExSkill"
+          type="button"
+        >
+          EX+
+        </button>
 
         <!-- Skill Level -->
         <div class="skill-level">
@@ -343,5 +287,17 @@ img, svg {
   background-clip: text;
   font-weight: bold;
   font-size: 0.85rem;
+}
+
+.ex-toggle-btn {
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
 }
 </style>

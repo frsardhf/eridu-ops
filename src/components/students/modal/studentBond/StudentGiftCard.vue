@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { GiftProps } from '../../../../types/gift';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import '../../../../styles/resourceDisplay.css';
 
 const props = defineProps<{
@@ -43,13 +43,6 @@ function formatValue(value: any): string {
 }
 
 const gift = props.item.gift;
-
-// Determine if this is a special box item that's part of the conversion process
-const isConversionItem = computed(() => {
-  if (!props.isBox) return false;
-  const id = props.item.gift.Id;
-  return id === 82 || id === 100000 || id === 100008;
-});
 </script>
 
 <template>

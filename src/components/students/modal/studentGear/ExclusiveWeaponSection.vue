@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ModalProps } from '../../../../types/student';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, toRef } from 'vue';
 import { $t } from '../../../../locales';
+import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
 
 const props = defineProps<{
   student: ModalProps | null;
@@ -12,7 +13,14 @@ const emit = defineEmits<{
   (e: 'update-grade', current: number, target: number): void;
 }>();
 
-// Local state to track levels
+const { isMaxGrade, isWeaponLocked, getWeaponIconUrl } = useStudentGearDisplay(
+  toRef(() => props.student),
+  toRef(() => props.gradeLevels),
+  () => ({}),
+  () => ({})
+);
+
+// Local state to track levels for star click interaction
 const gradeState = ref({
   current: props.gradeLevels?.current || 1,
   target: props.gradeLevels?.target || 1
@@ -25,13 +33,6 @@ watch(() => props.gradeLevels, (newVal) => {
     gradeState.value.target = newVal.target ?? 1;
   }
 }, { deep: true, immediate: true });
-
-// Get weapon icon URL
-function getWeaponIconUrl(): string {
-  if (!props.student?.WeaponImg) return '';
-  const baseUrl = 'https://schaledb.com/images/weapon';
-  return `${baseUrl}/${props.student.WeaponImg}.webp`;
-}
 
 // Single function to handle both current and target grade updates
 const updateCurrentGrade = (grade: number) => {
@@ -58,39 +59,19 @@ const updateTargetGrade = (grade: number) => {
 // Generate stars array for rendering
 const currentStars = computed(() => {
   const starsArray: { position: number; isGold: boolean; active: boolean }[] = [];
-
-  // Generate 9 stars (5 gold, 4 blue)
   for (let i = 1; i <= 9; i++) {
-    starsArray.push({
-      position: i,
-      isGold: i <= 5,
-      active: i <= gradeState.value.current
-    });
+    starsArray.push({ position: i, isGold: i <= 5, active: i <= gradeState.value.current });
   }
-
   return starsArray;
 });
 
 const targetStars = computed(() => {
   const starsArray: { position: number; isGold: boolean; active: boolean }[] = [];
-
-  // Generate 9 stars (5 gold, 4 blue)
   for (let i = 1; i <= 9; i++) {
-    starsArray.push({
-      position: i,
-      isGold: i <= 5,
-      active: i <= gradeState.value.target
-    });
+    starsArray.push({ position: i, isGold: i <= 5, active: i <= gradeState.value.target });
   }
-
   return starsArray;
 });
-
-// Add computed property to check if grade is maxed
-const isMaxGrade = computed(() => gradeState.value.current === 9);
-
-// Add computed property to check if weapon is locked
-const isWeaponLocked = computed(() => gradeState.value.current <= 5);
 </script>
 
 <template>

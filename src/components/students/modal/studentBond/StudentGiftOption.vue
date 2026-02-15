@@ -3,10 +3,6 @@ import { ref } from 'vue';
 import { adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
 import { $t } from '../../../../locales';
 
-// No longer need the convertBox prop
-defineProps<{
-}>();
-
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 
 // Tooltip state
