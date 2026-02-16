@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { StudentProps } from '../../types/student'
-import { getPinnedStudents } from '../../consumables/utils/studentStorage';
 import StudentCard from './StudentCard.vue';
 
 const props = defineProps<{ 
@@ -15,49 +13,11 @@ type EmitEvents = {
 
 const emit = defineEmits<EmitEvents>();
 
-const pinnedStudents = ref<string[]>([]);
-pinnedStudents.value = getPinnedStudents();
-
-// Sort students with pinned ones first
-const sortedStudents = computed(() => {
-  const pinnedStudentsList: StudentProps[] = [];
-  const unpinnedStudentsList: StudentProps[] = [];
-  
-  // First collect all unpinned students (these will be sorted later)
-  props.studentsArray.forEach(student => {
-    if (!pinnedStudents.value.includes(student.Id.toString())) {
-      unpinnedStudentsList.push(student);
-    }
-  });
-  
-  // Then collect pinned students in the exact order they appear in pinnedStudents
-  const pinnedStudentsMap = new Map<string, StudentProps>();
-  props.studentsArray.forEach(student => {
-    if (pinnedStudents.value.includes(student.Id.toString())) {
-      pinnedStudentsMap.set(student.Id.toString(), student);
-    }
-  });
-  
-  // Add pinned students to the list in the same order as pinnedStudents array
-  pinnedStudents.value.forEach(id => {
-    const student = pinnedStudentsMap.get(id);
-    if (student) {
-      pinnedStudentsList.push(student);
-    }
-  });
-  
-  // Return pinned students (in pin order) first, then unpinned (in sort order)
-  return [...pinnedStudentsList, ...unpinnedStudentsList];
-});
-
 function handleOpenModal(student: StudentProps) {
   emit('openModal', student);
 }
 
-// Handle pin toggle by refresh from storage and re-render
 function handlePinToggled(studentId: string | number, isPinned: boolean) {
-  pinnedStudents.value = getPinnedStudents();
-  pinnedStudents.value = [...pinnedStudents.value];
   emit('studentPinned', studentId, isPinned);
 }
 </script>
@@ -66,7 +26,7 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
   <div class="student-grid-wrapper">
     <div class="student-grid">
       <StudentCard
-        v-for="student in sortedStudents"
+        v-for="student in studentsArray"
         :key="student.Id"
         :student="student"
         @click="handleOpenModal(student)"

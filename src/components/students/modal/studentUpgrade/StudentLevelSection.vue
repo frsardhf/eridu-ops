@@ -354,7 +354,6 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 }
 
 .maxed-input:focus {
-  outline: none;
   border-color: rgb(255, 201, 51);
   box-shadow: 0 0 0 2px rgba(255, 201, 51, 0.2);
 }

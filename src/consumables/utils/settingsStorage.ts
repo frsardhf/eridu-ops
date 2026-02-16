@@ -1,11 +1,13 @@
 // settingsStorage.ts - Consolidated localStorage settings management
 
 import type { SortOption, SortDirection } from '../../types/header';
+import type { ThemeId } from '@/types/theme';
+import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
 
 export interface AppSettings {
-  theme: 'dark' | 'light';
+  theme: ThemeId;
   language: 'en' | 'jp';
   sort: {
     option: SortOption;
@@ -16,7 +18,7 @@ export interface AppSettings {
 
 // Default settings
 const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'dark',
+  theme: DEFAULT_THEME,
   language: 'en',
   sort: {
     option: 'id',
@@ -110,7 +112,7 @@ export function updateSortSettings(
  * Get theme setting
  * @returns Current theme
  */
-export function getTheme(): 'dark' | 'light' {
+export function getTheme(): ThemeId {
   return getSettings().theme;
 }
 
@@ -119,7 +121,7 @@ export function getTheme(): 'dark' | 'light' {
  * @param theme New theme value
  * @returns True if successful, false otherwise
  */
-export function setTheme(theme: 'dark' | 'light'): boolean {
+export function setTheme(theme: ThemeId): boolean {
   return updateSetting('theme', theme);
 }
 

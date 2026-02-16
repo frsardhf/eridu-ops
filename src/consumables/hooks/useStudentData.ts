@@ -1,18 +1,13 @@
-import { ref, computed, watch, Ref } from 'vue'
+import { ref, computed, watch, Ref, ComputedRef } from 'vue'
 import { StudentProps, FetchedData } from '../../types/student';
 import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
 import {
   ResourceProps,
-  GENERIC_GIFT_TAGS,
-  GIFT_BOX_IDS,
-  GIFT_BOX_EXP_VALUES,
-  GiftRarity
+  GIFT_BOX_IDS
 } from '../../types/resource';
 import {
-  creditsEntry,
-  CREDITS_ID,
-  injectSyntheticEntities
+  creditsEntry
 } from '../constants/syntheticEntities';
 import {
   saveItemsInventory,
@@ -42,6 +37,19 @@ import { studentDataStore, studentDataVersion, batchSetStudentData } from '../st
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage, initializeLocalizationData } from '../stores/localizationStore';
 import { filterByProperty } from '../utils/filterUtils';
+import { resolveLocalized } from '../utils/localizationUtils';
+import { sortStudentsWithPins } from '../utils/sortUtils';
+import { normalizeTheme } from '../utils/themeUtils';
+import { ThemeId } from '@/types/theme';
+import { buildGiftsByStudent } from '../utils/giftUtils';
+import {
+  attachElephIcons,
+  createResourceRecordWithSynthetic,
+  ensureSyntheticResourceEntries,
+  mergeEquipmentWithExisting,
+  toNumericResourceRecord,
+  toRecordById
+} from '../utils/studentDataHydrationUtils';
 
 // Singleton state (shared across all calls)
 let _studentData: Ref<{ [key: string]: StudentProps }>;
@@ -52,10 +60,11 @@ let _boxData: Ref<Record<string, ResourceProps>>;
 let _favoredGift: Ref<Record<string, GiftProps[]>>;
 let _giftBoxData: Ref<Record<string, GiftProps[]>>;
 let _searchQuery: Ref<string>;
-let _isDarkMode: Ref<boolean>;
+let _pinnedStudentIds: Ref<string[]>;
+let _currentTheme: Ref<ThemeId>;
 let _currentSort: Ref<SortOption>;
 let _sortDirection: Ref<SortDirection>;
-let _sortedStudentsArray: Ref<StudentProps[]>;
+let _sortedStudentsArray: ComputedRef<StudentProps[]>;
 let _isLoading: Ref<boolean>;
 let _isReady: Ref<boolean>;
 let _isInitialized = false;
@@ -72,12 +81,28 @@ export function useStudentData() {
     _favoredGift = ref<Record<string, GiftProps[]>>({});
     _giftBoxData = ref<Record<string, GiftProps[]>>({});
     _searchQuery = ref<string>('');
-    _isDarkMode = ref<boolean>(false);
+    _pinnedStudentIds = ref<string[]>([]);
+    _currentTheme = ref<ThemeId>('dark');
     _currentSort = ref<SortOption>('id');
     _sortDirection = ref<SortDirection>('asc');
-    _sortedStudentsArray = ref<StudentProps[]>([]);
     _isLoading = ref<boolean>(true);
     _isReady = ref<boolean>(false);
+
+    _sortedStudentsArray = computed(() => {
+      // Keep reactivity tied to store version updates
+      const _version = studentDataVersion.value;
+      void _version;
+
+      return sortStudentsWithPins({
+        students: Object.values(_studentData.value),
+        pinnedStudentIds: _pinnedStudentIds.value,
+        searchQuery: _searchQuery.value,
+        sortOption: _currentSort.value,
+        sortDirection: _sortDirection.value,
+        studentStore: studentDataStore.value,
+        resolveLocalized
+      });
+    });
   }
 
   // Use local aliases for singleton refs
@@ -89,89 +114,21 @@ export function useStudentData() {
   const favoredGift = _favoredGift;
   const giftBoxData = _giftBoxData;
   const searchQuery = _searchQuery;
-  const isDarkMode = _isDarkMode;
+  const pinnedStudentIds = _pinnedStudentIds;
+  const currentTheme = _currentTheme;
   const currentSort = _currentSort;
   const sortDirection = _sortDirection;
   const sortedStudentsArray = _sortedStudentsArray;
   const isLoading = _isLoading;
   const isReady = _isReady;
 
-  // Function to update the sorted students array
+  function syncPinnedStudents() {
+    pinnedStudentIds.value = getPinnedStudents();
+  }
+
+  // Backward-compatible trigger after pin updates from callers
   function updateSortedStudents() {
-    let filteredStudents = Object.values(studentData.value);
-    const pinnedStudents: string[] = getPinnedStudents();
-    const pinnedStudentsList: StudentProps[] = [];
-    const unpinnedStudentsList: StudentProps[] = [];
-    const studentStore = studentDataStore.value;
-    
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase();
-      filteredStudents = filteredStudents.filter(
-        (student: StudentProps) => student.Name.toLowerCase().includes(query)
-      );
-    }
-    
-    // First collect all unpinned students (these will be sorted later)
-    filteredStudents.forEach((student: StudentProps) => {
-      if (!pinnedStudents.includes(student.Id.toString())) {
-        unpinnedStudentsList.push(student);
-      }
-    });
-    
-    // Then collect pinned students in the exact order they appear in pinnedStudents
-    const pinnedStudentsMap = new Map<string, StudentProps>();
-    filteredStudents.forEach((student: StudentProps) => {
-      if (pinnedStudents.includes(student.Id.toString())) {
-        pinnedStudentsMap.set(student.Id.toString(), student);
-      }
-    });
-    
-    // Add pinned students to the list in the same order as pinnedStudents array
-    pinnedStudents.forEach(id => {
-      const student = pinnedStudentsMap.get(id);
-      if (student) {
-        pinnedStudentsList.push(student);
-      }
-    });
-    
-    // Sort only the unpinned students
-    unpinnedStudentsList.sort((a, b) => {
-      let comparison = 0;
-      switch (currentSort.value) {
-        case 'name':
-          comparison = a.Name.localeCompare(b.Name);
-          break;
-        case 'default':
-          comparison = (a.DefaultOrder || 0) - (b.DefaultOrder || 0);
-          break;
-        case 'bond': {
-          const aBond = studentStore[a.Id]?.bondDetailData?.currentBond ?? 0;
-          const bBond = studentStore[b.Id]?.bondDetailData?.currentBond ?? 0;
-          comparison = aBond - bBond;
-          break;
-        }
-        case 'level': {
-          const aLevel = studentStore[a.Id]?.characterLevels?.current ?? 1;
-          const bLevel = studentStore[b.Id]?.characterLevels?.current ?? 1;
-          comparison = aLevel - bLevel;
-          break;
-        }
-        case 'grade': {
-          const aGrade = studentStore[a.Id]?.gradeLevels?.current ?? a.StarGrade;
-          const bGrade = studentStore[b.Id]?.gradeLevels?.current ?? b.StarGrade;
-          comparison = aGrade - bGrade;
-          break;
-        }
-        case 'id':
-        default:
-          comparison = Number(a.Id) - Number(b.Id);
-          break;
-      }
-
-      return sortDirection.value === 'asc' ? comparison : -comparison;
-    });
-
-    sortedStudentsArray.value = [...pinnedStudentsList, ...unpinnedStudentsList];
+    syncPinnedStudents();
   }
   
   // For backward compatibility with code expecting an object
@@ -185,12 +142,14 @@ export function useStudentData() {
   function loadSettings() {
     const settings = getSettings();
 
-    isDarkMode.value = settings.theme === 'dark';
+    const theme = normalizeTheme(settings.theme);
+    currentTheme.value = theme;
     currentSort.value = settings.sort.option;
     sortDirection.value = settings.sort.direction;
+    syncPinnedStudents();
 
     // Apply theme to document
-    document.documentElement.setAttribute('data-theme', settings.theme);
+    document.documentElement.setAttribute('data-theme', theme);
   }
 
   // Save sort preferences to consolidated settings
@@ -204,24 +163,20 @@ export function useStudentData() {
       sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
     } else {
       currentSort.value = option;
-      sortDirection.value = 'asc';
     }
 
     saveSortPreferences();
-    updateSortedStudents();
   }
   
   // Toggle sort direction
   function toggleDirection() {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
     saveSortPreferences();
-    updateSortedStudents();
   }
 
   // Toggle theme
-  function toggleTheme() {
-    isDarkMode.value = !isDarkMode.value
-    const theme = isDarkMode.value ? 'dark' : 'light';
+  function setTheme(theme: ThemeId) {
+    currentTheme.value = theme;
     document.documentElement.setAttribute('data-theme', theme);
     updateSetting('theme', theme);
   }
@@ -229,7 +184,6 @@ export function useStudentData() {
   // Update search query
   function updateSearchQuery(query: string) {
     searchQuery.value = query;
-    updateSortedStudents();
   }
 
   // Fetch data from SchaleDB
@@ -249,152 +203,6 @@ export function useStudentData() {
       console.error(`Error fetching ${type} data:`, error);
       return {};
     }
-  }
-
-  // Utility functions
-
-  function getGiftsByStudent(
-    students: Record<string, StudentProps>, 
-    items: Record<string, ResourceProps>, 
-    isGiftBox: boolean): Record<string, GiftProps[]> {
-    const result: Record<string, GiftProps[]> = {};
-    
-    for (const studentId in students) {
-      const student = students[studentId];
-      const allTags = getAllStudentTags(student);
-      const studentGifts = isGiftBox 
-        ? processGiftBoxItems(studentId, items, allTags)
-        : processRegularGiftItems(items, allTags);
-      
-      result[studentId] = studentGifts;
-    }
-    
-    return result;
-  }
-  
-  function getAllStudentTags(student: StudentProps) {
-    const uniqueGiftTags = student.FavorItemUniqueTags;
-    const rareGiftTags = student.FavorItemTags;
-    return [...uniqueGiftTags, ...rareGiftTags, ...GENERIC_GIFT_TAGS];
-  }
-  
-  function processRegularGiftItems(
-    items: Record<string, ResourceProps>, allTags: string[]) {
-    const studentGifts: GiftProps[] = [];
-    
-    for (const itemId in items) {
-      const item = items[itemId];
-      const giftDetails = evaluateRegularGift(item, allTags);
-      
-      if (giftDetails.shouldGift) {
-        studentGifts.push({
-          gift: item,
-          exp: giftDetails.expValue,
-          grade: giftDetails.favorGrade + 1,
-        });
-      }
-    }
-    
-    return studentGifts;
-  }
-  
-  function evaluateRegularGift(item: ResourceProps, allTags: string[]) {
-    const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
-    const favorGrade = Math.min(commonTags.length, 3);
-    const genericTagCount = countGenericTags(item);
-    const expValue = calculateGiftExp(item, commonTags);
-    
-    const shouldGift = (favorGrade - genericTagCount > 0) ||
-      (favorGrade >= 2 && item.Tags.length <= 3);
-    
-    return { shouldGift, expValue, favorGrade };
-  }
-  
-  function processGiftBoxItems(
-    studentId: string, items: Record<string, ResourceProps>, allTags: string[]) {
-    const studentGifts: GiftProps[] = [];
-    const { 
-      highestExpGift, 
-      highestGradeGift, 
-      isCollabStudent 
-    } = getStudentGiftBoxInfo(studentId);
-    
-    for (const itemId in items) {
-      const item = items[itemId];
-      const giftDetails = evaluateGiftBoxItem(
-        item, 
-        allTags, 
-        highestExpGift, 
-        highestGradeGift, 
-        isCollabStudent
-      );
-      
-      if (giftDetails.shouldGift) {
-        studentGifts.push({
-          gift: item,
-          exp: giftDetails.expValue,
-          grade: giftDetails.newFavorGrade,
-        });
-      }
-    }
-    
-    return studentGifts;
-  }
-  
-  function getStudentGiftBoxInfo(studentId: string) {
-    let highestExpGift = 0;
-    let highestGradeGift = 0;
-    let isCollabStudent = false;
-    
-    const studentFavoredGifts = favoredGift.value[studentId] || [];
-    if (studentFavoredGifts.length === 4) {
-      isCollabStudent = true;
-    }
-    
-    studentFavoredGifts.forEach((gift) => {
-      if (gift.gift.Rarity === "SR" && gift.exp > highestExpGift) {
-        highestExpGift = gift.exp;
-        highestGradeGift = gift.grade;
-      }
-    });
-    
-    return { highestExpGift, highestGradeGift, isCollabStudent };
-  }
-  
-  function evaluateGiftBoxItem(
-    item: ResourceProps, allTags: string[], highestExpGift: number, 
-    highestGradeGift: number, isCollabStudent: boolean) {
-    const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
-    const favorGrade = Math.min(commonTags.length, 3);
-    const genericTagCount = countGenericTags(item);
-    const shouldGift = (favorGrade + genericTagCount >= 0);
-    
-    let expValue = 0;
-    let newFavorGrade = 0;
-    
-    if (item.Category === 'Consumable') {
-      expValue = GIFT_BOX_EXP_VALUES[item.Rarity as GiftRarity];
-      newFavorGrade = favorGrade + genericTagCount + item.Quality - 2;
-      
-      if (item.Tags.includes('DW')) {
-        expValue = highestExpGift || 20;
-        newFavorGrade = highestGradeGift;
-      }
-      
-      if (isCollabStudent) {
-        newFavorGrade = item.Rarity === "SR" ? 1 : 2;
-      }
-    }
-    
-    return { shouldGift, expValue, newFavorGrade };
-  }
-  
-  function countGenericTags(item: ResourceProps) {
-    return item.Tags.filter((tag: string) => GENERIC_GIFT_TAGS.includes(tag)).length;
-  }
-  
-  function calculateGiftExp(item: ResourceProps, tags: string[]) {
-    return (item.ExpValue ?? 0) * (1 + Math.min(tags.length, 3));
   }
 
   // Add new function to fetch all data in parallel
@@ -464,20 +272,9 @@ export function useStudentData() {
       ]);
 
       // Convert arrays to records
-      const studentRecord = students.reduce((acc, s) => {
-        acc[s.Id] = s;
-        return acc;
-      }, {} as Record<string, StudentProps>);
-
-      const itemRecord = items.reduce((acc, i) => {
-        acc[i.Id] = i;
-        return acc;
-      }, {} as Record<string, ResourceProps>);
-
-      const equipmentRecord = equipment.reduce((acc, e) => {
-        acc[e.Id] = e;
-        return acc;
-      }, {} as Record<string, ResourceProps>);
+      const studentRecord = toRecordById(students);
+      const itemRecord = toRecordById(items);
+      const equipmentRecord = toRecordById(equipment);
 
       // Process and populate reactive refs
       await processAndPopulateData(studentRecord, itemRecord, equipmentRecord);
@@ -523,21 +320,17 @@ export function useStudentData() {
     await initializeAllCaches();
 
     // Update student data
-    studentData.value = students;
+    studentData.value = attachElephIcons(students, items);
 
     // Filter gifts and boxes
     giftData.value = filterByProperty(items, 'category', 'Favor');
     boxData.value = filterByProperty(items, 'id', GIFT_BOX_IDS);
 
     // Calculate gifts by student
-    favoredGift.value = getGiftsByStudent(studentData.value, giftData.value, false);
-    giftBoxData.value = getGiftsByStudent(studentData.value, boxData.value, true);
-
-    // Add ElephIcons to student data
-    Object.entries(studentData.value).forEach(([studentId, student]) => {
-      if (items[studentId]?.Icon) {
-        studentData.value[studentId].ElephIcon = items[studentId].Icon;
-      }
+    favoredGift.value = buildGiftsByStudent(studentData.value, giftData.value);
+    giftBoxData.value = buildGiftsByStudent(studentData.value, boxData.value, {
+      isGiftBox: true,
+      favoredGiftByStudent: favoredGift.value
     });
 
     // Handle resources initialization - store ALL items
@@ -545,11 +338,7 @@ export function useStudentData() {
 
     if (!existingResources || Object.keys(existingResources).length === 0) {
       // Initialize with all items including synthetic entities (credits)
-      const allItems: Record<number, any> = {};
-      Object.entries(items).forEach(([id, item]) => {
-        allItems[Number(id)] = item;
-      });
-      injectSyntheticEntities(allItems);
+      const allItems = createResourceRecordWithSynthetic(items);
 
       // Save item definitions to items table (including credits)
       await saveItems(Object.values(allItems));
@@ -559,21 +348,21 @@ export function useStudentData() {
       resourceData.value = allItems;
     } else {
       // Ensure synthetic entities exist (credits, etc.)
-      const resourcesAsNumbers: Record<number, any> = {};
-      Object.entries(existingResources).forEach(([id, resource]) => {
-        resourcesAsNumbers[Number(id)] = resource;
-      });
+      const resourcesAsNumbers = toNumericResourceRecord(existingResources);
+      const {
+        resources: normalizedResources,
+        addedSynthetic
+      } = ensureSyntheticResourceEntries(resourcesAsNumbers);
 
-      if (!resourcesAsNumbers[CREDITS_ID]) {
-        injectSyntheticEntities(resourcesAsNumbers);
+      if (addedSynthetic) {
 
         // Save credits definition to items table
         await saveItems([creditsEntry]);
 
         // Save inventory to resources table
-        await saveItemsInventory(resourcesAsNumbers);
+        await saveItemsInventory(normalizedResources);
       }
-      resourceData.value = resourcesAsNumbers;
+      resourceData.value = normalizedResources;
     }
 
     // Handle equipment initialization - store ALL equipment
@@ -584,14 +373,7 @@ export function useStudentData() {
       equipmentData.value = equipment;
     } else {
       // Merge with existing (preserve QuantityOwned)
-      const mergedEquipments = { ...equipment };
-      Object.keys(existingEquipments).forEach(id => {
-        if (mergedEquipments[id]) {
-          mergedEquipments[id].QuantityOwned = existingEquipments[id].QuantityOwned || 0;
-        } else {
-          mergedEquipments[id] = existingEquipments[id];
-        }
-      });
+      const mergedEquipments = mergeEquipmentWithExisting(equipment, existingEquipments);
 
       await saveEquipmentInventory(mergedEquipments);
       equipmentData.value = mergedEquipments;
@@ -600,8 +382,8 @@ export function useStudentData() {
     // Preload student store for card overlays
     await preloadStudentStore();
 
-    // Update sorted students
-    updateSortedStudents();
+    // Keep pinned list synced for derived sorting
+    syncPinnedStudents();
   }
 
   // Preload student form data into store for card overlays
@@ -639,14 +421,6 @@ export function useStudentData() {
       }
     );
 
-    // Watch for changes in studentStore and re-sort when it updates
-    // Using version counter instead of deep watch for better performance
-    watch(
-      studentDataVersion,
-      () => {
-        updateSortedStudents();
-      }
-    );
   }
 
   // Initialize data only once
@@ -665,15 +439,16 @@ export function useStudentData() {
     favoredGift,
     giftBoxData,
     searchQuery,
-    isDarkMode,
+    currentTheme,
     filteredStudents,
     sortedStudentsArray,
-    toggleTheme,
+    setTheme,
     setSortOption,
     currentSort,
     sortDirection,
     updateSearchQuery,
     toggleDirection,
+    updateSortedStudents,
     reinitializeData,
     isLoading,
     isReady,

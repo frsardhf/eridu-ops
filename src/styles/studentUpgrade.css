@@ -123,17 +123,6 @@
   flex-shrink: 0;
 }
 
-.slider {
-  flex: 1;
-  min-width: 0;
-  height: 10px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--background-secondary);
-  border-radius: 5px;
-  outline: none;
-}
-
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;

@@ -423,7 +423,6 @@ const hideTooltip = () => {
 }
 
 .level-input:focus {
-  outline: none;
   background-color: rgba(0, 0, 0, 0.02);
 }
 

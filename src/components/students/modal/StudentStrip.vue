@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import { StudentProps } from '../../../types/student';
 import { $t } from '../../../locales';
 
@@ -17,6 +17,15 @@ const emit = defineEmits<{
 const searchQuery = ref('');
 const isExpanded = ref(false);
 const scrollContainer = ref<HTMLElement | null>(null);
+
+const filteredStudents = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  if (!query) return props.students;
+
+  return props.students.filter(student =>
+    student.Name.toLowerCase().includes(query)
+  );
+});
 
 function selectStudent(student: StudentProps) {
   emit('select-student', student);
@@ -87,7 +96,7 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
       <!-- Thumbnails -->
       <div class="strip-thumbnails" ref="scrollContainer">
         <button
-          v-for="student in students"
+          v-for="student in filteredStudents"
           :key="student.Id"
           :data-student-id="student.Id"
           :class="['strip-thumb', { active: student.Id === activeStudentId }]"
@@ -184,7 +193,6 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
   background: var(--background-primary);
   color: var(--text-primary);
   font-size: 0.8rem;
-  outline: none;
 }
 
 .strip-search:focus {

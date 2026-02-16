@@ -14,6 +14,8 @@ export const translations = {
       bond: "Bond",
       level: "Level",
       grade: "Grade",
+      school: "School",
+      club: "Club",
       method: "Sorting Method"
     },
     direction: {
@@ -195,6 +197,8 @@ export const translations = {
       bond: "絆",
       level: "レベル",
       grade: "星級",
+      school: "学園",
+      club: "部活",
       method: "ソート方法"
     },
     direction: {

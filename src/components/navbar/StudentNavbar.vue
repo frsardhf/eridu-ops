@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { HeaderProps, SortOption } from '../../types/header';
 import { 
   downloadLocalStorageData
 } from '../../consumables/utils/studentStorage';
 import { currentLanguage, setLanguage, Language } from '../../consumables/stores/localizationStore';
 import { $t } from '../../locales';
+import { ThemeId } from '@/types/theme';
+import { THEME_OPTIONS } from '@/consumables/utils/themeUtils';
 import ImportModal from './ImportModal.vue';
 import CreditsModal from './CreditsModal.vue';
 import ContactModal from './ContactModal.vue';
@@ -16,24 +18,41 @@ const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showCreditsModal = ref(false);
 const showContactModal = ref(false);
-const showLanguageMenu = ref(false);
+const showThemeTray = ref(false);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
-  'toggleTheme': [];
+  'setTheme': [themeId: ThemeId];
   'updateSort': [option: SortOption];
   'toggleDirection': [];
   'dataImported': [];
   'reinitializeData': [];
 }>();
 
+const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
+  { value: 'id', labelKey: 'sort.id' },
+  { value: 'name', labelKey: 'sort.name' },
+  { value: 'default', labelKey: 'sort.default' },
+  { value: 'bond', labelKey: 'sort.bond' },
+  { value: 'level', labelKey: 'sort.level' },
+  { value: 'grade', labelKey: 'sort.grade' },
+  { value: 'school', labelKey: 'sort.school' },
+  { value: 'club', labelKey: 'sort.club' }
+];
+
+const currentSortLabel = computed(() => {
+  const selected = SORT_OPTIONS.find(option => option.value === props.currentSort);
+  return selected ? $t(selected.labelKey) : $t('sort.default');
+});
+
 function updateSearch(event: Event) {
   const target = event.target as HTMLInputElement;
   emit('update:searchQuery', target.value);
 }
 
-function onToggleTheme() {
-  emit('toggleTheme');
+function onSelectTheme(themeId: ThemeId) {
+  emit('setTheme', themeId);
+  showThemeTray.value = false;
 }
 
 function updateSortOption(option: SortOption) {
@@ -42,8 +61,7 @@ function updateSortOption(option: SortOption) {
   mobileMenuOpen.value = false;
 }
 
-function toggleDirection(event: Event) {
-  event.stopPropagation();
+function toggleDirection() {
   emit('toggleDirection');
 }
 
@@ -56,14 +74,13 @@ function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 }
 
-function toggleLanguageMenu(event: Event) {
+function toggleThemeTray(event: Event) {
   event.stopPropagation();
-  showLanguageMenu.value = !showLanguageMenu.value;
+  showThemeTray.value = !showThemeTray.value;
 }
 
 function changeLanguage(language: Language) {
   setLanguage(language);
-  showLanguageMenu.value = false;
   mobileMenuOpen.value = false;
   emit('reinitializeData'); // Trigger data reinitialization with new language
 }
@@ -71,16 +88,17 @@ function changeLanguage(language: Language) {
 function handleClickOutside(event: MouseEvent) {
   const dropdown = document.getElementById('sort-dropdown');
   const mobileMenu = document.getElementById('mobile-menu');
-  const languageMenu = document.getElementById('language-menu');
+  const themeTray = document.getElementById('theme-tray');
+  const themeTrayToggle = document.getElementById('theme-tray-toggle');
   
   if (dropdown && !dropdown.contains(event.target as Node) && dropdownOpen.value) {
     dropdownOpen.value = false;
   }
   
-  if (languageMenu && !languageMenu.contains(event.target as Node) && 
-      !document.getElementById('language-toggle')?.contains(event.target as Node) && 
-      showLanguageMenu.value) {
-    showLanguageMenu.value = false;
+  if (themeTray && !themeTray.contains(event.target as Node) &&
+      !themeTrayToggle?.contains(event.target as Node) &&
+      showThemeTray.value) {
+    showThemeTray.value = false;
   }
   
   if (mobileMenu && !mobileMenu.contains(event.target as Node) && 
@@ -145,7 +163,14 @@ onBeforeUnmount(() => {
         </div>
         
         <div class="search-section">
-          <div class="search-container">
+          <div class="search-container" id="sort-dropdown">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+
             <input
               id="search-input"
               name="search-input"
@@ -155,137 +180,82 @@ onBeforeUnmount(() => {
               class="search-input"
               :placeholder="$t('searchStudents')"
             />
-            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </div>
-          
-          <div class="sort-container desktop-only" id="sort-dropdown">
-            <button 
-              class="sort-button"
-              :class="{ 'active': dropdownOpen }"
-              type="button"
-            >
-              <span 
-                class="sort-icon" 
-                @click="toggleDirection"
-                :title="sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending')"
-              >
-                <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
-                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                  stroke-width="2">
-                  <path d="M12 5v14M19 12l-7-7-7 7"/>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 19V5M5 12l7 7 7-7"/>
-                </svg>
-              </span>
-              <span 
-                class="sort-text"
-                @click="toggleDropdown"
-              >
-                {{ 
-                  currentSort === 'id' ? $t('sort.id') : 
-                  currentSort === 'name' ? $t('sort.name') : 
-                  currentSort === 'bond' ? $t('sort.bond') : 
-                  currentSort === 'level' ? $t('sort.level') : 
-                  currentSort === 'grade' ? $t('sort.grade') : $t('sort.default') 
-                }}
-                <span class="sort-arrow">▼</span>
-              </span>
-            </button>
+
+            <div class="sort-container">
+              <div class="sort-controls" :class="{ active: dropdownOpen }">
+                <button
+                  class="sort-icon-button"
+                  type="button"
+                  @click="toggleDirection"
+                  :title="sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending')"
+                >
+                  <span class="sort-direction-label">
+                    {{ sortDirection === 'asc' ? '↑' : '↓' }} 
+                  </span>
+                </button>
+
+                <button
+                  class="sort-button"
+                  type="button"
+                  @click="toggleDropdown"
+                >
+                  <span class="sort-text">{{ currentSortLabel }}</span>
+                  <span class="sort-arrow">▼</span>
+                </button>
+              </div>
+            </div>
+
             <div class="sort-dropdown" v-if="dropdownOpen">
-              <div 
-                class="sort-option" 
-                :class="{ 'active': currentSort === 'id' }"
-                @click.stop="updateSortOption('id')"
+              <div
+                v-for="option in SORT_OPTIONS"
+                :key="option.value"
+                class="sort-option"
+                :class="{ 'active': currentSort === option.value }"
+                @click.stop="updateSortOption(option.value)"
               >
-                {{ $t('sort.id') }}
-              </div>
-              <div 
-                class="sort-option" 
-                :class="{ 'active': currentSort === 'name' }"
-                @click.stop="updateSortOption('name')"
-              >
-                {{ $t('sort.name') }}
-              </div>
-              <div 
-                class="sort-option" 
-                :class="{ 'active': currentSort === 'default' }"
-                @click.stop="updateSortOption('default')"
-              >
-                {{ $t('sort.default') }}
-              </div>
-              <div 
-                class="sort-option" 
-                :class="{ 'active': currentSort === 'bond' }"
-                @click.stop="updateSortOption('bond')"
-              >
-                {{ $t('sort.bond') }}
-              </div>
-              <div 
-                class="sort-option" 
-                :class="{ 'active': currentSort === 'level' }"
-                @click.stop="updateSortOption('level')"
-              >
-                {{ $t('sort.level') }}
-              </div>
-              <div 
-                class="sort-option" 
-                :class="{ 'active': currentSort === 'grade' }"
-                @click.stop="updateSortOption('grade')"
-              >
-                {{ $t('sort.grade') }}
+                {{ $t(option.labelKey) }}
               </div>
             </div>
           </div>
         </div>
 
         <div class="right-controls">
-          <!-- Language selector -->
-          <div class="language-toggle" id="language-menu">
-            <button 
-              id="language-toggle"
-              class="language-button"
-              @click="toggleLanguageMenu"
-              :title="currentLanguage === 'en' ? 'English' : '日本語'"
+          <div class="theme-tray-wrapper">
+            <button
+              id="theme-tray-toggle"
+              class="theme-tray-toggle"
+              type="button"
+              aria-label="Theme colors"
+              @click="toggleThemeTray"
             >
-              {{ currentLanguage === 'en' ? 'EN' : 'JP' }}
+              <span class="theme-tray-toggle-dot"></span>
             </button>
-            <div class="language-dropdown" v-if="showLanguageMenu">
-              <div 
-                class="language-option" 
-                :class="{ 'active': currentLanguage === 'en' }"
-                @click="changeLanguage('en')"
-              >
-                English
-              </div>
-              <div 
-                class="language-option" 
-                :class="{ 'active': currentLanguage === 'jp' }"
-                @click="changeLanguage('jp')"
-              >
-                日本語
+
+            <div
+              id="theme-tray"
+              class="theme-tray"
+              :class="{ open: showThemeTray }"
+            >
+              <div class="theme-swatch-row" role="radiogroup" aria-label="Theme">
+                <button
+                  v-for="theme in THEME_OPTIONS"
+                  :key="theme.id"
+                  class="theme-swatch"
+                  :class="{ active: currentTheme === theme.id }"
+                  type="button"
+                  :title="theme.label"
+                  :aria-label="`Theme ${theme.label}`"
+                  :aria-checked="currentTheme === theme.id"
+                  role="radio"
+                  @click="onSelectTheme(theme.id)"
+                >
+                  <span
+                    class="theme-swatch-inner"
+                    :style="{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }"
+                  ></span>
+                </button>
               </div>
             </div>
-          </div>
-
-          <div class="theme-toggle">
-            <label class="switch" for="theme-toggle">
-              <input 
-                id="theme-toggle"
-                name="theme-toggle"
-                type="checkbox" 
-                :checked="isDarkMode"
-                @change="onToggleTheme"
-                aria-label="Toggle dark mode"
-              >
-              <span class="slider"></span>
-            </label>
           </div>
           
           <button 
@@ -304,75 +274,12 @@ onBeforeUnmount(() => {
       </div>
     </div>
     
-    <div id="mobile-menu" class="mobile-menu" :class="{ 'open': mobileMenuOpen }">
+    <div
+      v-if="mobileMenuOpen"
+      id="mobile-menu"
+      class="mobile-menu open"
+    >
       <div class="mobile-menu-container">
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">{{ $t('sort.default') }}</h3>
-          <div class="mobile-menu-options">
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'id' }"
-              @click="updateSortOption('id')"
-            >
-              {{ $t('sort.id') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'name' }"
-              @click="updateSortOption('name')"
-            >
-              {{ $t('sort.name') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'default' }"
-              @click="updateSortOption('default')"
-            >
-              {{ $t('sort.default') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'bond' }"
-              @click="updateSortOption('bond')"
-            >
-              {{ $t('sort.bond') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'level' }"
-              @click="updateSortOption('level')"
-            >
-              {{ $t('sort.level') }}
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentSort === 'grade' }"
-              @click="updateSortOption('grade')"
-            >
-              {{ $t('sort.grade') }}
-            </button>
-          </div>
-          
-          <div class="mobile-menu-direction">
-            <span class="direction-label">{{ $t('direction.ascending') }}:</span>
-            <button 
-              class="direction-button"
-              @click="toggleDirection($event)"
-            >
-              {{ sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending') }}
-              <svg v-if="sortDirection === 'asc'" xmlns="http://www.w3.org/2000/svg" 
-                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                stroke-width="2">
-                <path d="M12 5v14M19 12l-7-7-7 7"/>
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 19V5M5 12l7 7 7-7"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        
         <!-- Language section for mobile -->
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">Language / 言語</h3>
@@ -517,15 +424,16 @@ onBeforeUnmount(() => {
 .search-container {
   position: relative;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
 }
 
 .search-input {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  padding-right: 2.5rem;
+  height: 40px;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  padding-right: 10rem;
   border: 1px solid var(--input-border);
-  border-radius: 8px;
+  border-radius: 20px;
   font-size: 0.95rem;
   color: var(--text-primary);
   background: var(--input-background);
@@ -533,14 +441,13 @@ onBeforeUnmount(() => {
 }
 
 .search-input:focus {
-  outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
 }
 
 .search-icon {
   position: absolute;
-  right: 0.75rem;
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   width: 1.25rem;
@@ -550,48 +457,92 @@ onBeforeUnmount(() => {
 }
 
 .sort-container {
-  position: relative;
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--input-border);
+  background-color: var(--background-secondary);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.sort-controls:hover,
+.sort-controls.active {
+  border-color: var(--accent-color);
+}
+
+.sort-controls:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.35);
 }
 
 .sort-button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 36px;
-  width: 120px;
-  border-radius: 20px;
-  background-color: var(--background-secondary);
+  justify-content: center;
+  gap: 6px;
+  height: 100%;
+  max-width: 120px;
+  background-color: transparent;
   color: var(--text-primary);
   border: none;
-  padding: 0 15px;
-  font-size: 0.9em;
+  border-left: 1px solid var(--input-border);
+  padding: 0 12px;
+  font-size: 0.82em;
   cursor: pointer;
-  outline: none;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
-.sort-button:hover, .sort-button.active {
-  background-color: var(--background-tertiary);
+.sort-button:hover {
+  background-color: var(--background-secondary);
 }
 
-.sort-icon {
+.sort-icon-button {
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 0 12px 0 16px;
+  width: 6px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
   cursor: pointer;
-  flex-shrink: 0;
+  transition: background-color 0.2s ease;
 }
 
-.sort-icon:hover {
-  opacity: 0.8;
+.sort-icon-button:hover {
+  background-color: var(--background-secondary);
+}
+
+.sort-button:focus-visible,
+.sort-icon-button:focus-visible {
+  outline: none;
+}
+
+.sort-direction-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  line-height: 1;
 }
 
 .sort-text {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 84px;
 }
 
 .sort-arrow {
@@ -602,9 +553,9 @@ onBeforeUnmount(() => {
 
 .sort-dropdown {
   position: absolute;
-  top: 100%;
-  left: 0;
-  width: 120px;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 160px;
   margin-top: 5px;
   background-color: var(--background-primary);
   border-radius: 8px;
@@ -614,9 +565,9 @@ onBeforeUnmount(() => {
 }
 
 .sort-option {
-  padding: 10px 0;
+  padding: 10px 12px;
   width: 100%;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -634,63 +585,6 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 15px;
-}
-
-/* Language selector styles */
-.language-toggle {
-  position: relative;
-}
-
-.language-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 18px;
-  background-color: var(--background-secondary);
-  color: var(--text-primary);
-  border: none;
-  padding: 0 10px;
-  font-size: 0.9em;
-  font-weight: 500;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s ease;
-}
-
-.language-button:hover {
-  background-color: var(--background-tertiary);
-}
-
-.language-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 120px;
-  margin-top: 5px;
-  background-color: var(--background-primary);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  overflow: hidden;
-}
-
-.language-option {
-  padding: 10px 0;
-  width: 100%;
-  text-align: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.language-option:hover {
-  background-color: var(--background-secondary);
-}
-
-.language-option.active {
-  background-color: var(--background-tertiary);
-  font-weight: 500;
 }
 
 .desktop-controls {
@@ -715,59 +609,97 @@ onBeforeUnmount(() => {
   background-color: var(--background-tertiary);
 }
 
-.theme-toggle {
+.theme-swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-color-rgb), 0.28);
+  background: var(--background-primary);
+  background: color-mix(in srgb, var(--background-primary) 80%, white 20%);
+  box-shadow: 0 8px 20px rgba(var(--background-hover-rgb), 0.22);
+}
+
+.theme-tray-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
 }
 
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 46px;
-  height: 26px;
-  margin: 3px 0;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  height: 28px;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #e9e9ea;
-  transition: .4s;
-  border-radius: 26px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-  border: 0.5px solid rgba(0, 0, 0, 0.04);
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 22px;
-  width: 22px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: .3s;
+.theme-tray-toggle {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(var(--accent-color-rgb), 0.4);
+  background: var(--background-secondary);
+  background: color-mix(in srgb, var(--background-secondary) 78%, white 22%);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-input:checked + .slider {
-  background-color: var(--accent-color);
+.theme-tray-toggle-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, #4f46e5, #7c3aed 40%, #e61b72 70%, #ff6a00);
 }
 
-input:checked + .slider:before {
-  transform: translateX(18px);
+.theme-tray {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -2px;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1200;
+}
+
+.theme-tray::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  right: 12px;
+  width: 12px;
+  height: 12px;
+  background: var(--background-primary);
+  border-left: 1px solid rgba(var(--accent-color-rgb), 0.28);
+  border-top: 1px solid rgba(var(--accent-color-rgb), 0.28);
+  transform: rotate(45deg);
+}
+
+.theme-tray.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.theme-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.theme-swatch-inner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.theme-swatch.active {
+  border-color: var(--accent-color);
+  transform: scale(1.05);
 }
 
 .hamburger-button {
@@ -896,49 +828,8 @@ input:checked + .slider:before {
   flex-shrink: 0;
 }
 
-.mobile-menu-direction {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 0 12px;
-}
-
-.direction-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.direction-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.direction-button:hover {
-  background-color: rgba(var(--background-hover-rgb), 0.1);
-}
-
-.desktop-only {
-  display: none;
-}
-
 .mobile-hidden {
   display: block;
-}
-
-@media screen and (min-width: 769px) {
-  .desktop-only {
-    display: block;
-  }
 }
 
 @media screen and (max-width: 768px) {
@@ -973,6 +864,52 @@ input:checked + .slider:before {
   
   .search-container {
     max-width: 100%;
+  }
+
+  .search-input {
+    padding-right: 8.25rem;
+  }
+
+  .sort-button {
+    max-width: 95px;
+    padding: 0 8px;
+  }
+
+  .sort-text {
+    max-width: 68px;
+  }
+
+  .right-controls {
+    gap: 8px;
+  }
+
+  .theme-swatch-row {
+    gap: 2px;
+    padding: 5px 7px;
+  }
+
+  .theme-tray-toggle {
+    width: 28px;
+    height: 28px;
+  }
+
+  .theme-tray-toggle-dot {
+    width: 13px;
+    height: 13px;
+  }
+
+  .theme-swatch {
+    width: 18px;
+    height: 18px;
+  }
+
+  .theme-swatch-inner {
+    width: 13px;
+    height: 13px;
+  }
+
+  .theme-tray {
+    right: -4px;
   }
 }
 

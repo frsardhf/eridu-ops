@@ -15,27 +15,30 @@
   -moz-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
 
-  /* Light theme default variables */
-  --background-primary: #f3fcfd;
-  --header-gradient-start: #d4e9ff;
-  --header-gradient-end: #dbffff;
-  --text-primary: #213547;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #142330;
-  --border-color: #e9ecef;
-  --card-background: #fff;
-  --card-label-background: #faebd7;
-  --card-label-background-transparent: #faebd7e6;
-  --accent-color: #646cff;
-  --accent-hover: #535bf2;
-  --accent-color-rgb: 100, 108, 255;
-  --background-hover-rgb: 230, 230, 230;
-  --input-border: #e2e8f0;
-  --input-background: #ffffff;
-  --box-shadow: #0000001a;
-  --button-background: #f9f9f9;
-  --scrollbar-thumb: #00000033;
-  --scrollbar-thumb-hover: #00000080;
+  /* Default theme variables (dark) */
+  --background-primary: #111827;
+  --header-gradient-start: #111827;
+  --header-gradient-end: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #374151;
+  --border-color: #374151;
+  --card-background: #1f2937;
+  --card-label-background: #334155;
+  --card-label-background-transparent: #334155e6;
+  --input-color: #374151;
+  --input-placeholder: #9ca3af;
+  --accent-color: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-color-hover: #4f46e5;
+  --accent-color-rgb: 99, 102, 241;
+  --background-hover-rgb: 75, 85, 99;
+  --input-border: #4b5563;
+  --input-background: #1f2937;
+  --box-shadow: #00000040;
+  --button-background: #1f2937;
+  --scrollbar-thumb: #ffffff33;
+  --scrollbar-thumb-hover: #ffffff66;
 }
 
 /* Base styles */
@@ -44,30 +47,188 @@ body {
   min-width: 320px;
   color: var(--text-primary);
   background-color: var(--background-primary);
+  overflow-x: clip;
 }
 
-/* Dark theme styles */
+/* Theme styles */
+[data-theme='light'] {
+  --background-primary: #f3fcfd;
+  --header-gradient-start: #d4e9ff;
+  --header-gradient-end: #dbffff;
+  --text-primary: #213547;
+  --text-secondary: #64748b;
+  --text-tertiary: #142330;
+  --border-color: #dbe4ee;
+  --card-background: #ffffff;
+  --card-label-background: #faebd7;
+  --card-label-background-transparent: #faebd7e6;
+  --input-color: #f8fafc;
+  --input-placeholder: #64748b;
+  --accent-color: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-color-hover: #4338ca;
+  --accent-color-rgb: 79, 70, 229;
+  --background-hover-rgb: 226, 232, 240;
+  --input-border: #cbd5e1;
+  --input-background: #ffffff;
+  --box-shadow: #0000001a;
+  --button-background: #ffffff;
+  --scrollbar-thumb: #0f172a33;
+  --scrollbar-thumb-hover: #0f172a66;
+}
+
 [data-theme='dark'] {
-  --background-primary: #1a1a1a;
-  --header-gradient-start: #1a1f2c;
-  --header-gradient-end: #1a2634;
-  --text-primary: #ffffffde;
-  --text-secondary: #a0aec0;
-  --text-tertiary: #282c31;
-  --border-color: #2d3748;
-  --card-background: #2d3748;
-  --card-label-background: #424242;
-  --card-label-background-transparent: #424242e6;
-  --input-color: #4a5568;
-  --input-placeholder: #ffffff;
-  --accent-color: #646cff;
-  --accent-hover: #747bff;
-  --accent-color-rgb: 100, 108, 255;
-  --background-hover-rgb: 60, 60, 60;
-  --input-border: #4a5568;
-  --input-background: #2d3748;
-  --box-shadow: #00000033;
-  --button-background: #1a1a1a;
+  --background-primary: #111827;
+  --header-gradient-start: #111827;
+  --header-gradient-end: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #374151;
+  --border-color: #374151;
+  --card-background: #1f2937;
+  --card-label-background: #334155;
+  --card-label-background-transparent: #334155e6;
+  --input-color: #374151;
+  --input-placeholder: #9ca3af;
+  --accent-color: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-color-hover: #4f46e5;
+  --accent-color-rgb: 99, 102, 241;
+  --background-hover-rgb: 75, 85, 99;
+  --input-border: #4b5563;
+  --input-background: #1f2937;
+  --box-shadow: #00000040;
+  --button-background: #1f2937;
+}
+
+[data-theme='ocean'] {
+  --background-primary: #e4efff; /* modified */
+  --header-gradient-start: #8fd4ff;
+  --header-gradient-end: #c2f0ff;
+  --text-primary: #11324a;
+  --text-secondary: #3f6f93;
+  --text-tertiary: #102a3e;
+  --border-color: #9fcae8;
+  --card-background: #e9f7ff; /* modified */
+  --card-label-background: #e5fff8; /* modified */
+  --card-label-background-transparent: #e5fff8e6; /* modified */
+  --input-color: #ffffff;
+  --input-placeholder: #5e7f9e;
+  --accent-color: #0096ff;
+  --accent-hover: #0077d8;
+  --accent-color-hover: #0077d8;
+  --accent-color-rgb: 0, 150, 255;
+  --background-hover-rgb: 176, 212, 238;
+  --input-border: #9dc4df;
+  --input-background: #ffffff;
+  --box-shadow: #0c4b7f24;
+  --button-background: #f8fcff;
+  --scrollbar-thumb: #0b4b7d40;
+  --scrollbar-thumb-hover: #0b4b7d75;
+}
+
+[data-theme='forest'] {
+  --background-primary: #e8f5ec; /* modified */
+  --header-gradient-start: #9fe2b2;
+  --header-gradient-end: #d5f3de;
+  --text-primary: #163526;
+  --text-secondary: #4d7f65;
+  --text-tertiary: #153021;
+  --border-color: #a8d1b3;
+  --card-background: #edf8f1; /* modified */
+  --card-label-background: #f1ffd4; /* modified */
+  --card-label-background-transparent: #f1ffd4e6; /* modified */
+  --input-color: #ffffff;
+  --input-placeholder: #5f826d;
+  --accent-color: #16b364;
+  --accent-hover: #129255;
+  --accent-color-hover: #129255;
+  --accent-color-rgb: 22, 179, 100;
+  --background-hover-rgb: 184, 219, 193;
+  --input-border: #a5c6af;
+  --input-background: #ffffff;
+  --box-shadow: #0f4a2220;
+  --button-background: #f8fffa;
+  --scrollbar-thumb: #1f6e3f3f;
+  --scrollbar-thumb-hover: #1f6e3f74;
+}
+
+[data-theme='sunset'] {
+  --background-primary: #ffede6; /* modified */
+  --header-gradient-start: #ffbf98;
+  --header-gradient-end: #ffd7bd;
+  --text-primary: #4d2514;
+  --text-secondary: #8b5f46;
+  --text-tertiary: #492110;
+  --border-color: #e7b291;
+  --card-background: #fff1ea; /* modified */
+  --card-label-background: #fff8db; /* modified */
+  --card-label-background-transparent: #fff8dbe6; /* modified */
+  --input-color: #ffffff;
+  --input-placeholder: #956347;
+  --accent-color: #ff6a00;
+  --accent-hover: #dd5600;
+  --accent-color-hover: #dd5600;
+  --accent-color-rgb: 255, 106, 0;
+  --background-hover-rgb: 236, 189, 159;
+  --input-border: #e3af8e;
+  --input-background: #ffffff;
+  --box-shadow: #8a3f0f26;
+  --button-background: #fffaf5;
+  --scrollbar-thumb: #9a45183c;
+  --scrollbar-thumb-hover: #9a451875;
+}
+
+[data-theme='rose'] {
+  --background-primary: #fbe8f2; /* modified */
+  --header-gradient-start: #ffb5ce;
+  --header-gradient-end: #ffd8e7;
+  --text-primary: #4d1f36;
+  --text-secondary: #8d5e75;
+  --text-tertiary: #4a1d33;
+  --border-color: #e4aec3;
+  --card-background: #ffeef7; /* modified */
+  --card-label-background: #f3e7ff; /* modified */
+  --card-label-background-transparent: #f3e7ffe6; /* modified */
+  --input-color: #ffffff;
+  --input-placeholder: #96667d;
+  --accent-color: #e61b72;
+  --accent-hover: #c81561;
+  --accent-color-hover: #c81561;
+  --accent-color-rgb: 230, 27, 114;
+  --background-hover-rgb: 235, 189, 207;
+  --input-border: #e3adc3;
+  --input-background: #ffffff;
+  --box-shadow: #7f214629;
+  --button-background: #fff8fc;
+  --scrollbar-thumb: #8f2a503c;
+  --scrollbar-thumb-hover: #8f2a5073;
+}
+
+[data-theme='violet'] {
+  --background-primary: #eae0ff; /* modified */
+  --header-gradient-start: #ccb8ff;
+  --header-gradient-end: #e5d8ff;
+  --text-primary: #32244e;
+  --text-secondary: #695687;
+  --text-tertiary: #31234a;
+  --border-color: #c7b2ea;
+  --card-background: #fde7f9; /* modified */
+  --card-label-background: #e2e8ff; /* modified */
+  --card-label-background-transparent: #e2e8ffe6; /* modified */
+  --input-color: #ffffff;
+  --input-placeholder: #71608d;
+  --accent-color: #7c3aed;
+  --accent-hover: #6928db;
+  --accent-color-hover: #6928db;
+  --accent-color-rgb: 124, 58, 237;
+  --background-hover-rgb: 210, 192, 239;
+  --input-border: #c6afe8;
+  --input-background: #ffffff;
+  --box-shadow: #3f1b7e2a;
+  --button-background: #fbf9ff;
+  --scrollbar-thumb: #5f3aa73b;
+  --scrollbar-thumb-hover: #5f3aa775;
 }
 
 #app {

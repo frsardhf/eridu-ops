@@ -173,7 +173,6 @@
 
 .resource-input:focus {
   opacity: 1;
-  outline: none;
   border-color: var(--accent-color);
 }
 

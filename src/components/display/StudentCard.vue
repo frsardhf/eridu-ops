@@ -337,7 +337,6 @@ function handlePinToggle(event: MouseEvent) {
   box-shadow: 0 2px 4px var(--box-shadow);
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
-  outline: none;
 }
 
 .selection-grid-card:focus {

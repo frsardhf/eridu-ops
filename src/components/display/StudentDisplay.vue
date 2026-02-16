@@ -1,26 +1,27 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
-import { getSettings } from '@/consumables/utils/settingsStorage';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
 import { GiftProps } from '@/types/gift';
 import { SortOption } from '@/types/header';
 import { StudentProps } from '@/types/student';
+import { ThemeId } from '@/types/theme';
 
 const {
   favoredGift,
   giftBoxData,
-  isDarkMode,
+  currentTheme,
   searchQuery,
   sortedStudentsArray,
-  toggleTheme,
+  setTheme,
   setSortOption,
   currentSort,
   sortDirection,
   updateSearchQuery,
   toggleDirection,
+  updateSortedStudents,
   reinitializeData
 } = useStudentData()
 
@@ -87,7 +88,7 @@ function handleToggleDirection() {
 }
 
 function handleStudentPinned() {
-  sortedStudentsArray.value = [...sortedStudentsArray.value];
+  updateSortedStudents();
 }
 
 function handleDataImported() {
@@ -95,28 +96,24 @@ function handleDataImported() {
   // The actual reload is handled in the StudentNavbar component
 }
 
+function handleSetTheme(themeId: ThemeId) {
+  setTheme(themeId);
+}
+
 async function handleReinitializeData() {
   await reinitializeData();
 }
-
-onMounted(() => {
-  const settings = getSettings();
-  if (settings.theme) {
-    isDarkMode.value = settings.theme === 'dark';
-    document.documentElement.setAttribute('data-theme', settings.theme);
-  }
-})
 </script>
 
 <template>
   <div class="student-list-container">
     <StudentNavbar
       :search-query="searchQuery"
-      :is-dark-mode="isDarkMode"
+      :current-theme="currentTheme"
       :current-sort="currentSort"
       :sort-direction="sortDirection"
       @update:search-query="handleSearchUpdate"
-      @toggle-theme="toggleTheme"
+      @set-theme="handleSetTheme"
       @update-sort="updateSortOption"
       @toggle-direction="handleToggleDirection"
       @data-imported="handleDataImported"

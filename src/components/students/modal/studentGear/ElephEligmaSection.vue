@@ -347,7 +347,6 @@ const updateValue = (event: Event, field: 'owned' | 'price' | 'purchasable') => 
 }
 
 .resource-input-container:focus {
-  outline: none;
   border-color: var(--accent-color, #4a90e2);
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }

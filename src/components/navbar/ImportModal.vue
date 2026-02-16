@@ -334,7 +334,6 @@ function closeModal(event: MouseEvent) {
 }
 
 .import-textarea:focus {
-  outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
 }

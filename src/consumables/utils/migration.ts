@@ -14,6 +14,7 @@ import {
   setMetadata
 } from '../services/dbService';
 import { saveSettings, getSettings, type AppSettings } from './settingsStorage';
+import { normalizeTheme } from './themeUtils';
 
 // Legacy localStorage keys
 const LEGACY_KEYS = [
@@ -242,7 +243,7 @@ function consolidateSettings(): void {
     }
 
     // Gather legacy settings
-    const theme = localStorage.getItem('theme') || 'dark';
+    const theme = normalizeTheme(localStorage.getItem('theme') || 'dark');
     const language = localStorage.getItem('language') || 'en';
     const sortOption = localStorage.getItem('sort-option') || 'id';
     const sortDirection = localStorage.getItem('sort-direction') || 'asc';
@@ -250,7 +251,7 @@ function consolidateSettings(): void {
     const pinnedStudents = pinnedStudentsJson ? JSON.parse(pinnedStudentsJson) : [];
 
     const consolidatedSettings: AppSettings = {
-      theme: theme as 'dark' | 'light',
+      theme,
       language: language as 'en' | 'jp',
       sort: {
         option: sortOption as any,
