@@ -175,10 +175,6 @@ function hideTooltip() {
   background-color: var(--primary-hover, #3a5ce7);
 }
 
-.button-primary:focus {
-  outline: none;
-}
-
 .button-secondary {
   background-color: var(--secondary-color, #b8b8b8);
   color: white;
@@ -189,10 +185,6 @@ function hideTooltip() {
   background-color: var(--secondary-hover, #8d8d8d);
 }
 
-.button-secondary:focus {
-  outline: none;
-}
-
 .button-convert {
   background-color: var(--convert-color, #f7ac4a);
   color: white;
@@ -201,10 +193,6 @@ function hideTooltip() {
 
 .button-convert:hover:not(:disabled) {
   background-color: var(--convert-hover, #e49329);
-}
-
-.button-convert:focus {
-  outline: none;
 }
 
 .button-disabled {

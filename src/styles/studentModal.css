@@ -76,10 +76,6 @@
   flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
-.tab-button:focus {
-  outline: none;
-}
-
 .tab-button.active {
   color: var(--text-primary);
   border-bottom: 2px solid var(--accent-color);
@@ -195,11 +191,6 @@
   gap: 5px;
   padding: 5px;
   border-top: 1px solid var(--border-color);
-}
-
-button:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
 }
 
 /* ==========================================================================

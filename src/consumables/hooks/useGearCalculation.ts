@@ -4,7 +4,7 @@ import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
 import { Material } from '../../types/upgrade';
-import { EquipmentMaterial, EquipmentType, EquipmentLevels } from '../../types/gear';
+import { EquipmentType, EquipmentLevels } from '../../types/gear';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/gearsStore';
 import { isExpBall } from '../utils/materialUtils';
@@ -278,10 +278,9 @@ export function useGearCalculation() {
         let quantity = 0;
         const equipmentTypes: EquipmentType[] = [];
         
-        (materials as EquipmentMaterial[]).forEach(material => {
+        (materials as Material[]).forEach(material => {
           if (material.material?.Id === materialId) {
             quantity += material.materialQuantity;
-            equipmentTypes.push(material.equipmentType);
           }
         });
         

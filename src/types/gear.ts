@@ -11,7 +11,7 @@ export interface EquipmentItem {
 }
 
 export interface EquipmentMaterial {
-  material: Record<string, any> | null;
+  material: Record<string, any>;
   materialQuantity: number;
   equipmentType: EquipmentType;
 }

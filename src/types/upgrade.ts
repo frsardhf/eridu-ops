@@ -9,7 +9,7 @@ export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 export type MaterialType = 'materials' | 'special' | 'equipments' | 'credits' | 'xp';
 
 export interface Material {
-  material: ResourceProps | null;
+  material: ResourceProps;
   materialQuantity: number;
   type?: MaterialType;
 }

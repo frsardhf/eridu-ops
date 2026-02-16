@@ -1,5 +1,5 @@
 import { ref, computed, watch, watchEffect } from 'vue';
-import { ModalProps, StudentProps } from '../../types/student';
+import { StudentProps } from '../../types/student';
 import dataTable from '../../data/data.json';
 import {
   loadFormDataToRefs,
@@ -93,12 +93,12 @@ export function getEligmasForGrade(needed: number, price: number = 1, purchasabl
 
 // Exported function to calculate equipment materials
 export function calculateEquipmentMaterials(
-  student: StudentProps | null,
+  student: StudentProps,
   equipmentLevels: EquipmentLevels
 ): Material[] {
   const materialsNeeded: Material[] = [];
   
-  if (!student?.Id || !equipmentLevels) return materialsNeeded;
+  if (!student.Id || !equipmentLevels) return materialsNeeded;
 
   // Get all equipment data from cache
   const allEquipment = getAllEquipmentFromCache();
@@ -251,18 +251,13 @@ export function calculateGradeMaterials(
 
 // Calculate materials needed for exclusive gear upgrade (T1→T2)
 export function calculateExclusiveGearMaterials(
-  student: StudentProps | null,
-  exclusiveGearLevel: ExclusiveGearLevel | null | undefined
+  student: StudentProps,
+  exclusiveGearLevel: ExclusiveGearLevel
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
-  // Guard against undefined/null exclusiveGearLevel
-  if (!exclusiveGearLevel) {
-    return materialsNeeded;
-  }
-
   // Check if student has gear data and upgrade is needed
-  if (!student?.Gear || Object.keys(student.Gear).length === 0) {
+  if (!student.Gear || Object.keys(student.Gear).length === 0) {
     return materialsNeeded;
   }
 
@@ -308,7 +303,7 @@ export function calculateExclusiveGearMaterials(
 }
 
 export function calculateAllGears(
-  student: StudentProps | null,
+  student: StudentProps,
   equipmentLevels: EquipmentLevels,
   gradeLevels: GradeLevels,
   gradeInfos: GradeInfos,
@@ -342,11 +337,13 @@ export function getMaxTierForTypeSync(type: string): number {
 }
 
 export function useStudentGear(props: {
-  student: ModalProps | null,
+  student: StudentProps,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   // Track pending save to deduplicate concurrent saves
   let pendingSave: Promise<void> | null = null;
+  // Token to discard stale async loads during rapid student navigation
+  let loadRequestToken = 0;
   // Track loading state to prevent watch from triggering saves during load
   const isLoading = ref(false);
 
@@ -362,11 +359,10 @@ export function useStudentGear(props: {
 
   // Exclusive gear computed properties
   const hasExclusiveGear = computed(() => {
-    return !!(props.student?.Gear && Object.keys(props.student.Gear).length > 0);
+    return !!(props.student.Gear && Object.keys(props.student.Gear).length > 0);
   });
 
   const currentBond = computed(() => {
-    if (!props.student?.Id) return 0;
     const form = studentDataStore.value[props.student.Id];
     return form?.bondDetailData?.currentBond ?? 0;
   });
@@ -382,7 +378,6 @@ export function useStudentGear(props: {
   });
 
   const checkAllGearsMaxed = () => {
-    if (!props.student?.Equipment) return false;
     return props.student.Equipment.every((type) => {
       const maxTier = getMaxTierForTypeSync(type);
       const levels = equipmentLevels.value[type as EquipmentType];
@@ -391,7 +386,6 @@ export function useStudentGear(props: {
   };
 
   const checkTargetGearsMaxed = () => {
-    if (!props.student?.Equipment) return false;
     return props.student.Equipment.every((type) => {
       const maxTier = getMaxTierForTypeSync(type);
       const levels = equipmentLevels.value[type as EquipmentType];
@@ -400,8 +394,6 @@ export function useStudentGear(props: {
   };
 
   const toggleMaxAllGears = (checked: boolean) => {
-    if (!props.student?.Equipment) return;
-
     props.student.Equipment.forEach((type) => {
       const equipmentType = type as EquipmentType;
       const maxTier = getMaxTierForTypeSync(type);
@@ -417,14 +409,10 @@ export function useStudentGear(props: {
     targetGearsMaxed.value = checked;
 
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
+    updateStudentData(props.student.Id);
   };
 
   const toggleMaxTargetGears = (checked: boolean) => {
-    if (!props.student?.Equipment) return;
-
     props.student.Equipment.forEach((type) => {
       const equipmentType = type as EquipmentType;
       const maxTier = getMaxTierForTypeSync(type);
@@ -441,50 +429,27 @@ export function useStudentGear(props: {
     allGearsMaxed.value = checkAllGearsMaxed();
 
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
+    updateStudentData(props.student.Id);
   };
 
   // Reset form data
   function resetFormData() {
     // Reset equipment levels based on student's equipment
-    if (props.student?.Equipment) {
-      const newLevels: EquipmentLevels = {};
-      props.student.Equipment.forEach(type => {
-        newLevels[type as EquipmentType] = { current: 1, target: 1 };
-      });
-      equipmentLevels.value = newLevels;
-    } 
+    const newLevels: EquipmentLevels = {};
+    props.student.Equipment.forEach(type => {
+      newLevels[type as EquipmentType] = { current: 1, target: 1 };
+    });
+    equipmentLevels.value = newLevels;
 
-    const starGrade = props.student?.StarGrade ?? 1;
+    const starGrade = props.student.StarGrade ?? 1;
     gradeLevels.value = { current: starGrade, target: starGrade };
     gradeInfos.value = { owned: 0, price: 1, purchasable: 20 };
     exclusiveGearLevel.value = { current: 0, target: 0 };
   }
 
-  // Watch for changes to isVisible to load data when modal opens
-  watch(() => props.isVisible, (newValue) => {
-    if (newValue && props.student) {
-      setTimeout(() => {
-        loadFromIndexedDB();
-      }, 50);
-    }
-  }, { immediate: true });
-
-  // Watch for changes to the student prop to reset form when student changes
-  watch(() => props.student, (newValue) => {
-    if (newValue) {
-      resetFormData();
-      if (props.isVisible) {
-        loadFromIndexedDB();
-      }
-    }
-  });
-
   // Watch for changes to form data and save to IndexedDB
   watch([equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel], async () => {
-    if (props.student && props.isVisible && !isLoading.value) {
+    if (props.isVisible && !isLoading.value) {
       await saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
@@ -498,8 +463,6 @@ export function useStudentGear(props: {
 
   // Save current form data to IndexedDB
   async function saveToIndexedDB() {
-    if (!props.student) return;
-
     // Wait for any pending save to complete
     if (pendingSave) {
       await pendingSave;
@@ -514,10 +477,10 @@ export function useStudentGear(props: {
         exclusiveGearLevel: { ...exclusiveGearLevel.value }
       };
 
-      const savedData = await saveFormData(props.student!.Id, dataToSave);
+      const savedData = await saveFormData(props.student.Id, dataToSave);
       if (savedData) {
         // Update store immediately with sanitized data for reactive overlay updates
-        setStudentDataDirect(props.student!.Id, savedData);
+        setStudentDataDirect(props.student.Id, savedData);
       }
     })();
 
@@ -528,24 +491,31 @@ export function useStudentGear(props: {
 
   // Load form data from IndexedDB
   async function loadFromIndexedDB() {
-    if (!props.student) return;
+    const requestToken = ++loadRequestToken;
+    const studentId = props.student.Id;
 
     isLoading.value = true;
 
     try {
+      // Stage async load into temporary refs first so stale loads cannot mutate active state.
+      const stagedEquipmentLevels = ref<EquipmentLevels>({});
+      const stagedGradeLevels = ref<GradeLevels>({});
+      const stagedGradeInfos = ref<GradeInfos>({});
+      const stagedExclusiveGearLevel = ref<ExclusiveGearLevel>({});
+
       const refs = {
-        equipmentLevels,
-        gradeLevels,
-        gradeInfos,
-        exclusiveGearLevel
+        equipmentLevels: stagedEquipmentLevels,
+        gradeLevels: stagedGradeLevels,
+        gradeInfos: stagedGradeInfos,
+        exclusiveGearLevel: stagedExclusiveGearLevel
       };
 
-      const defaultEquipmentLevels = props.student.Equipment.reduce((acc, type) => {
-        acc[type as EquipmentType] = { current: 1, target: 1 };
-        return acc;
-      }, {} as EquipmentLevels);
+      const defaultEquipmentLevels: EquipmentLevels = {};
+      props.student.Equipment.forEach((type) => {
+        defaultEquipmentLevels[type] = { current: 1, target: 1 };
+      });
 
-      const starGrade = props.student?.StarGrade ?? 1;
+      const starGrade = props.student.StarGrade ?? 1;
 
       const defaultValues = {
         equipmentLevels: defaultEquipmentLevels,
@@ -556,11 +526,18 @@ export function useStudentGear(props: {
 
       // Load data - defaults are initialized by StudentModal before composables load
       // No need to save here; initializeStudentFormData handles atomic default creation
-      await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+      await loadFormDataToRefs(studentId, refs, defaultValues);
 
-      if (props.student) {
-        await updateStudentData(props.student.Id);
+      if (requestToken !== loadRequestToken || props.student.Id !== studentId) {
+        return;
       }
+
+      equipmentLevels.value = stagedEquipmentLevels.value;
+      gradeLevels.value = stagedGradeLevels.value;
+      gradeInfos.value = stagedGradeInfos.value;
+      exclusiveGearLevel.value = stagedExclusiveGearLevel.value;
+
+      await updateStudentData(studentId);
     } finally {
       isLoading.value = false;
     }
@@ -569,8 +546,6 @@ export function useStudentGear(props: {
   // Create a computed property for all equipment materials needed for this student
   // NOTE: This computed is now pure - side effects are handled in a separate watcher below
   const equipmentMaterialsNeeded = computed<Material[]>(() => {
-    if (!props.student) return [];
-
     return calculateAllGears(
       props.student,
       equipmentLevels.value,
@@ -583,9 +558,7 @@ export function useStudentGear(props: {
   // Update gears store when materials change (side effects belong in watchers, not computed)
   // Always update even when empty to clear stale cached data
   watch(equipmentMaterialsNeeded, (materials) => {
-    if (props.student) {
-      updateGearsData(props.student.Id, materials);
-    }
+    updateGearsData(props.student.Id, materials);
   }, { immediate: true });
 
   // Function to handle updates for equipment levels
@@ -598,7 +571,7 @@ export function useStudentGear(props: {
         equipmentLevels.value[type].current = current;
         equipmentLevels.value[type].target = target;
 
-        if (props.student && props.isVisible) {
+        if (props.isVisible) {
           updateStudentData(props.student.Id);
         }
       } else {
@@ -615,7 +588,7 @@ export function useStudentGear(props: {
         gradeLevels.value.current = current;
         gradeLevels.value.target = target;
 
-        if (props.student && props.isVisible) {
+        if (props.isVisible) {
           updateStudentData(props.student.Id);
         }
       }
@@ -630,7 +603,7 @@ export function useStudentGear(props: {
       gradeInfos.value.price = price;
       gradeInfos.value.purchasable = purchasable;
 
-      if (props.student && props.isVisible) {
+      if (props.isVisible) {
         updateStudentData(props.student.Id);
       }
     }
@@ -647,7 +620,7 @@ export function useStudentGear(props: {
 
     exclusiveGearLevel.value = { current, target };
 
-    if (props.student && props.isVisible) {
+    if (props.isVisible) {
       saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
@@ -667,6 +640,8 @@ export function useStudentGear(props: {
     handleEquipmentUpdate,
     handleGradeUpdate,
     handleGradeInfoUpdate,
+    saveToIndexedDB,
+    loadFromIndexedDB,
     getElephsForGrade,
     getEligmasForGrade,
     calculateGradeMaterials,

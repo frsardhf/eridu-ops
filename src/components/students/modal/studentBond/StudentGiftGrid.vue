@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { StudentProps } from '../../../../types/student';
-import StudentGiftCard from './StudentGiftCard.vue';
+import StudentGiftCard from '@/components/students/modal/studentBond/StudentGiftCard.vue';
+import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: StudentProps | null,
+  student: StudentProps,
   giftFormData: Record<string, number>,
   boxFormData: Record<string, number>,
   convertBox?: boolean,
@@ -24,8 +24,8 @@ function handleBoxInput(id: number, event: Event) {
   emit('update-box', id, event);
 }
 
-const hasGifts = computed(() => props.student?.Gifts && Object.keys(props.student.Gifts).length > 0);
-const hasBoxes = computed(() => props.student?.Boxes && Object.keys(props.student.Boxes).length > 0);
+const hasGifts = computed(() => props.student.Gifts && Object.keys(props.student.Gifts).length > 0);
+const hasBoxes = computed(() => props.student.Boxes && Object.keys(props.student.Boxes).length > 0);
 
 // Provide a default value for convertBox
 const convertBox = computed(() => props.convertBox ?? false);
@@ -36,7 +36,7 @@ const convertBox = computed(() => props.convertBox ?? false);
     <!-- Regular Gifts Section -->
     <template v-if="hasGifts">
       <StudentGiftCard 
-        v-for="(item) in student!.Gifts" 
+        v-for="(item) in student.Gifts" 
         :key="`gift-${item.gift.Id}`"
         :name="`gift-${item.gift.Id}`"
         :item="item"
@@ -49,7 +49,7 @@ const convertBox = computed(() => props.convertBox ?? false);
     <!-- Gift Boxes Section -->
     <template v-if="hasBoxes">
       <StudentGiftCard 
-        v-for="(item) in student!.Boxes" 
+        v-for="(item) in student.Boxes" 
         :key="`box-${item.gift.Id}`"
         :name="`box-${item.gift.Id}`"
         :item="item"

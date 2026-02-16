@@ -17,15 +17,6 @@ export function useStudentItems(props: {
     itemFormData.value[id] = value;
   }
 
-  // Watch for changes to isVisible to load data when modal opens
-  watch(() => props.isVisible, (newValue) => {
-    if (newValue) {
-      setTimeout(() => {
-        loadItems();
-      }, 50);
-    }
-  }, { immediate: true });
-
   // Watch for changes to form data and save to IndexedDB
   watch([itemFormData], () => {
     if (props.isVisible && !isLoading.value) {
@@ -63,6 +54,7 @@ export function useStudentItems(props: {
 
   return {
     itemFormData,
-    handleItemInput
+    handleItemInput,
+    loadItems
   };
 }

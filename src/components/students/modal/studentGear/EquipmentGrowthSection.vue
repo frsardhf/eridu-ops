@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
-import { ModalProps } from '../../../../types/student';
-import { EquipmentType } from '../../../../types/gear';
-import { $t } from '../../../../locales';
-import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
-import { getMaxTierForTypeSync } from '../../../../consumables/hooks/useStudentGear';
+import { useStudentGearDisplay } from '@/composables/student/useStudentGearDisplay';
+import { getMaxTierForTypeSync } from '@/consumables/hooks/useStudentGear';
+import { $t } from '@/locales';
+import { EquipmentType } from '@/types/gear';
+import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: ModalProps | null;
+  student: StudentProps;
   equipmentLevels: Record<string, { current: number; target: number; }>;
   exclusiveGearLevel: { current?: number; target?: number };
   hasExclusiveGear: boolean;
@@ -61,13 +61,12 @@ function updateEquipmentCurrent(type: string, value: number) {
   const maxTier = getMaxTierForTypeSync(type);
   if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
-    if (!props.equipmentLevels[equipmentType]) return;
+    const levels = props.equipmentLevels[equipmentType];
+    if (!levels) return;
 
-    props.equipmentLevels[equipmentType].current = value;
-    if (props.equipmentLevels[equipmentType].target < value) {
-      props.equipmentLevels[equipmentType].target = value;
-    }
-    emit('update-equipment', equipmentType, value, props.equipmentLevels[equipmentType].target);
+    const nextCurrent = value;
+    const nextTarget = Math.max(levels.target, value);
+    emit('update-equipment', equipmentType, nextCurrent, nextTarget);
   }
 }
 
@@ -76,17 +75,12 @@ function updateEquipmentTarget(type: string, value: number) {
   const maxTier = getMaxTierForTypeSync(type);
   if (value >= 1 && value <= maxTier) {
     const equipmentType = type as EquipmentType;
-    if (!props.equipmentLevels[equipmentType]) return;
+    const levels = props.equipmentLevels[equipmentType];
+    if (!levels) return;
 
     const finalValue = Math.max(value, 1);
-    props.equipmentLevels[equipmentType].target = finalValue;
-
-    if (props.equipmentLevels[equipmentType].current > finalValue) {
-      props.equipmentLevels[equipmentType].current = finalValue;
-      emit('update-equipment', equipmentType, finalValue, finalValue);
-    } else {
-      emit('update-equipment', equipmentType, props.equipmentLevels[equipmentType].current, finalValue);
-    }
+    const nextCurrent = Math.min(levels.current, finalValue);
+    emit('update-equipment', equipmentType, nextCurrent, finalValue);
   }
 }
 

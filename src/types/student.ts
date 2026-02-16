@@ -1,6 +1,6 @@
-import { EquipmentType, StudentGear } from "./gear";
-import { GiftProps } from "./gift";
-import { ResourceProps } from "./resource";
+import { EquipmentType, StudentGear } from '@/types/gear';
+import { GiftProps } from '@/types/gift';
+import { ResourceProps } from '@/types/resource';
 
 export interface StudentProps {
   Id: number;
@@ -12,7 +12,7 @@ export interface StudentProps {
   Gifts: GiftProps[];
   Boxes: GiftProps[];
   Gear: StudentGear;
-  Equipment: string[] | EquipmentType[];
+  Equipment: EquipmentType[];
   FavorItemUniqueTags: string[];
   FavorItemTags: string[];
   PotentialMaterial: number;
@@ -20,12 +20,8 @@ export interface StudentProps {
   SkillMaterial: number[][];
   SkillExMaterialAmount: number[][];
   SkillMaterialAmount: number[][];
+  [key: string]: any;
 }
-
-// ModalProps is now identical to StudentProps after removing Materials/Equipments
-// (which are global data read from resourceCacheStore, not student-specific)
-// Kept as alias for backward compatibility with existing component props
-export type ModalProps = StudentProps;
 
 export interface FetchedData {
   students: Record<string, StudentProps>;

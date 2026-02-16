@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { StudentProps } from '../../../types/student';
-import { currentLanguage } from '../../../consumables/stores/localizationStore';
+import { currentLanguage } from '@/consumables/stores/localizationStore';
+import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: StudentProps | null
+  student: StudentProps
 }>();
 
 function getFontSizeClass(name: string) {
@@ -21,14 +21,14 @@ function getFontSizeClass(name: string) {
 <template>
   <div class="student-section">
     <img 
-      :src="`https://schaledb.com/images/student/collection/${student!.Id}.webp`"
-      :alt="student!.Name"
+      :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
+      :alt="student.Name"
       class="student-image"
     />
     <h2 
       class="student-name font-bold" 
-      :class="getFontSizeClass(student!.Name)">
-      {{ student!.Name }}
+      :class="getFontSizeClass(student.Name)">
+      {{ student.Name }}
     </h2>
   </div>
 </template>

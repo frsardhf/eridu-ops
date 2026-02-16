@@ -769,10 +769,6 @@ const getMaterialLeftover = (materialId: number) => {
   border-bottom-color: var(--accent-color);
 }
 
-.main-tab:focus {
-  outline: none;
-}
-
 .mode-toggle-container {
   display: flex;
   justify-content: space-between;
@@ -805,10 +801,6 @@ const getMaterialLeftover = (materialId: number) => {
   background: rgba(255, 77, 79, 0.1);
   border-color: var(--error-color, #ff4d4f);
   color: var(--error-color, #ff4d4f);
-}
-
-.mode-toggle:focus {
-  outline: none;
 }
 
 .toggle-icon {

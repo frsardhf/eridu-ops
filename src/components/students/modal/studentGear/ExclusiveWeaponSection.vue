@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ModalProps } from '../../../../types/student';
 import { computed, ref, watch, toRef } from 'vue';
-import { $t } from '../../../../locales';
-import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
+import { useStudentGearDisplay } from '@/composables/student/useStudentGearDisplay';
+import { $t } from '@/locales';
+import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: ModalProps | null;
+  student: StudentProps;
   gradeLevels: { current?: number; target?: number; };
 }>();
 

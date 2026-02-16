@@ -1,12 +1,12 @@
 import { computed, MaybeRefOrGetter, toValue } from 'vue';
-import { getStudentData } from '../../consumables/stores/studentStore';
+import { getStudentData } from '@/consumables/stores/studentStore';
+import { StudentProps } from '@/types/student';
 
 export function useStudentSkillEnhancements(
-  student: MaybeRefOrGetter<Record<string, any> | null>
+  student: MaybeRefOrGetter<StudentProps>
 ) {
   const studentData = computed(() => {
     const s = toValue(student);
-    if (!s?.Id) return null;
     return getStudentData(s.Id);
   });
   const gradeLevel = computed(() => studentData.value?.gradeLevels?.current || 0);

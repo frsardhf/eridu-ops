@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ModalProps, StudentProps } from '../../types/student';
-import { SortOption } from '../../types/header';
-import { GiftProps } from '../../types/gift';
-import { useStudentData } from '../../consumables/hooks/useStudentData';
-import { getSettings } from '../../consumables/utils/settingsStorage';
-import StudentNavbar from '../navbar/StudentNavbar.vue';
-import StudentGrid from './StudentGrid.vue';
-import StudentModal from '../students/modal/StudentModal.vue'
+import { useStudentData } from '@/consumables/hooks/useStudentData';
+import { getSettings } from '@/consumables/utils/settingsStorage';
+import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
+import StudentGrid from '@/components/display/StudentGrid.vue';
+import StudentModal from '@/components/students/modal/StudentModal.vue'
+import { GiftProps } from '@/types/gift';
+import { SortOption } from '@/types/header';
+import { StudentProps } from '@/types/student';
 
 const {
   favoredGift,
@@ -24,11 +24,11 @@ const {
   reinitializeData
 } = useStudentData()
 
-const selectedStudent = ref<ModalProps | null>(null)
+const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
 
 // Prepare student for modal
-function prepareStudentForModal(student: StudentProps): ModalProps {
+function prepareStudentForModal(student: StudentProps): StudentProps {
   const studentGifts = favoredGift.value[student.Id] || {};
   const studentBoxes = giftBoxData.value[student.Id] || {};
 
@@ -131,7 +131,7 @@ onMounted(() => {
     />
 
     <StudentModal 
-      v-if="isModalVisible" 
+      v-if="isModalVisible && selectedStudent" 
       :student="selectedStudent" 
       :isVisible="isModalVisible"
       :studentsArray="sortedStudentsArray"

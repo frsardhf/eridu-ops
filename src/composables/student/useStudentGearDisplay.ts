@@ -1,7 +1,8 @@
 import { computed, MaybeRefOrGetter, toValue } from 'vue';
+import { StudentProps } from '@/types/student';
 
 export function useStudentGearDisplay(
-  student: MaybeRefOrGetter<Record<string, any> | null>,
+  student: MaybeRefOrGetter<StudentProps>,
   gradeLevels: MaybeRefOrGetter<{ current?: number; target?: number }>,
   equipmentLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
   exclusiveGearLevel: MaybeRefOrGetter<{ current?: number; target?: number }>

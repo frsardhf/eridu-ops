@@ -13,7 +13,7 @@ interface CachedResource {
   Category: string;
   Quality: number;
   ExpValue?: number;
-  Recipe?: number[][] | null;
+  Recipe?: number[][];
   QuantityOwned: number;
   Icon: string;
   Tier?: number;
@@ -39,8 +39,8 @@ export const SYNTHETIC_ENTITIES = {
     Tags: ['c'],
     Icon: 'currency_icon_gold',
     Description: 'In-game currency used for various upgrades',
-  } as const,
-} as const;
+  },
+};
 
 // Type-safe ID constants derived from SYNTHETIC_ENTITIES
 export const CREDITS_ID = SYNTHETIC_ENTITIES.CREDITS.Id;

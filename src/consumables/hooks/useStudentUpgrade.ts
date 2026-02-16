@@ -25,12 +25,12 @@ import { updateMaterialsData } from '../stores/materialsStore';
 import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 
 export function calculateLevelMaterials(
-  student: StudentProps | null,
+  student: StudentProps,
   characterLevels: CharacterLevels
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
-  if (!student?.Id) return materialsNeeded;
+  if (!student.Id) return materialsNeeded;
   if (characterLevels.current >= characterLevels.target) return materialsNeeded;
 
   const creditsData = getResourceDataByIdSync(CREDITS_ID);
@@ -69,12 +69,12 @@ export function calculateLevelMaterials(
 }
 
 export function calculateSkillMaterials(
-  student: StudentProps | null,
+  student: StudentProps,
   skillLevels: SkillLevels
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
-  if (!student?.Id) return materialsNeeded;
+  if (!student.Id) return materialsNeeded;
 
   const creditsData = getResourceDataByIdSync(CREDITS_ID);
   const exskillCreditsTable = dataTable.exskill_credits;
@@ -85,22 +85,12 @@ export function calculateSkillMaterials(
 
     if (current >= target) continue;
 
-    let materialIds: number[][] | null = null;
-    let materialQuantities: number[][] | null = null;
-    let creditsQuantities: number[] | null = null;
+    const isExSkill = type === 'Ex';
+    const materialIds = isExSkill ? student.SkillExMaterial : student.SkillMaterial;
+    const materialQuantities = isExSkill ? student.SkillExMaterialAmount : student.SkillMaterialAmount;
+    const creditsQuantities = isExSkill ? exskillCreditsTable : skillCreditsTable;
 
-    // Determine which material data to use based on skill type
-    if (type === 'Ex') {
-      materialIds = student?.SkillExMaterial ?? null;
-      materialQuantities = student?.SkillExMaterialAmount ?? null;
-      creditsQuantities = exskillCreditsTable;
-    } else {
-      materialIds = student?.SkillMaterial ?? null;
-      materialQuantities = student?.SkillMaterialAmount ?? null;
-      creditsQuantities = skillCreditsTable;
-    }
-
-    if (!materialIds || !materialQuantities) continue;
+    if (!materialIds || !materialQuantities || !creditsQuantities) continue;
 
     // Calculate materials for each level
     for (let level = current; level < target; level++) {
@@ -157,12 +147,12 @@ export function calculateSkillMaterials(
 }
 
 export function calculatePotentialMaterials(
-  student: StudentProps | null,
+  student: StudentProps,
   potentialLevels: PotentialLevels
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
-  if (!student?.Id || !dataTable.potential) return materialsNeeded;
+  if (!student.Id || !dataTable.potential) return materialsNeeded;
 
   const potentialMaterials = dataTable.potential;
   const creditsData = getResourceDataByIdSync(CREDITS_ID);
@@ -248,13 +238,11 @@ export function calculatePotentialMaterials(
 }
 
 export function calculateAllMaterials(
-  student: StudentProps | null,
+  student: StudentProps,
   characterLevels: CharacterLevels,
   skillLevels: SkillLevels,
   potentialLevels: PotentialLevels,
 ): Material[] {
-  if (!student) return [];
-
   // Collect all materials
   const materials: Material[] = [];
   materials.push(...calculateLevelMaterials(student, characterLevels));
@@ -266,11 +254,13 @@ export function calculateAllMaterials(
 }
 
 export function useStudentUpgrade(props: {
-  student: StudentProps | null,
+  student: StudentProps,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
   // Track pending save to deduplicate concurrent saves
   let pendingSave: Promise<void> | null = null;
+  // Token to discard stale async loads during rapid student navigation
+  let loadRequestToken = 0;
   // Track loading state to prevent watch from triggering saves during load
   const isLoading = ref(false);
 
@@ -418,28 +408,9 @@ export function useStudentUpgrade(props: {
     };
   }
 
-  // Watch for changes to isVisible to load data when modal opens
-  watch(() => props.isVisible, (newValue) => {
-    if (newValue && props.student) {
-      setTimeout(() => {
-        loadFromIndexedDB();
-      }, 50);
-    }
-  }, { immediate: true });
-
-  // Watch for changes to the student prop to reset form when student changes
-  watch(() => props.student, (newValue) => {
-    if (newValue) {
-      resetFormData();
-      if (props.isVisible) {
-        loadFromIndexedDB();
-      }
-    }
-  });
-
   // Watch for changes to form data and save to IndexedDB
   watch([characterLevels, skillLevels, potentialLevels], async () => {
-    if (props.student && props.isVisible && !isLoading.value) {
+    if (props.isVisible && !isLoading.value) {
       await saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
@@ -456,8 +427,6 @@ export function useStudentUpgrade(props: {
   }, { deep: true });
 
   async function saveToIndexedDB() {
-    if (!props.student) return;
-
     // Wait for any pending save to complete
     if (pendingSave) {
       await pendingSave;
@@ -471,10 +440,10 @@ export function useStudentUpgrade(props: {
         potentialLevels: potentialLevels.value
       };
 
-      const savedData = await saveFormData(props.student!.Id, dataToSave);
+      const savedData = await saveFormData(props.student.Id, dataToSave);
       if (savedData) {
         // Update store immediately with sanitized data for reactive overlay updates
-        setStudentDataDirect(props.student!.Id, savedData);
+        setStudentDataDirect(props.student.Id, savedData);
       }
     })();
 
@@ -484,15 +453,21 @@ export function useStudentUpgrade(props: {
   }
 
   async function loadFromIndexedDB() {
-    if (!props.student) return;
+    const requestToken = ++loadRequestToken;
+    const studentId = props.student.Id;
 
     isLoading.value = true;
 
     try {
+      // Stage async load into temporary refs first so stale loads cannot mutate active state.
+      const stagedCharacterLevels = ref<CharacterLevels>({ ...DEFAULT_CHARACTER_LEVELS });
+      const stagedSkillLevels = ref<SkillLevels>({ ...DEFAULT_SKILL_LEVELS });
+      const stagedPotentialLevels = ref<PotentialLevels>({ ...DEFAULT_POTENTIAL_LEVELS });
+
       const refs = {
-        characterLevels,
-        skillLevels,
-        potentialLevels
+        characterLevels: stagedCharacterLevels,
+        skillLevels: stagedSkillLevels,
+        potentialLevels: stagedPotentialLevels
       };
 
       const defaultValues = {
@@ -512,14 +487,20 @@ export function useStudentUpgrade(props: {
 
       // Load data - defaults are initialized by StudentModal before composables load
       // No need to save here; initializeStudentFormData handles atomic default creation
-      await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+      await loadFormDataToRefs(studentId, refs, defaultValues);
+
+      if (requestToken !== loadRequestToken || props.student.Id !== studentId) {
+        return;
+      }
+
+      characterLevels.value = stagedCharacterLevels.value;
+      skillLevels.value = stagedSkillLevels.value;
+      potentialLevels.value = stagedPotentialLevels.value;
     } finally {
       isLoading.value = false;
     }
 
-    if (props.student) {
-      await updateStudentData(props.student.Id);
-    }
+    await updateStudentData(studentId);
   }
 
   const totalCumulativeExp = computed(() => {
@@ -547,8 +528,6 @@ export function useStudentUpgrade(props: {
   // Create a computed property for all materials needed for this student
   // NOTE: This computed is now pure - side effects are handled in a separate watcher below
   const allMaterialsNeeded = computed<Material[]>(() => {
-    if (!props.student) return [];
-
     return calculateAllMaterials(
       props.student,
       characterLevels.value,
@@ -560,9 +539,7 @@ export function useStudentUpgrade(props: {
   // Update materials store when materials change (side effects belong in watchers, not computed)
   // Always update even when empty to clear stale cached data
   watch(allMaterialsNeeded, (materials) => {
-    if (props.student) {
-      updateMaterialsData(props.student.Id, materials);
-    }
+    updateMaterialsData(props.student.Id, materials);
   }, { immediate: true });
 
   // Function to handle both current and target level updates
@@ -582,8 +559,8 @@ export function useStudentUpgrade(props: {
         skillLevels.value[type].current = current;
         skillLevels.value[type].target = target;
 
-        if (props.student && props.isVisible) {
-          updateStudentData(props.student.Id);
+    if (props.student && props.isVisible) {
+      updateStudentData(props.student.Id);
         }
       }
     }
@@ -596,8 +573,8 @@ export function useStudentUpgrade(props: {
         potentialLevels.value[type].current = current;
         potentialLevels.value[type].target = target;
 
-        if (props.student && props.isVisible) {
-          updateStudentData(props.student.Id);
+    if (props.student && props.isVisible) {
+      updateStudentData(props.student.Id);
         }
       }
     }
@@ -605,9 +582,7 @@ export function useStudentUpgrade(props: {
 
   function closeModal() {
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
+    updateStudentData(props.student.Id);
     emit('close');
   }
 

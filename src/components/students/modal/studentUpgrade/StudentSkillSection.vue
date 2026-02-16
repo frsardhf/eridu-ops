@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, toRef } from 'vue';
-import { SkillType } from '../../../../types/upgrade';
-import { $t } from '../../../../locales';
-import { calculateTooltipPosition } from '../../../../consumables/utils/upgradeUtils';
-import { useStudentSkillEnhancements } from '../../../../composables/student/useStudentSkillEnhancements';
-import { useStudentSkillDisplay } from '../../../../composables/student/useStudentSkillDisplay';
-import { useStudentColors } from '../../../../composables/student/useStudentColors';
+import { useStudentColors } from '@/composables/student/useStudentColors';
+import { useStudentSkillDisplay } from '@/composables/student/useStudentSkillDisplay';
+import { useStudentSkillEnhancements } from '@/composables/student/useStudentSkillEnhancements';
+import { calculateTooltipPosition } from '@/consumables/utils/upgradeUtils';
+import { $t } from '@/locales';
+import { StudentProps } from '@/types/student';
+import { SkillType } from '@/types/upgrade';
 
 const props = defineProps<{
-  student: Record<string, any> | null,
+  student: StudentProps,
   skillLevels: Record<string, { current: number; target: number; }>,
   allSkillsMaxed: boolean;
   targetSkillsMaxed: boolean;

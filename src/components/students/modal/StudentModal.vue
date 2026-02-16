@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import { ModalProps, StudentProps } from '../../../types/student';
-import { useStudentGifts } from '../../../consumables/hooks/useStudentGifts';
-import { useStudentUpgrade } from '../../../consumables/hooks/useStudentUpgrade';
-import { useStudentItems } from '../../../consumables/hooks/useStudentItems';
-import { useStudentEquipment } from '../../../consumables/hooks/useStudentEquipment';
-import { useStudentGear } from '../../../consumables/hooks/useStudentGear';
-import { initializeStudentFormData } from '../../../consumables/services/studentFormService';
-import { setStudentDataDirect } from '../../../consumables/stores/studentStore';
-import { $t } from '../../../locales';
-import StudentModalHeader from './StudentModalHeader.vue';
-import StudentBondSection from './studentBond/StudentBondSection.vue';
-import StudentConvertBox from './studentBond/StudentGiftOption.vue';
-import StudentGiftGrid from './studentBond/StudentGiftGrid.vue';
-import StudentLevelSection from './studentUpgrade/StudentLevelSection.vue';
-import StudentPotentialSection from './studentUpgrade/StudentPotentialSection.vue';
-import StudentSkillSection from './studentUpgrade/StudentSkillSection.vue';
-import MaterialsSection from './shared/MaterialsSection.vue';
-import StudentEquipmentGrowth from './studentGear/EquipmentGrowthSection.vue';
-import StudentGradeGrowth from './studentGear/ExclusiveWeaponSection.vue';
-import ElephEligmaSection from './studentGear/ElephEligmaSection.vue';
-import StudentInfoMini from './studentInfo/StudentInfoMini.vue';
-import StudentInfoSkills from './studentInfo/StudentInfoSkills.vue';
-import StudentInfoGear from './studentInfo/StudentInfoGear.vue';
-import StudentStrip from './StudentStrip.vue';
-import GlobalInventoryModal from '../../inventory/GlobalInventoryModal.vue';
-import '../../../styles/studentModal.css'
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { $t } from '@/locales';
+import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
+import { useStudentGear } from '@/consumables/hooks/useStudentGear';
+import { useStudentGifts } from '@/consumables/hooks/useStudentGifts';
+import { useStudentItems } from '@/consumables/hooks/useStudentItems';
+import { useStudentUpgrade } from '@/consumables/hooks/useStudentUpgrade';
+import { initializeStudentFormData } from '@/consumables/services/studentFormService';
+import { setStudentDataDirect } from '@/consumables/stores/studentStore';
+import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
+import StudentBondSection from '@/components/students/modal/studentBond/StudentBondSection.vue';
+import StudentConvertBox from '@/components/students/modal/studentBond/StudentGiftOption.vue';
+import StudentGiftGrid from '@/components/students/modal/studentBond/StudentGiftGrid.vue';
+import StudentEquipmentGrowth from '@/components/students/modal/studentGear/EquipmentGrowthSection.vue';
+import ElephEligmaSection from '@/components/students/modal/studentGear/ElephEligmaSection.vue';
+import StudentGradeGrowth from '@/components/students/modal/studentGear/ExclusiveWeaponSection.vue';
+import StudentInfoGear from '@/components/students/modal/studentInfo/StudentInfoGear.vue';
+import StudentInfoMini from '@/components/students/modal/studentInfo/StudentInfoMini.vue';
+import StudentInfoSkills from '@/components/students/modal/studentInfo/StudentInfoSkills.vue';
+import MaterialsSection from '@/components/students/modal/shared/MaterialsSection.vue';
+import StudentLevelSection from '@/components/students/modal/studentUpgrade/StudentLevelSection.vue';
+import StudentPotentialSection from '@/components/students/modal/studentUpgrade/StudentPotentialSection.vue';
+import StudentSkillSection from '@/components/students/modal/studentUpgrade/StudentSkillSection.vue';
+import StudentModalHeader from '@/components/students/modal/StudentModalHeader.vue';
+import StudentStrip from '@/components/students/modal/StudentStrip.vue';
+import { StudentProps } from '@/types/student';
+import '@/styles/studentModal.css'
 
 const props = defineProps<{
-  student: ModalProps | null,
+  student: StudentProps,
   isVisible?: boolean,
   studentsArray?: StudentProps[]
 }>();
@@ -38,14 +38,8 @@ const emit = defineEmits<EmitFn>();
 
 const activeTab = ref('info');
 const isInventoryOpen = ref(false);
-
-// Initialize student form data atomically BEFORE composables load
-watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
-  if (visible && student) {
-    const formData = await initializeStudentFormData(student);
-    setStudentDataDirect(student.Id, formData);
-  }
-}, { immediate: true });
+const displayedStudent = ref<StudentProps | null>(null);
+let hydrateRequestToken = 0;
 
 const {
   closeModal,
@@ -62,7 +56,8 @@ const {
   shouldShowGiftGrade,
   autoFillGifts,
   resetGifts,
-  undoChanges
+  undoChanges,
+  loadFromIndexedDB: loadGiftData,
 } = useStudentGifts(props, emit);
 
 const {
@@ -82,17 +77,20 @@ const {
   toggleMaxTargetSkills,
   toggleMaxAllPotentials,
   toggleMaxTargetPotentials,
+  loadFromIndexedDB: loadUpgradeData,
 } = useStudentUpgrade(props, emit);
 
 // Keep resource/equipment hooks alive for data persistence
 const {
   itemFormData,
-  handleItemInput
+  handleItemInput,
+  loadItems
 } = useStudentItems(props);
 
 const {
   equipmentFormData,
-  handleEquipmentInput
+  handleEquipmentInput,
+  loadEquipments
 } = useStudentEquipment(props);
 
 const {
@@ -113,7 +111,35 @@ const {
   hasExclusiveGear,
   maxUnlockableGearTier,
   handleExclusiveGearUpdate,
+  loadFromIndexedDB: loadGearData,
 } = useStudentGear(props, emit);
+
+// Centralized hydration flow: initialize defaults once, then load all hook data together.
+watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
+  if (!visible || !student) return;
+
+  const requestToken = ++hydrateRequestToken;
+
+  try {
+    const formData = await initializeStudentFormData(student);
+    if (requestToken !== hydrateRequestToken) return;
+
+    setStudentDataDirect(student.Id, formData);
+
+    await Promise.all([
+      loadGiftData(),
+      loadUpgradeData(),
+      loadGearData(),
+      loadItems(),
+      loadEquipments()
+    ]);
+
+    if (requestToken !== hydrateRequestToken) return;
+    displayedStudent.value = student;
+  } finally {
+    // no-op: previous student remains displayed until hydrate completes
+  }
+}, { immediate: true });
 
 // Navigation
 function navigateToStudent(student: StudentProps) {
@@ -239,14 +265,14 @@ onUnmounted(() => {
 
     <!-- MIDDLE: Active Tab Content -->
     <div class="modal-body">
-      <div class="modal-grid">
+      <div v-if="displayedStudent" class="modal-grid">
         <!-- Info Tab (default) -->
         <div v-if="activeTab === 'info'" class="tab-content">
           <div class="left-column">
-            <StudentModalHeader :student="student" />
+            <StudentModalHeader :student="displayedStudent" />
 
             <StudentInfoMini
-              :student="student"
+              :student="displayedStudent"
               :character-levels="characterLevels"
               :current-bond="currentBond"
               :new-bond-level="newBondLevel"
@@ -255,12 +281,12 @@ onUnmounted(() => {
 
           <div class="right-column">
             <StudentInfoSkills
-              :student="student"
+              :student="displayedStudent"
               :skill-levels="skillLevels"
             />
 
             <StudentInfoGear
-              :student="student"
+              :student="displayedStudent"
               :grade-levels="gradeLevels"
               :equipment-levels="equipmentLevels"
               :exclusive-gear-level="exclusiveGearLevel"
@@ -272,7 +298,7 @@ onUnmounted(() => {
         <!-- Bond Calculator Tab -->
         <div v-if="activeTab === 'bond'" class="tab-content">
           <div class="left-column">
-            <StudentModalHeader :student="student" />
+            <StudentModalHeader :student="displayedStudent" />
 
             <StudentBondSection
               :current-bond="currentBond"
@@ -293,7 +319,7 @@ onUnmounted(() => {
               />
 
               <StudentGiftGrid
-                :student="student"
+                :student="displayedStudent"
                 :gift-form-data="giftFormData"
                 :box-form-data="boxFormData"
                 :should-show-gift-grade="shouldShowGiftGrade"
@@ -307,7 +333,7 @@ onUnmounted(() => {
         <!-- Upgrade Level, Skills, Talent Tab -->
         <div v-if="activeTab === 'upgrade'" class="tab-content">
           <div class="left-column">
-            <StudentModalHeader :student="student" />
+            <StudentModalHeader :student="displayedStudent" />
 
             <StudentLevelSection
               :character-levels="characterLevels"
@@ -318,7 +344,7 @@ onUnmounted(() => {
 
           <div class="right-column">
             <StudentSkillSection
-              :student="student"
+              :student="displayedStudent"
               :skill-levels="skillLevels"
               :all-skills-maxed="allSkillsMaxed"
               :target-skills-maxed="targetSkillsMaxed"
@@ -345,10 +371,10 @@ onUnmounted(() => {
         <!-- Upgrade Gear and Unique Equipment Tab -->
         <div v-if="activeTab === 'gear'" class="tab-content">
           <div class="left-column">
-            <StudentModalHeader :student="student" />
+            <StudentModalHeader :student="displayedStudent" />
 
             <ElephEligmaSection
-              :student="student"
+              :student="displayedStudent"
               :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
               :grade-infos="gradeInfos"
               :grade-levels="gradeLevels"
@@ -358,7 +384,7 @@ onUnmounted(() => {
 
           <div class="right-column">
             <StudentEquipmentGrowth
-              :student="student"
+              :student="displayedStudent"
               :equipment-levels="equipmentLevels"
               :exclusive-gear-level="exclusiveGearLevel"
               :has-exclusive-gear="hasExclusiveGear"
@@ -372,7 +398,7 @@ onUnmounted(() => {
             />
 
             <StudentGradeGrowth
-              :student="student"
+              :student="displayedStudent"
               :grade-levels="gradeLevels"
               @update-grade="handleGradeUpdate"
             />
@@ -390,7 +416,7 @@ onUnmounted(() => {
     <StudentStrip
       v-if="studentsArray && studentsArray.length > 0"
       :students="studentsArray"
-      :active-student-id="student?.Id ?? null"
+      :active-student-id="displayedStudent?.Id"
       @select-student="navigateToStudent"
       @navigate-prev="navigateToPrevious"
       @navigate-next="navigateToNext"
@@ -500,6 +526,7 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 0 15px 15px 15px;
 }
+
 
 @media (max-width: 576px) {
   .modal-header-row {

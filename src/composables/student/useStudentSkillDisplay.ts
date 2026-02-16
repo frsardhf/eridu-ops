@@ -1,7 +1,8 @@
 import { ComputedRef, MaybeRefOrGetter, computed, ref, toValue, watch } from 'vue';
-import { SkillType } from '../../types/upgrade';
-import { formatSkillDescription } from '../../consumables/utils/localizationUtils';
-import { formatSkillCost, getSkillIconUrl } from '../../consumables/utils/upgradeUtils';
+import { formatSkillDescription } from '@/consumables/utils/localizationUtils';
+import { formatSkillCost, getSkillIconUrl } from '@/consumables/utils/upgradeUtils';
+import { StudentProps } from '@/types/student';
+import { SkillType } from '@/types/upgrade';
 
 /**
  * Pure display-state helper — no reactive deps.
@@ -26,7 +27,7 @@ export function isTargetMaxLevel(target: number, maxLevel: number): boolean {
 }
 
 export function useStudentSkillDisplay(
-  student: MaybeRefOrGetter<Record<string, any> | null>,
+  student: MaybeRefOrGetter<StudentProps>,
   skillLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
   isPassiveEnhanced: ComputedRef<boolean>,
   isBasicEnhanced: ComputedRef<boolean>

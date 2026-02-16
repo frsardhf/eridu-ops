@@ -17,15 +17,6 @@ export function useStudentEquipment(props: {
     equipmentFormData.value[id] = value;
   }
 
-  // Watch for changes to isVisible to load data when modal opens
-  watch(() => props.isVisible, (newValue) => {
-    if (newValue) {
-      setTimeout(() => {
-        loadEquipments();
-      }, 50);
-    }
-  }, { immediate: true });
-
   // Watch for changes to form data and save to IndexedDB
   watch([equipmentFormData], () => {
     if (props.isVisible && !isLoading.value) {
@@ -63,6 +54,7 @@ export function useStudentEquipment(props: {
 
   return {
     equipmentFormData,
-    handleEquipmentInput
+    handleEquipmentInput,
+    loadEquipments
   };
 }

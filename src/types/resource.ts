@@ -5,7 +5,7 @@ export interface ResourceProps {
   Category: string;
   Quality: number;
   ExpValue?: number;
-  Recipe?: number[][] | null;
+  Recipe?: number[][];
   QuantityOwned?: number;
   Icon: string;
   Tier?: number;

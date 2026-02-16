@@ -9,9 +9,13 @@ import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../typ
 import { getAllocatedGifts } from './useGiftCalculation';
 
 export function useStudentGifts(props: {
-  student: StudentProps | null,
+  student: StudentProps,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
+  // Track pending save to deduplicate concurrent saves
+  let pendingSave: Promise<void> | null = null;
+  // Token to discard stale async loads during rapid student navigation
+  let loadRequestToken = 0;
 
   const giftFormData = ref<Record<string, number>>({});
   const boxFormData = ref<Record<string, number>>({});
@@ -35,25 +39,6 @@ export function useStudentGifts(props: {
     bondDetailData.value = {...DEFAULT_BOND_DETAIL};
   }
 
-  // Watch for changes to isVisible to load data when modal opens
-  watch(() => props.isVisible, (newValue) => {
-    if (newValue && props.student) {
-      setTimeout(() => {
-        loadFromIndexedDB();
-      }, 50);
-    }
-  }, { immediate: true });
-
-  // Watch for changes to the student prop to reset form when student changes
-  watch(() => props.student, (newValue) => {
-    if (newValue) {
-      resetFormData();
-      if (props.isVisible) {
-        loadFromIndexedDB();
-      }
-    }
-  });
-
   // Store previous state before any changes
   const savePreviousState = () => {
     previousGiftFormData.value = JSON.parse(JSON.stringify(giftFormData.value));
@@ -62,42 +47,60 @@ export function useStudentGifts(props: {
   };
 
   // Watch for changes to form data and save to IndexedDB
-  watch([giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData], () => {
-    if (props.student && props.isVisible && !isLoading.value) {
-      saveToIndexedDB();
+  watch([giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData], async () => {
+    if (props.isVisible && !isLoading.value) {
+      await saveToIndexedDB();
       updateStudentData(props.student.Id);
     }
   }, { deep: true });
 
   async function saveToIndexedDB() {
-    if (!props.student) return;
+    const studentId = props.student.Id;
 
-    const dataToSave = {
-      giftFormData: giftFormData.value,
-      boxFormData: boxFormData.value,
-      nonFavorGiftsMap: nonFavorGiftsMap.value,
-      bondDetailData: bondDetailData.value
+    // Wait for any pending save to complete
+    if (pendingSave) {
+      await pendingSave;
     }
 
-    const savedData = await saveFormData(props.student.Id, dataToSave);
-    if (savedData) {
-      // Update store immediately with sanitized data for reactive overlay updates
-      setStudentDataDirect(props.student.Id, savedData);
-    }
+    // Mark this as the current pending save
+    const currentSave = (async () => {
+      const dataToSave = {
+        giftFormData: giftFormData.value,
+        boxFormData: boxFormData.value,
+        nonFavorGiftsMap: nonFavorGiftsMap.value,
+        bondDetailData: bondDetailData.value
+      };
+
+      const savedData = await saveFormData(studentId, dataToSave);
+      if (savedData) {
+        // Update store immediately with sanitized data for reactive overlay updates
+        setStudentDataDirect(studentId, savedData);
+      }
+    })();
+
+    pendingSave = currentSave;
+    await currentSave;
+    pendingSave = null;
   }
 
   async function loadFromIndexedDB() {
-    if (!props.student) return;
+    const requestToken = ++loadRequestToken;
+    const studentId = props.student.Id;
 
     isLoading.value = true;
 
     try {
-      // Define the refs and their default values
+      // Stage async load into temporary refs first so stale loads cannot mutate active state.
+      const stagedGiftFormData = ref<Record<string, number>>({});
+      const stagedBoxFormData = ref<Record<string, number>>({});
+      const stagedNonFavorGiftsMap = ref<Record<number, number>>({});
+      const stagedBondDetailData = ref<BondDetailDataProps>({ ...DEFAULT_BOND_DETAIL });
+
       const refs = {
-        giftFormData,
-        boxFormData,
-        nonFavorGiftsMap,
-        bondDetailData
+        giftFormData: stagedGiftFormData,
+        boxFormData: stagedBoxFormData,
+        nonFavorGiftsMap: stagedNonFavorGiftsMap,
+        bondDetailData: stagedBondDetailData
       };
 
       const defaultValues = {
@@ -107,7 +110,16 @@ export function useStudentGifts(props: {
         bondDetailData: DEFAULT_BOND_DETAIL
       };
 
-      await loadFormDataToRefs(props.student.Id, refs, defaultValues);
+      await loadFormDataToRefs(studentId, refs, defaultValues);
+
+      if (requestToken !== loadRequestToken || props.student.Id !== studentId) {
+        return;
+      }
+
+      giftFormData.value = stagedGiftFormData.value;
+      boxFormData.value = stagedBoxFormData.value;
+      nonFavorGiftsMap.value = stagedNonFavorGiftsMap.value;
+      bondDetailData.value = stagedBondDetailData.value;
 
       // Store initial state for undo after loading
       savePreviousState();
@@ -171,8 +183,6 @@ export function useStudentGifts(props: {
 
   // Compute total cumulative EXP across gifts and boxes
   const calculateCumulativeExp = (): number => {
-    if (!props.student) return 0;
-    
     // Calculate exp for gifts
     const giftsExp = calculateItemTypeExp(
       props.student.Gifts,
@@ -416,7 +426,7 @@ export function useStudentGifts(props: {
     boxFormData.value[100009] = nonFavorGiftsSsr;
   }
 
-  function closeModal() {
+function closeModal() {
     // Save the current state (including conversion state) before closing
     saveToIndexedDB();
     emit('close');
@@ -444,6 +454,8 @@ export function useStudentGifts(props: {
     // Methods
     closeModal,
     resetFormData,
+    saveToIndexedDB,
+    loadFromIndexedDB,
     handleGiftInput,
     handleBoxInput,
     handleBondInput,

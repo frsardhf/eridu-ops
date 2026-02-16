@@ -5,7 +5,7 @@ import { $t } from '../../../locales';
 
 const props = defineProps<{
   students: StudentProps[],
-  activeStudentId: number | null
+  activeStudentId?: number
 }>();
 
 const emit = defineEmits<{
@@ -34,7 +34,7 @@ function handleMouseLeave() {
 watch(() => [props.activeStudentId, isExpanded.value], async () => {
   if (!isExpanded.value) return;
   await nextTick();
-  if (!scrollContainer.value || !props.activeStudentId) return;
+  if (!scrollContainer.value || props.activeStudentId == null) return;
 
   const activeEl = scrollContainer.value.querySelector(
     `[data-student-id="${props.activeStudentId}"]`

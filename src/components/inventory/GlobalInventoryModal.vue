@@ -160,10 +160,6 @@ function handleEquipmentInput(id: string, event: Event) {
   transition: all 0.2s ease;
 }
 
-.inv-tab-btn:focus {
-  outline: none;
-}
-
 .inv-tab-btn.active {
   color: var(--text-primary);
   border-bottom-color: var(--accent-color);

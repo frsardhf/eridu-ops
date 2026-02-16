@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { $t } from '../../../../locales';
-import { useStudentLevels } from '../../../../composables/student/useStudentLevels';
-import { useStudentLocalization } from '../../../../composables/student/useStudentLocalization';
-import { useStudentColors } from '../../../../composables/student/useStudentColors';
+import { useStudentColors } from '@/composables/student/useStudentColors';
+import { useStudentLevels } from '@/composables/student/useStudentLevels';
+import { useStudentLocalization } from '@/composables/student/useStudentLocalization';
+import { $t } from '@/locales';
+import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: Record<string, any> | null;
+  student: StudentProps;
   characterLevels: { current: number; target: number };
   currentBond: number;
   newBondLevel: number;

@@ -1,6 +1,7 @@
 // storageUtils.ts - Now using IndexedDB via dbService
 
 import { ResourceProps } from "../../types/resource";
+import { EquipmentLevels, EquipmentType } from "../../types/gear";
 import {
   getFormData as dbGetFormData,
   saveFormData as dbSaveFormData,
@@ -381,8 +382,20 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
 
       // Get equipment data from student data
       const studentData = students[char.id];
-      const equipmentTypes = studentData?.Equipment ?? ['gear1', 'gear2', 'gear3'];
+      const equipmentTypes = (studentData?.Equipment ?? []) as EquipmentType[];
       const starData = studentData?.StarGrade ?? 1;
+      const equipmentLevels: EquipmentLevels = {};
+      const importedGearValues = [
+        { current: parseInt(char.current.gear1) || 1, target: parseInt(char.target.gear1) || 1 },
+        { current: parseInt(char.current.gear2) || 1, target: parseInt(char.target.gear2) || 1 },
+        { current: parseInt(char.current.gear3) || 1, target: parseInt(char.target.gear3) || 1 }
+      ];
+
+      equipmentTypes.forEach((type, idx) => {
+        const imported = importedGearValues[idx];
+        if (!imported) return;
+        equipmentLevels[type] = imported;
+      });
 
       const formData = {
         studentId: char.id,
@@ -394,20 +407,7 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
           current: parseInt(char.current.level) || 1,
           target: parseInt(char.target.level) || 1
         },
-        equipmentLevels: {
-          [equipmentTypes[0]]: {
-            current: parseInt(char.current.gear1) || 1,
-            target: parseInt(char.target.gear1) || 1
-          },
-          [equipmentTypes[1]]: {
-            current: parseInt(char.current.gear2) || 1,
-            target: parseInt(char.target.gear2) || 1
-          },
-          [equipmentTypes[2]]: {
-            current: parseInt(char.current.gear3) || 1,
-            target: parseInt(char.target.gear3) || 1
-          }
-        },
+        equipmentLevels,
         giftFormData: {},
         gradeLevels: {
           current: (parseInt(char.current.star) || starData) + (parseInt(char.current.ue) || 0),

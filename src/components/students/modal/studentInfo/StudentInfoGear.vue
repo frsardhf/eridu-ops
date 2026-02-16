@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { EquipmentType } from '../../../../types/gear';
-import { $t } from '../../../../locales';
-import { useStudentGearDisplay } from '../../../../composables/student/useStudentGearDisplay';
+import { useStudentGearDisplay } from '@/composables/student/useStudentGearDisplay';
+import { $t } from '@/locales';
+import { EquipmentType } from '@/types/gear';
+import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: Record<string, any> | null;
+  student: StudentProps;
   gradeLevels: { current?: number; target?: number };
   equipmentLevels: Record<string, { current: number; target: number }>;
   exclusiveGearLevel: { current?: number; target?: number };
