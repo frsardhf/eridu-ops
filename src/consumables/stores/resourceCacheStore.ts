@@ -108,31 +108,6 @@ export function updateEquipmentInCache(id: string | number, data: CachedResource
 }
 
 /**
- * Update all items in cache
- * Call this after bulk import or updates
- */
-export function updateItemsCache(items: Record<number, CachedResource>) {
-  itemsCache.value = items;
-  isItemsLoaded.value = true;
-}
-
-/**
- * Update all equipment in cache
- * Call this after bulk import or updates
- */
-export function updateEquipmentCache(equipment: Record<number, CachedResource>) {
-  equipmentCache.value = equipment;
-  isEquipmentLoaded.value = true;
-}
-
-/**
- * Check if caches are loaded
- */
-export function areCachesLoaded(): boolean {
-  return isItemsLoaded.value && isEquipmentLoaded.value;
-}
-
-/**
  * Get all items from cache
  */
 export function getAllItemsFromCache(): Record<number, CachedResource> {

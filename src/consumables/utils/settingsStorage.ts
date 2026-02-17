@@ -14,6 +14,7 @@ export interface AppSettings {
     direction: SortDirection;
   };
   pinnedStudents: string[];
+  manualOrder: number[];
 }
 
 // Default settings
@@ -24,7 +25,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     option: 'id',
     direction: 'asc'
   },
-  pinnedStudents: []
+  pinnedStudents: [],
+  manualOrder: []
 };
 
 /**
@@ -157,6 +159,23 @@ export function getPinnedStudents(): string[] {
  */
 export function setPinnedStudents(studentIds: string[]): boolean {
   return updateSetting('pinnedStudents', studentIds);
+}
+
+/**
+ * Get manual order
+ * @returns Array of student IDs in manual order
+ */
+export function getManualOrder(): number[] {
+  return getSettings().manualOrder;
+}
+
+/**
+ * Set manual order
+ * @param ids Array of student IDs in desired order
+ * @returns True if successful, false otherwise
+ */
+export function setManualOrder(ids: number[]): boolean {
+  return updateSetting('manualOrder', ids);
 }
 
 /**

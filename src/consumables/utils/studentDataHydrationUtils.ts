@@ -1,6 +1,13 @@
-import { CREDITS_ID, injectSyntheticEntities } from '@/consumables/constants/syntheticEntities';
+import { CREDITS_ID, creditsEntry, injectSyntheticEntities } from '@/consumables/constants/syntheticEntities';
 import { ResourceProps } from '@/types/resource';
 import { StudentProps } from '@/types/student';
+import { saveItems } from '../services/dbService';
+import {
+  getItems,
+  getEquipment,
+  saveItemsInventory,
+  saveEquipmentInventory,
+} from '../utils/studentStorage';
 
 export function toRecordById<T extends { Id: number | string }>(
   items: T[]
@@ -75,5 +82,54 @@ export function mergeEquipmentWithExisting(
     }
   });
 
+  return mergedEquipments;
+}
+
+/**
+ * Hydrates resource data by loading existing inventory from IndexedDB,
+ * initializing with synthetic entities if empty, or ensuring they exist.
+ */
+export async function hydrateResourceData(
+  items: Record<string, ResourceProps>
+): Promise<Record<number, ResourceProps> | Record<string, ResourceProps>> {
+  const existingResources = await getItems();
+
+  if (!existingResources || Object.keys(existingResources).length === 0) {
+    const allItems = createResourceRecordWithSynthetic(items);
+    await saveItems(Object.values(allItems));
+    await saveItemsInventory(allItems);
+    return allItems;
+  }
+
+  const resourcesAsNumbers = toNumericResourceRecord(existingResources);
+  const {
+    resources: normalizedResources,
+    addedSynthetic
+  } = ensureSyntheticResourceEntries(resourcesAsNumbers);
+
+  if (addedSynthetic) {
+    await saveItems([creditsEntry]);
+    await saveItemsInventory(normalizedResources);
+  }
+
+  return normalizedResources;
+}
+
+/**
+ * Hydrates equipment data by loading existing inventory from IndexedDB,
+ * initializing if empty, or merging to preserve QuantityOwned.
+ */
+export async function hydrateEquipmentData(
+  equipment: Record<string, ResourceProps>
+): Promise<Record<string, ResourceProps>> {
+  const existingEquipments = await getEquipment();
+
+  if (!existingEquipments || Object.keys(existingEquipments).length === 0) {
+    await saveEquipmentInventory(equipment);
+    return equipment;
+  }
+
+  const mergedEquipments = mergeEquipmentWithExisting(equipment, existingEquipments);
+  await saveEquipmentInventory(mergedEquipments);
   return mergedEquipments;
 }

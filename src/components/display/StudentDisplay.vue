@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
-import { getPinnedStudents } from '@/consumables/utils/settingsStorage';
+import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
@@ -22,14 +22,15 @@ const {
   sortDirection,
   updateSearchQuery,
   toggleDirection,
-  updateSortedStudents,
+  syncPinnedStudents,
   reinitializeData
 } = useStudentData()
 
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
-const isManualOrderActive = ref(false);
-const manualOrderedIds = ref<number[]>([]);
+const savedOrder = getManualOrder();
+const isManualOrderActive = ref(savedOrder.length > 0);
+const manualOrderedIds = ref<number[]>(savedOrder);
 
 const displayStudentsArray = computed<StudentProps[]>(() => {
   const baseStudents = sortedStudentsArray.value;
@@ -63,6 +64,7 @@ const displayStudentsArray = computed<StudentProps[]>(() => {
 function resetManualOrder() {
   isManualOrderActive.value = false;
   manualOrderedIds.value = [];
+  setManualOrder([]);
 }
 
 function isPinned(studentId: number): boolean {
@@ -130,9 +132,30 @@ function handleToggleDirection() {
   toggleDirection();
 }
 
-function handleStudentPinned() {
-  updateSortedStudents();
-  resetManualOrder();
+function handleStudentPinned(studentId: string | number) {
+  syncPinnedStudents();
+
+  if (!isManualOrderActive.value) return;
+
+  // Move student to group boundary in manual order
+  const numericId = Number(studentId);
+  const ids = [...manualOrderedIds.value];
+  const index = ids.indexOf(numericId);
+  if (index < 0) return;
+
+  // Remove from current position
+  ids.splice(index, 1);
+
+  // Find boundary: insert right after last pinned student
+  const pinnedSet = new Set(getPinnedStudents().map(Number));
+  let lastPinnedIndex = -1;
+  for (let i = 0; i < ids.length; i++) {
+    if (pinnedSet.has(ids[i])) lastPinnedIndex = i;
+  }
+  ids.splice(lastPinnedIndex + 1, 0, numericId);
+
+  manualOrderedIds.value = ids;
+  setManualOrder(ids);
 }
 
 function handleStudentsReordered(fromId: number, toId: number) {
@@ -152,6 +175,7 @@ function handleStudentsReordered(fromId: number, toId: number) {
 
   manualOrderedIds.value = baseIds;
   isManualOrderActive.value = true;
+  setManualOrder(baseIds);
 }
 
 function handleDataImported() {
