@@ -325,11 +325,6 @@ export function useStudentGifts(props: {
     }
   };
 
-  // Watch for changes to boxFormData when in conversion mode
-  watch(boxFormData, () => {
-    // Removed the conversion logic from the watcher
-  }, { deep: true });
-
   const shouldShowGiftGrade = computed(() => {
     return (id: number): boolean => {
       return (
@@ -442,19 +437,16 @@ function closeModal() {
     // State
     giftFormData,
     boxFormData,
-    bondDetailData,
     currentBond, // Computed getter/setter for compatibility
-    
+
     // Computed
     totalCumulativeExp,
     newBondLevel,
     remainingXp,
     shouldShowGiftGrade,
-    
+
     // Methods
     closeModal,
-    resetFormData,
-    saveToIndexedDB,
     loadFromIndexedDB,
     handleGiftInput,
     handleBoxInput,

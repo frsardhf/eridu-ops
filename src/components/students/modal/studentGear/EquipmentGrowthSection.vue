@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
 import { useStudentGearDisplay } from '@/composables/student/useStudentGearDisplay';
-import { getMaxTierForTypeSync } from '@/consumables/hooks/useStudentGear';
+import { getMaxTierForTypeSync } from '@/consumables/utils/gearMaterialUtils';
 import { $t } from '@/locales';
 import { EquipmentType } from '@/types/gear';
 import { StudentProps } from '@/types/student';
