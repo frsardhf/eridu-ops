@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
+import { getPinnedStudents } from '@/consumables/utils/settingsStorage';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
@@ -27,6 +28,46 @@ const {
 
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
+const isManualOrderActive = ref(false);
+const manualOrderedIds = ref<number[]>([]);
+
+const displayStudentsArray = computed<StudentProps[]>(() => {
+  const baseStudents = sortedStudentsArray.value;
+
+  if (!isManualOrderActive.value || manualOrderedIds.value.length === 0) {
+    return baseStudents;
+  }
+
+  const studentsById = new Map<number, StudentProps>(
+    baseStudents.map(student => [student.Id, student])
+  );
+  const orderedStudents: StudentProps[] = [];
+
+  manualOrderedIds.value.forEach(id => {
+    const student = studentsById.get(id);
+    if (student) {
+      orderedStudents.push(student);
+      studentsById.delete(id);
+    }
+  });
+
+  baseStudents.forEach(student => {
+    if (studentsById.has(student.Id)) {
+      orderedStudents.push(student);
+    }
+  });
+
+  return orderedStudents;
+});
+
+function resetManualOrder() {
+  isManualOrderActive.value = false;
+  manualOrderedIds.value = [];
+}
+
+function isPinned(studentId: number): boolean {
+  return getPinnedStudents().includes(String(studentId));
+}
 
 // Prepare student for modal
 function prepareStudentForModal(student: StudentProps): StudentProps {
@@ -80,15 +121,37 @@ function handleSearchUpdate(value: string) {
 }
 
 function updateSortOption(option: SortOption) {
+  resetManualOrder();
   setSortOption(option);
 }
 
 function handleToggleDirection() {
+  resetManualOrder();
   toggleDirection();
 }
 
 function handleStudentPinned() {
   updateSortedStudents();
+  resetManualOrder();
+}
+
+function handleStudentsReordered(fromId: number, toId: number) {
+  if (fromId === toId) return;
+  if (isPinned(fromId) !== isPinned(toId)) return;
+
+  const baseIds = (isManualOrderActive.value
+    ? [...manualOrderedIds.value]
+    : sortedStudentsArray.value.map(student => student.Id));
+
+  const fromIndex = baseIds.indexOf(fromId);
+  const toIndex = baseIds.indexOf(toId);
+  if (fromIndex < 0 || toIndex < 0) return;
+
+  const [moved] = baseIds.splice(fromIndex, 1);
+  baseIds.splice(toIndex, 0, moved);
+
+  manualOrderedIds.value = baseIds;
+  isManualOrderActive.value = true;
 }
 
 function handleDataImported() {
@@ -121,17 +184,18 @@ async function handleReinitializeData() {
     />
 
     <StudentGrid
-      :students-array="sortedStudentsArray"
+      :students-array="displayStudentsArray"
       :key="`${currentSort}-${sortDirection}-${searchQuery}`"
       @open-modal="openModal"
       @student-pinned="handleStudentPinned"
+      @reorder-students="handleStudentsReordered"
     />
 
     <StudentModal 
       v-if="isModalVisible && selectedStudent" 
       :student="selectedStudent" 
       :isVisible="isModalVisible"
-      :studentsArray="sortedStudentsArray"
+      :studentsArray="displayStudentsArray"
       @close="closeModal"
       @navigate="handleNavigate"
     />
