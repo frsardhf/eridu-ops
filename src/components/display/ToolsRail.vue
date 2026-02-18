@@ -81,7 +81,7 @@ onMounted(() => {
       v-show="isExpanded"
     >
       <button
-        class="bulk-action-btn"
+        class="tools-action-btn"
         type="button"
         @click="openBulkModify"
       >
@@ -167,9 +167,12 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   background: var(--background-secondary);
   padding: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.bulk-action-btn {
+.tools-action-btn {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 12px;
@@ -181,12 +184,12 @@ onMounted(() => {
   transition: border-color 0.18s ease, color 0.18s ease;
 }
 
-.bulk-action-btn:hover {
+.tools-action-btn:hover {
   border-color: var(--accent-color);
   color: var(--accent-color);
 }
 
-.bulk-action-btn:focus-visible {
+.tools-action-btn:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }
@@ -201,7 +204,7 @@ onMounted(() => {
     border-radius: 12px;
   }
 
-  .bulk-action-btn {
+  .tools-action-btn {
     width: 100%;
   }
 }
