@@ -234,7 +234,8 @@ function consolidateSettings(): void {
       theme: 'dark',
       language: 'en',
       sort: { option: 'id', direction: 'asc' },
-      pinnedStudents: []
+      pinnedStudents: [],
+      manualOrder: []
     });
 
     if (hasCustomSettings) {
@@ -249,6 +250,7 @@ function consolidateSettings(): void {
     const sortDirection = localStorage.getItem('sort-direction') || 'asc';
     const pinnedStudentsJson = localStorage.getItem('pinned-students');
     const pinnedStudents = pinnedStudentsJson ? JSON.parse(pinnedStudentsJson) : [];
+    const manualOrder = [];
 
     const consolidatedSettings: AppSettings = {
       theme,
@@ -257,7 +259,8 @@ function consolidateSettings(): void {
         option: sortOption as any,
         direction: sortDirection as any
       },
-      pinnedStudents
+      pinnedStudents,
+      manualOrder
     };
 
     saveSettings(consolidatedSettings);

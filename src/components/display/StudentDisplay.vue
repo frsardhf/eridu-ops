@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
 import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
+import ToolsRail from '@/components/display/ToolsRail.vue';
+import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
@@ -11,6 +13,7 @@ import { StudentProps } from '@/types/student';
 import { ThemeId } from '@/types/theme';
 
 const {
+  studentData,
   favoredGift,
   giftBoxData,
   currentTheme,
@@ -28,9 +31,13 @@ const {
 
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
+const isBulkModifyModalVisible = ref(false);
 const savedOrder = getManualOrder();
 const isManualOrderActive = ref(savedOrder.length > 0);
 const manualOrderedIds = ref<number[]>(savedOrder);
+const allStudentsArray = computed<StudentProps[]>(() => {
+  return Object.values(studentData.value).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
+});
 
 const displayStudentsArray = computed<StudentProps[]>(() => {
   const baseStudents = sortedStudentsArray.value;
@@ -122,6 +129,14 @@ function handleSearchUpdate(value: string) {
   updateSearchQuery(value);
 }
 
+function openBulkModifyModal() {
+  isBulkModifyModalVisible.value = true;
+}
+
+function closeBulkModifyModal() {
+  isBulkModifyModalVisible.value = false;
+}
+
 function updateSortOption(option: SortOption) {
   resetManualOrder();
   setSortOption(option);
@@ -207,6 +222,10 @@ async function handleReinitializeData() {
       @reinitialize-data="handleReinitializeData"
     />
 
+    <ToolsRail
+      @open-bulk-modify="openBulkModifyModal"
+    />
+
     <StudentGrid
       :students-array="displayStudentsArray"
       :key="`${currentSort}-${sortDirection}-${searchQuery}`"
@@ -222,6 +241,12 @@ async function handleReinitializeData() {
       :studentsArray="displayStudentsArray"
       @close="closeModal"
       @navigate="handleNavigate"
+    />
+
+    <BulkModifyStudentsModal
+      v-if="isBulkModifyModalVisible"
+      :students="allStudentsArray"
+      @close="closeBulkModifyModal"
     />
   </div>
 </template>
