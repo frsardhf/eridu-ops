@@ -13,7 +13,7 @@ import {
   isMigrationCompleted,
   setMetadata
 } from '../services/dbService';
-import { saveSettings, getSettings, type AppSettings } from './settingsStorage';
+import { saveSettings, getSettings, DEFAULT_SETTINGS, type AppSettings } from './settingsStorage';
 import { normalizeTheme } from './themeUtils';
 
 // Legacy localStorage keys
@@ -230,13 +230,7 @@ function consolidateSettings(): void {
     const existingSettings = getSettings();
 
     // Only migrate if settings don't exist or are defaults
-    const hasCustomSettings = JSON.stringify(existingSettings) !== JSON.stringify({
-      theme: 'dark',
-      language: 'en',
-      sort: { option: 'id', direction: 'asc' },
-      pinnedStudents: [],
-      manualOrder: []
-    });
+    const hasCustomSettings = JSON.stringify(existingSettings) !== JSON.stringify(DEFAULT_SETTINGS);
 
     if (hasCustomSettings) {
       console.log('Settings already exist, skipping consolidation');

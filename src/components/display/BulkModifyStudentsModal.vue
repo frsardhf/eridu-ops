@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { applyBulkStudentFormPatch, AvailabilityFilter, classifyStudentAvailability, getNonDefaultPersistedFormStudentIds } from '@/consumables/services/bulkStudentFormService';
+import { computed, onMounted, ref, type Ref, watch } from 'vue';
+import {
+  applyBulkStudentFormPatch,
+  AvailabilityFilter,
+  classifyStudentAvailability,
+  getBulkFilterData,
+  type BulkFormPatch
+} from '@/consumables/services/bulkStudentFormService';
+import type { FormRecord } from '@/consumables/db/database';
 import { batchSetStudentData } from '@/consumables/stores/studentStore';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
@@ -18,11 +25,21 @@ const emit = defineEmits<{
 type BulkFieldValues = {
   bond: string;
   characterLevel: string;
+  characterLevelTarget: string;
   skillEx: string;
+  skillExTarget: string;
   skillPublic: string;
+  skillPublicTarget: string;
   skillPassive: string;
+  skillPassiveTarget: string;
   skillExtraPassive: string;
-  equipmentTier: string;
+  skillExtraPassiveTarget: string;
+  equipmentTierSlot1: string;
+  equipmentTargetSlot1: string;
+  equipmentTierSlot2: string;
+  equipmentTargetSlot2: string;
+  equipmentTierSlot3: string;
+  equipmentTargetSlot3: string;
   gradeLevel: string;
   potentialLevel: string;
 };
@@ -33,15 +50,29 @@ const selectedStarFilters = ref<number[]>([]);
 const selectedAvailabilityFilters = ref<AvailabilityFilter[]>([]);
 const selectAllInput = ref<HTMLInputElement | null>(null);
 const nonDefaultPersistedIds = ref<Set<number>>(new Set());
+const allFormData = ref<Record<number, FormRecord>>({});
+const enableTargets = ref(false);
+const characterLevelFilter = ref('');
+const showUnfilledOnly = ref(false);
 
 const fieldValues = ref<BulkFieldValues>({
   bond: '',
   characterLevel: '',
+  characterLevelTarget: '',
   skillEx: '',
+  skillExTarget: '',
   skillPublic: '',
+  skillPublicTarget: '',
   skillPassive: '',
+  skillPassiveTarget: '',
   skillExtraPassive: '',
-  equipmentTier: '',
+  skillExtraPassiveTarget: '',
+  equipmentTierSlot1: '',
+  equipmentTargetSlot1: '',
+  equipmentTierSlot2: '',
+  equipmentTargetSlot2: '',
+  equipmentTierSlot3: '',
+  equipmentTargetSlot3: '',
   gradeLevel: '',
   potentialLevel: ''
 });
@@ -49,13 +80,30 @@ const fieldValues = ref<BulkFieldValues>({
 const selectedIdSet = computed(() => new Set(selectedStudentIds.value));
 
 const filteredStudents = computed<StudentProps[]>(() => {
+  const charLevelRaw = characterLevelFilter.value.trim();
+  const parsedCharLevel = charLevelRaw ? Math.floor(Number(charLevelRaw)) : null;
+  const hasCharFilter = parsedCharLevel !== null && Number.isFinite(parsedCharLevel);
+
   return props.students.filter(student => {
     const availability = classifyStudentAvailability(student);
     const matchStar = selectedStarFilters.value.length === 0 || selectedStarFilters.value.includes(student.StarGrade);
     const matchAvailability =
       selectedAvailabilityFilters.value.length === 0 ||
       selectedAvailabilityFilters.value.includes(availability);
-    return matchStar && matchAvailability;
+
+    if (!matchStar || !matchAvailability) return false;
+
+    if (showUnfilledOnly.value) {
+      if (allFormData.value[student.Id]) return false;
+    }
+
+    if (hasCharFilter) {
+      const form = allFormData.value[student.Id];
+      const currentLevel = form?.characterLevels?.current ?? 1;
+      if (currentLevel !== parsedCharLevel) return false;
+    }
+
+    return true;
   });
 });
 
@@ -80,12 +128,17 @@ const overwriteCount = computed(() => {
   return selectedStudentIds.value.filter(studentId => nonDefaultPersistedIds.value.has(studentId)).length;
 });
 
-const hasAnyInputValue = computed(() => {
-  return Object.values(fieldValues.value).some(value => value.trim().length > 0);
+const isSubmitDisabled = computed(() => {
+  if (selectedCount.value === 0 || isSubmitting.value) return true;
+  return !Object.values(fieldValues.value).some(value => value.trim().length > 0);
 });
 
-const isSubmitDisabled = computed(() => {
-  return selectedCount.value === 0 || !hasAnyInputValue.value || isSubmitting.value;
+const gradeStarDisplay = computed(() => {
+  const raw = fieldValues.value.gradeLevel.trim();
+  if (!raw) return null;
+  const grade = Math.max(1, Math.min(9, Math.floor(Number(raw))));
+  if (!Number.isFinite(grade)) return null;
+  return { starCount: grade <= 5 ? grade : grade - 5, isGold: grade <= 5 };
 });
 
 watch([isAllFilteredSelected, isPartiallyFilteredSelected], () => {
@@ -94,7 +147,9 @@ watch([isAllFilteredSelected, isPartiallyFilteredSelected], () => {
 });
 
 onMounted(async () => {
-  nonDefaultPersistedIds.value = await getNonDefaultPersistedFormStudentIds(props.students);
+  const { nonDefaultIds, formData } = await getBulkFilterData(props.students);
+  nonDefaultPersistedIds.value = nonDefaultIds;
+  allFormData.value = formData;
 });
 
 function closeIfBackdrop(event: MouseEvent) {
@@ -150,20 +205,20 @@ function toggleAllFilteredSelection(checked: boolean) {
   selectedStudentIds.value = selectedStudentIds.value.filter(id => !filteredSet.has(id));
 }
 
-function toggleStarFilter(star: number) {
-  if (selectedStarFilters.value.includes(star)) {
-    selectedStarFilters.value = selectedStarFilters.value.filter(value => value !== star);
+function toggleArrayItem<T>(arr: Ref<T[]>, item: T) {
+  if (arr.value.includes(item)) {
+    arr.value = arr.value.filter(v => v !== item);
     return;
   }
-  selectedStarFilters.value = [...selectedStarFilters.value, star];
+  arr.value = [...arr.value, item];
+}
+
+function toggleStarFilter(star: number) {
+  toggleArrayItem(selectedStarFilters, star);
 }
 
 function toggleAvailabilityFilter(filter: AvailabilityFilter) {
-  if (selectedAvailabilityFilters.value.includes(filter)) {
-    selectedAvailabilityFilters.value = selectedAvailabilityFilters.value.filter(value => value !== filter);
-    return;
-  }
-  selectedAvailabilityFilters.value = [...selectedAvailabilityFilters.value, filter];
+  toggleArrayItem(selectedAvailabilityFilters, filter);
 }
 
 async function submitBulkModify() {
@@ -176,16 +231,29 @@ async function submitBulkModify() {
     if (!confirmed) return;
   }
 
-  const patch = {
-    bondLevel: parseOptionalInt(fieldValues.value.bond, 1, 100),
-    characterLevel: parseOptionalInt(fieldValues.value.characterLevel, 1, 100),
-    skillEx: parseOptionalInt(fieldValues.value.skillEx, 1, 5),
-    skillPublic: parseOptionalInt(fieldValues.value.skillPublic, 1, 10),
-    skillPassive: parseOptionalInt(fieldValues.value.skillPassive, 1, 10),
-    skillExtraPassive: parseOptionalInt(fieldValues.value.skillExtraPassive, 1, 10),
-    equipmentTier: parseOptionalInt(fieldValues.value.equipmentTier, 1, 10),
-    gradeLevel: parseOptionalInt(fieldValues.value.gradeLevel, 1, 10),
-    potentialLevel: parseOptionalInt(fieldValues.value.potentialLevel, 0, 100)
+  const fv = fieldValues.value;
+  const targets = enableTargets.value;
+
+  const patch: BulkFormPatch = {
+    bondLevel: parseOptionalInt(fv.bond, 1, 100),
+    characterLevel: parseOptionalInt(fv.characterLevel, 1, 90),
+    characterLevelTarget: targets ? parseOptionalInt(fv.characterLevelTarget, 1, 90) : null,
+    skillEx: parseOptionalInt(fv.skillEx, 1, 5),
+    skillExTarget: targets ? parseOptionalInt(fv.skillExTarget, 1, 5) : null,
+    skillPublic: parseOptionalInt(fv.skillPublic, 1, 10),
+    skillPublicTarget: targets ? parseOptionalInt(fv.skillPublicTarget, 1, 10) : null,
+    skillPassive: parseOptionalInt(fv.skillPassive, 1, 10),
+    skillPassiveTarget: targets ? parseOptionalInt(fv.skillPassiveTarget, 1, 10) : null,
+    skillExtraPassive: parseOptionalInt(fv.skillExtraPassive, 1, 10),
+    skillExtraPassiveTarget: targets ? parseOptionalInt(fv.skillExtraPassiveTarget, 1, 10) : null,
+    equipmentTierSlot1: parseOptionalInt(fv.equipmentTierSlot1, 1, 10),
+    equipmentTargetSlot1: targets ? parseOptionalInt(fv.equipmentTargetSlot1, 1, 10) : null,
+    equipmentTierSlot2: parseOptionalInt(fv.equipmentTierSlot2, 1, 10),
+    equipmentTargetSlot2: targets ? parseOptionalInt(fv.equipmentTargetSlot2, 1, 10) : null,
+    equipmentTierSlot3: parseOptionalInt(fv.equipmentTierSlot3, 1, 10),
+    equipmentTargetSlot3: targets ? parseOptionalInt(fv.equipmentTargetSlot3, 1, 10) : null,
+    gradeLevel: parseOptionalInt(fv.gradeLevel, 1, 9),
+    potentialLevel: parseOptionalInt(fv.potentialLevel, 0, 25)
   };
 
   isSubmitting.value = true;
@@ -257,6 +325,30 @@ async function submitBulkModify() {
             </button>
           </div>
 
+          <div class="filter-row">
+            <span class="filter-label">Char Level</span>
+            <input
+              v-model="characterLevelFilter"
+              type="number"
+              class="filter-number-input"
+              min="1"
+              max="90"
+              placeholder="1-90"
+            />
+          </div>
+
+          <div class="filter-row">
+            <span class="filter-label">Form Status</span>
+            <button
+              type="button"
+              class="filter-pill"
+              :class="{ active: showUnfilledOnly }"
+              @click="showUnfilledOnly = !showUnfilledOnly"
+            >
+              Unfilled Only
+            </button>
+          </div>
+
           <label class="select-all-row">
             <input
               ref="selectAllInput"
@@ -291,48 +383,191 @@ async function submitBulkModify() {
         </section>
 
         <section class="bulk-section">
-          <h3 class="section-title">Form Inputs (Current = Target on submit)</h3>
+          <div class="form-section-header">
+            <h3 class="section-title">Form Inputs</h3>
+            <label class="target-toggle">
+              <input type="checkbox" v-model="enableTargets" />
+              <span>Set separate targets</span>
+            </label>
+          </div>
           <p class="section-note">
             Leave empty to keep existing value. For students without form data, defaults are used.
           </p>
 
           <div class="form-grid">
-            <label class="field">
-              <span>Bond</span>
-              <input v-model="fieldValues.bond" type="number" min="1" max="100" placeholder="1-100" />
-            </label>
-            <label class="field">
-              <span>Character Level</span>
-              <input v-model="fieldValues.characterLevel" type="number" min="1" max="100" placeholder="1-100" />
-            </label>
-            <label class="field">
-              <span>EX Skill</span>
-              <input v-model="fieldValues.skillEx" type="number" min="1" max="5" placeholder="1-5" />
-            </label>
-            <label class="field">
-              <span>Basic Skill</span>
-              <input v-model="fieldValues.skillPublic" type="number" min="1" max="10" placeholder="1-10" />
-            </label>
-            <label class="field">
-              <span>Enhanced Skill</span>
-              <input v-model="fieldValues.skillPassive" type="number" min="1" max="10" placeholder="1-10" />
-            </label>
-            <label class="field">
-              <span>Sub Skill</span>
-              <input v-model="fieldValues.skillExtraPassive" type="number" min="1" max="10" placeholder="1-10" />
-            </label>
-            <label class="field">
-              <span>Equipment Tier</span>
-              <input v-model="fieldValues.equipmentTier" type="number" min="1" max="10" placeholder="1-10" />
-            </label>
-            <label class="field">
-              <span>Grade Level</span>
-              <input v-model="fieldValues.gradeLevel" type="number" min="1" max="10" placeholder="1-10" />
-            </label>
-            <label class="field">
-              <span>Potential Level</span>
-              <input v-model="fieldValues.potentialLevel" type="number" min="0" max="100" placeholder="0-100" />
-            </label>
+            <!-- Bond -->
+            <div class="field-group">
+              <span class="field-label">Bond</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.bond" type="number" min="1" max="100" placeholder="1-100" />
+              </div>
+            </div>
+
+            <!-- Character Level -->
+            <div class="field-group">
+              <span class="field-label">Character Level</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.characterLevel" type="number" min="1" max="90" placeholder="1-90" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.characterLevelTarget"
+                  type="number"
+                  min="1"
+                  max="90"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- EX Skill -->
+            <div class="field-group">
+              <span class="field-label">EX Skill</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.skillEx" type="number" min="1" max="5" placeholder="1-5" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.skillExTarget"
+                  type="number"
+                  min="1"
+                  max="5"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Basic Skill -->
+            <div class="field-group">
+              <span class="field-label">Basic Skill</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.skillPublic" type="number" min="1" max="10" placeholder="1-10" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.skillPublicTarget"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Enhanced Skill -->
+            <div class="field-group">
+              <span class="field-label">Enhanced Skill</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.skillPassive" type="number" min="1" max="10" placeholder="1-10" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.skillPassiveTarget"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Sub Skill -->
+            <div class="field-group">
+              <span class="field-label">Sub Skill</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.skillExtraPassive" type="number" min="1" max="10" placeholder="1-10" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.skillExtraPassiveTarget"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Equipment Slot 1 -->
+            <div class="field-group">
+              <span class="field-label">Equipment Slot 1</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.equipmentTierSlot1" type="number" min="1" max="10" placeholder="1-10" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.equipmentTargetSlot1"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Equipment Slot 2 -->
+            <div class="field-group">
+              <span class="field-label">Equipment Slot 2</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.equipmentTierSlot2" type="number" min="1" max="10" placeholder="1-10" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.equipmentTargetSlot2"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Equipment Slot 3 -->
+            <div class="field-group">
+              <span class="field-label">Equipment Slot 3</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.equipmentTierSlot3" type="number" min="1" max="10" placeholder="1-10" />
+                <span v-if="enableTargets" class="field-arrow">→</span>
+                <input
+                  v-if="enableTargets"
+                  v-model="fieldValues.equipmentTargetSlot3"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Target"
+                  class="target-input"
+                />
+              </div>
+            </div>
+
+            <!-- Grade Level -->
+            <div class="field-group">
+              <span class="field-label">Grade Level</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.gradeLevel" type="number" min="1" max="9" placeholder="1-9" />
+                <span v-if="gradeStarDisplay" class="grade-star-badge" :class="{ gold: gradeStarDisplay.isGold, blue: !gradeStarDisplay.isGold }">
+                  <svg viewBox="0 0 576 512" width="16" height="16" aria-hidden="true">
+                    <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
+                  </svg>
+                  <span class="grade-star-count">{{ gradeStarDisplay.starCount }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Potential Level -->
+            <div class="field-group">
+              <span class="field-label">Potential Level</span>
+              <div class="field-inputs">
+                <input v-model="fieldValues.potentialLevel" type="number" min="0" max="25" placeholder="0-25" />
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -476,6 +711,22 @@ async function submitBulkModify() {
   color: var(--accent-color);
 }
 
+.filter-number-input {
+  height: 30px;
+  width: 80px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.filter-number-input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
 .select-all-row {
   margin-top: 12px;
   display: flex;
@@ -550,6 +801,27 @@ async function submitBulkModify() {
   font-weight: 700;
 }
 
+.form-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.target-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.target-toggle input {
+  accent-color: var(--accent-color);
+}
+
 .section-note {
   margin: 4px 0 10px;
   color: var(--text-secondary);
@@ -558,33 +830,77 @@ async function submitBulkModify() {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
 }
 
-.field {
+.field-group {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.field span {
+.field-label {
   color: var(--text-secondary);
   font-size: 0.78rem;
 }
 
-.field input {
+.field-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-inputs input {
   height: 34px;
   padding: 0 10px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--background-primary);
   color: var(--text-primary);
+  min-width: 0;
+  flex: 1;
 }
 
-.field input:focus-visible {
+.field-inputs input:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 1px;
+}
+
+.field-arrow {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.target-input {
+  flex: 1;
+}
+
+.grade-star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.grade-star-badge.gold {
+  color: rgb(255, 201, 51);
+  background: rgba(255, 201, 51, 0.12);
+}
+
+.grade-star-badge.blue {
+  color: hsl(192, 100%, 60%);
+  background: hsla(192, 100%, 60%, 0.12);
+}
+
+.grade-star-count {
+  font-size: 0.78rem;
 }
 
 .bulk-modal-footer {
@@ -648,6 +964,16 @@ async function submitBulkModify() {
 
   .student-selection-grid {
     grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 }
 </style>

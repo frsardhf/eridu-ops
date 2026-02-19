@@ -1,17 +1,28 @@
 import { FormRecord, db } from '@/consumables/db/database';
 import { buildDefaultFormData } from '@/consumables/services/studentFormService';
 import { StudentProps } from '@/types/student';
+import { DEFAULT_SKILL_LEVELS, DEFAULT_POTENTIAL_LEVELS } from '@/types/upgrade';
 
 export type AvailabilityFilter = 'fest' | 'unique' | 'regular' | 'event';
 
 export interface BulkFormPatch {
   bondLevel: number | null;
   characterLevel: number | null;
+  characterLevelTarget: number | null;
   skillEx: number | null;
+  skillExTarget: number | null;
   skillPublic: number | null;
+  skillPublicTarget: number | null;
   skillPassive: number | null;
+  skillPassiveTarget: number | null;
   skillExtraPassive: number | null;
-  equipmentTier: number | null;
+  skillExtraPassiveTarget: number | null;
+  equipmentTierSlot1: number | null;
+  equipmentTargetSlot1: number | null;
+  equipmentTierSlot2: number | null;
+  equipmentTargetSlot2: number | null;
+  equipmentTierSlot3: number | null;
+  equipmentTargetSlot3: number | null;
   gradeLevel: number | null;
   potentialLevel: number | null;
 }
@@ -50,7 +61,7 @@ export function classifyStudentAvailability(student: StudentProps): Availability
   }
 }
 
-export function isNonDefaultPersistedForm(
+function isNonDefaultPersistedForm(
   student: StudentProps,
   form: FormRecord | undefined
 ): boolean {
@@ -67,20 +78,14 @@ export function isNonDefaultPersistedForm(
     return true;
   }
 
-  const skillDefaults = {
-    Ex: { current: 1, target: 1 },
-    Public: { current: 1, target: 1 },
-    Passive: { current: 1, target: 1 },
-    ExtraPassive: { current: 1, target: 1 }
-  };
-  if (isDifferentPair(form.skillLevels?.Ex, skillDefaults.Ex.current, skillDefaults.Ex.target)) return true;
-  if (isDifferentPair(form.skillLevels?.Public, skillDefaults.Public.current, skillDefaults.Public.target)) return true;
-  if (isDifferentPair(form.skillLevels?.Passive, skillDefaults.Passive.current, skillDefaults.Passive.target)) return true;
-  if (isDifferentPair(form.skillLevels?.ExtraPassive, skillDefaults.ExtraPassive.current, skillDefaults.ExtraPassive.target)) return true;
+  if (isDifferentPair(form.skillLevels?.Ex, DEFAULT_SKILL_LEVELS.Ex.current, DEFAULT_SKILL_LEVELS.Ex.target)) return true;
+  if (isDifferentPair(form.skillLevels?.Public, DEFAULT_SKILL_LEVELS.Public.current, DEFAULT_SKILL_LEVELS.Public.target)) return true;
+  if (isDifferentPair(form.skillLevels?.Passive, DEFAULT_SKILL_LEVELS.Passive.current, DEFAULT_SKILL_LEVELS.Passive.target)) return true;
+  if (isDifferentPair(form.skillLevels?.ExtraPassive, DEFAULT_SKILL_LEVELS.ExtraPassive.current, DEFAULT_SKILL_LEVELS.ExtraPassive.target)) return true;
 
-  if (isDifferentPair(form.potentialLevels?.attack, 0, 0)) return true;
-  if (isDifferentPair(form.potentialLevels?.maxhp, 0, 0)) return true;
-  if (isDifferentPair(form.potentialLevels?.healpower, 0, 0)) return true;
+  if (isDifferentPair(form.potentialLevels?.attack, DEFAULT_POTENTIAL_LEVELS.attack.current, DEFAULT_POTENTIAL_LEVELS.attack.target)) return true;
+  if (isDifferentPair(form.potentialLevels?.maxhp, DEFAULT_POTENTIAL_LEVELS.maxhp.current, DEFAULT_POTENTIAL_LEVELS.maxhp.target)) return true;
+  if (isDifferentPair(form.potentialLevels?.healpower, DEFAULT_POTENTIAL_LEVELS.healpower.current, DEFAULT_POTENTIAL_LEVELS.healpower.target)) return true;
 
   if (isDifferentPair(form.gradeLevels, starGrade, starGrade)) {
     return true;
@@ -110,22 +115,23 @@ export function isNonDefaultPersistedForm(
   return false;
 }
 
-export async function getNonDefaultPersistedFormStudentIds(
+export async function getBulkFilterData(
   students: StudentProps[]
-): Promise<Set<number>> {
-  const studentMap = new Map<number, StudentProps>(students.map(student => [student.Id, student]));
+): Promise<{ nonDefaultIds: Set<number>; formData: Record<number, FormRecord> }> {
+  const studentMap = new Map<number, StudentProps>(students.map(s => [s.Id, s]));
   const forms = await db.forms.toArray();
   const nonDefaultIds = new Set<number>();
+  const formData: Record<number, FormRecord> = {};
 
   forms.forEach(form => {
+    formData[form.studentId] = form;
     const student = studentMap.get(form.studentId);
-    if (!student) return;
-    if (isNonDefaultPersistedForm(student, form)) {
+    if (student && isNonDefaultPersistedForm(student, form)) {
       nonDefaultIds.add(form.studentId);
     }
   });
 
-  return nonDefaultIds;
+  return { nonDefaultIds, formData };
 }
 
 function applyPatchToForm(
@@ -168,30 +174,32 @@ function applyPatchToForm(
   }
 
   if (patch.characterLevel !== null) {
-    next.characterLevels = {
-      current: patch.characterLevel,
-      target: patch.characterLevel
-    };
+    const target = patch.characterLevelTarget ?? patch.characterLevel;
+    next.characterLevels = { current: patch.characterLevel, target };
   }
 
   const skillLevels = next.skillLevels ?? {
-    Ex: { current: 1, target: 1 },
-    Public: { current: 1, target: 1 },
-    Passive: { current: 1, target: 1 },
-    ExtraPassive: { current: 1, target: 1 }
+    Ex: { ...DEFAULT_SKILL_LEVELS.Ex },
+    Public: { ...DEFAULT_SKILL_LEVELS.Public },
+    Passive: { ...DEFAULT_SKILL_LEVELS.Passive },
+    ExtraPassive: { ...DEFAULT_SKILL_LEVELS.ExtraPassive }
   };
 
   if (patch.skillEx !== null) {
-    skillLevels.Ex = { current: patch.skillEx, target: patch.skillEx };
+    const target = patch.skillExTarget ?? patch.skillEx;
+    skillLevels.Ex = { current: patch.skillEx, target };
   }
   if (patch.skillPublic !== null) {
-    skillLevels.Public = { current: patch.skillPublic, target: patch.skillPublic };
+    const target = patch.skillPublicTarget ?? patch.skillPublic;
+    skillLevels.Public = { current: patch.skillPublic, target };
   }
   if (patch.skillPassive !== null) {
-    skillLevels.Passive = { current: patch.skillPassive, target: patch.skillPassive };
+    const target = patch.skillPassiveTarget ?? patch.skillPassive;
+    skillLevels.Passive = { current: patch.skillPassive, target };
   }
   if (patch.skillExtraPassive !== null) {
-    skillLevels.ExtraPassive = { current: patch.skillExtraPassive, target: patch.skillExtraPassive };
+    const target = patch.skillExtraPassiveTarget ?? patch.skillExtraPassive;
+    skillLevels.ExtraPassive = { current: patch.skillExtraPassive, target };
   }
   next.skillLevels = skillLevels;
 
@@ -203,17 +211,23 @@ function applyPatchToForm(
     };
   }
 
-  if (patch.equipmentTier !== null) {
-    const equipmentLevels = next.equipmentLevels ?? {};
-    const equipmentTypes = Array.isArray(student.Equipment) ? student.Equipment : [];
-    equipmentTypes.forEach(type => {
-      equipmentLevels[type] = {
-        current: patch.equipmentTier as number,
-        target: patch.equipmentTier as number
+  // Equipment: per-slot using student.Equipment array indices
+  const equipmentTypes = Array.isArray(student.Equipment) ? student.Equipment : [];
+  const slotPatches = [
+    { current: patch.equipmentTierSlot1, target: patch.equipmentTargetSlot1 },
+    { current: patch.equipmentTierSlot2, target: patch.equipmentTargetSlot2 },
+    { current: patch.equipmentTierSlot3, target: patch.equipmentTargetSlot3 },
+  ];
+  const equipmentLevels = next.equipmentLevels ?? {};
+  slotPatches.forEach((slot, index) => {
+    if (slot.current !== null && equipmentTypes[index]) {
+      equipmentLevels[equipmentTypes[index]] = {
+        current: slot.current,
+        target: slot.target ?? slot.current
       };
-    });
-    next.equipmentLevels = equipmentLevels;
-  }
+    }
+  });
+  next.equipmentLevels = equipmentLevels;
 
   if (patch.gradeLevel !== null) {
     next.gradeLevels = {

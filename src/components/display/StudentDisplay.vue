@@ -129,14 +129,6 @@ function handleSearchUpdate(value: string) {
   updateSearchQuery(value);
 }
 
-function openBulkModifyModal() {
-  isBulkModifyModalVisible.value = true;
-}
-
-function closeBulkModifyModal() {
-  isBulkModifyModalVisible.value = false;
-}
-
 function updateSortOption(option: SortOption) {
   resetManualOrder();
   setSortOption(option);
@@ -223,7 +215,7 @@ async function handleReinitializeData() {
     />
 
     <ToolsRail
-      @open-bulk-modify="openBulkModifyModal"
+      @open-bulk-modify="isBulkModifyModalVisible = true"
     />
 
     <StudentGrid
@@ -246,7 +238,7 @@ async function handleReinitializeData() {
     <BulkModifyStudentsModal
       v-if="isBulkModifyModalVisible"
       :students="allStudentsArray"
-      @close="closeBulkModifyModal"
+      @close="isBulkModifyModalVisible = false"
     />
   </div>
 </template>
