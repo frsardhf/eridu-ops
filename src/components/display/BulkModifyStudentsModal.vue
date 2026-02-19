@@ -51,8 +51,10 @@ const selectedAvailabilityFilters = ref<AvailabilityFilter[]>([]);
 const selectAllInput = ref<HTMLInputElement | null>(null);
 const nonDefaultPersistedIds = ref<Set<number>>(new Set());
 const allFormData = ref<Record<number, FormRecord>>({});
+const isFormDataLoaded = ref(false);
 const enableTargets = ref(false);
 const characterLevelFilter = ref('');
+const debouncedCharLevelFilter = ref('');
 const showUnfilledOnly = ref(false);
 
 const fieldValues = ref<BulkFieldValues>({
@@ -80,9 +82,9 @@ const fieldValues = ref<BulkFieldValues>({
 const selectedIdSet = computed(() => new Set(selectedStudentIds.value));
 
 const filteredStudents = computed<StudentProps[]>(() => {
-  const charLevelRaw = characterLevelFilter.value.trim();
-  const parsedCharLevel = charLevelRaw ? Math.floor(Number(charLevelRaw)) : null;
-  const hasCharFilter = parsedCharLevel !== null && Number.isFinite(parsedCharLevel);
+  const charLevelRaw = String(debouncedCharLevelFilter.value ?? '').trim();
+  const parsedCharLevel = charLevelRaw ? Number(charLevelRaw) : null;
+  const hasCharFilter = parsedCharLevel !== null && Number.isFinite(parsedCharLevel) && parsedCharLevel > 0;
 
   return props.students.filter(student => {
     const availability = classifyStudentAvailability(student);
@@ -93,14 +95,16 @@ const filteredStudents = computed<StudentProps[]>(() => {
 
     if (!matchStar || !matchAvailability) return false;
 
-    if (showUnfilledOnly.value) {
-      if (allFormData.value[student.Id]) return false;
-    }
+    if (isFormDataLoaded.value) {
+      if (showUnfilledOnly.value) {
+        if (allFormData.value[student.Id]) return false;
+      }
 
-    if (hasCharFilter) {
-      const form = allFormData.value[student.Id];
-      const currentLevel = form?.characterLevels?.current ?? 1;
-      if (currentLevel !== parsedCharLevel) return false;
+      if (hasCharFilter) {
+        const form = allFormData.value[student.Id];
+        if (!form || !form.characterLevels) return false;
+        if (form.characterLevels.current !== parsedCharLevel) return false;
+      }
     }
 
     return true;
@@ -141,15 +145,26 @@ const gradeStarDisplay = computed(() => {
   return { starCount: grade <= 5 ? grade : grade - 5, isGold: grade <= 5 };
 });
 
+let charLevelDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(characterLevelFilter, (val) => {
+  if (charLevelDebounceTimer !== null) clearTimeout(charLevelDebounceTimer);
+  charLevelDebounceTimer = setTimeout(() => {
+    debouncedCharLevelFilter.value = String(val ?? '');
+    charLevelDebounceTimer = null;
+  }, 300);
+});
+
 watch([isAllFilteredSelected, isPartiallyFilteredSelected], () => {
   if (!selectAllInput.value) return;
   selectAllInput.value.indeterminate = isPartiallyFilteredSelected.value;
 });
 
+
 onMounted(async () => {
   const { nonDefaultIds, formData } = await getBulkFilterData(props.students);
   nonDefaultPersistedIds.value = nonDefaultIds;
   allFormData.value = formData;
+  isFormDataLoaded.value = true;
 });
 
 function closeIfBackdrop(event: MouseEvent) {
@@ -727,6 +742,7 @@ async function submitBulkModify() {
   outline-offset: 1px;
 }
 
+
 .select-all-row {
   margin-top: 12px;
   display: flex;
@@ -781,7 +797,6 @@ async function submitBulkModify() {
   text-align: center;
   color: var(--text-secondary);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
