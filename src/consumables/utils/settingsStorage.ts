@@ -18,7 +18,7 @@ export interface AppSettings {
 }
 
 // Default settings
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   theme: DEFAULT_THEME,
   language: 'en',
   sort: {

@@ -9,28 +9,16 @@ const emit = defineEmits<{
   'open-bulk-modify': [];
 }>();
 
-function openRail() {
-  isExpanded.value = true;
-}
-
-function closeRail() {
-  isExpanded.value = false;
-}
-
 function handleFocusOut(event: FocusEvent) {
   const nextTarget = event.relatedTarget as Node | null;
   if (!nextTarget || !railRef.value?.contains(nextTarget)) {
-    closeRail();
+    isExpanded.value = false;
   }
 }
 
 function handleTriggerClick() {
   if (!isCoarsePointer.value) return;
   isExpanded.value = !isExpanded.value;
-}
-
-function openBulkModify() {
-  emit('open-bulk-modify');
 }
 
 onMounted(() => {
@@ -43,9 +31,9 @@ onMounted(() => {
     ref="railRef"
     class="tools-rail"
     :class="{ expanded: isExpanded }"
-    @mouseenter="openRail"
-    @mouseleave="closeRail"
-    @focusin="openRail"
+    @mouseenter="isExpanded = true"
+    @mouseleave="isExpanded = false"
+    @focusin="isExpanded = true"
     @focusout="handleFocusOut"
   >
     <button
@@ -83,7 +71,7 @@ onMounted(() => {
       <button
         class="bulk-action-btn"
         type="button"
-        @click="openBulkModify"
+        @click="emit('open-bulk-modify')"
       >
         Bulk Modify Students
       </button>
