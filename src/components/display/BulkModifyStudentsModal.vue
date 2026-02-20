@@ -82,7 +82,7 @@ const fieldValues = ref<BulkFieldValues>({
 const selectedIdSet = computed(() => new Set(selectedStudentIds.value));
 
 const filteredStudents = computed<StudentProps[]>(() => {
-  const charLevelRaw = String(debouncedCharLevelFilter.value ?? '').trim();
+  const charLevelRaw = String(debouncedCharLevelFilter.value ?? '');
   const parsedCharLevel = charLevelRaw ? Number(charLevelRaw) : null;
   const hasCharFilter = parsedCharLevel !== null && Number.isFinite(parsedCharLevel) && parsedCharLevel > 0;
 
@@ -132,13 +132,45 @@ const overwriteCount = computed(() => {
   return selectedStudentIds.value.filter(studentId => nonDefaultPersistedIds.value.has(studentId)).length;
 });
 
+function buildPatchFromFields(): BulkFormPatch {
+  const fv = fieldValues.value;
+  const targets = enableTargets.value;
+
+  return {
+    bondLevel: parseOptionalInt(fv.bond, 1, 100),
+    characterLevel: parseOptionalInt(fv.characterLevel, 1, 90),
+    characterLevelTarget: targets ? parseOptionalInt(fv.characterLevelTarget, 1, 90) : null,
+    skillEx: parseOptionalInt(fv.skillEx, 1, 5),
+    skillExTarget: targets ? parseOptionalInt(fv.skillExTarget, 1, 5) : null,
+    skillPublic: parseOptionalInt(fv.skillPublic, 1, 10),
+    skillPublicTarget: targets ? parseOptionalInt(fv.skillPublicTarget, 1, 10) : null,
+    skillPassive: parseOptionalInt(fv.skillPassive, 1, 10),
+    skillPassiveTarget: targets ? parseOptionalInt(fv.skillPassiveTarget, 1, 10) : null,
+    skillExtraPassive: parseOptionalInt(fv.skillExtraPassive, 1, 10),
+    skillExtraPassiveTarget: targets ? parseOptionalInt(fv.skillExtraPassiveTarget, 1, 10) : null,
+    equipmentTierSlot1: parseOptionalInt(fv.equipmentTierSlot1, 1, 10),
+    equipmentTargetSlot1: targets ? parseOptionalInt(fv.equipmentTargetSlot1, 1, 10) : null,
+    equipmentTierSlot2: parseOptionalInt(fv.equipmentTierSlot2, 1, 10),
+    equipmentTargetSlot2: targets ? parseOptionalInt(fv.equipmentTargetSlot2, 1, 10) : null,
+    equipmentTierSlot3: parseOptionalInt(fv.equipmentTierSlot3, 1, 10),
+    equipmentTargetSlot3: targets ? parseOptionalInt(fv.equipmentTargetSlot3, 1, 10) : null,
+    gradeLevel: parseOptionalInt(fv.gradeLevel, 1, 9),
+    potentialLevel: parseOptionalInt(fv.potentialLevel, 0, 25)
+  };
+}
+
+const hasAnyPatchValue = computed(() => {
+  const patch = buildPatchFromFields();
+  return Object.values(patch).some(value => value !== null);
+});
+
 const isSubmitDisabled = computed(() => {
   if (selectedCount.value === 0 || isSubmitting.value) return true;
-  return !Object.values(fieldValues.value).some(value => value.trim().length > 0);
+  return !hasAnyPatchValue.value;
 });
 
 const gradeStarDisplay = computed(() => {
-  const raw = fieldValues.value.gradeLevel.trim();
+  const raw = fieldValues.value.gradeLevel;
   if (!raw) return null;
   const grade = Math.max(1, Math.min(9, Math.floor(Number(raw))));
   if (!Number.isFinite(grade)) return null;
@@ -174,7 +206,7 @@ function closeIfBackdrop(event: MouseEvent) {
 }
 
 function parseOptionalInt(value: string, min: number, max: number): number | null {
-  const raw = value.trim();
+  const raw = value;
   if (!raw) return null;
 
   const parsed = Number(raw);
@@ -246,30 +278,7 @@ async function submitBulkModify() {
     if (!confirmed) return;
   }
 
-  const fv = fieldValues.value;
-  const targets = enableTargets.value;
-
-  const patch: BulkFormPatch = {
-    bondLevel: parseOptionalInt(fv.bond, 1, 100),
-    characterLevel: parseOptionalInt(fv.characterLevel, 1, 90),
-    characterLevelTarget: targets ? parseOptionalInt(fv.characterLevelTarget, 1, 90) : null,
-    skillEx: parseOptionalInt(fv.skillEx, 1, 5),
-    skillExTarget: targets ? parseOptionalInt(fv.skillExTarget, 1, 5) : null,
-    skillPublic: parseOptionalInt(fv.skillPublic, 1, 10),
-    skillPublicTarget: targets ? parseOptionalInt(fv.skillPublicTarget, 1, 10) : null,
-    skillPassive: parseOptionalInt(fv.skillPassive, 1, 10),
-    skillPassiveTarget: targets ? parseOptionalInt(fv.skillPassiveTarget, 1, 10) : null,
-    skillExtraPassive: parseOptionalInt(fv.skillExtraPassive, 1, 10),
-    skillExtraPassiveTarget: targets ? parseOptionalInt(fv.skillExtraPassiveTarget, 1, 10) : null,
-    equipmentTierSlot1: parseOptionalInt(fv.equipmentTierSlot1, 1, 10),
-    equipmentTargetSlot1: targets ? parseOptionalInt(fv.equipmentTargetSlot1, 1, 10) : null,
-    equipmentTierSlot2: parseOptionalInt(fv.equipmentTierSlot2, 1, 10),
-    equipmentTargetSlot2: targets ? parseOptionalInt(fv.equipmentTargetSlot2, 1, 10) : null,
-    equipmentTierSlot3: parseOptionalInt(fv.equipmentTierSlot3, 1, 10),
-    equipmentTargetSlot3: targets ? parseOptionalInt(fv.equipmentTargetSlot3, 1, 10) : null,
-    gradeLevel: parseOptionalInt(fv.gradeLevel, 1, 9),
-    potentialLevel: parseOptionalInt(fv.potentialLevel, 0, 25)
-  };
+  const patch = buildPatchFromFields();
 
   isSubmitting.value = true;
 
@@ -312,56 +321,66 @@ async function submitBulkModify() {
             <span class="selection-count">Selected: {{ selectedCount }} / {{ totalStudentsCount }}</span>
           </div>
 
-          <div class="filter-row">
-            <span class="filter-label">Base Grade</span>
-            <button
-              v-for="star in [1, 2, 3]"
-              :key="`star-${star}`"
-              type="button"
-              class="filter-pill"
-              :class="{ active: selectedStarFilters.includes(star) }"
-              @click="toggleStarFilter(star)"
-            >
-              {{ '★'.repeat(star) }}
-            </button>
-          </div>
+          <div class="filters-grid">
+            <div class="filter-type">
+              <span class="filter-label">Base Grade</span>
+              <div class="filter-pills-wrap">
+                <button
+                  v-for="star in [1, 2, 3]"
+                  :key="`star-${star}`"
+                  type="button"
+                  class="filter-pill"
+                  :class="{ active: selectedStarFilters.includes(star) }"
+                  @click="toggleStarFilter(star)"
+                >
+                  {{ '★'.repeat(star) }}
+                </button>
+              </div>
+            </div>
 
-          <div class="filter-row">
-            <span class="filter-label">Availability</span>
-            <button
-              v-for="filter in ['fest', 'unique', 'regular', 'event']"
-              :key="`limited-${filter}`"
-              type="button"
-              class="filter-pill"
-              :class="{ active: selectedAvailabilityFilters.includes(filter as AvailabilityFilter) }"
-              @click="toggleAvailabilityFilter(filter as AvailabilityFilter)"
-            >
-              {{ getAvailabilityLabel(filter as AvailabilityFilter) }}
-            </button>
-          </div>
+            <div class="filter-type">
+              <span class="filter-label">Availability</span>
+              <div class="filter-pills-wrap">
+                <button
+                  v-for="filter in ['fest', 'unique', 'regular', 'event']"
+                  :key="`limited-${filter}`"
+                  type="button"
+                  class="filter-pill"
+                  :class="{ active: selectedAvailabilityFilters.includes(filter as AvailabilityFilter) }"
+                  @click="toggleAvailabilityFilter(filter as AvailabilityFilter)"
+                >
+                  {{ getAvailabilityLabel(filter as AvailabilityFilter) }}
+                </button>
+              </div>
+            </div>
 
-          <div class="filter-row">
-            <span class="filter-label">Char Level</span>
-            <input
-              v-model="characterLevelFilter"
-              type="number"
-              class="filter-number-input"
-              min="1"
-              max="90"
-              placeholder="1-90"
-            />
-          </div>
+            <div class="filter-type">
+              <span class="filter-label">Char Level</span>
+              <div class="filter-pills-wrap">
+                <input
+                  v-model="characterLevelFilter"
+                  type="number"
+                  class="filter-number-input"
+                  min="1"
+                  max="90"
+                  placeholder="1-90"
+                />
+              </div>
+            </div>
 
-          <div class="filter-row">
-            <span class="filter-label">Form Status</span>
-            <button
-              type="button"
-              class="filter-pill"
-              :class="{ active: showUnfilledOnly }"
-              @click="showUnfilledOnly = !showUnfilledOnly"
-            >
-              Unfilled Only
-            </button>
+            <div class="filter-type">
+              <span class="filter-label">Form Status</span>
+              <div class="filter-pills-wrap">
+                <button
+                  type="button"
+                  class="filter-pill"
+                  :class="{ active: showUnfilledOnly }"
+                  @click="showUnfilledOnly = !showUnfilledOnly"
+                >
+                  Unfilled Only
+                </button>
+              </div>
+            </div>
           </div>
 
           <label class="select-all-row">
@@ -697,12 +716,28 @@ async function submitBulkModify() {
   color: var(--text-secondary);
 }
 
-.filter-row {
+.filters-grid {
   margin-top: 10px;
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.filter-type {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 160px;
+}
+
+.filter-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-height: 30px;
 }
 
 .filter-label {
@@ -728,13 +763,24 @@ async function submitBulkModify() {
 
 .filter-number-input {
   height: 30px;
-  width: 80px;
+  width: 120px;
   padding: 0 8px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--background-primary);
   color: var(--text-primary);
   font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .filters-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filter-type {
+    min-width: 0;
+  }
 }
 
 .filter-number-input:focus-visible {

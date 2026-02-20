@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const isExpanded = ref(false);
 const railRef = ref<HTMLElement | null>(null);
-const isCoarsePointer = ref(false);
 
 const emit = defineEmits<{
   'open-bulk-modify': [];
@@ -16,13 +15,36 @@ function handleFocusOut(event: FocusEvent) {
   }
 }
 
-function handleTriggerClick() {
-  if (!isCoarsePointer.value) return;
-  isExpanded.value = !isExpanded.value;
+function handleTriggerClick(event: MouseEvent) {
+  const nextState = !isExpanded.value;
+  isExpanded.value = nextState;
+
+  if (!nextState) {
+    const trigger = event.currentTarget as HTMLButtonElement | null;
+    trigger?.blur();
+  }
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  const target = event.target as Node | null;
+  if (target && railRef.value?.contains(target)) return;
+  isExpanded.value = false;
+}
+
+function handleEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    isExpanded.value = false;
+  }
 }
 
 onMounted(() => {
-  isCoarsePointer.value = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
+  document.addEventListener('keydown', handleEscape);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleEscape);
 });
 </script>
 
@@ -31,9 +53,6 @@ onMounted(() => {
     ref="railRef"
     class="tools-rail"
     :class="{ expanded: isExpanded }"
-    @mouseenter="isExpanded = true"
-    @mouseleave="isExpanded = false"
-    @focusin="isExpanded = true"
     @focusout="handleFocusOut"
   >
     <button
@@ -81,10 +100,43 @@ onMounted(() => {
 
 <style scoped>
 .tools-rail {
-  width: 100%;
-  padding: 6px 14px 0;
-  flex-shrink: 0;
-  background: var(--background-primary);
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translate(-50%, calc(100% - 20px));
+  width: min(30vw, 440px);
+  min-width: 260px;
+  z-index: 80;
+  opacity: 1;
+  transition: transform 0.2s ease;
+}
+
+.tools-rail::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  width: 72px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent-color) 68%, white 32%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent-color) 34%, var(--background-secondary)),
+    color-mix(in srgb, var(--accent-color) 72%, var(--background-secondary)),
+    color-mix(in srgb, var(--accent-color) 34%, var(--background-secondary))
+  );
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.4),
+    0 3px 10px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.tools-rail:hover,
+.tools-rail:focus-within,
+.tools-rail.expanded {
+  transform: translate(-50%, 0);
 }
 
 .tools-rail-trigger {
@@ -92,18 +144,25 @@ onMounted(() => {
   min-height: 46px;
   padding: 0 14px;
   border-radius: 14px;
-  border: 1px solid var(--border-color);
-  background: var(--background-secondary);
+  border: 1px solid color-mix(in srgb, var(--accent-color) 36%, var(--border-color));
+  background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
   color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: border-color 0.18s ease, background-color 0.18s ease;
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.24);
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .tools-rail-trigger:hover {
   border-color: var(--accent-color);
+  box-shadow:
+    0 20px 38px rgba(0, 0, 0, 0.44),
+    0 10px 18px rgba(0, 0, 0, 0.28);
 }
 
 .tools-rail-trigger:focus-visible {
@@ -150,10 +209,17 @@ onMounted(() => {
 }
 
 .tools-rail-panel {
-  margin-top: 6px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
   border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--background-secondary);
+  border: 1px solid color-mix(in srgb, var(--border-color) 75%, var(--text-primary) 25%);
+  background: color-mix(in srgb, var(--background-secondary) 92%, var(--background-primary) 8%);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.12);
   padding: 8px;
   display: flex;
   gap: 8px;
@@ -184,7 +250,10 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .tools-rail {
-    padding: 6px 10px 0;
+    width: min(76vw, 360px);
+    min-width: 220px;
+    bottom: 10px;
+    transform: translate(-50%, calc(100% - 18px));
   }
 
   .tools-rail-trigger {
