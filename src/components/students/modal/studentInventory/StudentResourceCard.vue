@@ -7,11 +7,13 @@ const props = defineProps<{
   item: ResourceProps,
   value?: any,
   formatQuantity?: (quantity: number) => string,
-  itemType?: 'resource' | 'equipment'
+  itemType?: 'resource' | 'equipment',
+  inputTabIndex?: number
 }>();
 
 const emit = defineEmits<{
   'update:value': [event: Event];
+  'keydown:input': [event: KeyboardEvent];
 }>();
 
 const isInputFocused = ref(false);
@@ -33,6 +35,10 @@ function forceInputFocus() {
   if (inputEl.value) {
     inputEl.value.focus();
   }
+}
+
+function handleInputKeydown(event: KeyboardEvent) {
+  emit('keydown:input', event);
 }
 
 // Determine the correct icon path based on itemType
@@ -77,9 +83,11 @@ function formatValue(value: any): string {
         :value="props.value"
         :name="`${props.item.Name}-${props.item.Id}`"
         @input="handleInput"
+        @keydown="handleInputKeydown"
         @focus="handleFocus"
         @blur="handleBlur"
         min="0"
+        :tabindex="props.inputTabIndex ?? 0"
         class="resource-input"
       />
     </div>

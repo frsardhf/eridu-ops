@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted, onMounted } from 'vue';
+import { ref, computed, nextTick, watch, type ComponentPublicInstance } from 'vue';
 import StudentResourceCard from './StudentResourceCard.vue';
 import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
 import { applyFilters } from '../../../../consumables/utils/filterUtils';
 import { MATERIAL } from '../../../../types/resource';
 import { getAllItemsFromCache } from '../../../../consumables/stores/resourceCacheStore';
 import '../../../../styles/resourceDisplay.css';
+
+const DEFAULT_ITEMS_PER_PAGE = 89;
+// First pages use explicit sizing; remaining resources are grouped into one final page.
+const PAGE_SIZE_PLAN: number[] = [89, 88];
 
 const props = defineProps<{
   resourceFormData: Record<string, number>,
@@ -17,195 +21,167 @@ type EmitFn = {
 const emit = defineEmits<EmitFn>();
 
 const currentPage = ref(0);
-const isDragging = ref(false);
-const startX = ref(0);
-const currentX = ref(0);
-const slideOffset = ref(0);
-const containerWidth = ref(0);
+const disableTransition = ref(false);
+const pageRefs = ref<Array<HTMLElement | null>>([]);
 
 const resources = computed(() => {
-  // Read directly from resource cache instead of props
   const allMaterials = getAllItemsFromCache();
   if (!allMaterials || Object.keys(allMaterials).length === 0) return [];
-
-  // Apply MATERIAL filters to show only planner-relevant resources
-  const filteredMaterials = applyFilters(allMaterials, MATERIAL);
-
-  return Object.values(filteredMaterials);
+  return Object.values(applyFilters(allMaterials, MATERIAL));
 });
 
-const totalPages = computed(() => {
-  return Math.ceil(resources.value.length / 112); // Show 112 items per page
+const pagedResources = computed(() => {
+  const all = resources.value;
+  if (all.length === 0) return [] as typeof all[];
+
+  const pages: typeof all[] = [];
+  let start = 0;
+
+  for (const rawSize of PAGE_SIZE_PLAN) {
+    const size = Math.max(1, Math.floor(rawSize));
+    if (start >= all.length) break;
+    pages.push(all.slice(start, start + size));
+    start += size;
+  }
+
+  if (start < all.length) {
+    pages.push(all.slice(start));
+  }
+
+  if (pages.length === 0) {
+    for (let i = 0; i < all.length; i += DEFAULT_ITEMS_PER_PAGE) {
+      pages.push(all.slice(i, i + DEFAULT_ITEMS_PER_PAGE));
+    }
+  }
+
+  return pages;
 });
+
+const totalPages = computed(() => pagedResources.value.length);
+
+const sliderStyle = computed(() => ({
+  transform: `translate3d(${-currentPage.value * 100}%, 0, 0)`,
+  transition: disableTransition.value ? 'none' : 'transform 0.3s ease'
+}));
+
+function setPageRef(el: Element | ComponentPublicInstance | null, pageIndex: number) {
+  const resolved =
+    el instanceof Element
+      ? (el as HTMLElement)
+      : ((el as ComponentPublicInstance | null)?.$el as HTMLElement | undefined);
+  pageRefs.value[pageIndex] = resolved ?? null;
+}
 
 function handleResourceInput(item: any, event: Event) {
   emit('update-resource', item.Id.toString(), event);
 }
 
-function handleDragStart(event: MouseEvent | TouchEvent) {
-  event.preventDefault();
-  isDragging.value = true;
-  startX.value = 'touches' in event ? event.touches[0].clientX : event.clientX;
-  currentX.value = startX.value;
-  slideOffset.value = currentPage.value * -100;
-  
-  // Add global event listeners for smoother dragging
-  if ('touches' in event) {
-    window.addEventListener('touchmove', handleDragMove, { passive: false });
-    window.addEventListener('touchend', handleDragEnd);
-  } else {
-    window.addEventListener('mousemove', handleDragMove);
-    window.addEventListener('mouseup', handleDragEnd);
-  }
-  
-  // Get container width for more accurate threshold calculation
-  const container = event.currentTarget as HTMLElement;
-  if (container) {
-    containerWidth.value = container.offsetWidth;
-  }
+function focusPageBoundaryInput(pageIndex: number, target: 'first' | 'last') {
+  const pageElement = pageRefs.value[pageIndex];
+  if (!pageElement) return;
+
+  const inputs = pageElement.querySelectorAll<HTMLInputElement>('input.resource-input');
+  if (inputs.length === 0) return;
+
+  const targetInput = target === 'first' ? inputs[0] : inputs[inputs.length - 1];
+  targetInput.focus();
 }
 
-function handleDragMove(event: MouseEvent | TouchEvent) {
-  if (!isDragging.value) return;
-  
-  event.preventDefault();
-  currentX.value = 'touches' in event ? event.touches[0].clientX : event.clientX;
-  const diff = currentX.value - startX.value;
-  
-  // Use container width instead of window width for more precise calculations
-  const newOffset = slideOffset.value + (diff / (containerWidth.value || window.innerWidth) * 100);
-  
-  // Limit the drag to the first and last page
-  if (newOffset > 0 || newOffset < -(totalPages.value - 1) * 100) return;
-  
-  slideOffset.value = newOffset;
-}
+async function goToPage(pageIndex: number, focusTarget?: 'first' | 'last', instant = false) {
+  const maxPage = Math.max(0, totalPages.value - 1);
+  const safePage = Math.min(Math.max(pageIndex, 0), maxPage);
 
-function handleDragEnd() {
-  if (!isDragging.value) return;
-  isDragging.value = false;
-  
-  // Remove global event listeners
-  window.removeEventListener('mousemove', handleDragMove);
-  window.removeEventListener('mouseup', handleDragEnd);
-  window.removeEventListener('touchmove', handleDragMove);
-  window.removeEventListener('touchend', handleDragEnd);
-  
-  const diff = currentX.value - startX.value;
-  // Lower threshold for desktop - 15% of container width
-  const threshold = (containerWidth.value || window.innerWidth) * 0.15; 
-  
-  if (Math.abs(diff) > threshold) {
-    if (diff > 0 && currentPage.value > 0) {
-      currentPage.value--;
-    } else if (diff < 0 && currentPage.value < totalPages.value - 1) {
-      currentPage.value++;
-    }
+  disableTransition.value = instant;
+  currentPage.value = safePage;
+
+  await nextTick();
+
+  if (focusTarget) {
+    focusPageBoundaryInput(safePage, focusTarget);
   }
-  
-  // Smoothly animate to the target page
-  slideOffset.value = currentPage.value * -100;
-}
 
-// Handle pagination buttons
-function goToPage(pageIndex: number) {
-  currentPage.value = pageIndex;
-  slideOffset.value = currentPage.value * -100;
-}
-
-// Add window resize event listener
-onMounted(() => {
-  window.addEventListener('resize', handleResize);
-  // Initial container width
-  const container = document.querySelector('.resources-slider') as HTMLElement;
-  if (container) {
-    containerWidth.value = container.offsetWidth;
-  }
-});
-
-// Handle window resize
-function handleResize() {
-  // Reset any fixed heights and recalculate layout
-  slideOffset.value = currentPage.value * -100;
-  // Update container width
-  const container = document.querySelector('.resources-slider') as HTMLElement;
-  if (container) {
-    containerWidth.value = container.offsetWidth;
+  if (instant) {
+    requestAnimationFrame(() => {
+      disableTransition.value = false;
+    });
   }
 }
 
-// Clean up event listeners when component is unmounted
-onUnmounted(() => {
-  window.removeEventListener('mousemove', handleDragMove);
-  window.removeEventListener('mouseup', handleDragEnd);
-  window.removeEventListener('touchmove', handleDragMove);
-  window.removeEventListener('touchend', handleDragEnd);
-  window.removeEventListener('resize', handleResize);
+function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: number, pageLength: number) {
+  if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (pageIndex !== currentPage.value) return;
+
+  if (!event.shiftKey && itemIndex === pageLength - 1 && pageIndex < totalPages.value - 1) {
+    event.preventDefault();
+    void goToPage(pageIndex + 1, 'first', true);
+  }
+
+  if (event.shiftKey && itemIndex === 0 && pageIndex > 0) {
+    event.preventDefault();
+    void goToPage(pageIndex - 1, 'last', true);
+  }
+}
+
+watch(totalPages, (nextTotal) => {
+  if (nextTotal === 0) {
+    currentPage.value = 0;
+    return;
+  }
+  if (currentPage.value > nextTotal - 1) {
+    currentPage.value = nextTotal - 1;
+  }
 });
 </script>
 
 <template>
   <div class="resources-tab">
     <div class="resources-container">
-      <div 
-        class="resources-slider" 
-        :class="{ 'is-dragging': isDragging }"
-        :style="{ transform: `translateX(${slideOffset}%)` }"
-        @mousedown="handleDragStart"
-        @touchstart.passive="handleDragStart"
+      <div
+        class="resources-slider"
+        :style="sliderStyle"
       >
-        <div 
-          v-for="page in totalPages" 
-          :key="page"
+        <div
+          v-for="(pageItems, pageIndex) in pagedResources"
+          :key="`page-${pageIndex}`"
+          :ref="(el) => setPageRef(el, pageIndex)"
           class="resources-page"
+          :aria-hidden="currentPage !== pageIndex"
         >
           <div class="resources-grid">
-            <StudentResourceCard 
-              v-for="(item) in resources.slice((page - 1) * 112, page * 112)" 
+            <StudentResourceCard
+              v-for="(item, itemIndex) in pageItems"
               :key="`resource-${item.Id}`"
               :item="item"
               :value="resourceFormData[item.Id]"
               :format-quantity="formatLargeNumber"
               :item-type="'resource'"
+              :input-tab-index="currentPage === pageIndex ? 0 : -1"
               @update:value="(e) => handleResourceInput(item, e)"
+              @keydown:input="(e) => handleBoundaryTab(e, pageIndex, itemIndex, pageItems.length)"
             />
           </div>
         </div>
       </div>
-      
-      <!-- Add navigation buttons for easier desktop navigation -->
-      <button 
-        v-if="totalPages > 1 && currentPage > 0" 
-        class="nav-button prev-button"
-        @click="goToPage(currentPage - 1)"
-      >
-        ←
-      </button>
-      <button 
-        v-if="totalPages > 1 && currentPage < totalPages - 1" 
-        class="nav-button next-button"
-        @click="goToPage(currentPage + 1)"
-      >
-        →
-      </button>
     </div>
-    
+
     <div class="resources-pagination">
       <div class="page-indicator">
-        <div 
-          v-for="page in totalPages" 
+        <button
+          v-for="page in totalPages"
           :key="page"
+          type="button"
           class="page-dot"
           :class="{ active: currentPage === page - 1 }"
+          :aria-label="`Go to page ${page}`"
+          :aria-current="currentPage === page - 1 ? 'page' : undefined"
           @click="goToPage(page - 1)"
-        ></div>
+        ></button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Only keep component-specific styles */
 .resources-tab {
   display: flex;
   flex-direction: column;
@@ -218,20 +194,12 @@ onUnmounted(() => {
   overflow: hidden;
   position: relative;
   height: 100%;
-  min-height: 500px; /* Fallback height */
 }
 
 .resources-slider {
   display: flex;
-  transition: transform 0.3s ease;
   height: 100%;
   width: 100%;
-  cursor: grab;
-}
-
-.resources-slider.is-dragging {
-  cursor: grabbing;
-  transition: none;
 }
 
 .resources-page {
@@ -243,7 +211,7 @@ onUnmounted(() => {
 }
 
 .resources-pagination {
-  padding-top: 20px;
+  padding-top: 16px;
   display: flex;
   justify-content: center;
 }
@@ -257,9 +225,11 @@ onUnmounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  border: none;
   background-color: var(--border-color);
   transition: all 0.2s ease;
   cursor: pointer;
+  padding: 0;
 }
 
 .page-dot.active {
@@ -271,41 +241,8 @@ onUnmounted(() => {
   transform: scale(1.2);
 }
 
-/* Navigation buttons */
-.nav-button {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--background-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-  z-index: 5;
-}
-
-.nav-button:hover {
-  opacity: 1;
-}
-
-.prev-button {
-  left: 10px;
-}
-
-.next-button {
-  right: 10px;
-}
-
-@media (max-width: 600px) {
-  .nav-button {
-    display: none;
-  }
+.page-dot:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
 }
 </style>
