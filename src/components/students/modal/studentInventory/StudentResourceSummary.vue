@@ -279,10 +279,9 @@ const setTab = (tab: ViewTab) => {
   activeTab.value = tab;
 };
 
-// Function to toggle mode
-const toggleMode = () => {
-  activeMode.value = activeMode.value === 'needed' ? 'missing' : 'needed';
-  // Clear hover state when switching modes
+const setMode = (mode: ViewMode) => {
+  if (mode === activeMode.value) return;
+  activeMode.value = mode;
   hoveredItemId.value = null;
   hoveredStudentId.value = null;
 };
@@ -458,58 +457,53 @@ const getMaterialLeftover = (materialId: number) => {
 
 <template>
   <div class="resource-summary">
-    <!-- Main Tabs -->
-    <div class="main-tabs">
-      <button
-        class="main-tab"
-        :class="{ active: activeTab === 'materials' }"
-        @click="setTab('materials')"
-      >
-        {{ $t('items') }}
-      </button>
-      <button
-        class="main-tab"
-        :class="{ active: activeTab === 'equipment' }"
-        @click="setTab('equipment')"
-      >
-        {{ $t('equipment') }}
-      </button>
-      <button
-        class="main-tab"
-        :class="{ active: activeTab === 'gifts' }"
-        @click="setTab('gifts')"
-      >
-        {{ $t('gifts') }}
-      </button>
-    </div>
+    <div class="summary-toolbar">
+      <div class="view-segmented" role="tablist" aria-label="Summary category">
+        <button
+          type="button"
+          class="view-segment-btn"
+          :class="{ active: activeTab === 'materials' }"
+          @click="setTab('materials')"
+        >
+          {{ $t('items') }}
+        </button>
+        <button
+          type="button"
+          class="view-segment-btn"
+          :class="{ active: activeTab === 'equipment' }"
+          @click="setTab('equipment')"
+        >
+          {{ $t('equipment') }}
+        </button>
+        <button
+          type="button"
+          class="view-segment-btn"
+          :class="{ active: activeTab === 'gifts' }"
+          @click="setTab('gifts')"
+        >
+          {{ $t('gifts') }}
+        </button>
+      </div>
 
-    <!-- Mode Toggle -->
-    <div class="mode-toggle-container">
-      <button 
-        class="mode-toggle"
-        @click="toggleMode"
-        :class="{ 'missing-mode': activeMode === 'missing' }"
-      >
-        <span class="toggle-icon">
-          <svg v-if="activeMode === 'needed'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 12l2 2 4-4"/>
-            <circle cx="12" cy="12" r="10"/>
-          </svg>
-          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-        </span>
-        <span class="toggle-text">
-          {{ activeMode === 'needed' ? $t('showMissing') : $t('showNeeded') }}
-        </span>
-      </button>
-      
-      <div class="mode-indicator">
-        <span class="current-mode">
-          {{ activeMode === 'needed' ? $t('needed') : $t('missing') }}
-        </span>
+      <span class="toolbar-divider" aria-hidden="true"></span>
+
+      <div class="mode-segmented" role="tablist" aria-label="Summary mode">
+        <button
+          type="button"
+          class="mode-segment-btn"
+          :class="{ active: activeMode === 'needed' }"
+          @click="setMode('needed')"
+        >
+          {{ $t('needed') }}
+        </button>
+        <button
+          type="button"
+          class="mode-segment-btn"
+          :class="{ active: activeMode === 'missing' }"
+          @click="setMode('missing')"
+        >
+          {{ $t('missing') }}
+        </button>
       </div>
     </div>
     
@@ -520,58 +514,62 @@ const getMaterialLeftover = (materialId: number) => {
       </div>
 
       <!-- Materials and Equipment tabs: Show resource icons -->
-      <div v-else-if="activeTab !== 'gifts'" class="resources-grid">
-        <div
-          v-for="(item, index) in displayResources"
-          :key="`resource-${item.material?.Id || index}`"
-          class="resource-item"
-          :title="getMaterialName(item, activeTab === 'equipment')"
-          @mousemove="showTooltip($event, item.material?.Id)"
-          @mouseleave="hideTooltip()"
-        >
-          <div class="resource-content">
-            <img
-              v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-              :src="getMaterialIconSrcAndAlt(item).src"
-              :alt="getMaterialIconSrcAndAlt(item).alt"
-              class="resource-icon"
-            />
-            <div
-              v-else
-              class="resource-icon missing-icon"
-            >?</div>
+      <div v-else-if="activeTab !== 'gifts'" class="resources-grid-wrap">
+        <div class="resources-grid">
+          <div
+            v-for="(item, index) in displayResources"
+            :key="`resource-${item.material?.Id || index}`"
+            class="resource-item"
+            :title="getMaterialName(item, activeTab === 'equipment')"
+            @mousemove="showTooltip($event, item.material?.Id)"
+            @mouseleave="hideTooltip()"
+          >
+            <div class="resource-content">
+              <img
+                v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
+                :src="getMaterialIconSrcAndAlt(item).src"
+                :alt="getMaterialIconSrcAndAlt(item).alt"
+                class="resource-icon"
+              />
+              <div
+                v-else
+                class="resource-icon missing-icon"
+              >?</div>
 
-            <div
-              class="resource-quantity"
-              :class="getQuantityClass()"
-            >
-              {{ formatQuantity(item) }}
+              <div
+                class="resource-quantity"
+                :class="getQuantityClass()"
+              >
+                {{ formatQuantity(item) }}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Gifts tab: Show student icons (Student → Gifts pattern) -->
-      <div v-else class="resources-grid">
-        <div
-          v-for="studentGift in studentsWithGifts"
-          :key="`student-${studentGift.student.Id}`"
-          class="resource-item student-gift-item"
-          :title="studentGift.student.Name"
-          @mousemove="showStudentTooltip($event, studentGift.student.Id)"
-          @mouseleave="hideStudentTooltip()"
-        >
-          <div class="resource-content">
-            <img
-              :src="`https://schaledb.com/images/student/icon/${studentGift.student.Id}.webp`"
-              :alt="studentGift.student.Name"
-              class="resource-icon student-icon-gift"
-            />
-            <div
-              class="resource-quantity"
-              :class="getQuantityClass()"
-            >
-              {{ formatLargeNumber(studentGift.totalGifts) }}
+      <div v-else class="resources-grid-wrap">
+        <div class="resources-grid">
+          <div
+            v-for="studentGift in studentsWithGifts"
+            :key="`student-${studentGift.student.Id}`"
+            class="resource-item student-gift-item"
+            :title="studentGift.student.Name"
+            @mousemove="showStudentTooltip($event, studentGift.student.Id)"
+            @mouseleave="hideStudentTooltip()"
+          >
+            <div class="resource-content">
+              <img
+                :src="`https://schaledb.com/images/student/icon/${studentGift.student.Id}.webp`"
+                :alt="studentGift.student.Name"
+                class="resource-icon student-icon-gift"
+              />
+              <div
+                class="resource-quantity"
+                :class="getQuantityClass()"
+              >
+                {{ formatLargeNumber(studentGift.totalGifts) }}
+              </div>
             </div>
           </div>
         </div>
@@ -741,95 +739,115 @@ const getMaterialLeftover = (materialId: number) => {
   width: 100%;
 }
 
-.main-tabs {
+.summary-toolbar {
   display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 4px 2px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--background-secondary);
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 10px;
 }
 
-.main-tab {
-  padding: 6px 10px;
-  font-size: 1em;
-  background: none;
-  border: none;
-  border-bottom: 3px solid transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  flex: 1;
-}
-
-.main-tab:hover {
-  color: var(--text-primary);
-}
-
-.main-tab.active {
-  color: var(--accent-color);
-  border-bottom-color: var(--accent-color);
-}
-
-.mode-toggle-container {
+.view-segmented,
+.mode-segmented {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 0 5px;
-}
-
-.mode-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
   background: var(--card-background);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-primary);
+  border-radius: 8px;
+}
+
+.view-segment-btn,
+.mode-segment-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 7px 12px;
   cursor: pointer;
-  font-size: 0.85em;
-  font-weight: 500;
+  font-size: 0.86em;
+  font-weight: 600;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
-.mode-toggle:hover {
-  background: var(--background-secondary);
-  border-color: var(--accent-color);
+.view-segment-btn:hover,
+.mode-segment-btn:hover {
+  color: var(--text-primary);
 }
 
-.mode-toggle.missing-mode {
-  background: rgba(255, 77, 79, 0.1);
-  border-color: var(--error-color, #ff4d4f);
-  color: var(--error-color, #ff4d4f);
+.view-segment-btn.active,
+.mode-segment-btn.active {
+  background: var(--accent-color);
+  color: #fff;
 }
 
-.toggle-icon {
-  display: flex;
-  align-items: center;
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border-color);
+  opacity: 0.9;
+  border-radius: 999px;
 }
 
-.mode-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.view-segmented {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
 
-.current-mode {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: var(--text-secondary);
+.mode-segmented {
+  background: color-mix(in srgb, var(--card-background) 86%, var(--background-secondary));
+}
+
+.view-segment-btn {
+  font-weight: 700;
+}
+
+.mode-segment-btn {
+  font-size: 0.82em;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 4px 8px;
-  background: var(--background-secondary);
-  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.view-segment-btn + .view-segment-btn,
+.mode-segment-btn + .mode-segment-btn {
+  border-left: 1px solid var(--border-color);
+}
+
+.view-segment-btn.active,
+.mode-segment-btn.active {
+  border-left-color: transparent;
+}
+
+.view-segment-btn:focus-visible,
+.mode-segment-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+  border: 1px solid var(--border-color);
 }
 
 .resources-content {
   flex: 1;
   background: var(--card-background);
   border-radius: 8px;
-  padding: 15px;
+  padding: 5px;
+  overflow-y: auto;
+}
+
+.resources-grid-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.resources-grid-wrap :deep(.resources-grid) {
+  grid-template-columns: repeat(auto-fill, minmax(68px, 68px));
+  justify-content: center;
+  width: min(100%, 980px);
+  gap: 4px;
 }
 
 .no-resources {
@@ -934,9 +952,9 @@ const getMaterialLeftover = (materialId: number) => {
 /* Gift icons grid in Student tooltip */
 .gift-icons-grid {
   display: grid;
-  grid-template-columns: repeat(var(--grid-columns, 3), minmax(40px, 1fr));
-  gap: 2px;
-  padding: 1px;
+  grid-template-columns: repeat(var(--grid-columns, 3), minmax(20px, 0.9fr));
+  gap: 8px;
+  padding: 4px;
 }
 
 .gift-usage-item {
@@ -965,23 +983,13 @@ const getMaterialLeftover = (materialId: number) => {
 }
 
 @media (max-width: 768px) {
-  .main-tabs {
-    flex-wrap: wrap;
+  .summary-toolbar {
+    position: static;
+    padding-top: 2px;
   }
-  
-  .main-tab {
-    font-size: 0.9em;
-    padding: 10px 15px;
-  }
-  
-  .mode-toggle-container {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
-  }
-  
-  .mode-toggle {
-    justify-content: center;
+
+  .toolbar-divider {
+    display: none;
   }
   
   .student-icons-grid {

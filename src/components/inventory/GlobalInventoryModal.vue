@@ -101,8 +101,8 @@ function handleEquipmentInput(id: string, event: Event) {
   background: var(--background-primary);
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-  max-width: 1000px;
-  width: 75%;
+  max-width: 1100px;
+  width: 87%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -172,7 +172,7 @@ function handleEquipmentInput(id: string, event: Event) {
 .inventory-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 15px;
 }
 
 .inventory-tab-content {
