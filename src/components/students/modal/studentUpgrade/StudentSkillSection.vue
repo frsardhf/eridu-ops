@@ -334,10 +334,9 @@ const hideTooltip = () => {
 <style scoped>
 .skill-section {
   padding: 1rem;
-  margin-bottom: 15px;
   background-color: var(--card-background);
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .section-title {
@@ -374,7 +373,7 @@ const hideTooltip = () => {
 
 .skill-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.5rem;
 }
 
@@ -623,13 +622,6 @@ const hideTooltip = () => {
   white-space: pre-wrap;
 }
 
-@media (max-width: 768px) {
-  .skill-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-}
-
 @media (max-width: 500px) {
   .section-title {
     flex-direction: column;
@@ -644,18 +636,8 @@ const hideTooltip = () => {
     gap: 0px;
   }
 
-  .skill-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .control-button {
     width: 20px;
-  }
-}
-
-@media (max-width: 350px) {
-  .skill-grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

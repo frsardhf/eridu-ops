@@ -67,7 +67,6 @@ const convertBox = computed(() => props.convertBox ?? false);
 .gifts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-  gap: 7px;
   height: auto;
   background-color: var(--background-primary);
 }

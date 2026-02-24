@@ -402,10 +402,9 @@ function updateExclusiveGearTarget(value: number) {
 <style scoped>
 .equipment-growth-section {
   padding: 1rem;
-  margin-bottom: 15px;
   background-color: var(--card-background);
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .section-title {
@@ -572,14 +571,14 @@ function updateExclusiveGearTarget(value: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  width: 24px;
   height: 36px;
   border: none;
   background-color: transparent;
   color: var(--text-primary);
   cursor: pointer;
   padding: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   transition: background-color 0.2s, color 0.2s;
   flex-shrink: 0;
 }
@@ -610,11 +609,6 @@ function updateExclusiveGearTarget(value: number) {
 }
 
 @media (max-width: 768px) {
-  .equipment-grid {
-    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
-    gap: 1rem;
-  }
-  
   .equipment-icon {
     width: 80px;
     height: 80px;

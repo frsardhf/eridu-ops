@@ -69,7 +69,6 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
     <!-- Collapsed indicator -->
     <div v-if="!isExpanded" class="strip-indicator">
       <div class="indicator-line"></div>
-      <span class="indicator-text">Show Student Strip</span>
     </div>
 
     <!-- Expanded content -->
@@ -128,11 +127,11 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-height: 20px;
   padding: 4px 12px;
   background: var(--background-secondary);
   border-top: 1px solid var(--border-color);
   cursor: pointer;
-  gap: 4px;
 }
 
 .indicator-line {

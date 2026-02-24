@@ -289,10 +289,9 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 <style scoped>
 .potential-section {
   padding: 1rem;
-  margin-bottom: 15px;
   background-color: var(--card-background);
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .collapsible-header {

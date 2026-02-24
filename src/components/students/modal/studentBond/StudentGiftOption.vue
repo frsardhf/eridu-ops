@@ -49,32 +49,15 @@ function hideTooltip() {
 
 <template>
   <div class="convert-box-section">
-    <h3 class="section-title">{{ $t('giftOptions') }}</h3>
     <div class="options-container">
       <div class="button-group">
-        <button
-          class="button button-secondary"
-          @click="handleReset"
-          @mousemove="showTooltip($event, 'reset')"
-          @mouseleave="hideTooltip()"
-        >
-          <span class="button-text">{{ $t('resetGifts') }}</span>
-        </button>
-        
-        <button
-          class="button button-secondary"
-          @click="handleUndo"
-          @mousemove="showTooltip($event, 'undo')"
-          @mouseleave="hideTooltip()"
-        >
-          <span class="button-text">{{ $t('undoChanges') }}</span>
-        </button>
-        
         <button
           class="button button-convert"
           @click="handleConvert"
           @mousemove="showTooltip($event, 'convert')"
           @mouseleave="hideTooltip()"
+          :aria-label="$t('convertGiftBox')"
+          :title="$t('convertGiftBox')"
         >
           <span class="button-text">{{ $t('convertGiftBox') }}</span>
         </button>
@@ -84,8 +67,32 @@ function hideTooltip() {
           @click="handleAutoFill"
           @mousemove="showTooltip($event, 'autofill')"
           @mouseleave="hideTooltip()"
+          :aria-label="$t('autoFillGifts')"
+          :title="$t('autoFillGifts')"
         >
           <span class="button-text">{{ $t('autoFillGifts') }}</span>
+        </button>
+
+        <button
+          class="button button-secondary"
+          @click="handleReset"
+          @mousemove="showTooltip($event, 'reset')"
+          @mouseleave="hideTooltip()"
+          :aria-label="$t('resetGifts')"
+          :title="$t('resetGifts')"
+        >
+          <span class="button-text">{{ $t('resetGifts') }}</span>
+        </button>
+        
+        <button
+          class="button button-secondary"
+          @click="handleUndo"
+          @mousemove="showTooltip($event, 'undo')"
+          @mouseleave="hideTooltip()"
+          :aria-label="$t('undoChanges')"
+          :title="$t('undoChanges')"
+        >
+          <span class="button-text">{{ $t('undoChanges') }}</span>
         </button>
       </div>
       
@@ -122,21 +129,6 @@ function hideTooltip() {
   padding: 12px 15px;
   border: 1px solid var(--border-color);
   width: 100%;
-}
-
-.convert-box-section h3.section-title {
-  margin-bottom: 10px;
-  padding-bottom: 5px;
-}
-
-.section-title {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .options-container {
@@ -219,17 +211,5 @@ function hideTooltip() {
   font-size: 0.8em;
   width: max-content;
   max-width: 250px;
-}
-
-@media (max-width: 768px) {
-  .options-container {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .button-group {
-    width: 100%;
-    justify-content: space-between;
-  }
 }
 </style>

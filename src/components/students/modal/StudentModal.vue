@@ -16,8 +16,9 @@ import StudentEquipmentGrowth from '@/components/students/modal/studentGear/Equi
 import ElephEligmaSection from '@/components/students/modal/studentGear/ElephEligmaSection.vue';
 import StudentGradeGrowth from '@/components/students/modal/studentGear/ExclusiveWeaponSection.vue';
 import StudentInfoGear from '@/components/students/modal/studentInfo/StudentInfoGear.vue';
-import StudentInfoMini from '@/components/students/modal/studentInfo/StudentInfoMini.vue';
 import StudentInfoSkills from '@/components/students/modal/studentInfo/StudentInfoSkills.vue';
+import StudentInfoWeapon from '@/components/students/modal/studentInfo/StudentInfoWeapon.vue';
+import StudentMetaHeader from '@/components/students/modal/StudentMetaHeader.vue';
 import MaterialsSection from '@/components/students/modal/shared/MaterialsSection.vue';
 import StudentLevelSection from '@/components/students/modal/studentUpgrade/StudentLevelSection.vue';
 import StudentPotentialSection from '@/components/students/modal/studentUpgrade/StudentPotentialSection.vue';
@@ -235,178 +236,186 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- TAB BAR (below title row) -->
-    <div class="modal-tabs">
-      <button
-        :class="['tab-button', { active: activeTab === 'info' }]"
-        @click="activeTab = 'info'"
-      >
-        {{ $t('info') }}
-      </button>
-      <button
-        :class="['tab-button', { active: activeTab === 'bond' }]"
-        @click="activeTab = 'bond'"
-      >
-        {{ $t('bond') }}
-      </button>
-      <button
-        :class="['tab-button', { active: activeTab === 'upgrade' }]"
-        @click="activeTab = 'upgrade'"
-      >
-        {{ $t('upgrade') }}
-      </button>
-      <button
-        :class="['tab-button', { active: activeTab === 'gear' }]"
-        @click="activeTab = 'gear'"
-      >
-        {{ $t('gear') }}
-      </button>
-    </div>
-
     <!-- MIDDLE: Active Tab Content -->
     <div class="modal-body">
       <div v-if="displayedStudent" class="modal-grid">
-        <!-- Info Tab (default) -->
-        <div v-if="activeTab === 'info'" class="tab-content">
+        <div class="tab-content">
           <div class="left-column">
-            <StudentModalHeader :student="displayedStudent" />
+            <StudentModalHeader class="student-hero-card" :student="displayedStudent" />
+          </div>
 
-            <StudentInfoMini
+          <div
+            class="right-column"
+            :class="{
+              'right-column--distributed': activeTab === 'info' || activeTab === 'upgrade' || activeTab === 'gear',
+              'right-column--upgrade': activeTab === 'upgrade',
+              'right-column--gear': activeTab === 'gear',
+              'right-column--bond': activeTab === 'bond'
+            }"
+          >
+            <StudentMetaHeader
               :student="displayedStudent"
               :character-levels="characterLevels"
               :current-bond="currentBond"
               :new-bond-level="newBondLevel"
             />
-          </div>
 
-          <div class="right-column">
-            <StudentInfoSkills
-              :student="displayedStudent"
-              :skill-levels="skillLevels"
-            />
-
-            <StudentInfoGear
-              :student="displayedStudent"
-              :grade-levels="gradeLevels"
-              :equipment-levels="equipmentLevels"
-              :exclusive-gear-level="exclusiveGearLevel"
-              :has-exclusive-gear="hasExclusiveGear"
-            />
-          </div>
-        </div>
-
-        <!-- Bond Calculator Tab -->
-        <div v-if="activeTab === 'bond'" class="tab-content">
-          <div class="left-column">
-            <StudentModalHeader :student="displayedStudent" />
-
-            <StudentBondSection
-              :current-bond="currentBond"
-              :new-bond-level="newBondLevel"
-              :remaining-xp="bondRemainingXp"
-              :total-exp="totalCumulativeExp"
-              @update-bond="handleBondInput"
-            />
-          </div>
-
-          <div class="right-column">
-            <div class="gift-section">
-              <StudentConvertBox
-                @toggle-convert="convertBoxes"
-                @auto-fill-gift="autoFillGifts"
-                @reset-gifts="resetGifts"
-                @undo-changes="undoChanges"
-              />
-
-              <StudentGiftGrid
-                :student="displayedStudent"
-                :gift-form-data="giftFormData"
-                :box-form-data="boxFormData"
-                :should-show-gift-grade="shouldShowGiftGrade"
-                @update-gift="handleGiftInput"
-                @update-box="handleBoxInput"
-              />
+            <div class="modal-tabs">
+              <button
+                :class="['tab-button', { active: activeTab === 'info' }]"
+                @click="activeTab = 'info'"
+              >
+                {{ $t('info') }}
+              </button>
+              <button
+                :class="['tab-button', { active: activeTab === 'bond' }]"
+                @click="activeTab = 'bond'"
+              >
+                {{ $t('bond') }}
+              </button>
+              <button
+                :class="['tab-button', { active: activeTab === 'upgrade' }]"
+                @click="activeTab = 'upgrade'"
+              >
+                {{ $t('upgrade') }}
+              </button>
+              <button
+                :class="['tab-button', { active: activeTab === 'gear' }]"
+                @click="activeTab = 'gear'"
+              >
+                {{ $t('gear') }}
+              </button>
             </div>
-          </div>
-        </div>
 
-        <!-- Upgrade Level, Skills, Talent Tab -->
-        <div v-if="activeTab === 'upgrade'" class="tab-content">
-          <div class="left-column">
-            <StudentModalHeader :student="displayedStudent" />
+            <template v-if="activeTab === 'info'">
+              <StudentInfoSkills
+                :student="displayedStudent"
+                :skill-levels="skillLevels"
+              />
 
-            <StudentLevelSection
-              :character-levels="characterLevels"
-              :total-xp-needed="characterRemainingXp"
-              @update-level="handleLevelUpdate"
-            />
-          </div>
+              <StudentInfoWeapon
+                :student="displayedStudent"
+                :grade-levels="gradeLevels"
+                :equipment-levels="equipmentLevels"
+                :exclusive-gear-level="exclusiveGearLevel"
+              />
 
-          <div class="right-column">
-            <StudentSkillSection
-              :student="displayedStudent"
-              :skill-levels="skillLevels"
-              :all-skills-maxed="allSkillsMaxed"
-              :target-skills-maxed="targetSkillsMaxed"
-              @update-skill="handleSkillUpdate"
-              @toggle-max-skills="toggleMaxAllSkills"
-              @toggle-max-target="toggleMaxTargetSkills"
-            />
+              <StudentInfoGear
+                :student="displayedStudent"
+                :grade-levels="gradeLevels"
+                :equipment-levels="equipmentLevels"
+                :exclusive-gear-level="exclusiveGearLevel"
+                :has-exclusive-gear="hasExclusiveGear"
+              />
+            </template>
 
-            <StudentPotentialSection
-              :potential-levels="potentialLevels"
-              :all-potentials-maxed="allPotentialsMaxed"
-              :target-potentials-maxed="targetPotentialsMaxed"
-              @update-potential="handlePotentialUpdate"
-              @toggle-max-potentials="toggleMaxAllPotentials"
-              @toggle-max-target-potentials="toggleMaxTargetPotentials"
-            />
+            <template v-if="activeTab === 'bond'">
+              <div class="bond-layout" :class="{ 'bond-layout-max': currentBond === 100 }">
+                <div class="bond-top-row">
+                  <StudentBondSection
+                    class="bond-panel"
+                    :class="{ 'bond-panel-full': currentBond === 100 }"
+                    :current-bond="currentBond"
+                    :new-bond-level="newBondLevel"
+                    :remaining-xp="bondRemainingXp"
+                    :total-exp="totalCumulativeExp"
+                    @update-bond="handleBondInput"
+                  />
 
-            <MaterialsSection
-              :materials="allMaterialsNeeded"
-            />
-          </div>
-        </div>
+                  <StudentConvertBox
+                    v-if="currentBond < 100"
+                    class="bond-options-panel"
+                    @toggle-convert="convertBoxes"
+                    @auto-fill-gift="autoFillGifts"
+                    @reset-gifts="resetGifts"
+                    @undo-changes="undoChanges"
+                  />
+                </div>
 
-        <!-- Upgrade Gear and Unique Equipment Tab -->
-        <div v-if="activeTab === 'gear'" class="tab-content">
-          <div class="left-column">
-            <StudentModalHeader :student="displayedStudent" />
+                <div v-if="currentBond < 100" class="bond-gift-scroll">
+                  <StudentGiftGrid
+                    class="bond-gift-grid"
+                    :student="displayedStudent"
+                    :gift-form-data="giftFormData"
+                    :box-form-data="boxFormData"
+                    :should-show-gift-grade="shouldShowGiftGrade"
+                    @update-gift="handleGiftInput"
+                    @update-box="handleBoxInput"
+                  />
+                </div>
+              </div>
+            </template>
 
-            <ElephEligmaSection
-              :student="displayedStudent"
-              :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
-              :grade-infos="gradeInfos"
-              :grade-levels="gradeLevels"
-              @update-info="handleGradeInfoUpdate"
-            />
-          </div>
+            <template v-if="activeTab === 'upgrade'">
+              <div class="tab-pane-scroll tab-pane-scroll--upgrade">
+                <StudentLevelSection
+                  class="upgrade-level-panel"
+                  :character-levels="characterLevels"
+                  :total-xp-needed="characterRemainingXp"
+                  @update-level="handleLevelUpdate"
+                />
 
-          <div class="right-column">
-            <StudentEquipmentGrowth
-              :student="displayedStudent"
-              :equipment-levels="equipmentLevels"
-              :exclusive-gear-level="exclusiveGearLevel"
-              :has-exclusive-gear="hasExclusiveGear"
-              :max-unlockable-gear-tier="maxUnlockableGearTier"
-              :all-gears-maxed="allGearsMaxed"
-              :target-gears-maxed="targetGearsMaxed"
-              @update-equipment="handleEquipmentUpdate"
-              @update-exclusive-gear="handleExclusiveGearUpdate"
-              @toggle-max-gears="toggleMaxAllGears"
-              @toggle-max-target-gears="toggleMaxTargetGears"
-            />
+                <StudentSkillSection
+                  :student="displayedStudent"
+                  :skill-levels="skillLevels"
+                  :all-skills-maxed="allSkillsMaxed"
+                  :target-skills-maxed="targetSkillsMaxed"
+                  @update-skill="handleSkillUpdate"
+                  @toggle-max-skills="toggleMaxAllSkills"
+                  @toggle-max-target="toggleMaxTargetSkills"
+                />
 
-            <StudentGradeGrowth
-              :student="displayedStudent"
-              :grade-levels="gradeLevels"
-              @update-grade="handleGradeUpdate"
-            />
+                <StudentPotentialSection
+                  :potential-levels="potentialLevels"
+                  :all-potentials-maxed="allPotentialsMaxed"
+                  :target-potentials-maxed="targetPotentialsMaxed"
+                  @update-potential="handlePotentialUpdate"
+                  @toggle-max-potentials="toggleMaxAllPotentials"
+                  @toggle-max-target-potentials="toggleMaxTargetPotentials"
+                />
 
-            <MaterialsSection
-              :materials="equipmentMaterialsNeeded"
-              :is-equipment-tab="true"
-            />
+                <MaterialsSection
+                  :materials="allMaterialsNeeded"
+                />
+              </div>
+            </template>
+
+            <template v-if="activeTab === 'gear'">
+              <div class="tab-pane-scroll tab-pane-scroll--gear">
+                <ElephEligmaSection
+                  v-if="(gradeLevels.current ?? 1) < 9"
+                  :student="displayedStudent"
+                  :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
+                  :grade-infos="gradeInfos"
+                  @update-info="handleGradeInfoUpdate"
+                />
+
+                <StudentEquipmentGrowth
+                  :student="displayedStudent"
+                  :equipment-levels="equipmentLevels"
+                  :exclusive-gear-level="exclusiveGearLevel"
+                  :has-exclusive-gear="hasExclusiveGear"
+                  :max-unlockable-gear-tier="maxUnlockableGearTier"
+                  :all-gears-maxed="allGearsMaxed"
+                  :target-gears-maxed="targetGearsMaxed"
+                  @update-equipment="handleEquipmentUpdate"
+                  @update-exclusive-gear="handleExclusiveGearUpdate"
+                  @toggle-max-gears="toggleMaxAllGears"
+                  @toggle-max-target-gears="toggleMaxTargetGears"
+                />
+
+                <StudentGradeGrowth
+                  :student="displayedStudent"
+                  :grade-levels="gradeLevels"
+                  @update-grade="handleGradeUpdate"
+                />
+
+                <MaterialsSection
+                  :materials="equipmentMaterialsNeeded"
+                  :is-equipment-tab="true"
+                />
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -457,7 +466,7 @@ onUnmounted(() => {
 }
 
 .modal-title {
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -500,31 +509,17 @@ onUnmounted(() => {
   border-color: transparent;
 }
 
-/* TAB BAR */
-.modal-tabs {
-  flex-shrink: 0;
-}
-
 /* BODY: Tab content area */
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 15px 20px;
 }
 
 .modal-grid {
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
-}
-
-.gift-section {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  background-color: var(--background-primary);
-  border-radius: 8px;
-  padding: 0 15px 15px 15px;
 }
 
 
@@ -535,12 +530,6 @@ onUnmounted(() => {
 
   .modal-body {
     padding: 10px;
-  }
-
-  .left-column {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
   }
 
   .inventory-btn span {

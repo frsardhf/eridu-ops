@@ -64,7 +64,6 @@ const hasMaterials = computed(() => {
   border-radius: 8px;
   padding: 15px;
   border: 1px solid var(--border-color);
-  margin-bottom: 15px;
 }
 
 .section-title {

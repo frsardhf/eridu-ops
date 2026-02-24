@@ -32,22 +32,22 @@
    ========================================================================== */
 .modal-tabs {
   display: flex;
-  margin-bottom: 15px;
-  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 46px;
   overflow-x: auto;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Hide scrollbar in Firefox */
-  padding-bottom: 2px;
-  background: var(--background-primary);
-  min-height: 44px;
-  z-index: 2;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  scrollbar-width: none;
+  padding: 4px;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
 }
 
 .modal-tabs::-webkit-scrollbar {
-  display: none; /* Hide scrollbar in Chrome, Safari, Opera */
+  display: none;
 }
 
 .modal-tabs::-webkit-scrollbar-track {
@@ -65,33 +65,43 @@
 }
 
 .tab-button {
-  padding: 8px 16px;
+  padding: 8px 14px;
   background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
   color: var(--text-secondary);
   transition: all 0.2s ease;
-  flex-shrink: 0; /* Prevent buttons from shrinking */
+  flex-shrink: 0;
 }
 
 .tab-button.active {
+  background: var(--background-primary);
   color: var(--text-primary);
-  border-bottom: 2px solid var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .tab-button:hover {
+  color: var(--text-primary);
   background-color: var(--hover-bg);
 }
 
 /* ==========================================================================
    Layout Structure
    ========================================================================== */
+.fullscreen-modal {
+  --student-modal-gap: 8px;
+  --student-modal-gap-bond: 2px;
+  --student-modal-hero-width: clamp(280px, 40vw, 430px);
+  --student-modal-hero-height: 85vh;
+}
+
 .tab-content {
   display: grid;
-  grid-template-columns: 375px 1fr;
-  gap: 20px;
+  grid-template-columns: var(--student-modal-hero-width) minmax(0, 1fr);
+  gap: var(--student-modal-gap);
+  align-items: stretch;
   width: 100%;
 }
 
@@ -104,44 +114,126 @@
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  min-width: 0;
 }
 
 .right-column {
-  overflow-y: auto;
-  gap: 5px;
-}
-
-/* XP Level Section Styles */
-.xp-level-section {
-  padding: 1rem;
-  background-color: var(--background-secondary);
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
-}
-
-.level-container {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--student-modal-gap);
+  min-width: 0;
+  min-height: var(--student-modal-hero-height);
+}
+
+/* Info tab: distribute free vertical space automatically */
+.right-column--distributed {
+  gap: 0;
   justify-content: space-between;
-  margin-bottom: 1rem;
 }
 
-.level-display {
+.tab-pane-scroll {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--student-modal-gap);
+  min-height: 0;
 }
 
-.level-icon-container {
-  position: relative;
+.tab-pane-scroll > * {
+  flex-shrink: 0;
+}
+
+.right-column--upgrade {
+  height: var(--student-modal-hero-height);
+  min-height: var(--student-modal-hero-height);
+}
+
+.right-column--upgrade .tab-pane-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  padding-top: 8px;
+}
+
+.right-column--gear {
+  height: var(--student-modal-hero-height);
+  min-height: var(--student-modal-hero-height);
+}
+
+.right-column--gear .tab-pane-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  padding-top: 8px;
+}
+
+.right-column--bond {
+  height: var(--student-modal-hero-height);
+  min-height: var(--student-modal-hero-height);
+  justify-content: flex-start;
+  gap: var(--student-modal-gap-bond);
+}
+
+.bond-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--student-modal-gap-bond);
+  min-height: 0;
+}
+
+.right-column--bond .bond-layout {
+  flex: 1;
+  min-height: 0;
+}
+
+.bond-top-row {
+  display: grid;
+  grid-template-columns: minmax(320px, 3fr) minmax(260px, 2fr);
+  gap: var(--student-modal-gap-bond);
+  align-items: stretch;
+}
+
+.bond-panel,
+.bond-options-panel,
+.bond-gift-grid {
+  width: 100%;
+}
+
+.bond-panel {
+  max-width: none !important;
+  align-self: stretch !important;
+}
+
+.bond-panel-full {
+  grid-column: 1 / -1;
+}
+
+.bond-layout-max .bond-top-row {
+  grid-template-columns: 1fr;
+}
+
+.bond-gift-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+/* Shared card sizing */
+.student-hero-card {
+  width: 100%;
+  align-self: stretch !important;
+  margin: 0 !important;
+  box-sizing: border-box;
 }
 
 /* Resource Card */
@@ -195,33 +287,83 @@
 /* ==========================================================================
    Responsive Styles
    ========================================================================== */
-@media (max-width: 976px) {
+@media (max-width: 1024px) {
   .modal-content {
     width: 90%;
     padding: 15px;
   }
-  
+
   .tab-content {
+    grid-template-columns: minmax(260px, 34vw) minmax(0, 1fr);
+  }
+
+  .bond-top-row {
     grid-template-columns: 1fr;
   }
-  
-  .tab-button {
-    flex: 1;
-    text-align: center;
-    padding: 8px 5px;
-    font-size: 0.9rem;
-  }
-  
-  .left-column {
-    margin-bottom: 15px;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-  }
-  
+
   input[type="number"],
   input[type="text"] {
     width: 100%;
     box-sizing: border-box;
   }
+}
+
+@media (max-width: 768px) {
+  .fullscreen-modal {
+    --student-modal-hero-height: clamp(320px, 52vh, 560px);
+  }
+
+  .tab-content {
+    grid-template-columns: 1fr;
+  }
+
+  .left-column {
+    margin-bottom: var(--student-modal-gap);
+  }
+
+  .right-column {
+    min-height: 0;
+  }
+
+  .right-column--bond {
+    height: auto;
+    min-height: 0;
+  }
+
+  .right-column--bond .bond-layout {
+    flex: 0 0 auto;
+  }
+
+  .right-column--upgrade {
+    height: auto;
+    min-height: 0;
+  }
+
+  .right-column--gear {
+    height: auto;
+    min-height: 0;
+  }
+
+  .right-column--upgrade .tab-pane-scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .right-column--gear .tab-pane-scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .bond-gift-scroll {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .tab-button {
+    flex: 1;
+    text-align: center;
+  }
+
 }

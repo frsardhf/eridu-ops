@@ -53,6 +53,22 @@ function hideTooltip() {
   <div class="info-skills">
     <div class="skills-grid">
       <div v-for="skillType in skillOrder" :key="skillType" class="skill-card">
+        <div class="skill-card-control">
+          <button
+            v-if="skillType === 'Ex' && hasExtraExSkill"
+            class="ex-toggle-btn"
+            :class="{ active: useExtraExSkill }"
+            :style="{ borderColor: bulletTypeColor, color: useExtraExSkill ?
+              'white' : bulletTypeColor, backgroundColor: useExtraExSkill ?
+              bulletTypeColor : 'transparent' }"
+            @click="toggleExtraExSkill"
+            type="button"
+          >
+            EX+
+          </button>
+          <span v-else class="ex-toggle-slot" aria-hidden="true"></span>
+        </div>
+
         <!-- Skill Icon -->
         <div class="skill-icon-wrapper">
           <svg
@@ -109,20 +125,6 @@ function hideTooltip() {
           </div>
         </div>
 
-        <!-- ExtraEx toggle (EX skill card only) -->
-        <button
-          v-if="skillType === 'Ex' && hasExtraExSkill"
-          class="ex-toggle-btn"
-          :class="{ active: useExtraExSkill }"
-          :style="{ borderColor: bulletTypeColor, color: useExtraExSkill ? 
-            'white' : bulletTypeColor, backgroundColor: useExtraExSkill ? 
-            bulletTypeColor : 'transparent' }"
-          @click="toggleExtraExSkill"
-          type="button"
-        >
-          EX+
-        </button>
-
         <!-- Skill Level -->
         <div class="skill-level">
           <template v-if="getLevelDisplay(skillType).isMax">
@@ -148,17 +150,16 @@ function hideTooltip() {
   border-radius: 10px;
   padding: 0.75rem;
   border: 1px solid var(--border-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 5px;
 }
 
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
 }
 
 .skill-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -166,6 +167,24 @@ function hideTooltip() {
   padding: 10px 6px;
   border-radius: 8px;
   background: var(--background-primary);
+}
+
+.skill-card-control {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40px;
+  min-height: 18px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  z-index: 4;
+}
+
+.ex-toggle-slot {
+  width: 40px;
+  height: 18px;
+  visibility: hidden;
 }
 
 /* Skill Icon */
@@ -293,12 +312,19 @@ img, svg {
 .ex-toggle-btn {
   font-size: 0.7rem;
   font-weight: bold;
-  padding: 2px 6px;
+  min-width: 40px;
+  padding: 1px 6px;
   border-radius: 4px;
   border: 1.5px solid;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
   line-height: 1.4;
   letter-spacing: 0.5px;
+}
+
+@media (max-width: 480px) {
+  .skills-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

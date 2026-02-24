@@ -165,9 +165,7 @@ const targetStars = computed(() => {
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  margin-bottom: 15px;
   width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
