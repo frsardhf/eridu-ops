@@ -76,22 +76,23 @@ const targetStars = computed(() => {
 
 <template>
   <div class="grade-growth-section">
-    <div class="card-header">
-      <h3 class="section-title">{{ $t('exclusiveWeapon') }}</h3>
-      <div class="grade-indicators" v-if="!isMaxGrade">
-        <div class="grade-pill" :class="gradeState.current <= 5 ? 'gold-grade' : 'blue-grade'">
-          {{ gradeState.current <= 5 ? gradeState.current : (gradeState.current - 5) }}★
-        </div>
-        <div class="grade-arrow">→</div>
-        <div class="grade-pill" :class="gradeState.target <= 5 ? 'gold-grade' : 'blue-grade'">
-          {{ gradeState.target <= 5 ? gradeState.target : (gradeState.target - 5) }}★
-        </div>
-      </div>
-      <div class="grade-max-pill" v-else>{{ $t('maxGrade') }}</div>
-    </div>
-    
+    <h3 class="sr-only">{{ $t('exclusiveWeapon') }}</h3>
+
     <div class="weapon-showcase">
       <div class="weapon-preview" :class="{ 'locked': isWeaponLocked }">
+        <div class="grade-overlay">
+          <div class="grade-indicators" v-if="!isMaxGrade">
+            <div class="grade-pill" :class="gradeState.current <= 5 ? 'gold-grade' : 'blue-grade'">
+              {{ gradeState.current <= 5 ? gradeState.current : (gradeState.current - 5) }}★
+            </div>
+            <div class="grade-arrow">→</div>
+            <div class="grade-pill" :class="gradeState.target <= 5 ? 'gold-grade' : 'blue-grade'">
+              {{ gradeState.target <= 5 ? gradeState.target : (gradeState.target - 5) }}★
+            </div>
+          </div>
+          <div class="grade-max-pill" v-else>{{ $t('maxGrade') }}</div>
+        </div>
+
         <img 
           :src="getWeaponIconUrl()" 
           :alt="$t('exclusiveWeapon')" 
@@ -99,59 +100,39 @@ const targetStars = computed(() => {
           v-if="props.student?.WeaponImg"
         />
         <div class="weapon-icon placeholder" v-else>?</div>
-        
-        <!-- Lock overlay for locked weapons -->
-        <div class="weapon-lock-overlay" v-if="isWeaponLocked">
-          <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-            <path fill="currentColor" d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
-          </svg>
-        </div>
-      </div>
-    </div>
-    
-    <div class="grade-controls">
-      <!-- Current Grade Stars -->
-      <div class="grade-row" :class="{ 'centered-row': isMaxGrade }">
-        <div class="grade-label">{{ $t('currentGrade') }}</div>
-        <div class="stars-container">
-          <span
-            v-for="star in currentStars" 
-            :key="'current-star-' + star.position"
-            class="stargrade-star-weapon"
-            :class="{ 
-              'active': star.active,
-              'gold-star': star.isGold,
-              'blue-star': !star.isGold
-            }"
-            @click="updateCurrentGrade(star.position)"
-          >
-            <svg class="svg-inline--fa fa-star" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-              <path class="" fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"></path>
-            </svg>
-          </span>
-        </div>
-      </div>
-      
-      <!-- Only show target stars if not at max grade -->
-      <div class="grade-row" v-if="!isMaxGrade">
-        <div class="grade-label">{{ $t('targetGrade') }}</div>
-        <div class="stars-container">
-          <span
-            v-for="star in targetStars" 
-            :key="'target-star-' + star.position"
-            class="stargrade-star-weapon"
-            :class="{ 
-              'active': star.active,
-              'gold-star': star.isGold,
-              'blue-star': !star.isGold,
-              'disabled': star.position < gradeState.current
-            }"
-            @click="updateTargetGrade(star.position)"
-          >
-            <svg class="svg-inline--fa fa-star" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-              <path class="" fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"></path>
-            </svg>
-          </span>
+
+        <div class="grade-inputs-overlay" :class="{ 'max-state': isMaxGrade, 'locked-state': isWeaponLocked }">
+          <div class="grade-stars-group current-group">
+            <button
+              v-for="star in currentStars"
+              :key="`current-star-${star.position}`"
+              class="grade-star-button"
+              :class="[star.isGold ? 'gold-star' : 'blue-star', { active: star.active }]"
+              type="button"
+              :aria-label="`${$t('current')} ${star.position}`"
+              @click="updateCurrentGrade(star.position)"
+            >
+              <svg class="star-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div v-if="!isMaxGrade" class="grade-stars-group target-group">
+            <button
+              v-for="star in targetStars"
+              :key="`target-star-${star.position}`"
+              class="grade-star-button"
+              :class="[star.isGold ? 'gold-star' : 'blue-star', { active: star.active }]"
+              type="button"
+              :aria-label="`${$t('target')} ${star.position}`"
+              @click="updateTargetGrade(star.position)"
+            >
+              <svg class="star-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -160,26 +141,22 @@ const targetStars = computed(() => {
 
 <style scoped>
 .grade-growth-section {
-  align-self: center;
-  background: var(--card-background);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  background: var(--card-background);
   width: 100%;
 }
 
-.card-header {
-  padding: 12px 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.section-title {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: var(--text-primary);
-  margin: 0;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 .grade-indicators {
@@ -207,11 +184,12 @@ const targetStars = computed(() => {
 
 .grade-arrow {
   color: var(--text-secondary);
-  font-size: 0.9em;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .grade-max-pill {
-  background: linear-gradient(135deg, rgba(255, 201, 51, 0.3), rgba(51, 200, 255, 0.3));
+  background: linear-gradient(135deg, rgba(255, 201, 51, 0.32), rgba(51, 200, 255, 0.28));
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 0.8em;
@@ -220,20 +198,104 @@ const targetStars = computed(() => {
 }
 
 .weapon-showcase {
-  display: flex;
-  justify-content: center;
+  position: relative;
+  align-items: center;
   background: var(--background-primary);
-  max-height: 160px;
+  min-height: 170px;
   overflow: hidden;
 }
 
 .weapon-preview {
   width: 100%;
-  height: 100%;
+  min-height: 170px;
   display: flex;
+  background: var(--card-background);
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+.grade-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.grade-inputs-overlay {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.grade-inputs-overlay.max-state {
+  justify-content: flex-end;
+}
+
+.grade-inputs-overlay.max-state .current-group {
+  margin-right: 0;
+}
+
+.grade-stars-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(4px);
+}
+
+.current-group {
+  margin-right: auto;
+}
+
+.grade-star-button {
+  border: none;
+  background: transparent;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: 0;
+  opacity: 0.28;
+  cursor: pointer;
+  transition: opacity 0.16s ease;
+}
+
+.grade-star-button.active {
+  opacity: 1;
+}
+
+.grade-star-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.star-icon {
+  width: 120%;
+  height: 120%;
+}
+
+.gold-star {
+  color: rgb(255, 201, 51);
+}
+
+.blue-star {
+  color: hsl(192, 100%, 60%);
 }
 
 /* Styles for locked weapon state */
@@ -242,37 +304,17 @@ const targetStars = computed(() => {
   opacity: 0.8;
 }
 
-.weapon-lock-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-}
-
-.lock-icon {
-  width: 40px;
-  height: 40px;
-  color: rgba(255, 255, 255, 0.8);
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
-}
-
 .weapon-icon {
-  width: 100%;
-  height: auto;
-  max-height: 160px;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
+  object-position: center;
 }
 
 .weapon-icon.placeholder {
   background: rgba(0, 0, 0, 0.3);
   width: 100%;
-  height: 100%;
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,98 +323,27 @@ const targetStars = computed(() => {
   border-radius: 8px;
 }
 
-.grade-controls {
-  padding: 15px;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.centered-row {
-  justify-content: center;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.grade-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.grade-label {
-  font-size: 1em;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-  text-align: center;
-}
-
-.stars-container {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  justify-content: center;
-}
-
-.stargrade-star-weapon {
-  width: 25px;
-  height: 25px;
-  cursor: pointer;
-  opacity: 0.3;
-  transition: all 0.25s ease;
-}
-
-.stargrade-star-weapon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.stargrade-star-weapon.active {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.stargrade-star-weapon.gold-star {
-  color: rgb(255, 201, 51);
-  filter: drop-shadow(0 0 2px rgba(255, 201, 51, 0.3));
-}
-
-.stargrade-star-weapon.blue-star {
-  color: hsl(192, 100%, 60%);
-  filter: drop-shadow(0 0 2px rgba(51, 200, 255, 0.3));
-}
-
-.stargrade-star-weapon.disabled {
-  cursor: not-allowed;
-}
-
-.stargrade-star-weapon:hover:not(.disabled) {
-  transform: scale(1.2);
-}
-
-@media (min-width: 768px) {
-  .grade-controls {
-    grid-template-columns: 1fr 1fr;
+@media (max-width: 520px) {
+  .grade-inputs-overlay.max-state {
+    justify-content: flex-end;
   }
 
-  .centered-row {
-    grid-column: 1 / span 2;
+  .grade-stars-group {
+    min-width: 0;
+    flex: 1 1 0;
+    max-width: 158px;
+    justify-content: center;
+    padding: 4px 6px;
   }
-}
 
-@media (max-width: 480px) {
-  .card-header {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
+  .grade-inputs-overlay.max-state .grade-stars-group {
+    flex: 0 1 auto;
+    width: auto;
   }
-  
-  .grade-indicators {
-    align-self: center;
-  }
-  
-  .grade-max-pill {
-    align-self: center;
+
+  .grade-star-button {
+    width: 14px;
+    height: 14px;
   }
 }
 </style>

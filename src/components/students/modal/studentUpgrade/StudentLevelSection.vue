@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
@@ -16,82 +16,21 @@ const levelState = ref({
   target: props.characterLevels.target,
 });
 
-// Track temporary display values (can be empty string during editing)
-const inputDisplayValues = ref({
-  current: props.characterLevels.current.toString(),
-  target: props.characterLevels.target.toString(),
-});
+const editingField = ref<'current' | 'target' | null>(null);
+const editValue = ref('');
+const currentEditorRef = ref<HTMLInputElement | null>(null);
+const targetEditorRef = ref<HTMLInputElement | null>(null);
 
 watch(() => props.characterLevels, (newVal) => {
   if (newVal) {
     levelState.value.current = newVal.current;
     levelState.value.target = newVal.target;
-    inputDisplayValues.value.current = newVal.current.toString();
-    inputDisplayValues.value.target = newVal.target.toString();
+    if (editingField.value) {
+      editingField.value = null;
+      editValue.value = '';
+    }
   }
 }, { deep: true, immediate: true });
-
-// Handle input changes during typing
-const handleInput = (event: Event, isTarget: boolean) => {
-  const input = event.target as HTMLInputElement;
-  const rawValue = input.value;
-
-  // Update display value (allow empty during typing)
-  if (isTarget) {
-    inputDisplayValues.value.target = rawValue;
-  } else {
-    inputDisplayValues.value.current = rawValue;
-  }
-
-  // If empty, don't update levelState yet (will be handled on blur)
-  if (rawValue === '' || rawValue === '-') {
-    return;
-  }
-
-  // Remove leading zeros and parse
-  const cleanedValue = rawValue.replace(/^0+(?=\d)/, '');
-  const value = parseInt(cleanedValue, 10);
-
-  // Handle NaN - don't update state
-  if (isNaN(value)) {
-    return;
-  }
-
-  // Apply clamping and update state
-  processLevelUpdate(value, isTarget);
-};
-
-// Handle blur - ensure valid value when leaving input
-const handleBlur = (event: Event, isTarget: boolean) => {
-  const input = event.target as HTMLInputElement;
-  const rawValue = input.value.trim();
-
-  let value: number;
-
-  // If empty or invalid, default to appropriate value
-  if (rawValue === '' || rawValue === '-' || isNaN(parseInt(rawValue, 10))) {
-    if (isTarget) {
-      // Default target to current level when empty
-      value = levelState.value.current;
-    } else {
-      // Default current to 1 when empty
-      value = 1;
-    }
-  } else {
-    value = parseInt(rawValue, 10);
-  }
-
-  processLevelUpdate(value, isTarget);
-
-  // Sync input display with actual state
-  if (isTarget) {
-    inputDisplayValues.value.target = levelState.value.target.toString();
-    input.value = levelState.value.target.toString();
-  } else {
-    inputDisplayValues.value.current = levelState.value.current.toString();
-    input.value = levelState.value.current.toString();
-  }
-};
 
 // Centralized logic for processing level updates
 const processLevelUpdate = (value: number, isTarget: boolean) => {
@@ -107,74 +46,123 @@ const processLevelUpdate = (value: number, isTarget: boolean) => {
     // If target is now less than current, bump it up
     if (levelState.value.target < value) {
       levelState.value.target = value;
-      inputDisplayValues.value.target = value.toString();
     }
   }
 
   emit('update-level', levelState.value.current, levelState.value.target);
 };
 
-// Prevent invalid characters (e, +, -, .)
-const handleKeydown = (event: KeyboardEvent) => {
+const parseEditValue = (rawValue: string, isTarget: boolean): number => {
+  const parsed = parseInt(rawValue);
+  if (Number.isNaN(parsed)) {
+    return isTarget ? levelState.value.current : 1;
+  }
+  return parsed;
+};
+
+const startEdit = async (field: 'current' | 'target') => {
+  if (field === 'target' && isMaxLevel.value) return;
+
+  editingField.value = field;
+  editValue.value = (field === 'current'
+    ? levelState.value.current
+    : levelState.value.target).toString();
+
+  await nextTick();
+  const editor = field === 'current' ? currentEditorRef.value : targetEditorRef.value;
+  editor?.focus();
+  editor?.select();
+};
+
+const commitEdit = () => {
+  if (!editingField.value) return;
+  const isTarget = editingField.value === 'target';
+  const parsed = parseEditValue(editValue.value, isTarget);
+  processLevelUpdate(parsed, isTarget);
+  editingField.value = null;
+  editValue.value = '';
+};
+
+const cancelEdit = () => {
+  editingField.value = null;
+  editValue.value = '';
+};
+
+const handleEditorKeydown = (event: KeyboardEvent) => {
   if (['e', 'E', '+', '-', '.'].includes(event.key)) {
     event.preventDefault();
+    return;
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    commitEdit();
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    cancelEdit();
   }
 };
 
-const isMaxLevel = computed(() => props.characterLevels.current === 90);
+const isMaxLevel = computed(() => levelState.value.current === 90);
 </script>
 
 <template>
   <div class="student-level-section" :class="{ 'student-level-section-max': isMaxLevel }">
-    <div class="student-level-summary-row">
-      <div class="student-level-input-inline">
-        <label for="current-level-input">{{ $t('currentLevel') }}</label>
+    <div class="student-level-row" :class="{ 'student-level-row-max': isMaxLevel }">
+      <div class="student-level-progress-pill">
+        <span class="student-level-label">LEVEL</span>
+
+        <button
+          v-if="editingField !== 'current'"
+          type="button"
+          class="student-level-value-button"
+          :aria-label="$t('currentLevel')"
+          @click="startEdit('current')"
+        >
+          {{ levelState.current }}
+        </button>
         <input
-          id="current-level-input"
+          v-else
+          ref="currentEditorRef"
+          v-model="editValue"
           name="current-level-input"
           type="number"
-          :value="inputDisplayValues.current"
-          @input="(e) => handleInput(e, false)"
-          @blur="(e) => handleBlur(e, false)"
-          @keydown="handleKeydown"
-          class="student-level-input"
+          class="student-level-editor-input"
           min="1"
           max="90"
+          @blur="commitEdit"
+          @keydown="handleEditorKeydown"
         />
+
+        <template v-if="!isMaxLevel">
+          <div class="student-level-arrow">→</div>
+          <button
+            v-if="editingField !== 'target'"
+            type="button"
+            class="student-level-value-button target"
+            :aria-label="$t('targetLevel')"
+            @click="startEdit('target')"
+          >
+            {{ levelState.target }}
+          </button>
+          <input
+            v-else
+            ref="targetEditorRef"
+            v-model="editValue"
+            name="target-level-input"
+            type="number"
+            class="student-level-editor-input target"
+            :min="levelState.current"
+            max="90"
+            @blur="commitEdit"
+            @keydown="handleEditorKeydown"
+          />
+        </template>
       </div>
 
-      <div v-if="!isMaxLevel" class="student-level-progress-pill">
-        <span class="student-level-label">LEVEL</span>
-        <span class="student-level-value">{{ levelState.current }}</span>
-        <div class="student-level-arrow">→</div>
-        <span class="student-level-value target">{{ levelState.target }}</span>
-      </div>
-
-      <div v-else class="student-level-max-banner">
-        <span class="student-level-label">LEVEL</span>
-        <span class="student-level-value">90</span>
-        <span class="student-level-max-title">{{ $t('max') }}</span>
-      </div>
-
-      <div v-if="!isMaxLevel" class="student-level-input-inline">
-        <label for="target-level-input">{{ $t('targetLevel') }}</label>
-        <input
-          id="target-level-input"
-          name="target-level-input"
-          type="number"
-          :value="inputDisplayValues.target"
-          @input="(e) => handleInput(e, true)"
-          @blur="(e) => handleBlur(e, true)"
-          @keydown="handleKeydown"
-          class="student-level-input"
-          min="1"
-          max="90"
-        />
-      </div>
-    </div>
-
-    <div v-if="!isMaxLevel" class="student-level-stats-row">
-      <div class="student-level-chip student-level-chip-strong student-level-chip-exp">
+      <div v-if="!isMaxLevel" class="student-level-chip student-level-chip-strong student-level-chip-exp">
         {{ $t('xpRequired') }}: {{ totalXpNeeded.toLocaleString() }}
       </div>
     </div>
@@ -193,68 +181,33 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   border-radius: 12px;
   padding: 12px;
   border: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
+}
+
+.student-level-row {
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
   gap: 8px;
+  align-items: stretch;
 }
 
-.student-level-summary-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.student-level-row.student-level-row-max {
+  grid-template-columns: 1fr;
 }
 
-.student-level-input-inline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.student-level-input-inline label {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.student-level-input {
-  width: 58px;
-  height: 32px;
-  padding: 4px 6px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  text-align: center;
-  background-color: var(--input-color, var(--background-primary));
-  color: var(--text-primary);
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-.student-level-input::-webkit-outer-spin-button,
-.student-level-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.student-level-progress-pill,
-.student-level-max-banner {
+.student-level-progress-pill {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  flex: 1;
-  min-width: 200px;
   min-height: 42px;
   border-radius: 999px;
-  border: 1px solid #4e7eff;
-  background: var(--background-primary);
-  padding: 4px 12px;
-  border-color: rgba(255, 201, 51, 0.35);
+  border: 1px solid rgba(255, 201, 51, 0.35);
   background: linear-gradient(
     135deg,
     rgba(255, 201, 51, 0.24),
     rgba(51, 197, 255, 0.22)
   );
+  padding: 4px 12px;
 }
 
 .student-level-label {
@@ -265,15 +218,51 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   letter-spacing: 0.45px;
 }
 
-.student-level-value {
+.student-level-value-button {
+  border: 0;
+  background: transparent;
   font-weight: 700;
   font-size: 0.98rem;
   color: var(--text-primary);
   line-height: 1;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0 2px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.student-level-value.target {
+.student-level-value-button.target {
   color: var(--accent-color);
+}
+
+.student-level-value-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+.student-level-editor-input {
+  width: 56px;
+  height: 30px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  text-align: center;
+  background-color: var(--input-color, var(--background-primary));
+  color: var(--text-primary);
+  font-weight: 700;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.student-level-editor-input.target {
+  color: var(--accent-color);
+}
+
+.student-level-editor-input::-webkit-outer-spin-button,
+.student-level-editor-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .student-level-arrow {
@@ -285,28 +274,17 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
   justify-content: center;
 }
 
-.student-level-max-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.45px;
-  text-transform: uppercase;
-  color: rgba(51, 105, 255, 0.9);
-}
-
-.student-level-stats-row {
+.student-level-chip {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.student-level-chip {
+  justify-content: center;
   font-size: 0.82rem;
   border: 1px solid var(--border-color);
   border-radius: 999px;
   padding: 4px 10px;
   background: var(--background-primary);
   color: var(--text-secondary);
+  min-height: 42px;
 }
 
 .student-level-chip-strong {
@@ -315,27 +293,18 @@ const isMaxLevel = computed(() => props.characterLevels.current === 90);
 }
 
 .student-level-chip-exp {
-  margin-left: auto;
-}
-
-.student-level-chip-muted {
-  opacity: 0.85;
-}
-
-@media (max-width: 1024px) {
-  .student-level-chip-exp {
-    margin-left: 0;
-  }
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {
-  .student-level-summary-row {
-    gap: 6px;
+  .student-level-row {
+    grid-template-columns: 1fr;
   }
 
-  .student-level-progress-pill,
-  .student-level-max-banner {
-    min-width: 100%;
+  .student-level-chip-exp {
+    justify-content: flex-start;
   }
 }
 </style>

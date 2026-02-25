@@ -90,7 +90,7 @@ const {
 
           <div class="tier-indicator" :class="{ 'placeholder-tier': !hasExclusiveGear }">
             <template v-if="!hasExclusiveGear">
-              {{ $t('comingSoon') }}
+              {{ $t('empty') }}
             </template>
             <template v-else-if="getExclusiveGearDisplay().isLocked">
               {{ $t('locked') }}
@@ -113,7 +113,7 @@ const {
   background: var(--card-background);
   border-radius: 10px;
   border: 1px solid var(--border-color);
-  padding: 0.75rem;
+  padding: 0.60rem;
 }
 
 .equipment-row {
@@ -160,8 +160,8 @@ const {
 }
 
 .equipment-image {
-  max-width: 85%;
-  max-height: 85%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
 }
 
@@ -219,11 +219,6 @@ const {
 }
 
 @media (max-width: 768px) {
-  .equipment-icon {
-    width: 80px;
-    height: 80px;
-  }
-
   .equipment-type-badge,
   .tier-indicator {
     font-size: 0.65rem;
@@ -234,16 +229,6 @@ const {
 @media (max-width: 480px) {
   .equipment-row {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .equipment-icon {
-    width: 70px;
-    height: 70px;
-  }
-
-  .equipment-type-badge {
-    font-size: 0.6rem;
-    padding: 0.15rem 0.35rem;
   }
 }
 </style>

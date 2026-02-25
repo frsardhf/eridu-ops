@@ -166,7 +166,7 @@ export const translations = {
     
     // Info tab
     exclusiveGear: "Exclusive Gear",
-    comingSoon: "Coming Soon",
+    empty: "EMPTY",
     bondRequired: "Bond > 15 Required",
     locked: "Locked",
     atk: "ATK",
@@ -349,7 +349,7 @@ export const translations = {
     
     // Info tab
     exclusiveGear: "固有装備",
-    comingSoon: "準備中",
+    empty: "空欄",
     bondRequired: "絆Lv.15以上が必要",
     locked: "未解放",
     atk: "ATK",

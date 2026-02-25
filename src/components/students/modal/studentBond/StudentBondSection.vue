@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
@@ -13,64 +13,18 @@ const emit = defineEmits<(e: 'update-bond', value: number) => void>();
 
 // Local state for the actual bond value
 const bondState = ref(props.currentBond);
-
-// Separate display value for input (can be empty during typing)
-const inputDisplayValue = ref(props.currentBond.toString());
+const editingBond = ref(false);
+const editBondValue = ref(props.currentBond.toString());
+const bondEditorRef = ref<HTMLInputElement | null>(null);
 
 // Sync with prop changes from parent
 watch(() => props.currentBond, (newVal) => {
   bondState.value = newVal;
-  inputDisplayValue.value = newVal.toString();
+  editingBond.value = false;
+  editBondValue.value = newVal.toString();
 }, { immediate: true });
 
 const isMaxBond = computed(() => bondState.value === 100);
-
-// Handle input changes during typing
-const handleInput = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const rawValue = input.value;
-
-  // Update display value (allow empty during typing)
-  inputDisplayValue.value = rawValue;
-
-  // If empty or just a dash, don't update state yet (will be handled on blur)
-  if (rawValue === '' || rawValue === '-') {
-    return;
-  }
-
-  // Remove leading zeros and parse
-  const cleanedValue = rawValue.replace(/^0+(?=\d)/, '');
-  const value = parseInt(cleanedValue, 10);
-
-  // Handle NaN - don't update state
-  if (isNaN(value)) {
-    return;
-  }
-
-  // Apply clamping and update state
-  processBondUpdate(value);
-};
-
-// Handle blur - ensure valid value when leaving input
-const handleBlur = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const rawValue = input.value.trim();
-
-  let value: number;
-
-  // If empty or invalid, default to 1
-  if (rawValue === '' || rawValue === '-' || isNaN(parseInt(rawValue, 10))) {
-    value = 1;
-  } else {
-    value = parseInt(rawValue, 10);
-  }
-
-  processBondUpdate(value);
-
-  // Sync input display with actual state
-  inputDisplayValue.value = bondState.value.toString();
-  input.value = bondState.value.toString();
-};
 
 // Centralized logic for processing bond updates
 const processBondUpdate = (value: number) => {
@@ -80,10 +34,44 @@ const processBondUpdate = (value: number) => {
   emit('update-bond', value);
 };
 
+const parseBondValue = (rawValue: string): number => {
+  const parsed = parseInt(rawValue.trim(), 10);
+  return Number.isNaN(parsed) ? 1 : parsed;
+};
+
+const startBondEdit = async () => {
+  editingBond.value = true;
+  editBondValue.value = bondState.value.toString();
+  await nextTick();
+  bondEditorRef.value?.focus();
+  bondEditorRef.value?.select();
+};
+
+const commitBondEdit = () => {
+  processBondUpdate(parseBondValue(editBondValue.value));
+  editingBond.value = false;
+};
+
+const cancelBondEdit = () => {
+  editingBond.value = false;
+  editBondValue.value = bondState.value.toString();
+};
+
 // Prevent invalid characters (e, +, -, .)
-const handleKeydown = (event: KeyboardEvent) => {
+const handleEditorKeydown = (event: KeyboardEvent) => {
   if (['e', 'E', '+', '-', '.'].includes(event.key)) {
     event.preventDefault();
+    return;
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    commitBondEdit();
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    cancelBondEdit();
   }
 };
 </script>
@@ -91,44 +79,50 @@ const handleKeydown = (event: KeyboardEvent) => {
 <template>
   <div class="bond-section" :class="{ 'bond-section-max': isMaxBond }">
     <div class="bond-summary-row">
-      <div class="bond-input-inline">
-        <label for="bond-input">{{ $t('currentBond') }}</label>
-        <input
-          id="bond-input"
-          name="bond-input"
-          type="number"
-          :value="inputDisplayValue"
-          @input="handleInput"
-          @blur="handleBlur"
-          @keydown="handleKeydown"
-          class="bond-input"
-          min="1"
-          max="100"
-        />
-      </div>
-
       <div v-if="!isMaxBond" class="bond-progress-pill">
-        <div class="bond-icon-container">
-          <img
-            src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
-            alt="Current Bond"
-            class="bond-icon"
-          />
-          <span class="bond-number">{{ bondState }}</span>
-        </div>
-
-        <template v-if="totalExp > 0">
-          <div class="bond-arrow">→</div>
-
+        <div class="bond-progress-track">
           <div class="bond-icon-container">
             <img
               src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
-              alt="New Bond"
+              alt="Current Bond"
               class="bond-icon"
             />
-            <span class="bond-number">{{ newBondLevel }}</span>
+            <button
+              v-if="!editingBond"
+              type="button"
+              class="bond-number-button"
+              :aria-label="$t('currentBond')"
+              @click="startBondEdit"
+            >
+              {{ bondState }}
+            </button>
+            <input
+              v-else
+              ref="bondEditorRef"
+              v-model="editBondValue"
+              name="bond-input"
+              type="number"
+              class="bond-number-input"
+              min="1"
+              max="100"
+              @blur="commitBondEdit"
+              @keydown="handleEditorKeydown"
+            />
           </div>
-        </template>
+
+          <template v-if="totalExp > 0">
+            <div class="bond-arrow">→</div>
+
+            <div class="bond-icon-container">
+              <img
+                src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+                alt="New Bond"
+                class="bond-icon"
+              />
+              <span class="bond-number">{{ newBondLevel }}</span>
+            </div>
+          </template>
+        </div>
       </div>
 
       <div v-else class="bond-max-banner">
@@ -138,7 +132,27 @@ const handleKeydown = (event: KeyboardEvent) => {
             alt="Max Bond"
             class="max-bond-icon"
           />
-          <span class="max-bond-number">100</span>
+          <button
+            v-if="!editingBond"
+            type="button"
+            class="bond-number-button max-bond-number-button"
+            :aria-label="$t('currentBond')"
+            @click="startBondEdit"
+          >
+            {{ bondState }}
+          </button>
+          <input
+            v-else
+            ref="bondEditorRef"
+            v-model="editBondValue"
+            name="bond-input"
+            type="number"
+            class="bond-number-input max-bond-number-input"
+            min="1"
+            max="100"
+            @blur="commitBondEdit"
+            @keydown="handleEditorKeydown"
+          />
         </div>
         <div class="max-banner-title">{{ $t('maxBond') }}</div>
       </div>
@@ -170,21 +184,19 @@ const handleKeydown = (event: KeyboardEvent) => {
 .bond-summary-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 0;
 }
 
-.bond-input-inline {
-  display: flex;
+.bond-summary-row > * {
+  width: 100%;
+}
+
+.bond-progress-track {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  flex-shrink: 0;
-}
-
-.bond-input-inline label {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
+  min-width: 0;
 }
 
 .bond-arrow {
@@ -201,8 +213,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  flex: 1;
-  min-width: 190px;
+  min-width: 0;
   min-height: 40px;
   border-radius: 999px;
   border: 1px solid var(--border-color);
@@ -236,7 +247,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .bond-number,
-.max-bond-number {
+.max-bond-number,
+.bond-number-button,
+.bond-number-input {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -245,6 +258,40 @@ const handleKeydown = (event: KeyboardEvent) => {
   font-size: 0.82rem;
   color: white;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.bond-number-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bond-number-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+.bond-number-input {
+  width: 28px;
+  height: 18px;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.bond-number-input::-webkit-outer-spin-button,
+.bond-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .max-banner-title {
@@ -256,17 +303,6 @@ const handleKeydown = (event: KeyboardEvent) => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-.bond-input {
-  width: 58px;
-  height: 32px;
-  padding: 4px 6px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  text-align: center;
-  background-color: var(--input-color, var(--background-primary));
-  color: var(--text-primary);
 }
 
 .bond-stats-row {
@@ -298,18 +334,6 @@ const handleKeydown = (event: KeyboardEvent) => {
   opacity: 0.85;
 }
 
-/* Hide number input arrows */
-.bond-input::-webkit-outer-spin-button,
-.bond-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.bond-input {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
 /* Responsive design */
 @media (max-width: 480px) {
   .bond-section {
@@ -317,12 +341,14 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 
   .bond-summary-row {
-    gap: 6px;
+    gap: 0;
   }
 
   .bond-progress-pill,
   .bond-max-banner {
-    min-width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .total-chip {

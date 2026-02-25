@@ -94,31 +94,30 @@ const hideTooltip = () => {
 
 <template>
   <div class="skill-section">
-    <h3 class="section-title">
-      {{ $t('skills') }}
-      <div class="options-container">
-        <div class="max-all-container">
-          <input
-            type="checkbox"
-            id="max-all-skills"
-            name="max-all-skills"
-            :checked="props.allSkillsMaxed"
-            @change="handleMaxAllSkillsChange"
-          />
-          <label for="max-all-skills">{{ $t('maxAllSkills') }}</label>
-        </div>
-        <div class="max-all-container">
-          <input
-            type="checkbox"
-            id="max-target-skills"
-            name="max-target-skills"
-            :checked="props.targetSkillsMaxed"
-            @change="handleMaxTargetSkillsChange"
-          />
-          <label for="max-target-skills">{{ $t('maxTargetSkills') }}</label>
-        </div>
+    <h3 class="sr-only">{{ $t('skills') }}</h3>
+
+    <div class="skill-options-rail">
+      <div class="skill-toggle-item">
+        <input
+          type="checkbox"
+          id="max-all-skills"
+          name="max-all-skills"
+          :checked="props.allSkillsMaxed"
+          @change="handleMaxAllSkillsChange"
+        />
+        <label for="max-all-skills">{{ $t('maxAllSkills') }}</label>
       </div>
-    </h3>
+      <div class="skill-toggle-item">
+        <input
+          type="checkbox"
+          id="max-target-skills"
+          name="max-target-skills"
+          :checked="props.targetSkillsMaxed"
+          @change="handleMaxTargetSkillsChange"
+        />
+        <label for="max-target-skills">{{ $t('maxTargetSkills') }}</label>
+      </div>
+    </div>
 
     <div class="skill-grid">
       <div
@@ -229,31 +228,6 @@ const hideTooltip = () => {
               {{ useExtraExSkill ? 'II' : 'I' }}
             </button>
           </div>
-
-          <!-- Level Display -->
-          <div class="level-indicator">
-            <template v-if="getLevelDisplayState(
-              props.skillLevels[skillType]?.current ?? 1,
-              props.skillLevels[skillType]?.target ?? 1,
-              getMaxLevel(skillType)
-            ) === 'max'">
-              <span class="max-level">{{ $t('max') }}</span>
-            </template>
-            <template v-else-if="getLevelDisplayState(
-              props.skillLevels[skillType]?.current ?? 1,
-              props.skillLevels[skillType]?.target ?? 1,
-              getMaxLevel(skillType)
-            ) === 'same'">
-              <span>Lv.{{ props.skillLevels[skillType]?.current ?? 1 }}</span>
-            </template>
-            <template v-else>
-              <span class="current-level-text">Lv.{{ props.skillLevels[skillType]?.current ?? 1 }}</span>
-              <span class="level-arrow">→</span>
-              <span class="target-level-text" :class="{ 'max-level': isTargetMaxLevel(props.skillLevels[skillType]?.target ?? 1, getMaxLevel(skillType)) }">
-                {{ props.skillLevels[skillType]?.target ?? 1 }}
-              </span>
-            </template>
-          </div>
         </div>
 
         <!-- Target Level Control -->
@@ -339,36 +313,62 @@ const hideTooltip = () => {
   border: 1px solid var(--border-color);
 }
 
-.section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0 0 1rem 0;
-  font-size: 1.1em;
-  color: var(--text-primary);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
-.options-container {
+.skill-options-rail {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
+  margin: 0 0 8px 0;
 }
 
-.max-all-container {
-  display: flex;
+.skill-toggle-item {
+  position: relative;
+}
+
+.skill-toggle-item input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.skill-toggle-item label {
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 0.85em;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
   color: var(--text-secondary);
-}
-
-.max-all-container input[type="checkbox"] {
-  cursor: pointer;
-}
-
-.max-all-container label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+}
+
+.skill-toggle-item input[type="checkbox"]:checked + label {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
+}
+
+.skill-toggle-item input[type="checkbox"]:focus-visible + label {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
 }
 
 .skill-grid {
@@ -479,8 +479,8 @@ const hideTooltip = () => {
 
 .skill-icon-wrapper {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
 }
 
 .skill-bg {
@@ -554,26 +554,6 @@ const hideTooltip = () => {
   color: white;
 }
 
-.level-indicator {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.level-indicator .max-level {
-  color: var(--accent-color, #4a8af4);
-}
-
-.level-indicator .level-arrow {
-  margin: 0 2px;
-  color: var(--text-secondary);
-}
-
-.level-indicator .target-level-text.max-level {
-  color: var(--accent-color, #4a8af4);
-}
-
 .skill-name {
   font-size: 0.75rem;
   font-weight: 600;
@@ -623,17 +603,18 @@ const hideTooltip = () => {
 }
 
 @media (max-width: 500px) {
-  .section-title {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+  .skill-options-rail {
+    width: 100%;
+    justify-content: stretch;
+    gap: 6px;
   }
 
-  .options-container {
+  .skill-toggle-item {
+    flex: 1 1 0;
+  }
+
+  .skill-toggle-item label {
     width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0px;
   }
 
   .control-button {

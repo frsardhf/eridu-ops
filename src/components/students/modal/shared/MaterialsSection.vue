@@ -27,8 +27,6 @@ const hasMaterials = computed(() => {
 
 <template>
   <div class="materials-section">
-    <h3 class="section-title">{{ $t('totalMaterialsNeeded') }}</h3>
-
     <div v-if="!hasMaterials" class="no-materials">
       {{ $t('noMaterialsNeeded') }}
     </div>
@@ -61,7 +59,7 @@ const hasMaterials = computed(() => {
 <style scoped>
 .materials-section {
   background: var(--card-background);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 15px;
   border: 1px solid var(--border-color);
 }

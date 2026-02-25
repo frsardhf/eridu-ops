@@ -59,22 +59,24 @@ const levelPillClass = computed(() => ({
           </div>
         </div>
 
-        <div v-if="bulletTypeName" class="type-pill-divided">
-          <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
-            {{ $t('atk') }}
-          </span>
-          <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
-            {{ bulletTypeName }}
-          </span>
-        </div>
+        <div v-if="bulletTypeName || armorTypeName" class="combat-type-row">
+          <div v-if="bulletTypeName" class="type-pill-divided">
+            <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
+              {{ $t('atk') }}
+            </span>
+            <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
+              {{ bulletTypeName }}
+            </span>
+          </div>
 
-        <div v-if="armorTypeName" class="type-pill-divided">
-          <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
-            {{ $t('def') }}
-          </span>
-          <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
-            {{ armorTypeName }}
-          </span>
+          <div v-if="armorTypeName" class="type-pill-divided">
+            <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
+              {{ $t('def') }}
+            </span>
+            <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
+              {{ armorTypeName }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -134,7 +136,7 @@ const levelPillClass = computed(() => ({
 .level-pill {
   display: flex;
   align-items: center;
-  min-width: 150px;
+  min-width: 170px;
   background: var(--background-primary);
   border: 1px solid #4e7eff;
   border-radius: 999px;
@@ -223,6 +225,13 @@ const levelPillClass = computed(() => ({
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.combat-type-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
 .pill-label {
   display: flex;
   align-items: center;
@@ -249,6 +258,11 @@ const levelPillClass = computed(() => ({
 @media (max-width: 768px) {
   .meta-row {
     display: block;
+  }
+
+  .combat-type-row {
+    width: fit-content;
+    max-width: 100%;
   }
 }
 </style>

@@ -148,7 +148,7 @@ function hideTooltip() {
 .info-skills {
   background: var(--card-background);
   border-radius: 10px;
-  padding: 0.75rem;
+  padding: 0.60rem;
   border: 1px solid var(--border-color);
 }
 
@@ -191,8 +191,8 @@ function hideTooltip() {
 .skill-icon-wrapper {
   position: relative;
   flex-shrink: 0;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
 }
 
 .skill-bg {

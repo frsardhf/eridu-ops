@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { PotentialType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
 import { getLevelDisplayState, isTargetMaxLevel } from '../../../../composables/student/useStudentSkillDisplay';
@@ -15,13 +14,6 @@ const emit = defineEmits<{
   (e: 'toggle-max-potentials', checked: boolean): void;
   (e: 'toggle-max-target-potentials', checked: boolean): void;
 }>();
-
-// State for collapsible section
-const isExpanded = ref(false);
-
-const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value;
-};
 
 // Constants
 const MAX_POTENTIAL_LEVEL = 25;
@@ -83,56 +75,32 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 
 <template>
   <div class="potential-section">
-    <h3 class="section-title collapsible-header" @click="toggleExpand">
-      <div class="collapsible-title">
-        <span>{{ $t('talent') }}</span>
-        <div class="options-container" v-if="isExpanded" @click.stop>
-          <div class="max-all-container">
-            <input
-              type="checkbox"
-              id="max-all-potentials"
-              name="max-all-potentials"
-              :checked="props.allPotentialsMaxed"
-              @change="handleMaxAllPotentialsChange"
-            />
-            <label for="max-all-potentials">{{ $t('maxAllPotentials') }}</label>
-          </div>
-          <div class="max-all-container">
-            <input
-              type="checkbox"
-              id="max-target-potentials"
-              name="max-target-potentials"
-              :checked="props.targetPotentialsMaxed"
-              @change="handleMaxTargetPotentialsChange"
-            />
-            <label for="max-target-potentials">{{ $t('maxTargetPotentials') }}</label>
-          </div>
-        </div>
-        <span
-          class="collapsible-hint"
-          v-if="!isExpanded"
-        >({{ $t('clickTo') }} {{ $t('expand') }})</span>
-      </div>
-      <div class="expand-icon" :class="{ 'rotated': isExpanded }">
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 4L6 8L10 4"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </div>
-    </h3>
+    <h3 class="sr-only">{{ $t('talent') }}</h3>
 
-    <div class="potential-grid" v-show="isExpanded">
+    <div class="potential-options-rail">
+      <div class="potential-toggle-item">
+        <input
+          type="checkbox"
+          id="max-all-potentials"
+          name="max-all-potentials"
+          :checked="props.allPotentialsMaxed"
+          @change="handleMaxAllPotentialsChange"
+        />
+        <label for="max-all-potentials">{{ $t('maxAllPotentials') }}</label>
+      </div>
+      <div class="potential-toggle-item">
+        <input
+          type="checkbox"
+          id="max-target-potentials"
+          name="max-target-potentials"
+          :checked="props.targetPotentialsMaxed"
+          @change="handleMaxTargetPotentialsChange"
+        />
+        <label for="max-target-potentials">{{ $t('maxTargetPotentials') }}</label>
+      </div>
+    </div>
+
+    <div class="potential-grid">
       <div
         v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]"
         :key="potType"
@@ -198,31 +166,6 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
               :alt="getPotentialName(potType)"
               class="potential-image"
             />
-          </div>
-
-          <!-- Level Display -->
-          <div class="level-indicator">
-            <template v-if="getLevelDisplayState(
-              props.potentialLevels[potType]?.current ?? 0,
-              props.potentialLevels[potType]?.target ?? 0,
-              MAX_POTENTIAL_LEVEL
-            ) === 'max'">
-              <span class="max-level">{{ $t('max') }}</span>
-            </template>
-            <template v-else-if="getLevelDisplayState(
-              props.potentialLevels[potType]?.current ?? 0,
-              props.potentialLevels[potType]?.target ?? 0,
-              MAX_POTENTIAL_LEVEL
-            ) === 'same'">
-              <span>Lv.{{ props.potentialLevels[potType]?.current ?? 0 }}</span>
-            </template>
-            <template v-else>
-              <span class="current-level-text">Lv.{{ props.potentialLevels[potType]?.current ?? 0 }}</span>
-              <span class="level-arrow">→</span>
-              <span class="target-level-text" :class="{ 'max-level': isTargetMaxLevel(props.potentialLevels[potType]?.target ?? 0, MAX_POTENTIAL_LEVEL) }">
-                {{ props.potentialLevels[potType]?.target ?? 0 }}
-              </span>
-            </template>
           </div>
         </div>
 
@@ -294,74 +237,68 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
   border: 1px solid var(--border-color);
 }
 
-.collapsible-header {
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  user-select: none;
-  transition: background-color 0.2s ease;
-  margin: 0;
-  font-size: 1.1em;
-  color: var(--text-primary);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
-.collapsible-header:hover {
-  background-color: rgba(var(--background-hover-rgb, 60, 60, 60), 0.15);
-  border-radius: 4px;
-}
-
-.collapsible-title {
+.potential-options-rail {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.collapsible-hint {
-  font-size: 0.75em;
-  font-weight: normal;
-  color: var(--text-secondary);
-  opacity: 0.7;
-}
-
-.expand-icon {
-  display: flex;
-  align-items: center;
-}
-
-.expand-icon.rotated svg {
-  transform: rotate(180deg);
-}
-
-.options-container {
-  display: flex;
-  align-items: center;
+  justify-content: flex-end;
   gap: 6px;
+  margin: 0 0 8px 0;
 }
 
-.max-all-container {
-  display: flex;
+.potential-toggle-item {
+  position: relative;
+}
+
+.potential-toggle-item input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.potential-toggle-item label {
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 0.85em;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
   color: var(--text-secondary);
-}
-
-.max-all-container input[type="checkbox"] {
-  cursor: pointer;
-}
-
-.max-all-container label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+}
+
+.potential-toggle-item input[type="checkbox"]:checked + label {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
+}
+
+.potential-toggle-item input[type="checkbox"]:focus-visible + label {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
 }
 
 .potential-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-  margin-top: 1rem;
 }
 
 .potential-item {
@@ -465,8 +402,8 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 }
 
 .potential-icon {
-  width: 64px;
-  height: 64px;
+  width: 100px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -475,29 +412,7 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 }
 
 .potential-image {
-  max-width: 115%;
-  max-height: 115%;
   object-fit: contain;
-}
-
-.level-indicator {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.level-indicator .max-level {
-  color: var(--accent-color, #4a8af4);
-}
-
-.level-indicator .level-arrow {
-  margin: 0 2px;
-  color: var(--text-secondary);
-}
-
-.level-indicator .target-level-text.max-level {
-  color: var(--accent-color, #4a8af4);
 }
 
 .potential-name {
@@ -508,23 +423,19 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
   line-height: 1.2;
 }
 
-@media (max-width: 768px) {
-  .potential-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 500px) {
-  .collapsible-title {
-    flex-direction: column;
-    align-items: flex-start;
+  .potential-options-rail {
+    width: 100%;
+    justify-content: stretch;
+    gap: 6px;
   }
 
-  .options-container {
+  .potential-toggle-item {
+    flex: 1 1 0;
+  }
+
+  .potential-toggle-item label {
     width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0px;
   }
 
   .potential-grid {

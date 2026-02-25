@@ -115,31 +115,30 @@ function updateExclusiveGearTarget(value: number) {
 
 <template>
   <div class="equipment-growth-section">
-    <h3 class="section-title">
-      {{ $t('gears') }}
-      <div class="options-container">
-        <div class="max-all-container">
-          <input
-            type="checkbox"
-            id="max-all-gears"
-            name="max-all-gears"
-            :checked="props.allGearsMaxed"
-            @change="handleMaxAllGearsChange"
-          />
-          <label for="max-all-gears">{{ $t('maxAllGears') }}</label>
-        </div>
-        <div class="max-all-container">
-          <input
-            type="checkbox"
-            id="max-target-gears"
-            name="max-target-gears"
-            :checked="props.targetGearsMaxed"
-            @change="handleMaxTargetGearsChange"
-          />
-          <label for="max-target-gears">{{ $t('maxTargetGears') }}</label>
-        </div>
+    <h3 class="sr-only">{{ $t('gears') }}</h3>
+
+    <div class="equipment-options-rail">
+      <div class="equipment-toggle-item">
+        <input
+          type="checkbox"
+          id="max-all-gears"
+          name="max-all-gears"
+          :checked="props.allGearsMaxed"
+          @change="handleMaxAllGearsChange"
+        />
+        <label for="max-all-gears">{{ $t('maxAllGears') }}</label>
       </div>
-    </h3>
+      <div class="equipment-toggle-item">
+        <input
+          type="checkbox"
+          id="max-target-gears"
+          name="max-target-gears"
+          :checked="props.targetGearsMaxed"
+          @change="handleMaxTargetGearsChange"
+        />
+        <label for="max-target-gears">{{ $t('maxTargetGears') }}</label>
+      </div>
+    </div>
 
     <div class="equipment-grid">
       <!-- Regular Equipment Items -->
@@ -196,19 +195,12 @@ function updateExclusiveGearTarget(value: number) {
         </div>
         
         <div class="equipment-icon">
-          <div class="equipment-type-badge">{{ equipmentTypes[type as EquipmentKey] }}</div>
           <img 
             :src="getEquipmentIconUrl(type, equipmentLevels[type]?.current || 1)"
             :alt="`${equipmentTypes[type as EquipmentKey]} ${$t('tier')}${equipmentLevels[type]?.current || 1}`"
             class="equipment-image"
             loading="lazy"
           />
-          <div class="tier-indicator">
-            {{ $t('tier') }}{{ equipmentLevels[type]?.current || 1 }}
-            <span class="tier-target" v-if="equipmentLevels[type]?.current !== equipmentLevels[type]?.target">
-              → {{ $t('tier') }}{{ equipmentLevels[type]?.target || 1 }}
-            </span>
-          </div>
         </div>
         
         <div class="level-control">
@@ -308,9 +300,6 @@ function updateExclusiveGearTarget(value: number) {
 
         <!-- Gear Icon -->
         <div class="equipment-icon" :class="{ 'placeholder-icon': !hasExclusiveGear }">
-          <div class="equipment-type-badge" :class="{ 'placeholder-badge': !hasExclusiveGear }">
-            {{ $t('exclusiveGear') }}
-          </div>
 
           <!-- Show gear image if student has gear -->
           <template v-if="hasExclusiveGear">
@@ -338,20 +327,6 @@ function updateExclusiveGearTarget(value: number) {
             </svg>
           </template>
 
-          <div class="tier-indicator" :class="{ 'placeholder-tier': !hasExclusiveGear }">
-            <template v-if="!hasExclusiveGear">
-              {{ $t('comingSoon') }}
-            </template>
-            <template v-else-if="gearCurrent === 0">
-              {{ $t('locked') }}
-            </template>
-            <template v-else>
-              {{ $t('tier') }}{{ gearCurrent }}
-              <span class="tier-target" v-if="gearCurrent !== gearTarget">
-                → {{ $t('tier') }}{{ gearTarget }}
-              </span>
-            </template>
-          </div>
         </div>
 
         <!-- Target Level Control -->
@@ -407,36 +382,62 @@ function updateExclusiveGearTarget(value: number) {
   border: 1px solid var(--border-color);
 }
 
-.section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0 0 1rem 0;
-  font-size: 1.1em;
-  color: var(--text-primary);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
-.options-container {
+.equipment-options-rail {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
+  margin: 0 0 8px 0;
 }
 
-.max-all-container {
-  display: flex;
+.equipment-toggle-item {
+  position: relative;
+}
+
+.equipment-toggle-item input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.equipment-toggle-item label {
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 0.85em;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
   color: var(--text-secondary);
-}
-
-.max-all-container input[type="checkbox"] {
-  cursor: pointer;
-}
-
-.max-all-container label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+}
+
+.equipment-toggle-item input[type="checkbox"]:checked + label {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
+}
+
+.equipment-toggle-item input[type="checkbox"]:focus-visible + label {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
 }
 
 .equipment-grid {
@@ -449,7 +450,7 @@ function updateExclusiveGearTarget(value: number) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   border-radius: 8px;
   background-color: var(--background-primary);
   position: relative;
@@ -465,54 +466,12 @@ function updateExclusiveGearTarget(value: number) {
   background-color: var(--card-background);
   border-radius: 12px;
   position: relative;
-  margin: 0.5rem 0;
-}
-
-.equipment-type-badge {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--accent-color, #4a8af4);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  width: max-content;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 2;
 }
 
 .equipment-image {
-  max-width: 85%;
-  max-height: 85%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.equipment-icon:hover .equipment-image {
-  transform: scale(1.05);
-}
-
-.tier-indicator {
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--background-primary);
-  color: var(--text-primary);
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
-}
-
-.tier-target {
-  color: var(--accent-color, #4a8af4);
-  font-weight: 700;
 }
 
 .level-control {
@@ -608,55 +567,19 @@ function updateExclusiveGearTarget(value: number) {
   font-weight: bold;
 }
 
-@media (max-width: 768px) {
-  .equipment-icon {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .equipment-type-badge,
-  .tier-indicator {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-  }
-}
-
 @media (max-width: 500px) {
-  .section-title {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .options-container {
+  .equipment-options-rail {
     width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0px;
-  }
-}
-
-@media (max-width: 480px) {
-  .equipment-growth-section {
-    padding: 1rem;
+    justify-content: stretch;
+    gap: 6px;
   }
 
-  .equipment-item {
-    padding: 0.75rem;
+  .equipment-toggle-item {
+    flex: 1 1 0;
   }
 
-  .equipment-icon {
-    width: 70px;
-    height: 70px;
-  }
-
-  .control-button {
-    width: 24px;
-  }
-
-  .min-button,
-  .max-button {
-    font-size: 0.875rem;
+  .equipment-toggle-item label {
+    width: 100%;
   }
 }
 
@@ -670,20 +593,11 @@ function updateExclusiveGearTarget(value: number) {
   background: transparent !important;
 }
 
-.placeholder-badge {
-  background-color: var(--text-secondary) !important;
-}
-
 .lock-icon-placeholder {
   width: 32px;
   height: 32px;
   color: var(--text-secondary);
   opacity: 0.5;
-}
-
-.placeholder-tier {
-  color: var(--text-secondary);
-  font-style: italic;
 }
 
 .placeholder-control {
