@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { createEditorKeydownHandler } from '@/consumables/utils/upgradeUtils';
-import { $t } from '../../../../locales';
+import { $t } from '@/locales';
 
 const props = defineProps<{
   characterLevels: { current: number; target: number; },

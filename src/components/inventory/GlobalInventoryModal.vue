@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { $t } from '../../locales';
-import StudentItemsGrid from '../students/modal/studentInventory/StudentItemsGrid.vue';
-import StudentEquipmentGrid from '../students/modal/studentInventory/StudentEquipmentGrid.vue';
-import StudentResourceSummary from '../students/modal/studentInventory/StudentResourceSummary.vue';
+import { $t } from '@/locales';
+import ItemsGrid from './ItemsGrid.vue';
+import EquipmentGrid from './EquipmentGrid.vue';
+import ResourceSummary from './ResourceSummary.vue';
 
 const props = defineProps<{
   resourceFormData: Record<string, number>,
@@ -65,21 +65,21 @@ function handleEquipmentInput(id: string, event: Event) {
       <!-- Content -->
       <div class="inventory-content">
         <div v-if="activeTab === 'items'" class="inventory-tab-content">
-          <StudentItemsGrid
+          <ItemsGrid
             :resource-form-data="resourceFormData"
             @update-resource="handleResourceInput"
           />
         </div>
 
         <div v-if="activeTab === 'equipment'" class="inventory-tab-content">
-          <StudentEquipmentGrid
+          <EquipmentGrid
             :equipment-form-data="equipmentFormData"
             @update-equipment="handleEquipmentInput"
           />
         </div>
 
         <div v-if="activeTab === 'summary'" class="inventory-tab-content">
-          <StudentResourceSummary />
+          <ResourceSummary />
         </div>
       </div>
     </div>

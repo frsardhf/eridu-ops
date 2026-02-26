@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { PotentialType } from '../../../../types/upgrade';
-import { $t } from '../../../../locales';
-import { getLevelDisplayState, isTargetMaxLevel } from '../../../../composables/student/useStudentSkillDisplay';
+import { PotentialType } from '@/types/upgrade';
+import { $t } from '@/locales';
+import { getLevelDisplayState, isTargetMaxLevel } from '@/composables/useStudentSkillDisplay';
 import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
 
 const props = defineProps<{

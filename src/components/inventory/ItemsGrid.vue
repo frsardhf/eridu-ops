@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, type ComponentPublicInstance } from 'vue';
-import StudentResourceCard from './StudentResourceCard.vue';
-import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
-import { applyFilters } from '../../../../consumables/utils/filterUtils';
-import { MATERIAL } from '../../../../types/resource';
-import { getAllItemsFromCache } from '../../../../consumables/stores/resourceCacheStore';
-import '../../../../styles/resourceDisplay.css';
+import ResourceCard from './ResourceCard.vue';
+import { formatLargeNumber } from '@/consumables/utils/materialUtils';
+import { applyFilters } from '@/consumables/utils/filterUtils';
+import { MATERIAL } from '@/types/resource';
+import { getAllItemsFromCache } from '@/consumables/stores/resourceCacheStore';
+import '@/styles/resourceDisplay.css';
 
 const DEFAULT_ITEMS_PER_PAGE = 89;
 // First pages use explicit sizing; remaining resources are grouped into one final page.
@@ -148,7 +148,7 @@ watch(totalPages, (nextTotal) => {
           :aria-hidden="currentPage !== pageIndex"
         >
           <div class="resources-grid">
-            <StudentResourceCard
+            <ResourceCard
               v-for="(item, itemIndex) in pageItems"
               :key="`resource-${item.Id}`"
               :item="item"

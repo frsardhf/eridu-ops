@@ -9,22 +9,22 @@ import { useStudentUpgrade } from '@/consumables/hooks/useStudentUpgrade';
 import { initializeStudentFormData } from '@/consumables/services/studentFormService';
 import { setStudentDataDirect } from '@/consumables/stores/studentStore';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
-import StudentBondSection from '@/components/students/modal/studentBond/StudentBondSection.vue';
-import StudentConvertBox from '@/components/students/modal/studentBond/StudentGiftOption.vue';
-import StudentGiftGrid from '@/components/students/modal/studentBond/StudentGiftGrid.vue';
-import StudentEquipmentGrowth from '@/components/students/modal/studentGear/EquipmentGrowthSection.vue';
-import ElephEligmaSection from '@/components/students/modal/studentGear/ElephEligmaSection.vue';
-import StudentGradeGrowth from '@/components/students/modal/studentGear/ExclusiveWeaponSection.vue';
-import StudentInfoGear from '@/components/students/modal/studentInfo/StudentInfoGear.vue';
-import StudentInfoSkills from '@/components/students/modal/studentInfo/StudentInfoSkills.vue';
-import StudentInfoWeapon from '@/components/students/modal/studentInfo/StudentInfoWeapon.vue';
-import StudentMetaHeader from '@/components/students/modal/StudentMetaHeader.vue';
-import MaterialsSection from '@/components/students/modal/shared/MaterialsSection.vue';
-import StudentLevelSection from '@/components/students/modal/studentUpgrade/StudentLevelSection.vue';
-import StudentPotentialSection from '@/components/students/modal/studentUpgrade/StudentPotentialSection.vue';
-import StudentSkillSection from '@/components/students/modal/studentUpgrade/StudentSkillSection.vue';
-import StudentModalHeader from '@/components/students/modal/StudentModalHeader.vue';
-import StudentStrip from '@/components/students/modal/StudentStrip.vue';
+import BondSection from '@/components/modal/bond/BondSection.vue';
+import GiftOption from '@/components/modal/bond/GiftOption.vue';
+import GiftGrid from '@/components/modal/bond/GiftGrid.vue';
+import EquipmentGrowthSection from '@/components/modal/gear/EquipmentGrowthSection.vue';
+import ElephEligmaSection from '@/components/modal/gear/ElephEligmaSection.vue';
+import ExclusiveWeaponSection from '@/components/modal/gear/ExclusiveWeaponSection.vue';
+import InfoGear from '@/components/modal/info/InfoGear.vue';
+import InfoSkills from '@/components/modal/info/InfoSkills.vue';
+import InfoWeapon from '@/components/modal/info/InfoWeapon.vue';
+import MetaHeader from '@/components/modal/MetaHeader.vue';
+import MaterialsSection from '@/components/modal/shared/MaterialsSection.vue';
+import LevelSection from '@/components/modal/upgrade/LevelSection.vue';
+import PotentialSection from '@/components/modal/upgrade/PotentialSection.vue';
+import SkillSection from '@/components/modal/upgrade/SkillSection.vue';
+import ModalHeader from '@/components/modal/ModalHeader.vue';
+import StudentStrip from '@/components/modal/StudentStrip.vue';
 import { StudentProps } from '@/types/student';
 import '@/styles/studentModal.css'
 
@@ -241,7 +241,7 @@ onUnmounted(() => {
       <div v-if="displayedStudent" class="modal-grid">
         <div class="tab-content">
           <div class="left-column">
-            <StudentModalHeader class="student-hero-card" :student="displayedStudent" />
+            <ModalHeader class="student-hero-card" :student="displayedStudent" />
           </div>
 
           <div
@@ -253,7 +253,7 @@ onUnmounted(() => {
               'right-column--bond': activeTab === 'bond'
             }"
           >
-            <StudentMetaHeader
+            <MetaHeader
               :student="displayedStudent"
               :character-levels="characterLevels"
               :current-bond="currentBond"
@@ -288,19 +288,19 @@ onUnmounted(() => {
             </div>
 
             <template v-if="activeTab === 'info'">
-              <StudentInfoSkills
+              <InfoSkills
                 :student="displayedStudent"
                 :skill-levels="skillLevels"
               />
 
-              <StudentInfoWeapon
+              <InfoWeapon
                 :student="displayedStudent"
                 :grade-levels="gradeLevels"
                 :equipment-levels="equipmentLevels"
                 :exclusive-gear-level="exclusiveGearLevel"
               />
 
-              <StudentInfoGear
+              <InfoGear
                 :student="displayedStudent"
                 :grade-levels="gradeLevels"
                 :equipment-levels="equipmentLevels"
@@ -312,7 +312,7 @@ onUnmounted(() => {
             <template v-if="activeTab === 'bond'">
               <div class="bond-layout" :class="{ 'bond-layout-max': currentBond === 100 }">
                 <div class="bond-top-row">
-                  <StudentBondSection
+                  <BondSection
                     class="bond-panel"
                     :class="{ 'bond-panel-full': currentBond === 100 }"
                     :current-bond="currentBond"
@@ -322,7 +322,7 @@ onUnmounted(() => {
                     @update-bond="handleBondInput"
                   />
 
-                  <StudentConvertBox
+                  <GiftOption
                     v-if="currentBond < 100"
                     class="bond-options-panel"
                     @toggle-convert="convertBoxes"
@@ -333,7 +333,7 @@ onUnmounted(() => {
                 </div>
 
                 <div v-if="currentBond < 100" class="bond-gift-scroll">
-                  <StudentGiftGrid
+                  <GiftGrid
                     class="bond-gift-grid"
                     :student="displayedStudent"
                     :gift-form-data="giftFormData"
@@ -348,14 +348,14 @@ onUnmounted(() => {
 
             <template v-if="activeTab === 'upgrade'">
               <div class="tab-pane-scroll tab-pane-scroll--upgrade">
-                <StudentLevelSection
+                <LevelSection
                   class="upgrade-level-panel"
                   :character-levels="characterLevels"
                   :total-xp-needed="characterRemainingXp"
                   @update-level="handleLevelUpdate"
                 />
 
-                <StudentSkillSection
+                <SkillSection
                   :student="displayedStudent"
                   :skill-levels="skillLevels"
                   :all-skills-maxed="allSkillsMaxed"
@@ -365,7 +365,7 @@ onUnmounted(() => {
                   @toggle-max-target="toggleMaxTargetSkills"
                 />
 
-                <StudentPotentialSection
+                <PotentialSection
                   :potential-levels="potentialLevels"
                   :all-potentials-maxed="allPotentialsMaxed"
                   :target-potentials-maxed="targetPotentialsMaxed"
@@ -390,7 +390,7 @@ onUnmounted(() => {
                   @update-info="handleGradeInfoUpdate"
                 />
 
-                <StudentEquipmentGrowth
+                <EquipmentGrowthSection
                   :student="displayedStudent"
                   :equipment-levels="equipmentLevels"
                   :exclusive-gear-level="exclusiveGearLevel"
@@ -404,7 +404,7 @@ onUnmounted(() => {
                   @toggle-max-target-gears="toggleMaxTargetGears"
                 />
 
-                <StudentGradeGrowth
+                <ExclusiveWeaponSection
                   :student="displayedStudent"
                   :grade-levels="gradeLevels"
                   @update-grade="handleGradeUpdate"

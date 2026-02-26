@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, type ComponentPublicInstance } from 'vue';
-import StudentResourceCard from './StudentResourceCard.vue';
-import { formatLargeNumber } from '../../../../consumables/utils/materialUtils';
-import { applyFilters } from '../../../../consumables/utils/filterUtils';
-import { EQUIPMENT } from '../../../../types/resource';
-import { getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
-import '../../../../styles/resourceDisplay.css';
+import ResourceCard from './ResourceCard.vue';
+import { formatLargeNumber } from '@/consumables/utils/materialUtils';
+import { applyFilters } from '@/consumables/utils/filterUtils';
+import { EQUIPMENT } from '@/types/resource';
+import { getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
+import '@/styles/resourceDisplay.css';
 
 const ITEMS_PER_PAGE = 98;
 
@@ -114,7 +114,7 @@ function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: n
           :aria-hidden="currentPage !== page - 1"
         >
           <div class="resources-grid">
-            <StudentResourceCard
+            <ResourceCard
               v-for="(item, itemIndex) in getPageResources(page - 1)"
               :key="`equipment-${item.Id}`"
               :item="item"

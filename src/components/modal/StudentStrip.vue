@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue';
-import { StudentProps } from '../../../types/student';
-import { $t } from '../../../locales';
+import { StudentProps } from '@/types/student';
+import { $t } from '@/locales';
 
 const props = defineProps<{
   students: StudentProps[],

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { StudentProps } from '../../types/student'
+import { StudentProps } from '@/types/student'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useStudentFormData } from '../../consumables/stores/studentStore'
-import { SkillType, SkillTypeName } from '../../types/upgrade'
-import { EquipmentType } from '../../types/gear'
+import { useStudentFormData } from '@/consumables/stores/studentStore'
+import { SkillType, SkillTypeName } from '@/types/upgrade'
+import { EquipmentType } from '@/types/gear'
 import {
   isStudentPinned,
   togglePinnedStudent
-} from '../../consumables/utils/studentStorage'
-import { currentLanguage } from '../../consumables/stores/localizationStore'
+} from '@/consumables/utils/studentStorage'
+import { currentLanguage } from '@/consumables/stores/localizationStore'
 
 const props = defineProps<{ student: StudentProps }>();
 const emit = defineEmits<{

@@ -6,7 +6,7 @@ import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import StudentGrid from '@/components/display/StudentGrid.vue';
-import StudentModal from '@/components/students/modal/StudentModal.vue'
+import StudentModal from '@/components/modal/StudentModal.vue'
 import { GiftProps } from '@/types/gift';
 import { SortOption } from '@/types/header';
 import { StudentProps } from '@/types/student';

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { $t } from '../../../../locales';
+import { $t } from '@/locales';
 import {
   formatLargeNumber,
   getMaterialIconSrc,
   buildMaterialMap,
   sortMaterials
-} from '../../../../consumables/utils/materialUtils';
-import { Material } from '../../../../types/upgrade';
-import '../../../../styles/resourceDisplay.css';
+} from '@/consumables/utils/materialUtils';
+import { Material } from '@/types/upgrade';
+import '@/styles/resourceDisplay.css';
 
 const props = defineProps<{
   materials: Material[];

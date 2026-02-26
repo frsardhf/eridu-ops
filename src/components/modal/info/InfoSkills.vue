@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { useStudentColors } from '@/composables/student/useStudentColors';
-import { useStudentSkillDisplay } from '@/composables/student/useStudentSkillDisplay';
-import { useStudentSkillEnhancements } from '@/composables/student/useStudentSkillEnhancements';
-import { useTooltip } from '@/composables/student/useTooltip';
+import { useStudentColors } from '@/composables/useStudentColors';
+import { useStudentSkillDisplay } from '@/composables/useStudentSkillDisplay';
+import { useStudentSkillEnhancements } from '@/composables/useStudentSkillEnhancements';
+import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
-import { useStudentGearDisplay } from '@/composables/student/useStudentGearDisplay';
+import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
 import { getMaxTierForTypeSync } from '@/consumables/utils/gearMaterialUtils';
 import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
 import { $t } from '@/locales';

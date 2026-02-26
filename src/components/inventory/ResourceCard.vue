@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { ResourceProps } from '../../../../types/resource';
-import '../../../../styles/resourceDisplay.css';
+import { ResourceProps } from '@/types/resource';
+import '@/styles/resourceDisplay.css';
 
 const props = defineProps<{
   item: ResourceProps,

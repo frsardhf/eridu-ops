@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useTooltip } from '@/composables/student/useTooltip';
-import { $t } from '../../../../locales';
+import { useTooltip } from '@/composables/useTooltip';
+import { $t } from '@/locales';
 
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 

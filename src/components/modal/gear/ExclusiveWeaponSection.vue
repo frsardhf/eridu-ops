@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, toRef } from 'vue';
-import { useStudentGearDisplay } from '@/composables/student/useStudentGearDisplay';
+import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 

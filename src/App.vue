@@ -1,8 +1,8 @@
 <script setup>
 import { watch } from 'vue';
-import StudentDisplay from './components/display/StudentDisplay.vue';
-import { useStudentData } from './consumables/hooks/useStudentData';
-import { preloadAllStudentsData } from './consumables/utils/materialUtils';
+import StudentDisplay from '@/components/display/StudentDisplay.vue';
+import { useStudentData } from '@/consumables/hooks/useStudentData';
+import { preloadAllStudentsData } from '@/consumables/utils/materialUtils';
 
 const { studentData, isReady } = useStudentData();
 

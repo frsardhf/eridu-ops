@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import StudentGiftCard from '@/components/students/modal/studentBond/StudentGiftCard.vue';
+import GiftCard from '@/components/modal/bond/GiftCard.vue';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
@@ -35,7 +35,7 @@ const convertBox = computed(() => props.convertBox ?? false);
   <div class="gifts-grid">
     <!-- Regular Gifts Section -->
     <template v-if="hasGifts">
-      <StudentGiftCard 
+      <GiftCard 
         v-for="(item) in student.Gifts" 
         :key="`gift-${item.gift.Id}`"
         :name="`gift-${item.gift.Id}`"
@@ -48,7 +48,7 @@ const convertBox = computed(() => props.convertBox ?? false);
     
     <!-- Gift Boxes Section -->
     <template v-if="hasBoxes">
-      <StudentGiftCard 
+      <GiftCard 
         v-for="(item) in student.Boxes" 
         :key="`box-${item.gift.Id}`"
         :name="`box-${item.gift.Id}`"

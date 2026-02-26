@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import { Material } from '../../../../types/upgrade';
-import { EquipmentType } from '../../../../types/gear';
-import { useMaterialCalculation } from '../../../../consumables/hooks/useMaterialCalculation';
-import { useGearCalculation } from '../../../../consumables/hooks/useGearCalculation';
-import { useGiftCalculation } from '../../../../consumables/hooks/useGiftCalculation';
-import { getAllItemsFromCache, getAllEquipmentFromCache } from '../../../../consumables/stores/resourceCacheStore';
-import { 
-  formatLargeNumber, 
-  formatLargeNumberAmount, 
+import { Material } from '@/types/upgrade';
+import { EquipmentType } from '@/types/gear';
+import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
+import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
+import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
+import { getAllItemsFromCache, getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
+import {
+  formatLargeNumber,
+  formatLargeNumberAmount,
   adjustTooltipPosition,
   isExpReport,
   isExpBall,
   getMaterialName,
   getMaterialIconSrc
-} from '../../../../consumables/utils/materialUtils';
-import { $t } from '../../../../locales';
-import '../../../../styles/resourceDisplay.css';
+} from '@/consumables/utils/materialUtils';
+import { $t } from '@/locales';
+import '@/styles/resourceDisplay.css';
 
 // Define view options - 3 main tabs
 type ViewTab = 'materials' | 'equipment' | 'gifts';

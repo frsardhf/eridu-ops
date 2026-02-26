@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { StudentProps } from '../../types/student'
+import { StudentProps } from '@/types/student'
 import StudentCard from './StudentCard.vue';
 
 const props = defineProps<{ 

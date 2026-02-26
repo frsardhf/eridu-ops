@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
-import { HeaderProps, SortOption } from '../../types/header';
-import { 
+import { HeaderProps, SortOption } from '@/types/header';
+import {
   downloadLocalStorageData
-} from '../../consumables/utils/studentStorage';
-import { currentLanguage, setLanguage, Language } from '../../consumables/stores/localizationStore';
-import { $t } from '../../locales';
+} from '@/consumables/utils/studentStorage';
+import { currentLanguage, setLanguage, Language } from '@/consumables/stores/localizationStore';
+import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
 import { THEME_OPTIONS } from '@/consumables/utils/themeUtils';
 import ImportModal from './ImportModal.vue';

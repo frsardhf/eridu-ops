@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { GiftProps } from '../../../../types/gift';
+import { GiftProps } from '@/types/gift';
 import { ref } from 'vue';
-import '../../../../styles/resourceDisplay.css';
+import '@/styles/resourceDisplay.css';
 
 const props = defineProps<{
   item: GiftProps,

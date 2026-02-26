@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
 import { $t } from '@/locales';
-import { useStudentColors } from '@/composables/student/useStudentColors';
-import { useStudentLevels } from '@/composables/student/useStudentLevels';
-import { useStudentLocalization } from '@/composables/student/useStudentLocalization';
+import { useStudentColors } from '@/composables/useStudentColors';
+import { useStudentLevels } from '@/composables/useStudentLevels';
+import { useStudentLocalization } from '@/composables/useStudentLocalization';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
