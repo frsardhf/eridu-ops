@@ -669,7 +669,7 @@ async function submitBulkModify() {
   width: min(1100px, 100%);
   max-height: 92vh;
   background: var(--background-primary);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
   display: flex;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
+import { createEditorKeydownHandler } from '@/consumables/utils/upgradeUtils';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
@@ -88,28 +89,13 @@ const cancelEdit = () => {
   editValue.value = '';
 };
 
-const handleEditorKeydown = (event: KeyboardEvent) => {
-  if (['e', 'E', '+', '-', '.'].includes(event.key)) {
-    event.preventDefault();
-    return;
-  }
-
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    commitEdit();
-  }
-
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    cancelEdit();
-  }
-};
+const handleEditorKeydown = createEditorKeydownHandler(commitEdit, cancelEdit);
 
 const isMaxLevel = computed(() => levelState.value.current === 90);
 </script>
 
 <template>
-  <div class="student-level-section" :class="{ 'student-level-section-max': isMaxLevel }">
+  <div class="modal-section-card" :class="{ 'student-level-section-max': isMaxLevel }">
     <div class="student-level-row" :class="{ 'student-level-row-max': isMaxLevel }">
       <div class="student-level-progress-pill">
         <span class="student-level-label">LEVEL</span>
@@ -174,13 +160,6 @@ const isMaxLevel = computed(() => levelState.value.current === 90);
   width: 100%;
   max-width: none !important;
   align-self: stretch !important;
-}
-
-.student-level-section {
-  background: var(--card-background);
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid var(--border-color);
 }
 
 .student-level-row {

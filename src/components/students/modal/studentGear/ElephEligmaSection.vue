@@ -66,7 +66,7 @@ const formatValue = (value: number) => {
 </script>
 
 <template>
-  <div class="eleph-eligma-card">
+  <div class="modal-section-card eleph-eligma-card">
     <div class="eleph-grid">
       <div class="eleph-owned-card" @click="forceOwnedInputFocus">
         <div class="eleph-owned-header">
@@ -143,10 +143,6 @@ const formatValue = (value: number) => {
 .eleph-eligma-card {
   width: 100%;
   align-self: stretch;
-  background: var(--card-background);
-  border-radius: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
   box-sizing: border-box;
 }
 
@@ -272,7 +268,7 @@ const formatValue = (value: number) => {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   text-align: center;
-  background-color: var(--input-background, var(--background-primary));
+  background-color: var(--input-color, var(--background-primary));
   color: var(--text-primary);
   font-size: 0.92rem;
   transition: border-color 0.2s ease;

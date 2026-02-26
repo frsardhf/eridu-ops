@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue';
+import { toRef } from 'vue';
 import { useStudentColors } from '@/composables/student/useStudentColors';
 import { useStudentSkillDisplay } from '@/composables/student/useStudentSkillDisplay';
 import { useStudentSkillEnhancements } from '@/composables/student/useStudentSkillEnhancements';
-import { calculateTooltipPosition } from '@/consumables/utils/upgradeUtils';
+import { useTooltip } from '@/composables/student/useTooltip';
+import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';
@@ -56,48 +57,25 @@ const handleMaxTargetSkillsChange = (event: Event) => {
 
 // Handle skill level changes (using props directly, no internal state)
 const updateSkillCurrent = (type: SkillType, value: number) => {
-  const maxLevel = getMaxLevel(type);
-  if (value >= 1 && value <= maxLevel) {
-    const currentTarget = props.skillLevels[type]?.target ?? 1;
-    // Ensure target is always >= current
-    const newTarget = Math.max(value, currentTarget);
-    emit('update-skill', type, value, newTarget);
-  }
+  const result = clampLevelPair(value, props.skillLevels[type]?.target ?? 1, 1, getMaxLevel(type), false);
+  if (result) emit('update-skill', type, result.current, result.target);
 };
 
 const updateSkillTarget = (type: SkillType, value: number) => {
-  const maxLevel = getMaxLevel(type);
-  if (value >= 1 && value <= maxLevel) {
-    const currentLevel = props.skillLevels[type]?.current ?? 1;
-    // Ensure current is always <= target
-    if (currentLevel > value) {
-      emit('update-skill', type, value, value);
-    } else {
-      emit('update-skill', type, currentLevel, value);
-    }
-  }
+  const result = clampLevelPair(value, props.skillLevels[type]?.current ?? 1, 1, getMaxLevel(type), true);
+  if (result) emit('update-skill', type, result.current, result.target);
 };
 
 // Tooltip handling
-const activeTooltip = ref<SkillType | null>(null);
-const tooltipStyle = ref({ top: '0px', left: '0px' });
-
-const showTooltip = (event: MouseEvent, skillType: SkillType) => {
-  tooltipStyle.value = calculateTooltipPosition(event, 250, 100);
-  activeTooltip.value = skillType;
-};
-
-const hideTooltip = () => {
-  activeTooltip.value = null;
-};
+const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<SkillType>(250, 100);
 </script>
 
 <template>
-  <div class="skill-section">
+  <div class="modal-section-card">
     <h3 class="sr-only">{{ $t('skills') }}</h3>
 
-    <div class="skill-options-rail">
-      <div class="skill-toggle-item">
+    <div class="modal-options-rail">
+      <div class="modal-toggle-item">
         <input
           type="checkbox"
           id="max-all-skills"
@@ -107,7 +85,7 @@ const hideTooltip = () => {
         />
         <label for="max-all-skills">{{ $t('maxAllSkills') }}</label>
       </div>
-      <div class="skill-toggle-item">
+      <div class="modal-toggle-item">
         <input
           type="checkbox"
           id="max-target-skills"
@@ -123,7 +101,7 @@ const hideTooltip = () => {
       <div
         v-for="skillType in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]"
         :key="skillType"
-        class="skill-item"
+        class="modal-grid-item"
       >
         <!-- Current Level Control -->
         <div class="level-control">
@@ -306,168 +284,10 @@ const hideTooltip = () => {
 </template>
 
 <style scoped>
-.skill-section {
-  padding: 1rem;
-  background-color: var(--card-background);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-}
-
-.skill-options-rail {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  margin: 0 0 8px 0;
-}
-
-.skill-toggle-item {
-  position: relative;
-}
-
-.skill-toggle-item input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.skill-toggle-item label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  background: var(--background-primary);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s ease;
-}
-
-.skill-toggle-item input[type="checkbox"]:checked + label {
-  border-color: var(--accent-color);
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
-}
-
-.skill-toggle-item input[type="checkbox"]:focus-visible + label {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 1px;
-}
-
 .skill-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.5rem;
-}
-
-.skill-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 8px;
-  background-color: var(--background-primary);
-  padding: 0.5rem;
-}
-
-.level-control {
-  width: 100%;
-}
-
-.custom-number-input {
-  display: flex;
-  align-items: center;
-  background-color: var(--background-primary);
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  height: 36px;
-}
-
-.level-input {
-  flex: 1;
-  height: 100%;
-  padding: 0 0.25rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-primary);
-  text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
-  min-width: 0;
-}
-
-.level-input::-webkit-outer-spin-button,
-.level-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.level-input:focus {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.level-input.max-level {
-  color: var(--accent-color, #4a8af4);
-}
-
-.control-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 36px;
-  border: none;
-  background-color: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: 0;
-  font-size: 1.1rem;
-  transition: background-color 0.2s, color 0.2s;
-  flex-shrink: 0;
-}
-
-.control-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--accent-color, #4a8af4);
-}
-
-.control-button:active {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.control-button.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.control-button.disabled:hover {
-  background-color: transparent;
-  color: var(--text-primary);
-}
-
-.min-button,
-.max-button {
-  font-size: 0.9rem;
-  font-weight: bold;
 }
 
 .skill-icon-container {
@@ -475,53 +295,6 @@ const hideTooltip = () => {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-}
-
-.skill-icon-wrapper {
-  position: relative;
-  width: 72px;
-  height: 72px;
-}
-
-.skill-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.skill-fg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  z-index: 2;
-  padding: 2px;
-  cursor: pointer;
-}
-
-.enhanced-overlay {
-  position: absolute;
-  top: 2px;
-  right: -4px;
-  width: 15px;
-  height: 15px;
-  color: white;
-  font-size: 15px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  z-index: 3;
-  pointer-events: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  line-height: 1;
 }
 
 .ex-toggle-btn {
@@ -564,61 +337,5 @@ const hideTooltip = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.skill-tooltip {
-  position: fixed;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px;
-  min-width: 200px;
-  max-width: 300px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.tooltip-content {
-  font-size: 0.9em;
-  line-height: 1.4;
-  color: var(--text-primary);
-}
-
-.tooltip-name {
-  font-weight: bold;
-  font-size: 1em;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.tooltip-cost {
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.tooltip-desc {
-  white-space: pre-wrap;
-}
-
-@media (max-width: 500px) {
-  .skill-options-rail {
-    width: 100%;
-    justify-content: stretch;
-    gap: 6px;
-  }
-
-  .skill-toggle-item {
-    flex: 1 1 0;
-  }
-
-  .skill-toggle-item label {
-    width: 100%;
-  }
-
-  .control-button {
-    width: 20px;
-  }
 }
 </style>

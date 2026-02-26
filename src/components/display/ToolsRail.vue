@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
 .tools-action-btn {
   min-height: 42px;
   padding: 0 16px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--background-primary);
   color: var(--text-primary);
@@ -258,7 +258,7 @@ onBeforeUnmount(() => {
 
   .tools-rail-trigger {
     min-height: 44px;
-    border-radius: 12px;
+    border-radius: 10px;
   }
 
   .tools-action-btn {

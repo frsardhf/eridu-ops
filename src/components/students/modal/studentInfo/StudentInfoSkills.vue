@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue';
+import { toRef } from 'vue';
 import { useStudentColors } from '@/composables/student/useStudentColors';
 import { useStudentSkillDisplay } from '@/composables/student/useStudentSkillDisplay';
 import { useStudentSkillEnhancements } from '@/composables/student/useStudentSkillEnhancements';
-import { calculateTooltipPosition } from '@/consumables/utils/upgradeUtils';
+import { useTooltip } from '@/composables/student/useTooltip';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';
@@ -36,21 +36,11 @@ const {
 const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 
 // Tooltip state
-const activeTooltip = ref<SkillType | null>(null);
-const tooltipStyle = ref({ top: '0px', left: '0px' });
-
-function showTooltip(event: MouseEvent, skillType: SkillType) {
-  tooltipStyle.value = calculateTooltipPosition(event, 250, 120);
-  activeTooltip.value = skillType;
-}
-
-function hideTooltip() {
-  activeTooltip.value = null;
-}
+const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<SkillType>(250, 120);
 </script>
 
 <template>
-  <div class="info-skills">
+  <div class="modal-section-card">
     <div class="skills-grid">
       <div v-for="skillType in skillOrder" :key="skillType" class="skill-card">
         <div class="skill-card-control">
@@ -145,13 +135,6 @@ function hideTooltip() {
 </template>
 
 <style scoped>
-.info-skills {
-  background: var(--card-background);
-  border-radius: 10px;
-  padding: 0.60rem;
-  border: 1px solid var(--border-color);
-}
-
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -187,94 +170,15 @@ function hideTooltip() {
   visibility: hidden;
 }
 
-/* Skill Icon */
-.skill-icon-wrapper {
-  position: relative;
-  flex-shrink: 0;
-  width: 72px;
-  height: 72px;
-}
-
-.skill-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.skill-fg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  z-index: 2;
-  padding: 2px;
-  cursor: pointer;
-}
-
 img, svg {
   vertical-align: middle;
 }
 
+/* Override enhanced-overlay size for info tab */
 .enhanced-overlay {
-  position: absolute;
-  top: 2px;
-  right: -4px;
   width: 18px;
   height: 18px;
-  color: white;
   font-size: 16px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  z-index: 3;
-  pointer-events: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  line-height: 1;
-}
-
-/* Tooltip */
-.skill-tooltip {
-  position: fixed;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px;
-  min-width: 200px;
-  max-width: 300px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.tooltip-content {
-  font-size: 0.9em;
-  line-height: 1.4;
-  color: var(--text-primary);
-}
-
-.tooltip-name {
-  font-weight: bold;
-  font-size: 1em;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.tooltip-cost {
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.tooltip-desc {
-  white-space: pre-wrap;
 }
 
 /* Skill Level */
@@ -296,7 +200,7 @@ img, svg {
 }
 
 .level-target {
-  color: var(--accent-color, #4a8af4);
+  color: var(--accent-color);
   font-weight: 600;
 }
 

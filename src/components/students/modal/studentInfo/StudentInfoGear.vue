@@ -43,14 +43,14 @@ const {
 </script>
 
 <template>
-  <div class="info-gear-equipment">
+  <div class="modal-section-card">
     <div class="equipment-row">
       <div
         v-for="type in (student?.Equipment as EquipmentType[] || [])"
         :key="type"
         class="equipment-card"
       >
-        <div class="equipment-icon">
+        <div class="modal-item-icon">
           <div class="equipment-type-badge">{{ getEquipmentTypeName(type) }}</div>
           <img
             :src="getEquipmentIconUrl(type, getEquipmentDisplay(type).current)"
@@ -68,7 +68,7 @@ const {
       </div>
 
       <div class="equipment-card" :class="{ 'placeholder-card': !hasExclusiveGear }">
-        <div class="equipment-icon" :class="{ 'placeholder-icon': !hasExclusiveGear }">
+        <div class="modal-item-icon" :class="{ 'placeholder-icon': !hasExclusiveGear }">
           <div class="equipment-type-badge" :class="{ 'placeholder-badge': !hasExclusiveGear }">
             {{ $t('exclusiveGear') }}
           </div>
@@ -109,13 +109,6 @@ const {
 </template>
 
 <style scoped>
-.info-gear-equipment {
-  background: var(--card-background);
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  padding: 0.60rem;
-}
-
 .equipment-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -131,15 +124,8 @@ const {
   position: relative;
 }
 
-.equipment-icon {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--card-background);
-  border-radius: 12px;
-  position: relative;
+/* Extra margin not in shared .modal-item-icon */
+.modal-item-icon {
   margin: 0.5rem 0;
 }
 
@@ -148,7 +134,7 @@ const {
   top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--accent-color, #4a8af4);
+  background-color: var(--accent-color);
   color: white;
   padding: 0.2rem 0.5rem;
   width: max-content;
@@ -157,12 +143,6 @@ const {
   font-weight: 700;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   z-index: 2;
-}
-
-.equipment-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: cover;
 }
 
 .exclusive-gear-image {
@@ -187,7 +167,7 @@ const {
 }
 
 .tier-target {
-  color: var(--accent-color, #4a8af4);
+  color: var(--accent-color);
   font-weight: 700;
 }
 

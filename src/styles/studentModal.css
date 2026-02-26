@@ -255,7 +255,7 @@
   margin: 0;
   font-size: 0.8em;
   text-align: center;
-  background-color: var(--input-color);
+  background-color: var(--input-color, var(--background-primary));
   border: 1px solid var(--border-color);
   border-radius: 3px 0 0 0;
   opacity: 0;
@@ -282,6 +282,286 @@
   gap: 5px;
   padding: 5px;
   border-top: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   Shared Utilities
+   ========================================================================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ==========================================================================
+   Shared Section Card
+   ========================================================================== */
+.modal-section-card {
+  padding: 0.6rem;
+  background-color: var(--card-background);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   Shared Grid Item
+   ========================================================================== */
+.modal-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  padding: 0.5rem;
+}
+
+/* ==========================================================================
+   Shared Item Icon Container (equipment, potential, etc.)
+   ========================================================================== */
+.modal-item-icon {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-background);
+  border-radius: 10px;
+  position: relative;
+}
+
+/* Shared gear/equipment image sizing */
+.equipment-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+/* ==========================================================================
+   Shared Toggle Checkbox Pills
+   ========================================================================== */
+.modal-options-rail {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0 0 8px 0;
+}
+
+.modal-toggle-item {
+  position: relative;
+}
+
+.modal-toggle-item input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-toggle-item label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.modal-toggle-item input[type="checkbox"]:checked + label {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
+}
+
+.modal-toggle-item input[type="checkbox"]:focus-visible + label {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+/* ==========================================================================
+   Shared Number Input Controls
+   ========================================================================== */
+.level-control {
+  width: 100%;
+}
+
+.custom-number-input {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  height: 36px;
+}
+
+.level-input {
+  flex: 1;
+  height: 100%;
+  padding: 0 0.25rem;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  min-width: 0;
+}
+
+.level-input::-webkit-outer-spin-button,
+.level-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.level-input:focus {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.level-input.max-level {
+  color: var(--accent-color);
+}
+
+.control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.1rem;
+  transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.control-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--accent-color);
+}
+
+.control-button:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.control-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-button.disabled:hover {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+
+.min-button,
+.max-button {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   Shared Skill Icon & Tooltip
+   ========================================================================== */
+.skill-icon-wrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.skill-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.skill-fg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  z-index: 2;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.enhanced-overlay {
+  position: absolute;
+  top: 2px;
+  right: -4px;
+  width: 15px;
+  height: 15px;
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1;
+}
+
+.skill-tooltip {
+  position: fixed;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.tooltip-content {
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.tooltip-name {
+  font-weight: bold;
+  font-size: 1em;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tooltip-cost {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.tooltip-desc {
+  white-space: pre-wrap;
 }
 
 /* ==========================================================================
@@ -365,5 +645,24 @@
     flex: 1;
     text-align: center;
   }
+}
 
+@media (max-width: 500px) {
+  .modal-options-rail {
+    width: 100%;
+    justify-content: stretch;
+    gap: 6px;
+  }
+
+  .modal-toggle-item {
+    flex: 1 1 0;
+  }
+
+  .modal-toggle-item label {
+    width: 100%;
+  }
+
+  .control-button {
+    width: 20px;
+  }
 }

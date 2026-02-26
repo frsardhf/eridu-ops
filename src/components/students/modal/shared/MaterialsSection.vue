@@ -59,7 +59,7 @@ const hasMaterials = computed(() => {
 <style scoped>
 .materials-section {
   background: var(--card-background);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 15px;
   border: 1px solid var(--border-color);
 }

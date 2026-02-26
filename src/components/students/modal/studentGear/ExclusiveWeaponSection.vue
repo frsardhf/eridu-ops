@@ -141,22 +141,11 @@ const targetStars = computed(() => {
 
 <style scoped>
 .grade-growth-section {
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   background: var(--card-background);
   width: 100%;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
 }
 
 .grade-indicators {
@@ -167,7 +156,7 @@ const targetStars = computed(() => {
 
 .grade-pill {
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 0.8em;
   font-weight: bold;
 }
@@ -191,7 +180,7 @@ const targetStars = computed(() => {
 .grade-max-pill {
   background: linear-gradient(135deg, rgba(255, 201, 51, 0.32), rgba(51, 200, 255, 0.28));
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 0.8em;
   font-weight: bold;
   letter-spacing: 1px;

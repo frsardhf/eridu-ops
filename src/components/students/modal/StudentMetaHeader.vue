@@ -88,7 +88,7 @@ const levelPillClass = computed(() => ({
   background: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 0.6rem;
   display: flex;
   flex-direction: column;
   gap: 10px;

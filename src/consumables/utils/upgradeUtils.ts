@@ -56,6 +56,57 @@ export function updateTargetLevel(value: number, current: number, minLevel: numb
 }
 
 /**
+ * Creates a keydown handler for number editor inputs.
+ * Blocks invalid keys (e, E, +, -, .) and handles Enter (commit) / Escape (cancel).
+ */
+export function createEditorKeydownHandler(
+  onCommit: () => void,
+  onCancel: () => void
+) {
+  return (event: KeyboardEvent) => {
+    if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+      event.preventDefault();
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      onCommit();
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onCancel();
+    }
+  };
+}
+
+/**
+ * Clamps a current/target level pair, ensuring target >= current.
+ * When isTarget=false, updates current and bumps target up if needed.
+ * When isTarget=true, updates target and pulls current down if needed.
+ */
+export function clampLevelPair(
+  newValue: number,
+  otherValue: number,
+  min: number,
+  max: number,
+  isTarget: boolean
+): { current: number; target: number } | null {
+  if (newValue < min || newValue > max) return null;
+
+  if (isTarget) {
+    return {
+      current: otherValue > newValue ? newValue : otherValue,
+      target: newValue,
+    };
+  } else {
+    return {
+      current: newValue,
+      target: Math.max(newValue, otherValue),
+    };
+  }
+}
+
+/**
  * Calculates tooltip position to avoid going off-screen
  */
 export function calculateTooltipPosition(event: MouseEvent, tooltipWidth: number, tooltipHeight: number) {

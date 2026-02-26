@@ -58,7 +58,7 @@ function handleBackgroundError() {
 <style scoped>
 .student-section {
   position: relative;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   overflow: hidden;
   background: var(--card-background);

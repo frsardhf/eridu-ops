@@ -2,6 +2,7 @@
 import { PotentialType } from '../../../../types/upgrade';
 import { $t } from '../../../../locales';
 import { getLevelDisplayState, isTargetMaxLevel } from '../../../../composables/student/useStudentSkillDisplay';
+import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
 
 const props = defineProps<{
   potentialLevels: Record<PotentialType, { current: number; target: number }>;
@@ -41,24 +42,13 @@ const getPotentialName = (potType: PotentialType): string => {
 
 // Handle potential type changes (using props directly, no internal state)
 const updatePotentialCurrent = (type: PotentialType, value: number) => {
-  if (value >= 0 && value <= MAX_POTENTIAL_LEVEL) {
-    const currentTarget = props.potentialLevels[type]?.target ?? 0;
-    // Ensure target is always >= current
-    const newTarget = Math.max(value, currentTarget);
-    emit('update-potential', type, value, newTarget);
-  }
+  const result = clampLevelPair(value, props.potentialLevels[type]?.target ?? 0, 0, MAX_POTENTIAL_LEVEL, false);
+  if (result) emit('update-potential', type, result.current, result.target);
 };
 
 const updatePotentialTarget = (type: PotentialType, value: number) => {
-  if (value >= 0 && value <= MAX_POTENTIAL_LEVEL) {
-    const currentLevel = props.potentialLevels[type]?.current ?? 0;
-    // Ensure current is always <= target
-    if (currentLevel > value) {
-      emit('update-potential', type, value, value);
-    } else {
-      emit('update-potential', type, currentLevel, value);
-    }
-  }
+  const result = clampLevelPair(value, props.potentialLevels[type]?.current ?? 0, 0, MAX_POTENTIAL_LEVEL, true);
+  if (result) emit('update-potential', type, result.current, result.target);
 };
 
 // Checkbox handlers
@@ -74,11 +64,11 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 </script>
 
 <template>
-  <div class="potential-section">
+  <div class="modal-section-card">
     <h3 class="sr-only">{{ $t('talent') }}</h3>
 
-    <div class="potential-options-rail">
-      <div class="potential-toggle-item">
+    <div class="modal-options-rail">
+      <div class="modal-toggle-item">
         <input
           type="checkbox"
           id="max-all-potentials"
@@ -88,7 +78,7 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
         />
         <label for="max-all-potentials">{{ $t('maxAllPotentials') }}</label>
       </div>
-      <div class="potential-toggle-item">
+      <div class="modal-toggle-item">
         <input
           type="checkbox"
           id="max-target-potentials"
@@ -104,7 +94,7 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
       <div
         v-for="potType in ['attack', 'maxhp', 'healpower'] as PotentialType[]"
         :key="potType"
-        class="potential-item"
+        class="modal-grid-item"
       >
         <!-- Current Level Control -->
         <div class="level-control">
@@ -160,7 +150,7 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 
         <!-- Potential Icon -->
         <div class="potential-icon-container">
-          <div class="potential-icon">
+          <div class="modal-item-icon">
             <img
               :src="`https://schaledb.com/images/item/icon/${getPotentialIcon(potType)}.webp`"
               :alt="getPotentialName(potType)"
@@ -230,168 +220,10 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 </template>
 
 <style scoped>
-.potential-section {
-  padding: 1rem;
-  background-color: var(--card-background);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-}
-
-.potential-options-rail {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  margin: 0 0 8px 0;
-}
-
-.potential-toggle-item {
-  position: relative;
-}
-
-.potential-toggle-item input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.potential-toggle-item label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  background: var(--background-primary);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s ease;
-}
-
-.potential-toggle-item input[type="checkbox"]:checked + label {
-  border-color: var(--accent-color);
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
-}
-
-.potential-toggle-item input[type="checkbox"]:focus-visible + label {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 1px;
-}
-
 .potential-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-}
-
-.potential-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 8px;
-  background-color: var(--background-primary);
-  padding: 0.5rem;
-}
-
-.level-control {
-  width: 100%;
-}
-
-.custom-number-input {
-  display: flex;
-  align-items: center;
-  background-color: var(--background-primary);
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  height: 36px;
-}
-
-.level-input {
-  flex: 1;
-  height: 100%;
-  padding: 0 0.25rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-primary);
-  text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
-  min-width: 0;
-}
-
-.level-input::-webkit-outer-spin-button,
-.level-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.level-input:focus {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.level-input.max-level {
-  color: var(--accent-color, #4a8af4);
-}
-
-.control-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 36px;
-  border: none;
-  background-color: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: 0;
-  font-size: 1.1rem;
-  transition: background-color 0.2s, color 0.2s;
-  flex-shrink: 0;
-}
-
-.control-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--accent-color, #4a8af4);
-}
-
-.control-button:active {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.control-button.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.control-button.disabled:hover {
-  background-color: transparent;
-  color: var(--text-primary);
-}
-
-.min-button,
-.max-button {
-  font-size: 0.9rem;
-  font-weight: bold;
 }
 
 .potential-icon-container {
@@ -399,16 +231,6 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-}
-
-.potential-icon {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--card-background);
-  border-radius: 12px;
 }
 
 .potential-image {
@@ -424,26 +246,8 @@ const handleMaxTargetPotentialsChange = (event: Event) => {
 }
 
 @media (max-width: 500px) {
-  .potential-options-rail {
-    width: 100%;
-    justify-content: stretch;
-    gap: 6px;
-  }
-
-  .potential-toggle-item {
-    flex: 1 1 0;
-  }
-
-  .potential-toggle-item label {
-    width: 100%;
-  }
-
   .potential-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .control-button {
-    width: 20px;
   }
 }
 

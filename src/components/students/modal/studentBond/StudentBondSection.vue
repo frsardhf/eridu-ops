@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
+import { createEditorKeydownHandler } from '@/consumables/utils/upgradeUtils';
 import { $t } from '../../../../locales';
 
 const props = defineProps<{
@@ -57,27 +58,11 @@ const cancelBondEdit = () => {
   editBondValue.value = bondState.value.toString();
 };
 
-// Prevent invalid characters (e, +, -, .)
-const handleEditorKeydown = (event: KeyboardEvent) => {
-  if (['e', 'E', '+', '-', '.'].includes(event.key)) {
-    event.preventDefault();
-    return;
-  }
-
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    commitBondEdit();
-  }
-
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    cancelBondEdit();
-  }
-};
+const handleEditorKeydown = createEditorKeydownHandler(commitBondEdit, cancelBondEdit);
 </script>
 
 <template>
-  <div class="bond-section" :class="{ 'bond-section-max': isMaxBond }">
+  <div class="modal-section-card bond-section" :class="{ 'bond-section-max': isMaxBond }">
     <div class="bond-summary-row">
       <div v-if="!isMaxBond" class="bond-progress-pill">
         <div class="bond-progress-track">
@@ -172,10 +157,6 @@ const handleEditorKeydown = (event: KeyboardEvent) => {
 
 <style scoped>
 .bond-section {
-  background: var(--card-background);
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { adjustTooltipPosition } from '../../../../consumables/utils/materialUtils';
+import { useTooltip } from '@/composables/student/useTooltip';
 import { $t } from '../../../../locales';
 
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 
 // Tooltip state
-const hoveredTooltipType = ref<'convert' | 'autofill' | 'reset' | 'undo' | null>(null);
-const tooltipPosition = ref({ x: 0, y: 0 });
+const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } =
+  useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>(250, 120);
 
 function handleConvert() {
   emit('toggle-convert');
@@ -24,31 +23,10 @@ function handleReset() {
 function handleUndo() {
   emit('undo-changes');
 }
-
-// Function to show tooltip
-function showTooltip(event: MouseEvent, type: 'convert' | 'autofill' | 'reset' | 'undo') {
-  hoveredTooltipType.value = type;
-  
-  // Set initial position
-  tooltipPosition.value = adjustTooltipPosition(event);
-  
-  // Adjust tooltip position after it's rendered
-  setTimeout(() => {
-    const tooltip = document.querySelector('.gift-tooltip') as HTMLElement;
-    if (tooltip) {
-      tooltipPosition.value = adjustTooltipPosition(event, tooltip);
-    }
-  }, 0);
-}
-
-// Function to hide tooltip
-function hideTooltip() {
-  hoveredTooltipType.value = null;
-}
 </script>
 
 <template>
-  <div class="convert-box-section">
+  <div class="modal-section-card">
     <div class="options-container">
       <div class="button-group">
         <button
@@ -97,24 +75,21 @@ function hideTooltip() {
       </div>
       
       <!-- Tooltip for all buttons -->
-      <div 
-        v-if="hoveredTooltipType !== null" 
+      <div
+        v-if="activeTooltip !== null"
         class="gift-tooltip"
-        :style="{ 
-          left: `${tooltipPosition.x}px`, 
-          top: `${tooltipPosition.y}px`
-        }"
+        :style="tooltipStyle"
       >
-        <template v-if="hoveredTooltipType === 'convert'">
+        <template v-if="activeTooltip === 'convert'">
           {{ $t('convertGiftBoxTooltip') }}
         </template>
-        <template v-else-if="hoveredTooltipType === 'autofill'">
+        <template v-else-if="activeTooltip === 'autofill'">
           {{ $t('autoFillGiftsTooltip') }}
         </template>
-        <template v-else-if="hoveredTooltipType === 'reset'">
+        <template v-else-if="activeTooltip === 'reset'">
           {{ $t('resetGiftsTooltip') }}
         </template>
-        <template v-else-if="hoveredTooltipType === 'undo'">
+        <template v-else-if="activeTooltip === 'undo'">
           {{ $t('undoChangesTooltip') }}
         </template>
       </div>
@@ -123,14 +98,6 @@ function hideTooltip() {
 </template>
 
 <style scoped>
-.convert-box-section {
-  background: var(--card-background);
-  border-radius: 8px;
-  padding: 12px 15px;
-  border: 1px solid var(--border-color);
-  width: 100%;
-}
-
 .options-container {
   display: flex;
   flex-wrap: wrap;
@@ -151,7 +118,7 @@ function hideTooltip() {
 .button {
   position: relative;
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.9em;
   cursor: pointer;
   border: 1px solid transparent;
@@ -199,14 +166,14 @@ function hideTooltip() {
 .gift-tooltip {
   position: fixed;
   z-index: 1000;
-  background: rgba(12, 12, 20, 0.92);
+  background: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   pointer-events: none;
   backdrop-filter: blur(5px);
-  color: white;
+  color: var(--text-primary);
   text-align: left;
   font-size: 0.8em;
   width: max-content;
