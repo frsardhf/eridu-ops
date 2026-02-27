@@ -50,7 +50,7 @@ const levelPillClass = computed(() => ({
             <span class="bond-number-inline">{{ currentBond }}</span>
           </div>
           <div class="level-content">
-            <span class="level-label">LEVEL</span>
+            <span class="level-label">{{ $t('level') }}</span>
             <span class="level-number">{{ characterLevels.current }}</span>
             <template v-if="showLevelArrow">
               <span class="level-arrow">→</span>

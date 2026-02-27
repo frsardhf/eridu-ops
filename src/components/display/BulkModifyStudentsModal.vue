@@ -218,15 +218,11 @@ function parseOptionalInt(value: string, min: number, max: number): number | nul
 
 function getAvailabilityLabel(filter: AvailabilityFilter): string {
   switch (filter) {
-    case 'fest':
-      return 'Fest';
-    case 'unique':
-      return 'Unique';
-    case 'event':
-      return 'Event';
+    case 'fest':   return $t('bulkModify.availability.fest');
+    case 'unique': return $t('bulkModify.availability.unique');
+    case 'event':  return $t('bulkModify.availability.event');
     case 'regular':
-    default:
-      return 'Regular';
+    default:       return $t('bulkModify.availability.regular');
   }
 }
 
@@ -306,7 +302,7 @@ async function submitBulkModify() {
   <div class="bulk-modal-backdrop" @click="closeIfBackdrop">
     <div class="bulk-modal">
       <div class="bulk-modal-header">
-        <h2 class="bulk-modal-title">Bulk Modify Students</h2>
+        <h2 class="bulk-modal-title">{{ $t('bulkModify.title') }}</h2>
         <button class="bulk-close-btn" type="button" @click="emit('close')" :aria-label="$t('close')">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
             <path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12 5.7 16.89a1 1 0 0 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.88a1 1 0 0 0 0-1.41Z"/>
@@ -317,13 +313,13 @@ async function submitBulkModify() {
       <div class="bulk-modal-content">
         <section class="bulk-section">
           <div class="selection-header">
-            <h3 class="section-title">Student Selection</h3>
-            <span class="selection-count">Selected: {{ selectedCount }} / {{ totalStudentsCount }}</span>
+            <h3 class="section-title">{{ $t('bulkModify.studentSelection') }}</h3>
+            <span class="selection-count">{{ $t('bulkModify.selected') }}: {{ selectedCount }} / {{ totalStudentsCount }}</span>
           </div>
 
           <div class="filters-grid">
             <div class="filter-type">
-              <span class="filter-label">Base Grade</span>
+              <span class="filter-label">{{ $t('bulkModify.filters.baseGrade') }}</span>
               <div class="filter-pills-wrap">
                 <button
                   v-for="star in [1, 2, 3]"
@@ -339,7 +335,7 @@ async function submitBulkModify() {
             </div>
 
             <div class="filter-type">
-              <span class="filter-label">Availability</span>
+              <span class="filter-label">{{ $t('bulkModify.filters.availability') }}</span>
               <div class="filter-pills-wrap">
                 <button
                   v-for="filter in ['fest', 'unique', 'regular', 'event']"
@@ -355,7 +351,7 @@ async function submitBulkModify() {
             </div>
 
             <div class="filter-type">
-              <span class="filter-label">Char Level</span>
+              <span class="filter-label">{{ $t('bulkModify.filters.charLevel') }}</span>
               <div class="filter-pills-wrap">
                 <input
                   v-model="characterLevelFilter"
@@ -369,7 +365,7 @@ async function submitBulkModify() {
             </div>
 
             <div class="filter-type">
-              <span class="filter-label">Form Status</span>
+              <span class="filter-label">{{ $t('bulkModify.filters.formStatus') }}</span>
               <div class="filter-pills-wrap">
                 <button
                   type="button"
@@ -377,34 +373,10 @@ async function submitBulkModify() {
                   :class="{ active: showUnfilledOnly }"
                   @click="showUnfilledOnly = !showUnfilledOnly"
                 >
-                  Unfilled Only
+                  {{ $t('bulkModify.filters.unfilledOnly') }}
                 </button>
               </div>
             </div>
-          </div>
-
-          <div class="filter-row">
-            <span class="filter-label">Char Level</span>
-            <input
-              v-model="characterLevelFilter"
-              type="number"
-              class="filter-number-input"
-              min="1"
-              max="90"
-              placeholder="1-90"
-            />
-          </div>
-
-          <div class="filter-row">
-            <span class="filter-label">Form Status</span>
-            <button
-              type="button"
-              class="filter-pill"
-              :class="{ active: showUnfilledOnly }"
-              @click="showUnfilledOnly = !showUnfilledOnly"
-            >
-              Unfilled Only
-            </button>
           </div>
 
           <label class="select-all-row">
@@ -414,8 +386,8 @@ async function submitBulkModify() {
               :checked="isAllFilteredSelected"
               @change="toggleAllFilteredSelection(($event.target as HTMLInputElement).checked)"
             />
-            <span>Select all filtered students</span>
-            <span class="visible-count">Visible: {{ filteredStudents.length }}</span>
+            <span>{{ $t('bulkModify.selectAllFiltered') }}</span>
+            <span class="visible-count">{{ $t('bulkModify.visible') }}: {{ filteredStudents.length }}</span>
           </label>
 
           <div class="student-selection-grid">
@@ -442,20 +414,18 @@ async function submitBulkModify() {
 
         <section class="bulk-section">
           <div class="form-section-header">
-            <h3 class="section-title">Form Inputs</h3>
+            <h3 class="section-title">{{ $t('bulkModify.formInputs') }}</h3>
             <label class="target-toggle">
               <input type="checkbox" v-model="enableTargets" />
-              <span>Set separate targets</span>
+              <span>{{ $t('bulkModify.setSeparateTargets') }}</span>
             </label>
           </div>
-          <p class="section-note">
-            Leave empty to keep existing value. For students without form data, defaults are used.
-          </p>
+          <p class="section-note">{{ $t('bulkModify.formNote') }}</p>
 
           <div class="form-grid">
             <!-- Bond -->
             <div class="field-group">
-              <span class="field-label">Bond</span>
+              <span class="field-label">{{ $t('bulkModify.fields.bond') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.bond" type="number" min="1" max="100" placeholder="1-100" />
               </div>
@@ -463,7 +433,7 @@ async function submitBulkModify() {
 
             <!-- Character Level -->
             <div class="field-group">
-              <span class="field-label">Character Level</span>
+              <span class="field-label">{{ $t('bulkModify.fields.characterLevel') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.characterLevel" type="number" min="1" max="90" placeholder="1-90" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -481,7 +451,7 @@ async function submitBulkModify() {
 
             <!-- EX Skill -->
             <div class="field-group">
-              <span class="field-label">EX Skill</span>
+              <span class="field-label">{{ $t('bulkModify.fields.skillEx') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.skillEx" type="number" min="1" max="5" placeholder="1-5" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -499,7 +469,7 @@ async function submitBulkModify() {
 
             <!-- Basic Skill -->
             <div class="field-group">
-              <span class="field-label">Basic Skill</span>
+              <span class="field-label">{{ $t('bulkModify.fields.skillPublic') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.skillPublic" type="number" min="1" max="10" placeholder="1-10" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -517,7 +487,7 @@ async function submitBulkModify() {
 
             <!-- Enhanced Skill -->
             <div class="field-group">
-              <span class="field-label">Enhanced Skill</span>
+              <span class="field-label">{{ $t('bulkModify.fields.skillPassive') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.skillPassive" type="number" min="1" max="10" placeholder="1-10" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -535,7 +505,7 @@ async function submitBulkModify() {
 
             <!-- Sub Skill -->
             <div class="field-group">
-              <span class="field-label">Sub Skill</span>
+              <span class="field-label">{{ $t('bulkModify.fields.skillExtraPassive') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.skillExtraPassive" type="number" min="1" max="10" placeholder="1-10" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -553,7 +523,7 @@ async function submitBulkModify() {
 
             <!-- Equipment Slot 1 -->
             <div class="field-group">
-              <span class="field-label">Equipment Slot 1</span>
+              <span class="field-label">{{ $t('bulkModify.fields.equipmentSlot1') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.equipmentTierSlot1" type="number" min="1" max="10" placeholder="1-10" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -571,7 +541,7 @@ async function submitBulkModify() {
 
             <!-- Equipment Slot 2 -->
             <div class="field-group">
-              <span class="field-label">Equipment Slot 2</span>
+              <span class="field-label">{{ $t('bulkModify.fields.equipmentSlot2') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.equipmentTierSlot2" type="number" min="1" max="10" placeholder="1-10" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -589,7 +559,7 @@ async function submitBulkModify() {
 
             <!-- Equipment Slot 3 -->
             <div class="field-group">
-              <span class="field-label">Equipment Slot 3</span>
+              <span class="field-label">{{ $t('bulkModify.fields.equipmentSlot3') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.equipmentTierSlot3" type="number" min="1" max="10" placeholder="1-10" />
                 <span v-if="enableTargets" class="field-arrow">→</span>
@@ -607,7 +577,7 @@ async function submitBulkModify() {
 
             <!-- Grade Level -->
             <div class="field-group">
-              <span class="field-label">Grade Level</span>
+              <span class="field-label">{{ $t('bulkModify.fields.gradeLevel') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.gradeLevel" type="number" min="1" max="9" placeholder="1-9" />
                 <span v-if="gradeStarDisplay" class="grade-star-badge" :class="{ gold: gradeStarDisplay.isGold, blue: !gradeStarDisplay.isGold }">
@@ -621,7 +591,7 @@ async function submitBulkModify() {
 
             <!-- Potential Level -->
             <div class="field-group">
-              <span class="field-label">Potential Level</span>
+              <span class="field-label">{{ $t('bulkModify.fields.potentialLevel') }}</span>
               <div class="field-inputs">
                 <input v-model="fieldValues.potentialLevel" type="number" min="0" max="25" placeholder="0-25" />
               </div>
@@ -632,7 +602,7 @@ async function submitBulkModify() {
 
       <div class="bulk-modal-footer">
         <p v-if="overwriteCount > 0" class="overwrite-warning">
-          Warning: {{ overwriteCount }} selected students already have non-default saved form data. Filled fields will replace those values.
+          {{ $t('bulkModify.overwriteWarningPrefix') }}{{ overwriteCount }}{{ $t('bulkModify.overwriteWarningSuffix') }}
         </p>
 
         <div class="footer-actions">
@@ -645,7 +615,7 @@ async function submitBulkModify() {
             :disabled="isSubmitDisabled"
             @click="submitBulkModify"
           >
-            {{ isSubmitting ? 'Applying...' : 'Apply Bulk Update' }}
+            {{ isSubmitting ? $t('bulkModify.applying') : $t('bulkModify.apply') }}
           </button>
         </div>
       </div>

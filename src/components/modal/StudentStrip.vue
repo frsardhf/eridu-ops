@@ -83,10 +83,10 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
           @keydown.stop
         />
         <div class="strip-nav-arrows">
-          <button class="strip-arrow" @click="emit('navigate-prev')" title="Previous">
+          <button class="strip-arrow" @click="emit('navigate-prev')" :title="$t('previous')">
             &#10094;
           </button>
-          <button class="strip-arrow" @click="emit('navigate-next')" title="Next">
+          <button class="strip-arrow" @click="emit('navigate-next')" :title="$t('next')">
             &#10095;
           </button>
         </div>

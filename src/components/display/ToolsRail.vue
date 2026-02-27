@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { $t } from '@/locales';
 
 const isExpanded = ref(false);
 const railRef = ref<HTMLElement | null>(null);
@@ -69,7 +70,7 @@ onBeforeUnmount(() => {
             d="M3 6a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm0 6a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm0 6a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Zm15-11h3v3h-3V7Zm0 7h3v3h-3v-3Z"
           />
         </svg>
-        <span class="trigger-title">Tools</span>
+        <span class="trigger-title">{{ $t('tools') }}</span>
       </span>
 
       <span class="trigger-right">
@@ -92,7 +93,7 @@ onBeforeUnmount(() => {
         type="button"
         @click="emit('open-bulk-modify')"
       >
-        Bulk Modify Students
+        {{ $t('bulkModify.title') }}
       </button>
     </div>
   </section>

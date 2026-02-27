@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { $t } from '@/locales';
+
 const emit = defineEmits(['close']);
 
 function closeModal(event: MouseEvent) {
@@ -12,8 +14,8 @@ function closeModal(event: MouseEvent) {
   <div class="modal-backdrop" @click="closeModal">
     <div class="modal-container">
       <div class="modal-header">
-        <h2 class="modal-title">Credits</h2>
-        <button class="close-button" @click="emit('close')" aria-label="Close">
+        <h2 class="modal-title">{{ $t('credits') }}</h2>
+        <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -23,29 +25,21 @@ function closeModal(event: MouseEvent) {
       
       <div class="modal-content">
         <div class="credits-section">
-          <h3>Data Sources</h3>
-          <p>The data used in this application is sourced from:</p>
+          <h3>{{ $t('creditsModal.dataSources') }}</h3>
+          <p>{{ $t('creditsModal.dataSourcesBody') }}</p>
           <ul>
             <li><a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a></li>
           </ul>
         </div>
 
         <div class="credits-section">
-          <h3>Translations</h3>
-          <p>
-            English translations of skills are provided by Lonqie and are used with permission.
-            Please note that translations in other languages may be contributed by other translators
-            and are not free to use in other projects without explicit permission.
-          </p>
+          <h3>{{ $t('creditsModal.translationsHeader') }}</h3>
+          <p>{{ $t('creditsModal.translationsBody') }}</p>
         </div>
 
         <div class="credits-section">
-          <h3>Acknowledgements</h3>
-          <p>
-            Special thanks to the SchaleDB team and Lonqie for their incredible work
-            in maintaining comprehensive Blue Archive data resources that make applications
-            like this possible.
-          </p>
+          <h3>{{ $t('creditsModal.acknowledgements') }}</h3>
+          <p>{{ $t('creditsModal.acknowledgementsBody') }}</p>
         </div>
       </div>
     </div>

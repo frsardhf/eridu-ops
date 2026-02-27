@@ -184,7 +184,71 @@ export const translations = {
     close: "Close",
     update: "Update",
     confirm: "Confirm",
-    cancel: "Cancel"
+    cancel: "Cancel",
+
+    // Navigation
+    previous: "Previous",
+    next: "Next",
+
+    // Tools rail
+    tools: "Tools",
+
+    // Contact modal
+    contactModal: {
+      body: "If you have any inquiries or want to report bugs, you can contact me on Discord:",
+    },
+
+    // Credits modal
+    creditsModal: {
+      dataSources: "Data Sources",
+      dataSourcesBody: "The data used in this application is sourced from:",
+      translationsHeader: "Translations",
+      translationsBody: "English translations of skills are provided by Lonqie and are used with permission. Please note that translations in other languages may be contributed by other translators and are not free to use in other projects without explicit permission.",
+      acknowledgements: "Acknowledgements",
+      acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
+    },
+
+    // Bulk Modify Students modal
+    bulkModify: {
+      title: "Bulk Modify Students",
+      studentSelection: "Student Selection",
+      selected: "Selected",
+      filters: {
+        baseGrade: "Base Grade",
+        availability: "Availability",
+        charLevel: "Char Level",
+        formStatus: "Form Status",
+        unfilledOnly: "Unfilled Only",
+      },
+      availability: {
+        fest: "Fest",
+        unique: "Unique",
+        event: "Event",
+        regular: "Regular",
+      },
+      selectAllFiltered: "Select all filtered students",
+      visible: "Visible",
+      formInputs: "Form Inputs",
+      setSeparateTargets: "Set separate targets",
+      formNote: "Leave empty to keep existing value. For students without form data, defaults are used.",
+      fields: {
+        bond: "Bond",
+        characterLevel: "Character Level",
+        skillEx: "EX Skill",
+        skillPublic: "Basic Skill",
+        skillPassive: "Enhanced Skill",
+        skillExtraPassive: "Sub Skill",
+        equipmentSlot1: "Equipment Slot 1",
+        equipmentSlot2: "Equipment Slot 2",
+        equipmentSlot3: "Equipment Slot 3",
+        gradeLevel: "Grade Level",
+        potentialLevel: "Potential Level",
+      },
+      overwriteWarningPrefix: "Warning: ",
+      overwriteWarningSuffix: " selected students already have non-default saved form data. Filled fields will replace those values.",
+      applying: "Applying...",
+      apply: "Apply Bulk Update",
+    },
   },
   jp: {
     // Navbar
@@ -367,7 +431,71 @@ export const translations = {
     close: "閉じる",
     update: "更新",
     confirm: "確認",
-    cancel: "キャンセル"
+    cancel: "キャンセル",
+
+    // Navigation
+    previous: "前へ",
+    next: "次へ",
+
+    // Tools rail
+    tools: "ツール",
+
+    // Contact modal
+    contactModal: {
+      body: "ご質問やバグの報告はDiscordでお問い合わせください：",
+    },
+
+    // Credits modal
+    creditsModal: {
+      dataSources: "データソース",
+      dataSourcesBody: "このアプリケーションで使用されているデータは以下を元にしています：",
+      translationsHeader: "翻訳",
+      translationsBody: "English translations of skills are provided by Lonqie and are used with permission. Please note that translations in other languages may be contributed by other translators and are not free to use in other projects without explicit permission.",
+      acknowledgements: "謝辞",
+      acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
+    },
+
+    // Bulk Modify Students modal
+    bulkModify: {
+      title: "生徒の一括変更",
+      studentSelection: "生徒選択",
+      selected: "選択済み",
+      filters: {
+        baseGrade: "初期星級",
+        availability: "入手方法",
+        charLevel: "キャラLv",
+        formStatus: "設定状態",
+        unfilledOnly: "未設定のみ",
+      },
+      availability: {
+        fest: "フェス",
+        unique: "固定",
+        event: "イベント",
+        regular: "通常",
+      },
+      selectAllFiltered: "フィルタした生徒を全選択",
+      visible: "表示数",
+      formInputs: "入力フォーム",
+      setSeparateTargets: "目標を個別に設定",
+      formNote: "空欄の項目は既存の値を保持します。データのない生徒にはデフォルト値が使用されます。",
+      fields: {
+        bond: "絆",
+        characterLevel: "キャラクターレベル",
+        skillEx: "EXスキル",
+        skillPublic: "通常スキル",
+        skillPassive: "パッシブスキル",
+        skillExtraPassive: "サブスキル",
+        equipmentSlot1: "装備スロット1",
+        equipmentSlot2: "装備スロット2",
+        equipmentSlot3: "装備スロット3",
+        gradeLevel: "星級",
+        potentialLevel: "ポテンシャルレベル",
+      },
+      overwriteWarningPrefix: "警告：",
+      overwriteWarningSuffix: "人の生徒にデフォルト以外の保存済みフォームデータがあります。入力されたフィールドはそれらの値を上書きします。",
+      applying: "適用中...",
+      apply: "一括変更を適用",
+    },
   }
 };
 
