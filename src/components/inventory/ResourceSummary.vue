@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Material } from '@/types/upgrade';
 import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
 import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
@@ -21,6 +21,18 @@ import '@/styles/resourceDisplay.css';
 // Define view options - 3 main tabs
 type ViewTab = 'materials' | 'equipment' | 'gifts';
 type ViewMode = 'needed' | 'missing';
+
+const props = withDefaults(defineProps<{
+  activeTabExternal?: ViewTab | null;
+  activeModeExternal?: ViewMode | null;
+  showCategoryTabs?: boolean;
+  showModeTabs?: boolean;
+}>(), {
+  activeTabExternal: null,
+  activeModeExternal: null,
+  showCategoryTabs: true,
+  showModeTabs: true
+});
 
 // Define types for material items with remaining property
 interface MaterialWithRemaining extends Material {
@@ -249,12 +261,32 @@ const setMode = (mode: ViewMode) => {
   activeMode.value = mode;
   clearHoverState();
 };
+
+watch(
+  () => props.activeTabExternal,
+  (tab) => {
+    if (!tab || tab === activeTab.value) return;
+    clearHoverState();
+    activeTab.value = tab;
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.activeModeExternal,
+  (mode) => {
+    if (!mode || mode === activeMode.value) return;
+    clearHoverState();
+    activeMode.value = mode;
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <div class="resource-summary">
     <div class="summary-toolbar">
-      <div class="view-segmented" role="tablist" aria-label="Summary category">
+      <div v-if="showCategoryTabs" class="view-segmented" role="tablist" aria-label="Summary category">
         <button
           type="button"
           class="view-segment-btn"
@@ -281,9 +313,9 @@ const setMode = (mode: ViewMode) => {
         </button>
       </div>
 
-      <span class="toolbar-divider" aria-hidden="true"></span>
+      <span v-if="showCategoryTabs" class="toolbar-divider" aria-hidden="true"></span>
 
-      <div class="mode-segmented" role="tablist" aria-label="Summary mode">
+      <div v-if="showModeTabs" class="mode-segmented" role="tablist" aria-label="Summary mode">
         <button
           type="button"
           class="mode-segment-btn"
@@ -541,13 +573,10 @@ const setMode = (mode: ViewMode) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 10px;
-  padding: 4px 2px 10px;
   position: sticky;
   top: 0;
   z-index: 4;
   background: var(--background-secondary);
-  border-bottom: 1px solid var(--border-color);
 }
 
 .view-segmented,

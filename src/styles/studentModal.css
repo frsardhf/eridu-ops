@@ -91,8 +91,7 @@
    Layout Structure
    ========================================================================== */
 .fullscreen-modal {
-  --student-modal-gap: 8px;
-  --student-modal-gap-bond: 2px;
+  --student-modal-gap: 10px;
   --student-modal-hero-width: clamp(280px, 40vw, 430px);
   --student-modal-hero-height: 85vh;
 }
@@ -128,8 +127,7 @@
 
 /* Info tab: distribute free vertical space automatically */
 .right-column--distributed {
-  gap: 0;
-  justify-content: space-between;
+  gap: var(--student-modal-gap);
 }
 
 .tab-pane-scroll {
@@ -155,7 +153,6 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 2px;
-  padding-top: 8px;
 }
 
 .right-column--gear {
@@ -170,20 +167,19 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 2px;
-  padding-top: 8px;
 }
 
 .right-column--bond {
   height: var(--student-modal-hero-height);
   min-height: var(--student-modal-hero-height);
   justify-content: flex-start;
-  gap: var(--student-modal-gap-bond);
+  gap: var(--student-modal-gap);
 }
 
 .bond-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--student-modal-gap-bond);
+  gap: var(--student-modal-gap);
   min-height: 0;
 }
 
@@ -195,7 +191,7 @@
 .bond-top-row {
   display: grid;
   grid-template-columns: minmax(320px, 3fr) minmax(260px, 2fr);
-  gap: var(--student-modal-gap-bond);
+  gap: var(--student-modal-gap);
   align-items: stretch;
 }
 
