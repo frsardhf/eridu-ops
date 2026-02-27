@@ -107,33 +107,6 @@ export function clampLevelPair(
 }
 
 /**
- * Calculates tooltip position to avoid going off-screen
- */
-export function calculateTooltipPosition(event: MouseEvent, tooltipWidth: number, tooltipHeight: number) {
-  const rect = (event.target as HTMLElement).getBoundingClientRect();
-  
-  // Calculate position
-  let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-  let top = rect.top - tooltipHeight - 10; // 10px gap
-  
-  // Adjust if tooltip would go off screen
-  if (left < 0) left = 0;
-  if (left + tooltipWidth > window.innerWidth) {
-    left = window.innerWidth - tooltipWidth;
-  }
-  
-  // If tooltip would go off top of screen, show below instead
-  if (top < 0) {
-    top = rect.bottom + 10;
-  }
-  
-  return {
-    top: `${top}px`,
-    left: `${left}px`
-  };
-}
-
-/**
  * Formats value display with current/target highlighting
  */
 export function formatValueWithTarget(currentValue: number, targetValue: number) {

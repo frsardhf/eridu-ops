@@ -4,9 +4,9 @@ import { $t } from '@/locales';
 
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 
-// Tooltip state
-const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } =
-  useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>(250, 120);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>();
 
 function handleConvert() {
   emit('toggle-convert');
@@ -32,7 +32,7 @@ function handleUndo() {
         <button
           class="button button-convert"
           @click="handleConvert"
-          @mousemove="showTooltip($event, 'convert')"
+          @mouseenter="showTooltip($event, 'convert')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('convertGiftBox')"
           :title="$t('convertGiftBox')"
@@ -43,7 +43,7 @@ function handleUndo() {
         <button
           class="button button-primary"
           @click="handleAutoFill"
-          @mousemove="showTooltip($event, 'autofill')"
+          @mouseenter="showTooltip($event, 'autofill')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('autoFillGifts')"
           :title="$t('autoFillGifts')"
@@ -54,7 +54,7 @@ function handleUndo() {
         <button
           class="button button-secondary"
           @click="handleReset"
-          @mousemove="showTooltip($event, 'reset')"
+          @mouseenter="showTooltip($event, 'reset')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('resetGifts')"
           :title="$t('resetGifts')"
@@ -65,7 +65,7 @@ function handleUndo() {
         <button
           class="button button-secondary"
           @click="handleUndo"
-          @mousemove="showTooltip($event, 'undo')"
+          @mouseenter="showTooltip($event, 'undo')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('undoChanges')"
           :title="$t('undoChanges')"
@@ -77,7 +77,8 @@ function handleUndo() {
       <!-- Tooltip for all buttons -->
       <div
         v-if="activeTooltip !== null"
-        class="gift-tooltip"
+        ref="tooltipRef"
+        class="modal-tooltip"
         :style="tooltipStyle"
       >
         <template v-if="activeTooltip === 'convert'">
@@ -162,21 +163,5 @@ function handleUndo() {
   opacity: 0.8;
 }
 
-/* Tooltip styles */
-.gift-tooltip {
-  position: fixed;
-  z-index: 1000;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  backdrop-filter: blur(5px);
-  color: var(--text-primary);
-  text-align: left;
-  font-size: 0.8em;
-  width: max-content;
-  max-width: 250px;
-}
+
 </style>

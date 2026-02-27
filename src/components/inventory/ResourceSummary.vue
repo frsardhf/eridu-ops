@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Material } from '@/types/upgrade';
-import { EquipmentType } from '@/types/gear';
 import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
 import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
 import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
@@ -9,12 +8,13 @@ import { getAllItemsFromCache, getAllEquipmentFromCache } from '@/consumables/st
 import {
   formatLargeNumber,
   formatLargeNumberAmount,
-  adjustTooltipPosition,
   isExpReport,
   isExpBall,
   getMaterialName,
   getMaterialIconSrc
 } from '@/consumables/utils/materialUtils';
+import { formatUsageQuantity } from '@/consumables/utils/tooltipUtils';
+import { useResourceTooltip } from '@/composables/useResourceTooltip';
 import { $t } from '@/locales';
 import '@/styles/resourceDisplay.css';
 
@@ -27,54 +27,32 @@ interface MaterialWithRemaining extends Material {
   remaining: number;
 }
 
-// Define type for student usage data
-interface StudentUsage {
-  student: { Id: number; Name: string; [key: string]: any };
-  quantity: number;
-  equipmentTypes?: EquipmentType[];
-}
-
 // UI state
 const activeTab = ref<ViewTab>('materials');
 const activeMode = ref<ViewMode>('needed');
 
-const { 
-  totalMaterialsNeeded, 
-  materialsLeftover, 
-  getMaterialUsageByStudents,
-  calculateExpNeeds 
+const {
+  totalMaterialsNeeded,
+  calculateExpNeeds
 } = useMaterialCalculation();
 
-// Get equipment resource data
 const {
   totalEquipmentsNeeded,
-  equipmentsLeftover,
-  getEquipmentUsageByStudents,
   calculateExpNeeds: calculateEquipmentExpNeeds
 } = useGearCalculation();
 
-// Get gift resource data (Student → Gifts pattern)
+const { getStudentsWithGifts } = useGiftCalculation();
+
 const {
-  getStudentsWithGifts,
-  getGiftsForStudent
-} = useGiftCalculation();
-
-// Track the currently hovered item for tooltip
-const hoveredItemId = ref<number | null>(null);
-const hoveredStudentId = ref<number | null>(null); // For gifts tab - student hover
-const tooltipPosition = ref({ x: 0, y: 0 });
-const isHoveringTooltip = ref(false);
-
-// Add a cache for material usage data
-const materialUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
-const equipmentUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
-
-// Add cache for XP calculation results
-const xpCalculationCache = ref<{
-  totalXpNeeded: number;
-  ownedXp: number;
-  studentXpDetails: { studentId: string; xpNeeded: number; remainingXp: number; name: string; }[];
-} | null>(null);
+  hoveredItemId, hoveredStudentId, tooltipPosition, isHoveringTooltip,
+  studentUsageForMaterial, giftsForHoveredStudent,
+  tooltipGridColumns, giftTooltipGridColumns,
+  creditOwned, creditNeeded, creditRemaining, isCreditDeficit, isCreditSurplus,
+  expInfo, expBallInfo,
+  showTooltip, hideTooltip, handleTooltipMouseEnter, handleTooltipMouseLeave,
+  showStudentTooltip, hideStudentTooltip,
+  getMaterialLeftover, clearHoverState,
+} = useResourceTooltip(activeTab, activeMode);
 
 // Add ref for current exp report icon
 const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
@@ -168,12 +146,6 @@ const studentsWithGifts = computed(() => {
   return getStudentsWithGifts(activeMode.value);
 });
 
-// Gifts for the hovered student in Gifts tab tooltip
-const giftsForHoveredStudent = computed(() => {
-  if (hoveredStudentId.value === null) return [];
-  return getGiftsForStudent(hoveredStudentId.value, activeMode.value);
-});
-
 // Computed property to get the resources based on active tab and mode
 const displayResources = computed(() => {
   let resources: any[] = [];
@@ -265,193 +237,17 @@ const getQuantityClass = (): string => {
   return activeMode.value === 'missing' ? 'negative' : '';
 };
 
-// Function to reset cache when view changes
 const setTab = (tab: ViewTab) => {
-  // Clear hover state and caches when switching tabs
   if (activeTab.value !== tab) {
-    hoveredItemId.value = null;
-    hoveredStudentId.value = null;
-    materialUsageCache.value.clear();
-    equipmentUsageCache.value.clear();
-    xpCalculationCache.value = null;
+    clearHoverState();
   }
-
   activeTab.value = tab;
 };
 
 const setMode = (mode: ViewMode) => {
   if (mode === activeMode.value) return;
   activeMode.value = mode;
-  hoveredItemId.value = null;
-  hoveredStudentId.value = null;
-};
-
-const showTooltip = async (event: MouseEvent, materialId: number) => {
-  hoveredItemId.value = materialId;
-  
-  // Set initial position
-  tooltipPosition.value = adjustTooltipPosition(event);
-  
-  // Wait for the tooltip to be rendered
-  await nextTick();
-  
-  // Adjust tooltip position after it's rendered
-  const tooltip = document.querySelector('.material-tooltip') as HTMLElement;
-  if (tooltip) {
-    tooltipPosition.value = adjustTooltipPosition(event, tooltip);
-  }
-};
-
-// Function to hide tooltip
-const hideTooltip = () => {
-  // Only hide if we're not hovering the tooltip
-  if (!isHoveringTooltip.value) {
-    hoveredItemId.value = null;
-  }
-};
-
-// Function to handle tooltip mouse enter
-const handleTooltipMouseEnter = () => {
-  isHoveringTooltip.value = true;
-};
-
-// Function to handle tooltip mouse leave
-const handleTooltipMouseLeave = () => {
-  isHoveringTooltip.value = false;
-  hoveredItemId.value = null;
-  hoveredStudentId.value = null;
-};
-
-// Show tooltip for student (Gifts tab - Student → Gifts pattern)
-const showStudentTooltip = async (event: MouseEvent, studentId: number) => {
-  hoveredStudentId.value = studentId;
-
-  // Set initial position
-  tooltipPosition.value = adjustTooltipPosition(event);
-
-  // Wait for the tooltip to be rendered
-  await nextTick();
-
-  // Adjust tooltip position after it's rendered
-  const tooltip = document.querySelector('.material-tooltip') as HTMLElement;
-  if (tooltip) {
-    tooltipPosition.value = adjustTooltipPosition(event, tooltip);
-  }
-};
-
-// Hide student tooltip
-const hideStudentTooltip = () => {
-  if (!isHoveringTooltip.value) {
-    hoveredStudentId.value = null;
-  }
-};
-
-// Helper function to get tooltip grid columns
-const getTooltipGridColumns = (count: number): string => {
-  if (count <= 3) return count.toString();
-  if (count <= 8) return Math.min(4, count).toString();
-  if (count <= 16) return Math.min(8, count).toString();
-  return Math.min(10, count).toString();
-};
-
-// Add a computed property to determine the appropriate grid width based on student count
-const tooltipGridColumns = computed(() => getTooltipGridColumns(studentUsageForMaterial.value.length));
-
-// Tooltip grid columns for gift display (Student → Gifts pattern)
-const giftTooltipGridColumns = computed(() => getTooltipGridColumns(giftsForHoveredStudent.value.length));
-
-// Helper function to format usage quantity
-const formatUsageQuantity = (quantity: number, materialId?: number | null, equipmentTypes?: EquipmentType[]): string => {
-  if (materialId && (isExpReport(materialId) || isExpBall(materialId))) {
-    return quantity.toString();
-  }
-  return formatLargeNumber(quantity);
-};
-
-// Student usage data for the hovered material (Materials and Equipment tabs only)
-// Gifts tab uses Student → Gifts pattern with giftsForHoveredStudent
-const studentUsageForMaterial = computed(() => {
-  if (hoveredItemId.value === null) return [];
-
-  const materialId = hoveredItemId.value;
-  const isEquipmentView = activeTab.value === 'equipment';
-
-  // Use different cache based on the active tab
-  const cache = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
-
-  // Create a cache key that includes both material ID and current view
-  const cacheKey = `${materialId}-${activeTab.value}-${activeMode.value}`;
-
-  // For XP reports, credits, and XP balls, always get fresh data
-  if (isExpReport(materialId) || materialId === 5 || isExpBall(materialId)) {
-    const usage = isEquipmentView
-      ? getEquipmentUsageByStudents(materialId, activeMode.value)
-      : getMaterialUsageByStudents(materialId, activeMode.value);
-    return usage.sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
-  }
-
-  // Check if we already have cached data for this material and view mode
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey)!;
-  }
-
-  // If not in cache, calculate and store in cache
-  let usage: any[] = [];
-  if (isEquipmentView) {
-    usage = getEquipmentUsageByStudents(materialId, activeMode.value)
-      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
-    equipmentUsageCache.value.set(cacheKey, usage);
-  } else {
-    usage = getMaterialUsageByStudents(materialId, activeMode.value)
-      .sort((a, b) => b.quantity - a.quantity); // Sort by highest quantity first
-    materialUsageCache.value.set(cacheKey, usage);
-  }
-
-  return usage;
-});
-
-// Add computed properties for credit quantities
-const creditOwned = computed(() => {
-  const resources = getAllItemsFromCache();
-  return resources[5]?.QuantityOwned || 0;
-});
-
-const creditNeeded = computed(() => {
-  const needed = totalMaterialsNeeded.value.find(m => m.material?.Id === 5);
-  return needed?.materialQuantity || 0;
-});
-
-const creditRemaining = computed(() => Math.abs(creditOwned.value - creditNeeded.value));
-const isCreditDeficit = computed(() => creditOwned.value < creditNeeded.value);
-const isCreditSurplus = computed(() => creditOwned.value > creditNeeded.value);
-
-// Helper function to create exp info computed property
-const createExpInfo = (calculateFn: () => { totalXpNeeded: number; ownedXp: number }) => {
-  return computed(() => {
-    const { totalXpNeeded, ownedXp } = calculateFn();
-    const remaining = ownedXp - totalXpNeeded;
-    return {
-      needed: totalXpNeeded,
-      remaining: Math.abs(remaining),
-      owned: ownedXp,
-      isDeficit: remaining < 0,
-      isSurplus: remaining > 0
-    };
-  });
-};
-
-// Add computed properties for EXP quantities
-const expInfo = createExpInfo(() => calculateExpNeeds());
-
-// Add computed properties for EXP balls quantities
-const expBallInfo = createExpInfo(() => calculateEquipmentExpNeeds());
-
-// Add computed property to get leftover quantity for a material (Materials and Equipment tabs)
-const getMaterialLeftover = (materialId: number) => {
-  const isEquipmentView = activeTab.value === 'equipment';
-  const leftover = isEquipmentView ? equipmentsLeftover.value : materialsLeftover.value;
-  const material = leftover.find(m => m.material?.Id === materialId);
-  return material?.materialQuantity ?? 0;
+  clearHoverState();
 };
 </script>
 
@@ -579,9 +375,9 @@ const getMaterialLeftover = (materialId: number) => {
       <div 
         v-if="hoveredItemId !== null && studentUsageForMaterial.length > 0" 
         class="material-tooltip"
-        :style="{ 
-          left: `${tooltipPosition.x}px`, 
-          top: `${tooltipPosition.y}px`,
+        :style="{
+          left: tooltipPosition.left,
+          top: tooltipPosition.top,
           '--grid-columns': tooltipGridColumns
         }"
         @mouseenter="handleTooltipMouseEnter"
@@ -691,7 +487,7 @@ const getMaterialLeftover = (materialId: number) => {
               class="student-icon"
             />
             <span class="usage-quantity">
-              {{ formatUsageQuantity(usage.quantity, hoveredItemId, usage.equipmentTypes) }}
+              {{ formatUsageQuantity(usage.quantity, hoveredItemId) }}
             </span>
           </div>
         </div>
@@ -702,8 +498,8 @@ const getMaterialLeftover = (materialId: number) => {
         v-if="hoveredStudentId !== null && giftsForHoveredStudent.length > 0"
         class="material-tooltip"
         :style="{
-          left: `${tooltipPosition.x}px`,
-          top: `${tooltipPosition.y}px`,
+          left: tooltipPosition.left,
+          top: tooltipPosition.top,
           '--grid-columns': giftTooltipGridColumns
         }"
         @mouseenter="handleTooltipMouseEnter"

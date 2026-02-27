@@ -528,17 +528,19 @@
   line-height: 1;
 }
 
-.skill-tooltip {
+.modal-tooltip {
   position: fixed;
   background: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px;
+  padding: 10px;
   min-width: 200px;
   max-width: 300px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1000;
   pointer-events: none;
+  color: var(--text-primary);
+  font-size: 1em;
 }
 
 .tooltip-content {

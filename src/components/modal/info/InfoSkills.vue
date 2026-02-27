@@ -35,8 +35,8 @@ const {
 
 const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 
-// Tooltip state
-const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<SkillType>(250, 120);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<SkillType>();
 </script>
 
 <template>
@@ -99,20 +99,6 @@ const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<Ski
           >
             +
           </div>
-          <!-- Tooltip -->
-          <div
-            class="skill-tooltip"
-            :style="tooltipStyle"
-            v-show="activeTooltip === skillType"
-          >
-            <div class="tooltip-content">
-              <div class="tooltip-name">{{ getSkillName(skillType) }}</div>
-              <div class="tooltip-cost" v-if="getSkillCostDisplay(skillType)">
-                {{ $t('cost') }}: <span v-html="getSkillCostDisplay(skillType)"></span>
-              </div>
-              <div class="tooltip-desc" v-html="getSkillDescription(skillType)"></div>
-            </div>
-          </div>
         </div>
 
         <!-- Skill Level -->
@@ -129,6 +115,22 @@ const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<Ski
             <span class="level-target">{{ getLevelDisplay(skillType).target }}</span>
           </template>
         </div>
+      </div>
+    </div>
+
+    <!-- Single tooltip outside the loop -->
+    <div
+      ref="tooltipRef"
+      class="modal-tooltip"
+      :style="tooltipStyle"
+      v-show="activeTooltip !== null"
+    >
+      <div class="tooltip-content" v-if="activeTooltip">
+        <div class="tooltip-name">{{ getSkillName(activeTooltip) }}</div>
+        <div class="tooltip-cost" v-if="getSkillCostDisplay(activeTooltip)">
+          {{ $t('cost') }}: <span v-html="getSkillCostDisplay(activeTooltip)"></span>
+        </div>
+        <div class="tooltip-desc" v-html="getSkillDescription(activeTooltip)"></div>
       </div>
     </div>
   </div>

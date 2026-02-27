@@ -66,8 +66,8 @@ const updateSkillTarget = (type: SkillType, value: number) => {
   if (result) emit('update-skill', type, result.current, result.target);
 };
 
-// Tooltip handling
-const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<SkillType>(250, 100);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<SkillType>();
 </script>
 
 <template>
@@ -268,7 +268,8 @@ const { activeTooltip, tooltipStyle, showTooltip, hideTooltip } = useTooltip<Ski
 
     <!-- Tooltip -->
     <div
-      class="skill-tooltip"
+      ref="tooltipRef"
+      class="modal-tooltip"
       :style="tooltipStyle"
       v-show="activeTooltip !== null"
     >
