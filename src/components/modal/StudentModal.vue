@@ -247,9 +247,7 @@ onUnmounted(() => {
           <div
             class="right-column"
             :class="{
-              'right-column--distributed': activeTab === 'info' || activeTab === 'upgrade' || activeTab === 'gear',
-              'right-column--upgrade': activeTab === 'upgrade',
-              'right-column--gear': activeTab === 'gear',
+              'right-column--scrollable': activeTab === 'upgrade' || activeTab === 'gear' || activeTab === 'bond',
               'right-column--bond': activeTab === 'bond'
             }"
           >

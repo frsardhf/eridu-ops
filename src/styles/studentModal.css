@@ -50,20 +50,6 @@
   display: none;
 }
 
-.modal-tabs::-webkit-scrollbar-track {
-  background: var(--background-secondary);
-  border-radius: 2px;
-}
-
-.modal-tabs::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 2px;
-}
-
-.modal-tabs::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
-}
-
 .tab-button {
   padding: 8px 14px;
   background: transparent;
@@ -113,7 +99,6 @@
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 0;
   min-width: 0;
 }
 
@@ -123,11 +108,6 @@
   gap: var(--student-modal-gap);
   min-width: 0;
   min-height: var(--student-modal-hero-height);
-}
-
-/* Info tab: distribute free vertical space automatically */
-.right-column--distributed {
-  gap: var(--student-modal-gap);
 }
 
 .tab-pane-scroll {
@@ -141,39 +121,18 @@
   flex-shrink: 0;
 }
 
-.right-column--upgrade {
+/* Upgrade, Gear, Bond: fixed height with scrollable content */
+.right-column--scrollable {
   height: var(--student-modal-hero-height);
-  min-height: var(--student-modal-hero-height);
 }
 
-.right-column--upgrade .tab-pane-scroll {
+.right-column--scrollable .tab-pane-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 2px;
-}
-
-.right-column--gear {
-  height: var(--student-modal-hero-height);
-  min-height: var(--student-modal-hero-height);
-}
-
-.right-column--gear .tab-pane-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  padding-right: 2px;
-}
-
-.right-column--bond {
-  height: var(--student-modal-hero-height);
-  min-height: var(--student-modal-hero-height);
-  justify-content: flex-start;
-  gap: var(--student-modal-gap);
 }
 
 .bond-layout {
@@ -185,7 +144,6 @@
 
 .right-column--bond .bond-layout {
   flex: 1;
-  min-height: 0;
 }
 
 .bond-top-row {
@@ -603,35 +561,19 @@
     min-height: 0;
   }
 
-  .right-column--bond {
+  .right-column--scrollable {
     height: auto;
     min-height: 0;
+  }
+
+  .right-column--scrollable .tab-pane-scroll {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .right-column--bond .bond-layout {
     flex: 0 0 auto;
-  }
-
-  .right-column--upgrade {
-    height: auto;
-    min-height: 0;
-  }
-
-  .right-column--gear {
-    height: auto;
-    min-height: 0;
-  }
-
-  .right-column--upgrade .tab-pane-scroll {
-    flex: 0 0 auto;
-    overflow: visible;
-    padding-right: 0;
-  }
-
-  .right-column--gear .tab-pane-scroll {
-    flex: 0 0 auto;
-    overflow: visible;
-    padding-right: 0;
   }
 
   .bond-gift-scroll {

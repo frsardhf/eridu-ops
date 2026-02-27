@@ -669,10 +669,10 @@ watch(
 }
 
 .resources-grid-wrap :deep(.resources-grid) {
-  grid-template-columns: repeat(auto-fill, minmax(68px, 68px));
-  justify-content: center;
-  width: min(100%, 980px);
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+  justify-content: stretch;
+  width: 100%;
+  gap: 0;
 }
 
 .no-resources {
