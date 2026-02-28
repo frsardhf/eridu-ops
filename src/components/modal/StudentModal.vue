@@ -137,10 +137,29 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
 
     if (requestToken !== hydrateRequestToken) return;
     displayedStudent.value = student;
+
+    // Preload neighbor images so next/prev navigation is near-instant
+    if (props.studentsArray && props.studentsArray.length > 1) {
+      const idx = props.studentsArray.findIndex(s => s.Id === student.Id);
+      if (idx !== -1) {
+        const prevIdx = idx > 0 ? idx - 1 : props.studentsArray.length - 1;
+        const nextIdx = idx < props.studentsArray.length - 1 ? idx + 1 : 0;
+        preloadStudentImages(props.studentsArray[prevIdx]);
+        preloadStudentImages(props.studentsArray[nextIdx]);
+      }
+    }
   } finally {
     // no-op: previous student remains displayed until hydrate completes
   }
 }, { immediate: true });
+
+// Image preloading for neighbor students
+function preloadStudentImages(s: StudentProps) {
+  new Image().src = `https://schaledb.com/images/student/portrait/${s.Id}.webp`;
+  if (s.CollectionBG) {
+    new Image().src = `https://schaledb.com/images/background/${s.CollectionBG}.jpg`;
+  }
+}
 
 // Navigation
 function navigateToStudent(student: StudentProps) {
