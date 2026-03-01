@@ -82,6 +82,21 @@ function calculateEquipmentMaterials(
 
   const allEquipment = getAllEquipmentFromCache();
 
+  // Pre-build lookup map: "Category:Tier" → equipment item for O(1) access
+  // instead of O(n) Array.find inside the nested loop.
+  // Use first-match semantics (no overwrite) to mirror Array.find() behaviour,
+  // since the cache may contain multiple entries per Category+Tier
+  // (e.g. blueprint piece alongside assembled item) and only the first has a Recipe.
+  const equipmentByTypeAndTier = new Map<string, CachedResource>();
+  for (const eq of Object.values(allEquipment)) {
+    if (eq.Category && typeof eq.Tier === 'number') {
+      const key = `${eq.Category}:${eq.Tier}`;
+      if (!equipmentByTypeAndTier.has(key)) {
+        equipmentByTypeAndTier.set(key, eq);
+      }
+    }
+  }
+
   Object.entries(equipmentLevels).forEach(([type, levels]) => {
     const { current, target } = levels;
 
@@ -89,9 +104,7 @@ function calculateEquipmentMaterials(
 
     for (let level = current; level < target; level++) {
       const nextTier = level + 1;
-      const equipmentItem = Object.values(allEquipment).find(eq =>
-        eq.Category === type && eq.Tier === nextTier
-      );
+      const equipmentItem = equipmentByTypeAndTier.get(`${type}:${nextTier}`);
 
       const recipes = equipmentItem?.Recipe ?? null;
 

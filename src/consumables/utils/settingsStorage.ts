@@ -6,6 +6,10 @@ import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
 
+// Module-level cache so repeated getSettings() calls never re-parse localStorage.
+// Invalidated on every saveSettings() call.
+let _cachedSettings: AppSettings | null = null;
+
 export interface AppSettings {
   theme: ThemeId;
   language: 'en' | 'jp';
@@ -30,18 +34,25 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 /**
- * Get consolidated settings from localStorage
+ * Get consolidated settings from localStorage.
+ * Result is cached in memory; re-parses localStorage only on first call
+ * or after saveSettings() invalidates the cache.
  * @returns AppSettings object or default settings if not found
  */
 export function getSettings(): AppSettings {
+  if (_cachedSettings) return _cachedSettings;
+
   try {
     const data = localStorage.getItem(SETTINGS_KEY);
-    if (!data) return { ...DEFAULT_SETTINGS };
+    if (!data) {
+      _cachedSettings = { ...DEFAULT_SETTINGS };
+      return _cachedSettings;
+    }
 
     const parsed = JSON.parse(data);
 
     // Merge with defaults to ensure all properties exist
-    return {
+    _cachedSettings = {
       ...DEFAULT_SETTINGS,
       ...parsed,
       sort: {
@@ -49,6 +60,7 @@ export function getSettings(): AppSettings {
         ...parsed.sort
       }
     };
+    return _cachedSettings;
   } catch (error) {
     console.error('Error reading settings from localStorage:', error);
     return { ...DEFAULT_SETTINGS };
@@ -56,13 +68,14 @@ export function getSettings(): AppSettings {
 }
 
 /**
- * Save consolidated settings to localStorage
+ * Save consolidated settings to localStorage and update the in-memory cache.
  * @param settings The settings object to save
  * @returns True if successful, false otherwise
  */
 export function saveSettings(settings: AppSettings): boolean {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    _cachedSettings = settings; // keep cache in sync
     return true;
   } catch (error) {
     console.error('Error saving settings to localStorage:', error);

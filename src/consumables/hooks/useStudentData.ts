@@ -36,14 +36,15 @@ import { ThemeId } from '@/types/theme';
 import { buildGiftsByStudent } from '../utils/giftUtils';
 import {
   attachElephIcons,
-  hydrateResourceData,
+  hydrateItemsData,
   hydrateEquipmentData,
   toRecordById
 } from '../utils/studentDataHydrationUtils';
 
 // Singleton state (shared across all calls)
+let _langChangeTimer: ReturnType<typeof setTimeout> | null = null;
 let _studentData: Ref<{ [key: string]: StudentProps }>;
-let _resourceData: Ref<Record<string, ResourceProps>>;
+let _itemsData: Ref<Record<string, ResourceProps>>;
 let _equipmentData: Ref<Record<string, ResourceProps>>;
 let _giftData: Ref<Record<string, ResourceProps>>;
 let _boxData: Ref<Record<string, ResourceProps>>;
@@ -163,7 +164,7 @@ async function processAndPopulateData(
     favoredGiftByStudent: _favoredGift.value
   });
 
-  _resourceData.value = await hydrateResourceData(items);
+  _itemsData.value = await hydrateItemsData(items);
   _equipmentData.value = await hydrateEquipmentData(equipment);
 
   await preloadStudentStore();
@@ -225,7 +226,7 @@ export function useStudentData() {
   // Initialize refs on first call only
   if (!_studentData) {
     _studentData = ref<{ [key: string]: StudentProps }>({});
-    _resourceData = ref<Record<string, ResourceProps>>({});
+    _itemsData = ref<Record<string, ResourceProps>>({});
     _equipmentData = ref<Record<string, ResourceProps>>({});
     _giftData = ref<Record<string, ResourceProps>>({});
     _boxData = ref<Record<string, ResourceProps>>({});
@@ -255,11 +256,18 @@ export function useStudentData() {
     });
   }
 
-  // Watch for language changes and reinitialize data (only once)
+  // Watch for language changes and reinitialize data (only once).
+  // Debounced 200ms so rapid language switching only triggers one reinit.
   if (!_isInitialized) {
     watch(
       () => currentLanguage.value,
-      () => { reinitializeData(); }
+      () => {
+        if (_langChangeTimer) clearTimeout(_langChangeTimer);
+        _langChangeTimer = setTimeout(() => {
+          _langChangeTimer = null;
+          reinitializeData();
+        }, 200);
+      }
     );
   }
 
@@ -274,7 +282,7 @@ export function useStudentData() {
     studentData: _studentData,
     giftData: _giftData,
     boxData: _boxData,
-    resourceData: _resourceData,
+    itemsData: _itemsData,
     equipmentData: _equipmentData,
     favoredGift: _favoredGift,
     giftBoxData: _giftBoxData,

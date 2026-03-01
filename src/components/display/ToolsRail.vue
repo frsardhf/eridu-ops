@@ -112,28 +112,6 @@ onBeforeUnmount(() => {
   transition: transform 0.2s ease;
 }
 
-.tools-rail::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 4px);
-  transform: translateX(-50%);
-  width: 72px;
-  height: 8px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--accent-color) 68%, white 32%);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent-color) 34%, var(--background-secondary)),
-    color-mix(in srgb, var(--accent-color) 72%, var(--background-secondary)),
-    color-mix(in srgb, var(--accent-color) 34%, var(--background-secondary))
-  );
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.4),
-    0 3px 10px rgba(0, 0, 0, 0.28);
-  pointer-events: none;
-}
-
 .tools-rail:hover,
 .tools-rail:focus-within,
 .tools-rail.expanded {

@@ -86,33 +86,33 @@ export function mergeEquipmentWithExisting(
 }
 
 /**
- * Hydrates resource data by loading existing inventory from IndexedDB,
+ * Hydrates items data by loading existing inventory from IndexedDB,
  * initializing with synthetic entities if empty, or ensuring they exist.
  */
-export async function hydrateResourceData(
+export async function hydrateItemsData(
   items: Record<string, ResourceProps>
 ): Promise<Record<number, ResourceProps> | Record<string, ResourceProps>> {
-  const existingResources = await getItems();
+  const existingItems = await getItems();
 
-  if (!existingResources || Object.keys(existingResources).length === 0) {
+  if (!existingItems || Object.keys(existingItems).length === 0) {
     const allItems = createResourceRecordWithSynthetic(items);
     await saveItems(Object.values(allItems));
     await saveItemsInventory(allItems);
     return allItems;
   }
 
-  const resourcesAsNumbers = toNumericResourceRecord(existingResources);
+  const resourcesAsNumbers = toNumericResourceRecord(existingItems);
   const {
-    resources: normalizedResources,
+    resources: normalizedItems,
     addedSynthetic
   } = ensureSyntheticResourceEntries(resourcesAsNumbers);
 
   if (addedSynthetic) {
     await saveItems([creditsEntry]);
-    await saveItemsInventory(normalizedResources);
+    await saveItemsInventory(normalizedItems);
   }
 
-  return normalizedResources;
+  return normalizedItems;
 }
 
 /**

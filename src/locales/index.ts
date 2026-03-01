@@ -504,12 +504,22 @@ export const t = computed(() => {
   return translations[currentLanguage.value];
 });
 
+// Resolved translation cache keyed by "lang:path".
+// Keying on language means no invalidation is ever needed — switching language
+// just uses a different key prefix, leaving old entries harmlessly stale.
+const _translationCache = new Map<string, string>();
+
 // Function to get a specific translation using a path
 export function useTranslation(path: string, language?: Language): string {
   const lang = language || currentLanguage.value;
+  const cacheKey = `${lang}:${path}`;
+
+  const cached = _translationCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
   const parts = path.split('.');
   let result: any = translations[lang];
-  
+
   for (const part of parts) {
     if (result && result[part] !== undefined) {
       result = result[part];
@@ -517,16 +527,20 @@ export function useTranslation(path: string, language?: Language): string {
       console.warn(`Translation missing for path: ${path} in language: ${lang}`);
       // Try to get the English equivalent as fallback
       if (lang !== 'en') {
-        return useTranslation(path, 'en');
+        const fallback = useTranslation(path, 'en');
+        _translationCache.set(cacheKey, fallback);
+        return fallback;
       }
+      _translationCache.set(cacheKey, path);
       return path;
     }
   }
-  
+
+  _translationCache.set(cacheKey, result);
   return result;
 }
 
 // Helper function to access nested translations
 export function $t(path: string): string {
   return useTranslation(path);
-} 
+}

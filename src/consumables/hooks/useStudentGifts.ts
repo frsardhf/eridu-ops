@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, toRaw } from 'vue';
 import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
@@ -39,11 +39,13 @@ export function useStudentGifts(props: {
     bondDetailData.value = {...DEFAULT_BOND_DETAIL};
   }
 
-  // Store previous state before any changes
+  // Store previous state before any changes.
+  // toRaw() strips the Vue Proxy wrapper before cloning — structuredClone
+  // cannot handle Proxy objects and throws DataCloneError without it.
   const savePreviousState = () => {
-    previousGiftFormData.value = JSON.parse(JSON.stringify(giftFormData.value));
-    previousBoxFormData.value = JSON.parse(JSON.stringify(boxFormData.value));
-    previousNonFavorGiftsMap.value = JSON.parse(JSON.stringify(nonFavorGiftsMap.value));
+    previousGiftFormData.value = structuredClone(toRaw(giftFormData.value));
+    previousBoxFormData.value = structuredClone(toRaw(boxFormData.value));
+    previousNonFavorGiftsMap.value = structuredClone(toRaw(nonFavorGiftsMap.value));
   };
 
   // Watch for changes to form data and save to IndexedDB

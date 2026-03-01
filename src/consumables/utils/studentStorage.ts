@@ -310,14 +310,7 @@ export async function downloadLocalStorageData(): Promise<void> {
 async function importV3Format(importData: any): Promise<void> {
   const { userData, settings } = importData;
 
-  // Clear existing user data to prevent stale overlays
-  await Promise.all([
-    db.forms.clear(),
-    db.items_inventory.clear(),
-    db.equipment_inventory.clear()
-  ]);
-
-  // Convert forms from Record to Array
+  // Convert forms from Record to Array (before transaction — no DB access needed)
   let formsArray: any[] = [];
   if (userData.forms) {
     if (Array.isArray(userData.forms)) {
@@ -330,24 +323,36 @@ async function importV3Format(importData: any): Promise<void> {
     }
   }
 
-  // Import user data into IndexedDB
-  await Promise.all([
-    formsArray.length > 0 ? db.forms.bulkPut(formsArray) : Promise.resolve(),
-    userData.resources ? db.items_inventory.bulkPut(
-      Object.entries(userData.resources).map(([id, quantity]) => ({
-        Id: Number(id),
-        QuantityOwned: quantity as number
-      }))
-    ) : Promise.resolve(),
-    userData.equipments ? db.equipment_inventory.bulkPut(
-      Object.entries(userData.equipments).map(([id, quantity]) => ({
-        Id: Number(id),
-        QuantityOwned: quantity as number
-      }))
-    ) : Promise.resolve()
-  ]);
+  // Support both 'resources' (legacy key) and 'items' (canonical key) for items inventory
+  const itemsSource = userData.items ?? userData.resources;
 
-  // Merge settings with existing ones to preserve new/default keys
+  // Wrap all DB operations in a single atomic transaction so a partial failure
+  // never leaves the database in an inconsistent state.
+  await db.transaction('rw', [db.forms, db.items_inventory, db.equipment_inventory], async () => {
+    await Promise.all([
+      db.forms.clear(),
+      db.items_inventory.clear(),
+      db.equipment_inventory.clear()
+    ]);
+
+    await Promise.all([
+      formsArray.length > 0 ? db.forms.bulkPut(formsArray) : Promise.resolve(),
+      itemsSource ? db.items_inventory.bulkPut(
+        Object.entries(itemsSource).map(([id, quantity]) => ({
+          Id: Number(id),
+          QuantityOwned: quantity as number
+        }))
+      ) : Promise.resolve(),
+      userData.equipments ? db.equipment_inventory.bulkPut(
+        Object.entries(userData.equipments).map(([id, quantity]) => ({
+          Id: Number(id),
+          QuantityOwned: quantity as number
+        }))
+      ) : Promise.resolve()
+    ]);
+  });
+
+  // Merge settings with existing ones to preserve new/default keys (localStorage, outside transaction)
   if (settings) {
     saveSettings({
       ...getSettings(),
@@ -480,17 +485,18 @@ export function importLocalStorageData(file: File): Promise<boolean> {
           return;
         }
 
-        // PRIORITY 1: Check for SchaleDB format (KEEP)
-        if (importData.characters && Array.isArray(importData.characters)) {
-          const success = await importFromOtherSite(fileContent);
-          resolve(success);
-          return;
-        }
-
-        // PRIORITY 2: Check for v3.0 format (NEW)
+        // PRIORITY 1: Check for native v3.0 format first so a file that
+        // somehow contains both keys uses the canonical format.
         if (importData.version === '3.0' && importData.userData) {
           await importV3Format(importData);
           resolve(true);
+          return;
+        }
+
+        // PRIORITY 2: Check for SchaleDB / other-site format
+        if (importData.characters && Array.isArray(importData.characters)) {
+          const success = await importFromOtherSite(fileContent);
+          resolve(success);
           return;
         }
 
