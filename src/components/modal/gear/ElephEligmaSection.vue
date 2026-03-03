@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+import { useFocusInput, useGradeInfoEditor } from '@/composables/useInputEditor';
+import { formatItemQuantity } from '@/consumables/utils/materialUtils';
 
 const props = defineProps<{
   student: StudentProps;
@@ -13,15 +15,17 @@ const emit = defineEmits<{
   (e: 'update-info', owned: number, price: number, purchasable: number): void;
 }>();
 
-const gradeState = ref({
-  owned: props.gradeInfos?.owned || 0,
-  price: props.gradeInfos?.price || 1,
-  purchasable: props.gradeInfos?.purchasable || 20
-});
-
-const ownedInputFocused = ref(false);
-const ownedInputEl = ref<HTMLInputElement | null>(null);
-const fallbackElephIcon = 'https://schaledb.com/images/item/icon/item_icon_secretstone.webp';
+const { 
+  isInputFocused, 
+  inputEl, 
+  handleFocus, 
+  handleBlur, 
+  forceInputFocus 
+} = useFocusInput();
+const { gradeState, updateValue } = useGradeInfoEditor(
+  () => props.gradeInfos,
+  (owned, price, purchasable) => emit('update-info', owned, price, purchasable),
+);
 
 const elephIcon = computed(() => {
   if (String(props.student?.Id) === '10099') {
@@ -30,72 +34,39 @@ const elephIcon = computed(() => {
   if (!props.student?.ElephIcon) return '';
   return `https://schaledb.com/images/item/icon/${props.student.ElephIcon}.webp`;
 });
-
-watch(() => props.gradeInfos, (newVal) => {
-  if (newVal) {
-    gradeState.value.owned = newVal.owned ?? 0;
-    gradeState.value.price = newVal.price ?? 1;
-    gradeState.value.purchasable = newVal.purchasable ?? 20;
-  }
-}, { deep: true, immediate: true });
-
-const updateValue = (event: Event, field: 'owned' | 'price' | 'purchasable') => {
-  const input = event.target as HTMLInputElement;
-  const value = parseInt(input.value, 10) || 0;
-
-  const limits = {
-    owned: { min: 0, max: 520 },
-    price: { min: 1, max: 5 },
-    purchasable: { min: 1, max: 20 }
-  };
-
-  const clampedValue = Math.max(limits[field].min, Math.min(limits[field].max, value));
-  gradeState.value[field] = clampedValue;
-
-  emit('update-info', gradeState.value.owned, gradeState.value.price, gradeState.value.purchasable);
-};
-
-const forceOwnedInputFocus = () => {
-  ownedInputEl.value?.focus();
-};
-
-const formatValue = (value: number) => {
-  if (!value || value === 0) return '';
-  return `×${value}`;
-};
 </script>
 
 <template>
   <div class="modal-section-card eleph-eligma-card">
     <div class="eleph-grid">
-      <div class="eleph-owned-card" @click="forceOwnedInputFocus">
+      <div class="eleph-owned-card" @click="forceInputFocus">
         <div class="eleph-owned-header">
           <div class="gift-icon-container">
             <img
-              :src="elephIcon || fallbackElephIcon"
+              :src="elephIcon"
               alt="Eleph"
               class="gift-icon"
             />
 
             <div
-              v-if="!ownedInputFocused && gradeState.owned"
+              v-if="!isInputFocused && gradeState.owned"
               class="eleph-owned-quantity"
             >
-              {{ formatValue(gradeState.owned) }}
+              {{ formatItemQuantity(gradeState.owned) }}
             </div>
 
             <div class="input-container">
               <input
                 id="eleph-owned-input"
-                ref="ownedInputEl"
+                ref="inputEl"
                 type="number"
                 :value="gradeState.owned"
                 class="resource-input"
                 min="0"
                 max="520"
                 @input="(e) => updateValue(e, 'owned')"
-                @focus="ownedInputFocused = true"
-                @blur="ownedInputFocused = false"
+                @focus="handleFocus"
+                @blur="handleBlur"
               />
             </div>
           </div>

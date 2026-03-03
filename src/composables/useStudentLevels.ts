@@ -1,6 +1,7 @@
 import { computed, toValue, MaybeRefOrGetter } from 'vue';
+import { MAX_LEVEL } from '@/consumables/constants/gameConstants';
 
-const MAX_LEVEL = 90;
+export { MAX_LEVEL };
 
 export function useStudentLevels(
   characterLevels: MaybeRefOrGetter<{ current: number; target: number }>

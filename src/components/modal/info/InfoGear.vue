@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
+import { useStudentGearDisplay, getEquipmentTypeName } from '@/composables/useStudentGearDisplay';
 import { $t } from '@/locales';
 import { EquipmentType } from '@/types/gear';
 import { StudentProps } from '@/types/student';
@@ -12,22 +12,6 @@ const props = defineProps<{
   exclusiveGearLevel: { current?: number; target?: number };
   hasExclusiveGear: boolean;
 }>();
-
-const equipmentTypes: Record<string, () => string> = {
-  Hat: () => $t('equipmentTypes.Hat'),
-  Gloves: () => $t('equipmentTypes.Gloves'),
-  Shoes: () => $t('equipmentTypes.Shoes'),
-  Bag: () => $t('equipmentTypes.Bag'),
-  Badge: () => $t('equipmentTypes.Badge'),
-  Hairpin: () => $t('equipmentTypes.Hairpin'),
-  Charm: () => $t('equipmentTypes.Charm'),
-  Watch: () => $t('equipmentTypes.Watch'),
-  Necklace: () => $t('equipmentTypes.Necklace')
-};
-
-function getEquipmentTypeName(type: string): string {
-  return equipmentTypes[type]?.() || type;
-}
 
 const {
   getEquipmentIconUrl,

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
-import { createEditorKeydownHandler } from '@/consumables/utils/upgradeUtils';
 import { $t } from '@/locales';
+import { useBondEditor } from '@/composables/useInputEditor';
 
 const props = defineProps<{
   currentBond: number,
@@ -12,53 +11,16 @@ const props = defineProps<{
 
 const emit = defineEmits<(e: 'update-bond', value: number) => void>();
 
-// Local state for the actual bond value
-const bondState = ref(props.currentBond);
-const editingBond = ref(false);
-const editBondValue = ref(props.currentBond.toString());
-const bondEditorRef = ref<HTMLInputElement | null>(null);
-
-// Sync with prop changes from parent
-watch(() => props.currentBond, (newVal) => {
-  bondState.value = newVal;
-  editingBond.value = false;
-  editBondValue.value = newVal.toString();
-}, { immediate: true });
-
-const isMaxBond = computed(() => bondState.value === 100);
-
-// Centralized logic for processing bond updates
-const processBondUpdate = (value: number) => {
-  // Clamp between 1 and 100
-  value = Math.max(1, Math.min(100, value));
-  bondState.value = value;
-  emit('update-bond', value);
-};
-
-const parseBondValue = (rawValue: string): number => {
-  const parsed = parseInt(rawValue.trim(), 10);
-  return Number.isNaN(parsed) ? 1 : parsed;
-};
-
-const startBondEdit = async () => {
-  editingBond.value = true;
-  editBondValue.value = bondState.value.toString();
-  await nextTick();
-  bondEditorRef.value?.focus();
-  bondEditorRef.value?.select();
-};
-
-const commitBondEdit = () => {
-  processBondUpdate(parseBondValue(editBondValue.value));
-  editingBond.value = false;
-};
-
-const cancelBondEdit = () => {
-  editingBond.value = false;
-  editBondValue.value = bondState.value.toString();
-};
-
-const handleEditorKeydown = createEditorKeydownHandler(commitBondEdit, cancelBondEdit);
+const {
+  bondState,
+  bondEditorRef,
+  isMaxBond,
+  isEditing,
+  editValue,
+  startEdit,
+  commitEdit,
+  handleEditorKeydown,
+} = useBondEditor(() => props.currentBond, (value) => emit('update-bond', value));
 </script>
 
 <template>
@@ -73,24 +35,24 @@ const handleEditorKeydown = createEditorKeydownHandler(commitBondEdit, cancelBon
               class="bond-icon"
             />
             <button
-              v-if="!editingBond"
+              v-if="!isEditing"
               type="button"
               class="bond-number-button"
               :aria-label="$t('currentBond')"
-              @click="startBondEdit"
+              @click="startEdit"
             >
               {{ bondState }}
             </button>
             <input
               v-else
               ref="bondEditorRef"
-              v-model="editBondValue"
+              v-model="editValue"
               name="bond-input"
               type="number"
               class="bond-number-input"
               min="1"
               max="100"
-              @blur="commitBondEdit"
+              @blur="commitEdit"
               @keydown="handleEditorKeydown"
             />
           </div>
@@ -118,24 +80,24 @@ const handleEditorKeydown = createEditorKeydownHandler(commitBondEdit, cancelBon
             class="max-bond-icon"
           />
           <button
-            v-if="!editingBond"
+            v-if="!isEditing"
             type="button"
             class="bond-number-button max-bond-number-button"
             :aria-label="$t('currentBond')"
-            @click="startBondEdit"
+            @click="startEdit"
           >
             {{ bondState }}
           </button>
           <input
             v-else
             ref="bondEditorRef"
-            v-model="editBondValue"
+            v-model="editValue"
             name="bond-input"
             type="number"
             class="bond-number-input max-bond-number-input"
             min="1"
             max="100"
-            @blur="commitBondEdit"
+            @blur="commitEdit"
             @keydown="handleEditorKeydown"
           />
         </div>

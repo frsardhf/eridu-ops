@@ -2,6 +2,8 @@ import type { ResourceProps } from './resource';
 
 export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
 
+export const SKILL_TYPES: readonly SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'] as const;
+
 export type SkillTypeName = 'Ex' | 'Basic' | 'Enhanced' | 'Sub';
 
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';

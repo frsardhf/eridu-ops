@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
   width: 100%;
   min-height: 46px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--accent-color) 36%, var(--border-color));
   background: color-mix(in srgb, var(--background-secondary) 90%, var(--background-primary) 10%);
   color: var(--text-primary);

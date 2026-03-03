@@ -1,6 +1,10 @@
 // Define equipment types
-export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' | 
+export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' |
   'Hairpin' | 'Charm' | 'Watch' | 'Necklace';
+
+export const EQUIPMENT_TYPES: readonly EquipmentType[] = [
+  'Hat', 'Gloves', 'Shoes', 'Bag', 'Badge', 'Hairpin', 'Charm', 'Watch', 'Necklace',
+] as const;
 
 export interface EquipmentItem {
   Id: number;

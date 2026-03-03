@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { GiftProps } from '@/types/gift';
-import { ref } from 'vue';
 import '@/styles/resourceDisplay.css';
+import { useFocusInput } from '@/composables/useInputEditor';
+import { formatItemQuantity } from '@/consumables/utils/materialUtils';
+import { getGiftIconUrl, getGiftGradeIconUrl } from '@/consumables/utils/iconUtils';
 
 const props = defineProps<{
   item: GiftProps,
@@ -11,62 +13,39 @@ const props = defineProps<{
   isBox?: boolean
 }>();
 
-const emit = defineEmits<{
-  'update:value': [event: Event];
-}>();
+const emit = defineEmits<{'update:value': [event: Event];}>();
 
-const isInputFocused = ref(false);
-const inputEl = ref<HTMLInputElement | null>(null);
-
-function handleInput(event: Event) {
-  emit('update:value', event);
-}
-
-function handleFocus() {
-  isInputFocused.value = true;
-}
-
-function handleBlur() {
-  isInputFocused.value = false;
-}
-
-function forceInputFocus() {
-  if (inputEl.value) {
-    inputEl.value.focus();
-  }
-}
-
-// Format the quantity value
-function formatValue(value: any): string {
-  if (!value || value === '0') return '';
-  return `×${value}`;
-}
-
-const gift = props.item.gift;
+const { 
+  isInputFocused, 
+  inputEl, 
+  handleFocus, 
+  handleBlur, 
+  forceInputFocus 
+} = useFocusInput();
 </script>
 
 <template>
   <div class="gift-card" :class="{ 'box-card': isBox }" @click="forceInputFocus">
     <div class="gift-header">
       <div class="gift-icon-container">
-        <img 
-          :src="`https://schaledb.com/images/${isBox ? 'item/full' : 'item/icon'}/${gift.Icon}.webp`"
-          :alt="gift.Name"
+        <img
+          :src="getGiftIconUrl(props.item.gift.Icon, isBox ?? false)"
+          :alt="props.item.gift.Name"
           class="gift-icon"
         />
-        <img 
+        <img
           v-if="(!isBox || showGiftGrade)"
-          :src="`https://schaledb.com/images/ui/Cafe_Interaction_Gift_0${item.grade}.png`"
+          :src="getGiftGradeIconUrl(item.grade)"
           :alt="item.grade.toString()"
           class="grade-icon"
         />
         
         <!-- Quantity display (similar to resource-quantity) -->
-        <div 
-          class="resource-quantity" 
+        <div
+          class="resource-quantity"
           v-if="!isInputFocused && value"
         >
-          {{ formatValue(value) }}
+          {{ formatItemQuantity(value) }}
         </div>
         
         <!-- Input for editing quantity -->
@@ -75,8 +54,8 @@ const gift = props.item.gift;
             ref="inputEl"
             type="number"
             :value="value"
-            :name="`${isBox ? 'box' : 'gift'}-${gift.Id}`"
-            @input="handleInput"
+            :name="`${isBox ? 'box' : 'gift'}-${props.item.gift.Id}`"
+            @input="(e) => emit('update:value', e)"
             @focus="handleFocus"
             @blur="handleBlur"
             min="0"

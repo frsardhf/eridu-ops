@@ -24,11 +24,9 @@ function handleBoxInput(id: number, event: Event) {
   emit('update-box', id, event);
 }
 
-const hasGifts = computed(() => props.student.Gifts && Object.keys(props.student.Gifts).length > 0);
-const hasBoxes = computed(() => props.student.Boxes && Object.keys(props.student.Boxes).length > 0);
-
-// Provide a default value for convertBox
-const convertBox = computed(() => props.convertBox ?? false);
+const hasGifts = computed(() => Object.keys(props.student.Gifts ?? {}).length > 0);
+const hasBoxes = computed(() => Object.keys(props.student.Boxes ?? {}).length > 0);
+const convertBox = computed(() => !!props.convertBox);
 </script>
 
 <template>

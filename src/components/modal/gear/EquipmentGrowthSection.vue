@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
-import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
+import { useStudentGearDisplay, getEquipmentTypeName } from '@/composables/useStudentGearDisplay';
 import { getMaxTierForTypeSync } from '@/consumables/utils/gearMaterialUtils';
 import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
+import { MAX_EXCLUSIVE_GEAR_LEVEL } from '@/consumables/constants/gameConstants';
 import { $t } from '@/locales';
 import { EquipmentType } from '@/types/gear';
 import { StudentProps } from '@/types/student';
+import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
   student: StudentProps;
@@ -24,38 +26,16 @@ const emit = defineEmits<{
   (e: 'toggle-max-target-gears', checked: boolean): void;
 }>();
 
-const { getEquipmentIconUrl, getExclusiveGearIconUrl } = useStudentGearDisplay(
+const { 
+  getEquipmentIconUrl, 
+  getExclusiveGearIconUrl, 
+  getExclusiveGearDisplay 
+} = useStudentGearDisplay(
   toRef(() => props.student),
   () => ({}),
   toRef(() => props.equipmentLevels),
   toRef(() => props.exclusiveGearLevel)
 );
-
-// Checkbox handlers
-const handleMaxAllGearsChange = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  emit('toggle-max-gears', checked);
-};
-
-const handleMaxTargetGearsChange = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  emit('toggle-max-target-gears', checked);
-};
-
-// Equipment type mapping for display
-const equipmentTypes = {
-  Hat: $t('equipmentTypes.Hat'),
-  Gloves: $t('equipmentTypes.Gloves'),
-  Shoes: $t('equipmentTypes.Shoes'),
-  Bag: $t('equipmentTypes.Bag'),
-  Badge: $t('equipmentTypes.Badge'),
-  Hairpin: $t('equipmentTypes.Hairpin'),
-  Charm: $t('equipmentTypes.Charm'),
-  Watch: $t('equipmentTypes.Watch'),
-  Necklace: $t('equipmentTypes.Necklace')
-};
-
-type EquipmentKey = keyof typeof equipmentTypes;
 
 // Function to handle current level changes
 function updateEquipmentCurrent(type: string, value: number) {
@@ -75,24 +55,33 @@ function updateEquipmentTarget(type: string, value: number) {
   if (result) emit('update-equipment', equipmentType, result.current, result.target);
 }
 
-// Function to check if target is at max level
-function isTargetMaxLevel(target: number, type: string) {
-  return target === getMaxTierForTypeSync(type);
-}
-
-// Exclusive gear computed with defaults
-const gearCurrent = computed(() => props.exclusiveGearLevel?.current ?? 0);
-const gearTarget = computed(() => props.exclusiveGearLevel?.target ?? 0);
-
 function updateExclusiveGearCurrent(value: number) {
-  const result = clampLevelPair(value, gearTarget.value, 0, props.maxUnlockableGearTier, false);
+  const result = clampLevelPair(value, getExclusiveGearDisplay().target, 0, props.maxUnlockableGearTier, false);
   if (result) emit('update-exclusive-gear', result.current, result.target);
 }
 
 function updateExclusiveGearTarget(value: number) {
-  const result = clampLevelPair(value, gearCurrent.value, 0, 2, true);
+  const result = clampLevelPair(value, getExclusiveGearDisplay().current, 0, MAX_EXCLUSIVE_GEAR_LEVEL, true);
   if (result) emit('update-exclusive-gear', result.current, result.target);
 }
+
+const equipmentStates = computed(() =>
+  (props.student?.Equipment || []).map(type => ({
+    type,
+    current: props.equipmentLevels[type]?.current || 1,
+    target:  props.equipmentLevels[type]?.target  || 1,
+    max:     getMaxTierForTypeSync(type),
+  }))
+);
+
+const exclusiveGearState = computed(() => {
+  const d = getExclusiveGearDisplay();
+  return {
+    current:    d.current,
+    target:     d.target,
+    maxCurrent: props.maxUnlockableGearTier,
+  };
+});
 </script>
 
 <template>
@@ -106,7 +95,7 @@ function updateExclusiveGearTarget(value: number) {
           id="max-all-gears"
           name="max-all-gears"
           :checked="props.allGearsMaxed"
-          @change="handleMaxAllGearsChange"
+          @change="(e) => emit('toggle-max-gears', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-all-gears">{{ $t('maxAllGears') }}</label>
       </div>
@@ -116,7 +105,7 @@ function updateExclusiveGearTarget(value: number) {
           id="max-target-gears"
           name="max-target-gears"
           :checked="props.targetGearsMaxed"
-          @change="handleMaxTargetGearsChange"
+          @change="(e) => emit('toggle-max-target-gears', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-target-gears">{{ $t('maxTargetGears') }}</label>
       </div>
@@ -124,117 +113,33 @@ function updateExclusiveGearTarget(value: number) {
 
     <div class="equipment-grid">
       <!-- Regular Equipment Items -->
-      <div v-for="type in student?.Equipment" :key="type" class="modal-grid-item equipment-item">
+      <div v-for="state in equipmentStates" :key="state.type" class="modal-grid-item equipment-item">
         <div class="level-control">
-          <div class="custom-number-input">
-            <button
-              class="control-button min-button"
-              :class="{ disabled: equipmentLevels[type]?.current <= 1 }"
-              @click="updateEquipmentCurrent(type, 1)"
-              :disabled="equipmentLevels[type]?.current <= 1"
-              :aria-label="$t('setMinLevel')"
-            >
-              <span>«</span>
-            </button>
-            <button
-              class="control-button decrement-button"
-              :class="{ disabled: equipmentLevels[type]?.current <= 1 }"
-              @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) - 1)"
-              :disabled="equipmentLevels[type]?.current <= 1"
-              :aria-label="$t('decreaseLevel')"
-            >
-              <span>−</span>
-            </button>
-            <input
-              type="number"
-              :name="`${type.toLowerCase()}-current`"
-              :value="equipmentLevels[type]?.current || 1"
-              @input="(e) => updateEquipmentCurrent(type, parseInt((e.target as HTMLInputElement).value))"
-              :min="1"
-              :max="getMaxTierForTypeSync(type)"
-              class="level-input current-level"
-              :aria-label="`${$t('currentEquipment')} ${equipmentTypes[type as EquipmentKey]}`"
-            />
-            <button
-              class="control-button increment-button"
-              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForTypeSync(type) }"
-              @click="updateEquipmentCurrent(type, (equipmentLevels[type]?.current || 1) + 1)"
-              :disabled="equipmentLevels[type]?.current >= getMaxTierForTypeSync(type)"
-              :aria-label="$t('increaseLevel')"
-            >
-              <span>+</span>
-            </button>
-            <button
-              class="control-button max-button"
-              :class="{ disabled: equipmentLevels[type]?.current >= getMaxTierForTypeSync(type) }"
-              @click="updateEquipmentCurrent(type, getMaxTierForTypeSync(type))"
-              :disabled="equipmentLevels[type]?.current >= getMaxTierForTypeSync(type)"
-              :aria-label="$t('setMaxLevel')"
-            >
-              <span>»</span>
-            </button>
-          </div>
+          <NumberStepper
+            :value="state.current" :min="1" :max="state.max"
+            :name="`${state.type.toLowerCase()}-current`"
+            :aria-label="`${$t('currentEquipment')} ${getEquipmentTypeName(state.type)}`"
+            @change="updateEquipmentCurrent(state.type, $event)"
+          />
         </div>
 
         <div class="modal-item-icon">
           <img
-            :src="getEquipmentIconUrl(type, equipmentLevels[type]?.current || 1)"
-            :alt="`${equipmentTypes[type as EquipmentKey]} ${$t('tier')}${equipmentLevels[type]?.current || 1}`"
+            :src="getEquipmentIconUrl(state.type, state.current)"
+            :alt="`${getEquipmentTypeName(state.type)} ${$t('tier')}${state.current}`"
             class="equipment-image"
             loading="lazy"
           />
         </div>
 
         <div class="level-control">
-          <div class="custom-number-input">
-            <button
-              class="control-button min-button"
-              :class="{ disabled: equipmentLevels[type]?.target <= 1 }"
-              @click="updateEquipmentTarget(type, 1)"
-              :disabled="equipmentLevels[type]?.target <= 1"
-              :aria-label="$t('setMinLevel')"
-            >
-              <span>«</span>
-            </button>
-            <button
-              class="control-button decrement-button"
-              :class="{ disabled: equipmentLevels[type]?.target <= 1 }"
-              @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) - 1)"
-              :disabled="equipmentLevels[type]?.target <= 1"
-              :aria-label="$t('decreaseLevel')"
-            >
-              <span>−</span>
-            </button>
-            <input
-              type="number"
-              :name="`${type.toLowerCase()}-target`"
-              :value="equipmentLevels[type]?.target || 1"
-              @input="(e) => updateEquipmentTarget(type, parseInt((e.target as HTMLInputElement).value))"
-              :min="1"
-              :max="getMaxTierForTypeSync(type)"
-              class="level-input target-level"
-              :class="{ 'max-level': isTargetMaxLevel(equipmentLevels[type]?.target || 1, type) }"
-              :aria-label="`${$t('targetEquipment')} ${equipmentTypes[type as EquipmentKey]}`"
-            />
-            <button
-              class="control-button increment-button"
-              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForTypeSync(type) }"
-              @click="updateEquipmentTarget(type, (equipmentLevels[type]?.target || 1) + 1)"
-              :disabled="equipmentLevels[type]?.target >= getMaxTierForTypeSync(type)"
-              :aria-label="$t('increaseLevel')"
-            >
-              <span>+</span>
-            </button>
-            <button
-              class="control-button max-button"
-              :class="{ disabled: equipmentLevels[type]?.target >= getMaxTierForTypeSync(type) }"
-              @click="updateEquipmentTarget(type, getMaxTierForTypeSync(type))"
-              :disabled="equipmentLevels[type]?.target >= getMaxTierForTypeSync(type)"
-              :aria-label="$t('setMaxLevel')"
-            >
-              <span>»</span>
-            </button>
-          </div>
+          <NumberStepper
+            :value="state.target" :min="1" :max="state.max"
+            variant="target"
+            :name="`${state.type.toLowerCase()}-target`"
+            :aria-label="`${$t('targetEquipment')} ${getEquipmentTypeName(state.type)}`"
+            @change="updateEquipmentTarget(state.type, $event)"
+          />
         </div>
       </div>
 
@@ -242,42 +147,12 @@ function updateExclusiveGearTarget(value: number) {
       <div class="modal-grid-item equipment-item" :class="{ 'placeholder-item': !hasExclusiveGear }">
         <!-- Current Level Control -->
         <div class="level-control" :class="{ 'placeholder-control': !hasExclusiveGear }">
-          <div class="custom-number-input" :class="{ disabled: !hasExclusiveGear || maxUnlockableGearTier === 0 }">
-            <button
-              class="control-button min-button"
-              :class="{ disabled: !hasExclusiveGear || gearCurrent <= 0 }"
-              @click="updateExclusiveGearCurrent(0)"
-              :disabled="!hasExclusiveGear || gearCurrent <= 0"
-            ><span>«</span></button>
-            <button
-              class="control-button decrement-button"
-              :class="{ disabled: !hasExclusiveGear || gearCurrent <= 0 }"
-              @click="updateExclusiveGearCurrent(gearCurrent - 1)"
-              :disabled="!hasExclusiveGear || gearCurrent <= 0"
-            ><span>−</span></button>
-            <input
-              type="number"
-              name="exclusive-gear-current"
-              :value="gearCurrent"
-              @input="(e) => updateExclusiveGearCurrent(parseInt((e.target as HTMLInputElement).value))"
-              :min="0"
-              :max="maxUnlockableGearTier"
-              class="level-input current-level"
-              :disabled="!hasExclusiveGear || maxUnlockableGearTier === 0"
-            />
-            <button
-              class="control-button increment-button"
-              :class="{ disabled: !hasExclusiveGear || gearCurrent >= maxUnlockableGearTier }"
-              @click="updateExclusiveGearCurrent(gearCurrent + 1)"
-              :disabled="!hasExclusiveGear || gearCurrent >= maxUnlockableGearTier"
-            ><span>+</span></button>
-            <button
-              class="control-button max-button"
-              :class="{ disabled: !hasExclusiveGear || gearCurrent >= maxUnlockableGearTier }"
-              @click="updateExclusiveGearCurrent(maxUnlockableGearTier)"
-              :disabled="!hasExclusiveGear || gearCurrent >= maxUnlockableGearTier"
-            ><span>»</span></button>
-          </div>
+          <NumberStepper
+            :value="exclusiveGearState.current" :min="0" :max="exclusiveGearState.maxCurrent"
+            name="exclusive-gear-current"
+            :disabled="!hasExclusiveGear || exclusiveGearState.maxCurrent === 0"
+            @change="updateExclusiveGearCurrent($event)"
+          />
         </div>
 
         <!-- Gear Icon -->
@@ -313,43 +188,13 @@ function updateExclusiveGearTarget(value: number) {
 
         <!-- Target Level Control -->
         <div class="level-control" :class="{ 'placeholder-control': !hasExclusiveGear }">
-          <div class="custom-number-input" :class="{ disabled: !hasExclusiveGear }">
-            <button
-              class="control-button min-button"
-              :class="{ disabled: !hasExclusiveGear || gearTarget <= 0 }"
-              @click="updateExclusiveGearTarget(0)"
-              :disabled="!hasExclusiveGear || gearTarget <= 0"
-            ><span>«</span></button>
-            <button
-              class="control-button decrement-button"
-              :class="{ disabled: !hasExclusiveGear || gearTarget <= 0 }"
-              @click="updateExclusiveGearTarget(gearTarget - 1)"
-              :disabled="!hasExclusiveGear || gearTarget <= 0"
-            ><span>−</span></button>
-            <input
-              type="number"
-              name="exclusive-gear-target"
-              :value="gearTarget"
-              @input="(e) => updateExclusiveGearTarget(parseInt((e.target as HTMLInputElement).value))"
-              :min="0"
-              :max="2"
-              class="level-input target-level"
-              :class="{ 'max-level': gearTarget === 2 }"
-              :disabled="!hasExclusiveGear"
-            />
-            <button
-              class="control-button increment-button"
-              :class="{ disabled: !hasExclusiveGear || gearTarget >= 2 }"
-              @click="updateExclusiveGearTarget(gearTarget + 1)"
-              :disabled="!hasExclusiveGear || gearTarget >= 2"
-            ><span>+</span></button>
-            <button
-              class="control-button max-button"
-              :class="{ disabled: !hasExclusiveGear || gearTarget >= 2 }"
-              @click="updateExclusiveGearTarget(2)"
-              :disabled="!hasExclusiveGear || gearTarget >= 2"
-            ><span>»</span></button>
-          </div>
+          <NumberStepper
+            :value="exclusiveGearState.target" :min="0" :max="MAX_EXCLUSIVE_GEAR_LEVEL"
+            variant="target"
+            name="exclusive-gear-target"
+            :disabled="!hasExclusiveGear"
+            @change="updateExclusiveGearTarget($event)"
+          />
         </div>
       </div>
     </div>

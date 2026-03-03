@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { toRef } from 'vue';
-import { useStudentColors } from '@/composables/useStudentColors';
+import { computed, toRef } from 'vue';
+import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentSkillDisplay } from '@/composables/useStudentSkillDisplay';
-import { useStudentSkillEnhancements } from '@/composables/useStudentSkillEnhancements';
 import { useTooltip } from '@/composables/useTooltip';
 import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import { SkillType } from '@/types/upgrade';
+import { SkillType, SKILL_TYPES } from '@/types/upgrade';
+import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
   student: StudentProps,
@@ -23,51 +23,53 @@ const emit = defineEmits<{
 }>();
 
 const studentRef = toRef(() => props.student);
-const { isPassiveEnhanced, isBasicEnhanced } = useStudentSkillEnhancements(studentRef);
-const { bulletTypeColor } = useStudentColors(studentRef);
+const { bulletTypeColor } = useStudentInfo(studentRef);
 const {
   useExtraExSkill,
   hasExtraExSkill,
+  isBasicEnhanced,
+  isPassiveEnhanced,
   toggleExtraExSkill,
   getSkillIcon,
   getSkillName,
   getMaxLevel,
   getLevelDisplayState,
-  isTargetMaxLevel,
   getSkillDescription,
   getSkillCostDisplay,
   getSkillIconUrl
 } = useStudentSkillDisplay(
   studentRef,
   toRef(() => props.skillLevels),
-  isPassiveEnhanced,
-  isBasicEnhanced
 );
 
-// Checkbox handlers
-const handleMaxAllSkillsChange = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  emit('toggle-max-skills', checked);
-};
-
-const handleMaxTargetSkillsChange = (event: Event) => {
-  const checked = (event.target as HTMLInputElement).checked;
-  emit('toggle-max-target', checked);
-};
+const skillStates = computed(() =>
+  SKILL_TYPES.map(type => ({
+    type,
+    current: props.skillLevels[type]?.current ?? 1,
+    target:  props.skillLevels[type]?.target  ?? 1,
+    max:     getMaxLevel(type),
+  }))
+);
+const { 
+  activeTooltip, 
+  tooltipStyle, 
+  tooltipRef, 
+  showTooltip, 
+  hideTooltip 
+} = useTooltip<SkillType>();
 
 // Handle skill level changes (using props directly, no internal state)
 const updateSkillCurrent = (type: SkillType, value: number) => {
-  const result = clampLevelPair(value, props.skillLevels[type]?.target ?? 1, 1, getMaxLevel(type), false);
+  const target = props.skillLevels[type]?.target;
+  const result = clampLevelPair(value, target ?? 1, 1, getMaxLevel(type), false);
   if (result) emit('update-skill', type, result.current, result.target);
 };
 
 const updateSkillTarget = (type: SkillType, value: number) => {
-  const result = clampLevelPair(value, props.skillLevels[type]?.current ?? 1, 1, getMaxLevel(type), true);
+  const current = props.skillLevels[type]?.current;
+  const result = clampLevelPair(value, current ?? 1, 1, getMaxLevel(type), true);
   if (result) emit('update-skill', type, result.current, result.target);
 };
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<SkillType>();
 </script>
 
 <template>
@@ -81,7 +83,7 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
           id="max-all-skills"
           name="max-all-skills"
           :checked="props.allSkillsMaxed"
-          @change="handleMaxAllSkillsChange"
+          @change="(e) => emit('toggle-max-skills', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-all-skills">{{ $t('maxAllSkills') }}</label>
       </div>
@@ -91,7 +93,7 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
           id="max-target-skills"
           name="max-target-skills"
           :checked="props.targetSkillsMaxed"
-          @change="handleMaxTargetSkillsChange"
+          @change="(e) => emit('toggle-max-target', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-target-skills">{{ $t('maxTargetSkills') }}</label>
       </div>
@@ -99,60 +101,18 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
 
     <div class="skill-grid">
       <div
-        v-for="skillType in ['Ex', 'Public', 'Passive', 'ExtraPassive'] as SkillType[]"
-        :key="skillType"
+        v-for="state in skillStates"
+        :key="state.type"
         class="modal-grid-item"
       >
         <!-- Current Level Control -->
         <div class="level-control">
-          <div class="custom-number-input">
-            <button
-              class="control-button min-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) <= 1 }"
-              @click="updateSkillCurrent(skillType, 1)"
-              :disabled="(props.skillLevels[skillType]?.current ?? 1) <= 1"
-              :aria-label="$t('setMinLevel')"
-            >
-              <span>«</span>
-            </button>
-            <button
-              class="control-button decrement-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) <= 1 }"
-              @click="updateSkillCurrent(skillType, (props.skillLevels[skillType]?.current ?? 1) - 1)"
-              :disabled="(props.skillLevels[skillType]?.current ?? 1) <= 1"
-              :aria-label="$t('decreaseLevel')"
-            >
-              <span>−</span>
-            </button>
-            <input
-              type="number"
-              :name="`skill-current-${skillType}`"
-              :value="props.skillLevels[skillType]?.current ?? 1"
-              @input="(e) => updateSkillCurrent(skillType, parseInt((e.target as HTMLInputElement).value))"
-              :min="1"
-              :max="getMaxLevel(skillType)"
-              class="level-input current-level"
-              :aria-label="`${$t('current')} ${getSkillName(skillType)}`"
-            />
-            <button
-              class="control-button increment-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType) }"
-              @click="updateSkillCurrent(skillType, (props.skillLevels[skillType]?.current ?? 1) + 1)"
-              :disabled="(props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType)"
-              :aria-label="$t('increaseLevel')"
-            >
-              <span>+</span>
-            </button>
-            <button
-              class="control-button max-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType) }"
-              @click="updateSkillCurrent(skillType, getMaxLevel(skillType))"
-              :disabled="(props.skillLevels[skillType]?.current ?? 1) >= getMaxLevel(skillType)"
-              :aria-label="$t('setMaxLevel')"
-            >
-              <span>»</span>
-            </button>
-          </div>
+          <NumberStepper
+            :value="state.current" :min="1" :max="state.max"
+            :name="`skill-current-${state.type}`"
+            :aria-label="`${$t('current')} ${getSkillName(state.type)}`"
+            @change="updateSkillCurrent(state.type, $event)"
+          />
         </div>
 
         <!-- Skill Icon -->
@@ -173,15 +133,15 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
               />
             </svg>
             <img
-              :src="getSkillIconUrl(getSkillIcon(skillType))"
-              :alt="getSkillName(skillType)"
+              :src="getSkillIconUrl(getSkillIcon(state.type))"
+              :alt="getSkillName(state.type)"
               class="skill-fg"
-              @mouseenter="showTooltip($event, skillType)"
+              @mouseenter="showTooltip($event, state.type)"
               @mouseleave="hideTooltip"
             />
             <!-- Enhanced overlay for Passive skill -->
             <div
-              v-if="skillType === 'Passive' && isPassiveEnhanced"
+              v-if="state.type === 'Passive' && isPassiveEnhanced"
               class="enhanced-overlay"
               :style="{ backgroundColor: bulletTypeColor }"
             >
@@ -189,7 +149,7 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
             </div>
             <!-- Enhanced overlay for Public skill (GearPublic) -->
             <div
-              v-if="skillType === 'Public' && isBasicEnhanced"
+              v-if="state.type === 'Public' && isBasicEnhanced"
               class="enhanced-overlay"
               :style="{ backgroundColor: bulletTypeColor }"
             >
@@ -197,7 +157,7 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
             </div>
             <!-- EX skill toggle -->
             <button
-              v-if="skillType === 'Ex' && hasExtraExSkill"
+              v-if="state.type === 'Ex' && hasExtraExSkill"
               @click="toggleExtraExSkill"
               class="ex-toggle-btn"
               :class="{ active: useExtraExSkill }"
@@ -210,59 +170,17 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
 
         <!-- Target Level Control -->
         <div class="level-control">
-          <div class="custom-number-input">
-            <button
-              class="control-button min-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) <= 1 }"
-              @click="updateSkillTarget(skillType, 1)"
-              :disabled="(props.skillLevels[skillType]?.target ?? 1) <= 1"
-              :aria-label="$t('setMinLevel')"
-            >
-              <span>«</span>
-            </button>
-            <button
-              class="control-button decrement-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) <= 1 }"
-              @click="updateSkillTarget(skillType, (props.skillLevels[skillType]?.target ?? 1) - 1)"
-              :disabled="(props.skillLevels[skillType]?.target ?? 1) <= 1"
-              :aria-label="$t('decreaseLevel')"
-            >
-              <span>−</span>
-            </button>
-            <input
-              type="number"
-              :name="`skill-target-${skillType}`"
-              :value="props.skillLevels[skillType]?.target ?? 1"
-              @input="(e) => updateSkillTarget(skillType, parseInt((e.target as HTMLInputElement).value))"
-              :min="1"
-              :max="getMaxLevel(skillType)"
-              class="level-input target-level"
-              :class="{ 'max-level': isTargetMaxLevel(props.skillLevels[skillType]?.target ?? 1, getMaxLevel(skillType)) }"
-              :aria-label="`${$t('target')} ${getSkillName(skillType)}`"
-            />
-            <button
-              class="control-button increment-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType) }"
-              @click="updateSkillTarget(skillType, (props.skillLevels[skillType]?.target ?? 1) + 1)"
-              :disabled="(props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType)"
-              :aria-label="$t('increaseLevel')"
-            >
-              <span>+</span>
-            </button>
-            <button
-              class="control-button max-button"
-              :class="{ disabled: (props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType) }"
-              @click="updateSkillTarget(skillType, getMaxLevel(skillType))"
-              :disabled="(props.skillLevels[skillType]?.target ?? 1) >= getMaxLevel(skillType)"
-              :aria-label="$t('setMaxLevel')"
-            >
-              <span>»</span>
-            </button>
-          </div>
+          <NumberStepper
+            :value="state.target" :min="1" :max="state.max"
+            variant="target"
+            :name="`skill-target-${state.type}`"
+            :aria-label="`${$t('target')} ${getSkillName(state.type)}`"
+            @change="updateSkillTarget(state.type, $event)"
+          />
         </div>
 
         <!-- Skill Name -->
-        <div class="skill-name">{{ getSkillName(skillType) }}</div>
+        <div class="skill-name">{{ getSkillName(state.type) }}</div>
       </div>
     </div>
 

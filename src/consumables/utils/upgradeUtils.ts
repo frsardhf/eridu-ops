@@ -1,5 +1,6 @@
 // materialUtils.ts
 import { type Ref } from 'vue';
+export { MAX_POTENTIAL_LEVEL } from '@/consumables/constants/gameConstants';
 
 /**
  * Determines the state of level displays (max, same, or different)
@@ -53,6 +54,15 @@ export function updateTargetLevel(value: number, current: number, minLevel: numb
     return Math.max(value, current);
   }
   return Math.min(Math.max(value, current, minLevel), maxLevel);
+}
+
+/**
+ * Parses a raw string input to an integer.
+ * Returns `fallback` when the string is empty or non-numeric.
+ */
+export function parseEditValue(rawValue: string, fallback: number): number {
+  const parsed = parseInt(rawValue, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
 }
 
 /**
@@ -129,16 +139,3 @@ export function formatSkillCost(cost: number[], current: number, target: number)
   return formatValueWithTarget(currentValue, targetValue);
 }
 
-/**
- * Get full URL for skill icon
- */
-export function getSkillIconUrl(iconName: string) {
-  return `https://schaledb.com/images/skill/${iconName}.webp`;
-}
-
-/**
- * Get full URL for potential icon
- */
-export function getPotentialIconUrl(iconName: string) {
-  return `https://schaledb.com/images/item/icon/${iconName}.webp`;
-}

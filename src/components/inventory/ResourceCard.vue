@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { ResourceProps } from '@/types/resource';
 import '@/styles/resourceDisplay.css';
+import { useFocusInput } from '@/composables/useInputEditor';
+import { formatLargeNumber } from '@/consumables/utils/materialUtils';
+import { getItemIconUrl } from '@/consumables/utils/iconUtils';
 
 const props = defineProps<{
   item: ResourceProps,
   value?: any,
-  formatQuantity?: (quantity: number) => string,
   itemType?: 'resource' | 'equipment',
   inputTabIndex?: number
 }>();
@@ -16,66 +17,37 @@ const emit = defineEmits<{
   'keydown:input': [event: KeyboardEvent];
 }>();
 
-const isInputFocused = ref(false);
-const inputEl = ref<HTMLInputElement | null>(null);
+const { 
+  isInputFocused, 
+  inputEl, 
+  handleFocus, 
+  handleBlur, 
+  forceInputFocus 
+} = useFocusInput();
 
 function handleInput(event: Event) {
   emit('update:value', event);
 }
 
-function handleFocus() {
-  isInputFocused.value = true;
-}
-
-function handleBlur() {
-  isInputFocused.value = false;
-}
-
-function forceInputFocus() {
-  if (inputEl.value) {
-    inputEl.value.focus();
-  }
-}
-
 function handleInputKeydown(event: KeyboardEvent) {
   emit('keydown:input', event);
-}
-
-// Determine the correct icon path based on itemType
-function getIconPath(): string {
-  const type = props.itemType === 'equipment' ? 'equipment' : 'item';
-  let iconName = props.item.Icon;
-  if (props.itemType === 'equipment' && props.item.Tier !== 0) iconName = `${props.item.Icon}_piece`;
-  return `https://schaledb.com/images/${type}/icon/${iconName}.webp`;
-}
-
-// Format the quantity value
-function formatValue(value: any): string {
-  if (!value || value === '0') return '';
-  
-  // If formatQuantity prop is provided, use it
-  if (props.formatQuantity) {
-    return props.formatQuantity(Number(value));
-  }
-  
-  // Otherwise use default formatting
-  return `×${value}`;
 }
 </script>
 
 <template>
   <div class="resource-item" @click="forceInputFocus">
     <div class="resource-content">
-      <img 
-        :src="getIconPath()"
+      <img
+        :src="getItemIconUrl(props.item.Icon, 
+          props.itemType === 'equipment' ? 'equipment' : 'item', props.item.Tier)"
         :alt="props.item.Name"
         class="resource-icon"
       />
-      <div 
-        class="resource-quantity" 
+      <div
+        class="resource-quantity"
         v-if="!isInputFocused"
       >
-        {{ formatValue(props.value) }}
+        {{ formatLargeNumber(Number(props.value)) }}
       </div>
       <input
         ref="inputEl"

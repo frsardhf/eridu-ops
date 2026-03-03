@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
 import { $t } from '@/locales';
-import { useStudentColors } from '@/composables/useStudentColors';
+import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
-import { useStudentLocalization } from '@/composables/useStudentLocalization';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
@@ -15,8 +14,7 @@ const props = defineProps<{
 
 const studentRef = toRef(() => props.student);
 
-const { squadTypeName, bulletTypeName, armorTypeName } = useStudentLocalization(studentRef);
-const { squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight } = useStudentColors(studentRef);
+const { squadTypeName, bulletTypeName, armorTypeName, squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight } = useStudentInfo(studentRef);
 const { showLevelArrow } = useStudentLevels(() => props.characterLevels);
 const showBondArrow = computed(() => props.currentBond !== props.newBondLevel);
 const levelPillClass = computed(() => ({

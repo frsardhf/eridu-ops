@@ -1,5 +1,16 @@
 import { computed, MaybeRefOrGetter, toValue } from 'vue';
+import {
+  getWeaponIconUrl as iconGetWeaponIconUrl,
+  getEquipmentIconUrl as iconGetEquipmentIconUrl,
+  getExclusiveGearIconUrl as iconGetExclusiveGearIconUrl,
+} from '@/consumables/utils/iconUtils';
+import { MAX_GRADE, WEAPON_STAR_THRESHOLD } from '@/consumables/constants/gameConstants';
+import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+
+export function getEquipmentTypeName(type: string): string {
+  return $t(`equipmentTypes.${type}`) || type;
+}
 
 export function useStudentGearDisplay(
   student: MaybeRefOrGetter<StudentProps>,
@@ -9,25 +20,23 @@ export function useStudentGearDisplay(
 ) {
   const currentGrade = computed(() => toValue(gradeLevels)?.current ?? 1);
   const targetGrade = computed(() => toValue(gradeLevels)?.target ?? 1);
-  const isMaxGrade = computed(() => currentGrade.value === 9);
-  const isWeaponLocked = computed(() => currentGrade.value <= 5);
+  const isMaxGrade = computed(() => currentGrade.value === MAX_GRADE);
+  const isWeaponLocked = computed(() => currentGrade.value <= WEAPON_STAR_THRESHOLD);
 
   const blueStars = computed(() => {
     const arr: { position: number; active: boolean }[] = [];
-    for (let i = 6; i <= 9; i++) {
+    for (let i = WEAPON_STAR_THRESHOLD + 1; i <= MAX_GRADE; i++) {
       arr.push({ position: i, active: i <= currentGrade.value });
     }
     return arr;
   });
 
   function getWeaponIconUrl(): string {
-    const s = toValue(student);
-    if (!s?.WeaponImg) return '';
-    return `https://schaledb.com/images/weapon/${s.WeaponImg}.webp`;
+    return iconGetWeaponIconUrl(toValue(student).WeaponImg);
   }
 
   function getEquipmentIconUrl(type: string, tier: number): string {
-    return `https://schaledb.com/images/equipment/icon/equipment_icon_${type.toLowerCase()}_tier${tier}.webp`;
+    return iconGetEquipmentIconUrl(type, tier);
   }
 
   function getEquipmentDisplay(type: string): { current: number; target: number; isSame: boolean } {
@@ -38,9 +47,7 @@ export function useStudentGearDisplay(
   }
 
   function getExclusiveGearIconUrl(): string {
-    const s = toValue(student);
-    if (!s?.Id) return '';
-    return `https://schaledb.com/images/gear/full/${s.Id}.webp`;
+    return iconGetExclusiveGearIconUrl(toValue(student).Id);
   }
 
   function getExclusiveGearDisplay(): {

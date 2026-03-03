@@ -4,25 +4,13 @@ import { $t } from '@/locales';
 
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
-  useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>();
-
-function handleConvert() {
-  emit('toggle-convert');
-}
-
-function handleAutoFill() {
-  emit('auto-fill-gift');
-}
-
-function handleReset() {
-  emit('reset-gifts');
-}
-
-function handleUndo() {
-  emit('undo-changes');
-}
+const { 
+  activeTooltip, 
+  tooltipStyle, 
+  tooltipRef, 
+  showTooltip, 
+  hideTooltip 
+} = useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>();
 </script>
 
 <template>
@@ -31,7 +19,7 @@ function handleUndo() {
       <div class="button-group">
         <button
           class="button button-convert"
-          @click="handleConvert"
+          @click="emit('toggle-convert')"
           @mouseenter="showTooltip($event, 'convert')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('convertGiftBox')"
@@ -42,7 +30,7 @@ function handleUndo() {
         
         <button
           class="button button-primary"
-          @click="handleAutoFill"
+          @click="emit('auto-fill-gift')"
           @mouseenter="showTooltip($event, 'autofill')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('autoFillGifts')"
@@ -53,7 +41,7 @@ function handleUndo() {
 
         <button
           class="button button-secondary"
-          @click="handleReset"
+          @click="emit('reset-gifts')"
           @mouseenter="showTooltip($event, 'reset')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('resetGifts')"
@@ -64,7 +52,7 @@ function handleUndo() {
         
         <button
           class="button button-secondary"
-          @click="handleUndo"
+          @click="emit('undo-changes')"
           @mouseenter="showTooltip($event, 'undo')"
           @mouseleave="hideTooltip()"
           :aria-label="$t('undoChanges')"

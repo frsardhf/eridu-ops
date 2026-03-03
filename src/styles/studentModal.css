@@ -606,3 +606,67 @@
     width: 20px;
   }
 }
+
+/* ==========================================================================
+   Grade Star Rating Controls (StarRatingGroup)
+   ========================================================================== */
+.grade-stars-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(4px);
+}
+
+.grade-star-button {
+  border: none;
+  background: transparent;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: 0;
+  opacity: 0.28;
+  cursor: pointer;
+  transition: opacity 0.16s ease;
+}
+
+.grade-star-button.active {
+  opacity: 1;
+}
+
+.grade-star-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.star-icon {
+  width: 120%;
+  height: 120%;
+}
+
+.gold-star {
+  color: rgb(255, 201, 51);
+}
+
+.blue-star {
+  color: hsl(192, 100%, 60%);
+}
+
+@media (max-width: 520px) {
+  .grade-stars-group {
+    min-width: 0;
+    flex: 1 1 0;
+    max-width: 158px;
+    justify-content: center;
+    padding: 4px 6px;
+  }
+
+  .grade-star-button {
+    width: 14px;
+    height: 14px;
+  }
+}

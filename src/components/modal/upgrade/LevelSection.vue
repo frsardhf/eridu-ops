@@ -1,97 +1,29 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
-import { createEditorKeydownHandler } from '@/consumables/utils/upgradeUtils';
 import { $t } from '@/locales';
+import { useStudentLevels } from '@/composables/useStudentLevels';
+import { useLevelEditor } from '@/composables/useInputEditor';
 
 const props = defineProps<{
-  characterLevels: { current: number; target: number; },
-  totalXpNeeded: number
+  characterLevels: { current: number; target: number };
+  totalXpNeeded: number;
 }>();
 
-const emit = defineEmits<(
-  e: 'update-level', current: number, target: number
-) => void>();
+const emit = defineEmits<(e: 'update-level', current: number, target: number) => void>();
 
-const levelState = ref({
-  current: props.characterLevels.current,
-  target: props.characterLevels.target,
-});
-
-const editingField = ref<'current' | 'target' | null>(null);
-const editValue = ref('');
-const currentEditorRef = ref<HTMLInputElement | null>(null);
-const targetEditorRef = ref<HTMLInputElement | null>(null);
-
-watch(() => props.characterLevels, (newVal) => {
-  if (newVal) {
-    levelState.value.current = newVal.current;
-    levelState.value.target = newVal.target;
-    if (editingField.value) {
-      editingField.value = null;
-      editValue.value = '';
-    }
-  }
-}, { deep: true, immediate: true });
-
-// Centralized logic for processing level updates
-const processLevelUpdate = (value: number, isTarget: boolean) => {
-  if (isTarget) {
-    // Target must be between current and 90
-    value = Math.max(levelState.value.current, Math.min(90, value));
-    levelState.value.target = value;
-  } else {
-    // Current must be between 1 and 90
-    value = Math.max(1, Math.min(90, value));
-    levelState.value.current = value;
-    
-    // If target is now less than current, bump it up
-    if (levelState.value.target < value) {
-      levelState.value.target = value;
-    }
-  }
-
-  emit('update-level', levelState.value.current, levelState.value.target);
-};
-
-const parseEditValue = (rawValue: string, isTarget: boolean): number => {
-  const parsed = parseInt(rawValue);
-  if (Number.isNaN(parsed)) {
-    return isTarget ? levelState.value.current : 1;
-  }
-  return parsed;
-};
-
-const startEdit = async (field: 'current' | 'target') => {
-  if (field === 'target' && isMaxLevel.value) return;
-
-  editingField.value = field;
-  editValue.value = (field === 'current'
-    ? levelState.value.current
-    : levelState.value.target).toString();
-
-  await nextTick();
-  const editor = field === 'current' ? currentEditorRef.value : targetEditorRef.value;
-  editor?.focus();
-  editor?.select();
-};
-
-const commitEdit = () => {
-  if (!editingField.value) return;
-  const isTarget = editingField.value === 'target';
-  const parsed = parseEditValue(editValue.value, isTarget);
-  processLevelUpdate(parsed, isTarget);
-  editingField.value = null;
-  editValue.value = '';
-};
-
-const cancelEdit = () => {
-  editingField.value = null;
-  editValue.value = '';
-};
-
-const handleEditorKeydown = createEditorKeydownHandler(commitEdit, cancelEdit);
-
-const isMaxLevel = computed(() => levelState.value.current === 90);
+const { isMaxLevel } = useStudentLevels(() => props.characterLevels);
+const {
+  levelState,
+  editingField,
+  editValue,
+  currentEditorRef,
+  targetEditorRef,
+  startEdit,
+  commitEdit,
+  handleEditorKeydown,
+} = useLevelEditor(
+  () => props.characterLevels,
+  (current, target) => emit('update-level', current, target),
+);
 </script>
 
 <template>
@@ -148,7 +80,7 @@ const isMaxLevel = computed(() => levelState.value.current === 90);
         </template>
       </div>
 
-      <div v-if="!isMaxLevel" class="student-level-chip student-level-chip-strong student-level-chip-exp">
+      <div v-if="!isMaxLevel" class="student-level-chip">
         {{ $t('xpRequired') }}: {{ totalXpNeeded.toLocaleString() }}
       </div>
     </div>
@@ -258,20 +190,17 @@ const isMaxLevel = computed(() => levelState.value.current === 90);
   align-items: center;
   justify-content: center;
   font-size: 0.82rem;
+  font-weight: 700;
+
   border: 1px solid var(--border-color);
   border-radius: 999px;
   padding: 4px 10px;
+
   background: var(--background-primary);
-  color: var(--text-secondary);
-  min-height: 42px;
-}
-
-.student-level-chip-strong {
-  font-weight: 700;
   color: var(--text-primary);
-}
 
-.student-level-chip-exp {
+  min-height: 42px;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

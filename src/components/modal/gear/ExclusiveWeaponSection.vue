@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, watch, toRef } from 'vue';
+import { computed, toRef } from 'vue';
 import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
+import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
+import {
+  MAX_GRADE,
+  WEAPON_STAR_THRESHOLD as TRESHOLD
+} from '@/consumables/constants/gameConstants';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+import StarRatingGroup from '@/components/modal/shared/StarRatingGroup.vue';
 
 const props = defineProps<{
   student: StudentProps;
@@ -13,64 +19,45 @@ const emit = defineEmits<{
   (e: 'update-grade', current: number, target: number): void;
 }>();
 
-const { isMaxGrade, isWeaponLocked, getWeaponIconUrl } = useStudentGearDisplay(
+const { 
+  isMaxGrade, 
+  isWeaponLocked, 
+  getWeaponIconUrl, 
+  currentGrade, 
+  targetGrade 
+} = useStudentGearDisplay(
   toRef(() => props.student),
   toRef(() => props.gradeLevels),
   () => ({}),
   () => ({})
 );
 
-// Local state to track levels for star click interaction
-const gradeState = ref({
-  current: props.gradeLevels?.current || 1,
-  target: props.gradeLevels?.target || 1
-});
-
-// Watch for prop changes to update local state
-watch(() => props.gradeLevels, (newVal) => {
-  if (newVal) {
-    gradeState.value.current = newVal.current ?? 1;
-    gradeState.value.target = newVal.target ?? 1;
-  }
-}, { deep: true, immediate: true });
-
-// Single function to handle both current and target grade updates
 const updateCurrentGrade = (grade: number) => {
-  // Clamp the value between 1 and 9
-  const value = Math.max(1, Math.min(9, grade));
-  gradeState.value.current = value;
-
-  // Ensure target is at least as high as current
-  if (gradeState.value.target < value) {
-    gradeState.value.target = value;
-  }
-
-  emit('update-grade', gradeState.value.current, gradeState.value.target);
+  const result = clampLevelPair(grade, props.gradeLevels?.target ?? 1, 1, MAX_GRADE, false);
+  if (result) emit('update-grade', result.current, result.target);
 };
 
 const updateTargetGrade = (grade: number) => {
-  // Target must be at least current and at most 9
-  const value = Math.max(gradeState.value.current, Math.min(9, grade));
-  gradeState.value.target = value;
-
-  emit('update-grade', gradeState.value.current, gradeState.value.target);
+  const result = clampLevelPair(grade, props.gradeLevels?.current ?? 1, 1, MAX_GRADE, true);
+  if (result) emit('update-grade', result.current, result.target);
 };
 
-// Generate stars array for rendering
 const currentStars = computed(() => {
-  const starsArray: { position: number; isGold: boolean; active: boolean }[] = [];
-  for (let i = 1; i <= 9; i++) {
-    starsArray.push({ position: i, isGold: i <= 5, active: i <= gradeState.value.current });
-  }
-  return starsArray;
+  const current = props.gradeLevels?.current ?? 1;
+  return Array.from({ length: MAX_GRADE }, (_, i) => ({
+    position: i + 1,
+    isGold: i + 1 <= TRESHOLD,
+    active: i + 1 <= current,
+  }));
 });
 
 const targetStars = computed(() => {
-  const starsArray: { position: number; isGold: boolean; active: boolean }[] = [];
-  for (let i = 1; i <= 9; i++) {
-    starsArray.push({ position: i, isGold: i <= 5, active: i <= gradeState.value.target });
-  }
-  return starsArray;
+  const target = props.gradeLevels?.target ?? 1;
+  return Array.from({ length: MAX_GRADE }, (_, i) => ({
+    position: i + 1,
+    isGold: i + 1 <= TRESHOLD,
+    active: i + 1 <= target,
+  }));
 });
 </script>
 
@@ -82,12 +69,12 @@ const targetStars = computed(() => {
       <div class="weapon-preview" :class="{ 'locked': isWeaponLocked }">
         <div class="grade-overlay">
           <div class="grade-indicators" v-if="!isMaxGrade">
-            <div class="grade-pill" :class="gradeState.current <= 5 ? 'gold-grade' : 'blue-grade'">
-              {{ gradeState.current <= 5 ? gradeState.current : (gradeState.current - 5) }}★
+            <div class="grade-pill" :class="currentGrade <= TRESHOLD ? 'gold-grade' : 'blue-grade'">
+              {{ currentGrade <= TRESHOLD ? currentGrade : (currentGrade - TRESHOLD) }}★
             </div>
             <div class="grade-arrow">→</div>
-            <div class="grade-pill" :class="gradeState.target <= 5 ? 'gold-grade' : 'blue-grade'">
-              {{ gradeState.target <= 5 ? gradeState.target : (gradeState.target - 5) }}★
+            <div class="grade-pill" :class="targetGrade <= TRESHOLD ? 'gold-grade' : 'blue-grade'">
+              {{ targetGrade <= TRESHOLD ? targetGrade : (targetGrade - TRESHOLD) }}★
             </div>
           </div>
           <div class="grade-max-pill" v-else>{{ $t('maxGrade') }}</div>
@@ -102,37 +89,20 @@ const targetStars = computed(() => {
         <div class="weapon-icon placeholder" v-else>?</div>
 
         <div class="grade-inputs-overlay" :class="{ 'max-state': isMaxGrade, 'locked-state': isWeaponLocked }">
-          <div class="grade-stars-group current-group">
-            <button
-              v-for="star in currentStars"
-              :key="`current-star-${star.position}`"
-              class="grade-star-button"
-              :class="[star.isGold ? 'gold-star' : 'blue-star', { active: star.active }]"
-              type="button"
-              :aria-label="`${$t('current')} ${star.position}`"
-              @click="updateCurrentGrade(star.position)"
-            >
-              <svg class="star-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
-              </svg>
-            </button>
-          </div>
+          <StarRatingGroup
+            class="current-group"
+            :stars="currentStars"
+            :label-prefix="$t('current')"
+            @select="updateCurrentGrade"
+          />
 
-          <div v-if="!isMaxGrade" class="grade-stars-group target-group">
-            <button
-              v-for="star in targetStars"
-              :key="`target-star-${star.position}`"
-              class="grade-star-button"
-              :class="[star.isGold ? 'gold-star' : 'blue-star', { active: star.active }]"
-              type="button"
-              :aria-label="`${$t('target')} ${star.position}`"
-              @click="updateTargetGrade(star.position)"
-            >
-              <svg class="star-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/>
-              </svg>
-            </button>
-          </div>
+          <StarRatingGroup
+            v-if="!isMaxGrade"
+            class="target-group"
+            :stars="targetStars"
+            :label-prefix="$t('target')"
+            @select="updateTargetGrade"
+          />
         </div>
       </div>
     </div>
@@ -237,54 +207,8 @@ const targetStars = computed(() => {
   margin-right: 0;
 }
 
-.grade-stars-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 32px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  backdrop-filter: blur(4px);
-}
-
 .current-group {
   margin-right: auto;
-}
-
-.grade-star-button {
-  border: none;
-  background: transparent;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  line-height: 0;
-  opacity: 0.28;
-  cursor: pointer;
-  transition: opacity 0.16s ease;
-}
-
-.grade-star-button.active {
-  opacity: 1;
-}
-
-.grade-star-button:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 1px;
-  border-radius: 2px;
-}
-
-.star-icon {
-  width: 120%;
-  height: 120%;
-}
-
-.gold-star {
-  color: rgb(255, 201, 51);
-}
-
-.blue-star {
-  color: hsl(192, 100%, 60%);
 }
 
 /* Styles for locked weapon state */
@@ -317,22 +241,9 @@ const targetStars = computed(() => {
     justify-content: flex-end;
   }
 
-  .grade-stars-group {
-    min-width: 0;
-    flex: 1 1 0;
-    max-width: 158px;
-    justify-content: center;
-    padding: 4px 6px;
-  }
-
   .grade-inputs-overlay.max-state .grade-stars-group {
     flex: 0 1 auto;
     width: auto;
-  }
-
-  .grade-star-button {
-    width: 14px;
-    height: 14px;
   }
 }
 </style>

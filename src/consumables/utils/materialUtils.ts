@@ -201,6 +201,15 @@ export function formatLargeNumberAmount(quantity: number): string {
 }
 
 /**
+ * Formats a small item quantity for display with a '×' prefix.
+ * Returns '' for falsy / zero values (hides the overlay when quantity is 0).
+ */
+export function formatItemQuantity(value: number | string | null | undefined): string {
+  if (!value || value === '0' || value === 0) return '';
+  return `×${value}`;
+}
+
+/**
  * Helper function to check if a material ID is an EXP report
  */
 export function isExpReport(materialId: number): boolean {

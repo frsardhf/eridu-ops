@@ -1,76 +1,21 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { toRef } from 'vue';
+import { useStudentImages } from '@/composables/useStudentImages';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
   student: StudentProps
 }>();
 
-const backgroundLoadFailed = ref(false);
-const imageLoading = ref(true);
-const portraitLoaded = ref(false);
-const backgroundLoaded = ref(false);
-
-const portraitSrc = computed(() =>
-  `https://schaledb.com/images/student/portrait/${props.student.Id}.webp`
-);
-
-const backgroundSrc = computed(() => {
-  const collectionBg = props.student.CollectionBG;
-  if (!collectionBg || backgroundLoadFailed.value) return '';
-  return `https://schaledb.com/images/background/${collectionBg}.jpg`;
-});
-
-let shimmerTimer: ReturnType<typeof setTimeout> | null = null;
-
-// Reset loading state when student changes; delay shimmer so cache hits never flash it
-watch(() => props.student.Id, () => {
-  portraitLoaded.value = false;
-  backgroundLoaded.value = false;
-  backgroundLoadFailed.value = false;
-
-  if (shimmerTimer) clearTimeout(shimmerTimer);
-  shimmerTimer = setTimeout(() => {
-    shimmerTimer = null;
-    if (!portraitLoaded.value) imageLoading.value = true;
-  }, 80);
-});
-
-onBeforeUnmount(() => {
-  if (shimmerTimer) clearTimeout(shimmerTimer);
-});
-
-function checkAllLoaded() {
-  const bgDone = !backgroundSrc.value || backgroundLoaded.value;
-  if (portraitLoaded.value && bgDone) {
-    if (shimmerTimer) {
-      clearTimeout(shimmerTimer);
-      shimmerTimer = null;
-    }
-    imageLoading.value = false;
-  }
-}
-
-function handlePortraitLoad() {
-  portraitLoaded.value = true;
-  checkAllLoaded();
-}
-
-function handlePortraitError() {
-  portraitLoaded.value = true;
-  checkAllLoaded();
-}
-
-function handleBackgroundLoad() {
-  backgroundLoaded.value = true;
-  checkAllLoaded();
-}
-
-function handleBackgroundError() {
-  backgroundLoadFailed.value = true;
-  backgroundLoaded.value = true;
-  checkAllLoaded();
-}
+const {
+  portraitSrc,
+  backgroundSrc,
+  imageLoading,
+  handlePortraitLoad,
+  handlePortraitError,
+  handleBackgroundLoad,
+  handleBackgroundError,
+} = useStudentImages(toRef(() => props.student));
 </script>
 
 <template>

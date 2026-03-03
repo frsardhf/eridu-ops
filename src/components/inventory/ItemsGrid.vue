@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, type ComponentPublicInstance } from 'vue';
 import ResourceCard from './ResourceCard.vue';
-import { formatLargeNumber } from '@/consumables/utils/materialUtils';
 import { applyFilters } from '@/consumables/utils/filterUtils';
 import { MATERIAL } from '@/types/resource';
 import { getAllItemsFromCache } from '@/consumables/stores/resourceCacheStore';
@@ -153,7 +152,6 @@ watch(totalPages, (nextTotal) => {
               :key="`resource-${item.Id}`"
               :item="item"
               :value="resourceFormData[item.Id]"
-              :format-quantity="formatLargeNumber"
               :item-type="'resource'"
               :input-tab-index="currentPage === pageIndex ? 0 : -1"
               @update:value="(e) => handleResourceInput(item, e)"

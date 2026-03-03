@@ -1,6 +1,14 @@
-import { ComputedRef, MaybeRefOrGetter, computed, ref, toValue, watch } from 'vue';
+import { MaybeRefOrGetter, computed, ref, toValue, watch } from 'vue';
 import { formatSkillDescription } from '@/consumables/utils/localizationUtils';
-import { formatSkillCost, getSkillIconUrl } from '@/consumables/utils/upgradeUtils';
+import { formatSkillCost } from '@/consumables/utils/upgradeUtils';
+import { getSkillIconUrl } from '@/consumables/utils/iconUtils';
+import { getStudentData } from '@/consumables/stores/studentStore';
+import {
+  GEAR_UNLOCK_PASSIVE_SKILL,
+  GEAR_UNLOCK_PUBLIC_SKILL,
+  DEFAULT_EX_SKILL_LEVELS,
+  DEFAULT_SKILL_LEVELS,
+} from '@/consumables/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';
 
@@ -29,9 +37,10 @@ export function isTargetMaxLevel(target: number, maxLevel: number): boolean {
 export function useStudentSkillDisplay(
   student: MaybeRefOrGetter<StudentProps>,
   skillLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
-  isPassiveEnhanced: ComputedRef<boolean>,
-  isBasicEnhanced: ComputedRef<boolean>
 ) {
+  const studentData = computed(() => getStudentData(toValue(student).Id));
+  const isPassiveEnhanced = computed(() => (studentData.value?.gradeLevels?.current ?? 0) >= GEAR_UNLOCK_PASSIVE_SKILL);
+  const isBasicEnhanced   = computed(() => (studentData.value?.exclusiveGearLevel?.current ?? 0) >= GEAR_UNLOCK_PUBLIC_SKILL);
   const skillLabels: Record<SkillType, string> = {
     Ex: 'EX',
     Public: 'Basic',
@@ -78,9 +87,9 @@ export function useStudentSkillDisplay(
     if (skillType === 'Ex') {
       return s?.Skills?.Ex?.Parameters?.[0]?.length
         || s?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length
-        || 5;
+        || DEFAULT_EX_SKILL_LEVELS;
     }
-    return s?.Skills?.[skillType]?.Parameters?.[0]?.length || 10;
+    return s?.Skills?.[skillType]?.Parameters?.[0]?.length || DEFAULT_SKILL_LEVELS;
   }
 
   function getLevelDisplay(skillType: SkillType): {
@@ -128,6 +137,8 @@ export function useStudentSkillDisplay(
     skillLabels,
     useExtraExSkill,
     hasExtraExSkill,
+    isBasicEnhanced,
+    isPassiveEnhanced,
     toggleExtraExSkill,
     getSkillIcon,
     getSkillName,

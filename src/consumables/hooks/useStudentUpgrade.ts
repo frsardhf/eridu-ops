@@ -18,6 +18,7 @@ import dataTable from '../../data/data.json';
 import { updateMaterialsData } from '../stores/materialsStore';
 import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 import { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
+import { MAX_POTENTIAL_LEVEL } from '../utils/upgradeUtils';
 
 // Re-export for external consumers (materialUtils.ts)
 export { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
@@ -41,7 +42,6 @@ export function useStudentUpgrade(props: {
   const allPotentialsMaxed = ref(false);
   const targetPotentialsMaxed = ref(false);
 
-  const MAX_POTENTIAL_LEVEL = 25;
   const characterXpTable = dataTable.character_xp;
 
   const checkAllSkillsMaxed = () => {
@@ -343,6 +343,7 @@ export function useStudentUpgrade(props: {
 
     // Methods
     closeModal,
+    saveBeforeClose: saveToIndexedDB,
     loadFromIndexedDB,
     handleLevelUpdate,
     handlePotentialUpdate,

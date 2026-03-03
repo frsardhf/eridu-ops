@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { useStudentColors } from '@/composables/useStudentColors';
+import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentSkillDisplay } from '@/composables/useStudentSkillDisplay';
-import { useStudentSkillEnhancements } from '@/composables/useStudentSkillEnhancements';
 import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
@@ -14,11 +13,14 @@ const props = defineProps<{
 }>();
 
 const studentRef = toRef(() => props.student);
-const { isPassiveEnhanced, isBasicEnhanced } = useStudentSkillEnhancements(studentRef);
-const { bulletTypeColor } = useStudentColors(studentRef);
+const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
+
+const { bulletTypeColor } = useStudentInfo(studentRef);
 const {
   useExtraExSkill,
   hasExtraExSkill,
+  isBasicEnhanced,
+  isPassiveEnhanced,
   toggleExtraExSkill,
   getSkillIcon,
   getSkillName,
@@ -26,17 +28,14 @@ const {
   getSkillDescription,
   getSkillCostDisplay,
   getSkillIconUrl
-} = useStudentSkillDisplay(
-  studentRef,
-  toRef(() => props.skillLevels),
-  isPassiveEnhanced,
-  isBasicEnhanced
-);
-
-const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<SkillType>();
+} = useStudentSkillDisplay(studentRef, toRef(() => props.skillLevels));
+const { 
+  activeTooltip, 
+  tooltipStyle, 
+  tooltipRef, 
+  showTooltip, 
+  hideTooltip 
+} = useTooltip<SkillType>();
 </script>
 
 <template>

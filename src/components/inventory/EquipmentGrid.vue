@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, type ComponentPublicInstance } from 'vue';
 import ResourceCard from './ResourceCard.vue';
-import { formatLargeNumber } from '@/consumables/utils/materialUtils';
 import { applyFilters } from '@/consumables/utils/filterUtils';
 import { EQUIPMENT } from '@/types/resource';
 import { getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
@@ -119,7 +118,6 @@ function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: n
               :key="`equipment-${item.Id}`"
               :item="item"
               :value="equipmentFormData[item.Id]"
-              :format-quantity="formatLargeNumber"
               :item-type="'equipment'"
               :input-tab-index="currentPage === page - 1 ? 0 : -1"
               @update:value="(e) => handleEquipmentInput(item, e)"
