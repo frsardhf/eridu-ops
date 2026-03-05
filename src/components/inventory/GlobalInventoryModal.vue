@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 type InventoryTab = 'items' | 'equipment';
 type SummaryTab = 'materials' | 'equipment' | 'gifts';
-type SummaryViewMode = 'needed' | 'missing';
+type SummaryViewMode = 'needed' | 'missing' | 'leftover';
 
 const activeTab = ref<InventoryTab>('items');
 const summaryMode = ref(false);
@@ -116,19 +116,24 @@ const toggleSummaryMode = () => {
           <div class="inventory-mode-segmented" role="tablist" :aria-label="$t('summary')">
             <button
               type="button"
-              class="inventory-mode-btn"
-              :class="{ active: summaryViewMode === 'needed' }"
+              :class="['inventory-mode-btn', 'inventory-mode-needed', { active: summaryViewMode === 'needed' }]"
               @click="summaryViewMode = 'needed'"
             >
               {{ $t('needed') }}
             </button>
             <button
               type="button"
-              class="inventory-mode-btn"
-              :class="{ active: summaryViewMode === 'missing' }"
+              :class="['inventory-mode-btn', 'inventory-mode-missing', { active: summaryViewMode === 'missing' }]"
               @click="summaryViewMode = 'missing'"
             >
               {{ $t('missing') }}
+            </button>
+            <button
+              type="button"
+              :class="['inventory-mode-btn', 'inventory-mode-leftover', { active: summaryViewMode === 'leftover' }]"
+              @click="summaryViewMode = 'leftover'"
+            >
+              {{ $t('leftover') }}
             </button>
           </div>
         </template>
@@ -258,11 +263,15 @@ const toggleSummaryMode = () => {
   border-bottom: 1px solid var(--border-color);
   padding: 0 20px;
   flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .inventory-tab-group {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .inv-tab-btn {
@@ -292,6 +301,7 @@ const toggleSummaryMode = () => {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--card-background);
+  flex: 0 0 auto;
 }
 
 .inventory-mode-btn {
@@ -316,12 +326,26 @@ const toggleSummaryMode = () => {
 }
 
 .inventory-mode-btn.active {
-  background: var(--accent-color);
-  color: #fff;
+  border-left-color: transparent;
+}
+
+.inventory-mode-btn.inventory-mode-needed.active {
+  color: #1f4fd6;
+  background: color-mix(in srgb, #1f4fd6 18%, var(--card-background));
+}
+
+.inventory-mode-btn.inventory-mode-missing.active {
+  color: #c62828;
+  background: color-mix(in srgb, #c62828 16%, var(--card-background));
+}
+
+.inventory-mode-btn.inventory-mode-leftover.active {
+  color: #2e7d32;
+  background: color-mix(in srgb, #2e7d32 18%, var(--card-background));
 }
 
 .inventory-mode-btn:focus-visible {
-  outline: 2px solid var(--accent-color);
+  outline: 2px solid currentColor;
   outline-offset: 1px;
 }
 
@@ -329,6 +353,19 @@ const toggleSummaryMode = () => {
   flex: 1;
   overflow-y: auto;
   padding: 15px;
+}
+
+.inventory-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+.inventory-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.inventory-tabs::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 999px;
 }
 
 .inventory-tab-content {

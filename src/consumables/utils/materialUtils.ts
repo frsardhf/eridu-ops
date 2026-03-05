@@ -2,6 +2,8 @@ import { getAllFormData } from '../services/dbService';
 import { useStudentData } from '../hooks/useStudentData';
 import {
   Material,
+  MaterialType,
+  MaterialWithRemaining,
   DEFAULT_SKILL_LEVELS,
   DEFAULT_POTENTIAL_LEVELS,
   DEFAULT_CHARACTER_LEVELS,
@@ -282,4 +284,88 @@ export function getMaterialIconSrc(
   const baseUrl = useItemIcon ? 'item' : 'equipment';
   const suffix = !useItemIcon ? '_piece' : '';
   return `https://schaledb.com/images/${baseUrl}/icon/${item.material.Icon}${suffix}.webp`;
+}
+
+/**
+ * Filters and sorts a material/equipment list by deficit (owned < needed).
+ * Special items (XP reports, XP balls) delegate their quantity/owned lookup
+ * to the provided callbacks so this function stays pure.
+ */
+export function calculateMissingItems(
+  items: any[],
+  getStorage: () => Record<string, any>,
+  isSpecialItem: (id: number) => boolean,
+  getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number }
+): MaterialWithRemaining[] {
+  const storage = getStorage();
+
+  return items
+    .filter(item => {
+      const materialId = item.material?.Id;
+      if (!materialId) return false;
+
+      if (isSpecialItem(materialId)) {
+        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
+        return ownedXp < totalXpNeeded;
+      }
+
+      const resource = storage[materialId.toString()];
+      if (!resource) return true;
+
+      const owned = resource.QuantityOwned || 0;
+      return owned < item.materialQuantity;
+    })
+    .map((item): MaterialWithRemaining => {
+      const materialId = item.material?.Id;
+
+      if (isSpecialItem(materialId)) {
+        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
+        return {
+          material: item.material,
+          materialQuantity: totalXpNeeded,
+          remaining: ownedXp - totalXpNeeded,
+          type: 'xp'
+        };
+      }
+
+      const resource = storage[materialId?.toString() || ''];
+      const owned = resource?.QuantityOwned || 0;
+      return {
+        material: item.material,
+        materialQuantity: item.materialQuantity,
+        remaining: owned - item.materialQuantity,
+        type: (item.type ?? 'materials') as MaterialType
+      };
+    })
+    .sort((a, b) => a.remaining - b.remaining);
+}
+
+/**
+ * Maps a full catalog to leftover quantities (owned − needed > 0).
+ * Special items (XP reports, XP balls) delegate their remaining amount
+ * to getSpecialRemaining so this function stays pure.
+ * For tabs with no special item type, pass () => false and () => 0.
+ */
+export function calculateLeftoverItems(
+  catalog: any[],
+  getNeeded: (id: number) => number,
+  defaultType: MaterialType,
+  isSpecialItem: (id: number) => boolean,
+  getSpecialRemaining: () => number
+): MaterialWithRemaining[] {
+  return catalog
+    .map((item): MaterialWithRemaining => {
+      const isSpecial = isSpecialItem(item.Id);
+      const owned: number = item.QuantityOwned ?? 0;
+      const needed = getNeeded(item.Id);
+      const remaining = isSpecial ? getSpecialRemaining() : Math.max(0, owned - needed);
+      return {
+        material: item,
+        materialQuantity: remaining,
+        remaining,
+        type: isSpecial ? 'xp' : defaultType
+      };
+    })
+    .filter(item => item.remaining > 0)
+    .sort(sortMaterials);
 }

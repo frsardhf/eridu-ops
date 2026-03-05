@@ -78,6 +78,11 @@
   color: #e53935;
 }
 
+/* Positive quantity (for leftover resources) */
+.resource-quantity.positive {
+  color: #43a047;
+}
+
 /* Responsive adjustments */
 @media (max-width: 600px) {
   .resources-grid {

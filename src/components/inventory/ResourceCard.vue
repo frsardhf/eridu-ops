@@ -24,14 +24,6 @@ const {
   handleBlur, 
   forceInputFocus 
 } = useFocusInput();
-
-function handleInput(event: Event) {
-  emit('update:value', event);
-}
-
-function handleInputKeydown(event: KeyboardEvent) {
-  emit('keydown:input', event);
-}
 </script>
 
 <template>
@@ -54,8 +46,8 @@ function handleInputKeydown(event: KeyboardEvent) {
         type="number"
         :value="props.value"
         :name="`${props.item.Name}-${props.item.Id}`"
-        @input="handleInput"
-        @keydown="handleInputKeydown"
+        @input="emit('update:value', $event)"
+        @keydown="emit('keydown:input', $event as KeyboardEvent)"
         @focus="handleFocus"
         @blur="handleBlur"
         min="0"

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, type ComponentPublicInstance } from 'vue';
+import { computed } from 'vue';
 import ResourceCard from './ResourceCard.vue';
 import { applyFilters } from '@/consumables/utils/filterUtils';
 import { EQUIPMENT } from '@/types/resource';
 import { getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
+import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import '@/styles/resourceDisplay.css';
 
 const ITEMS_PER_PAGE = 98;
@@ -17,84 +18,22 @@ type EmitFn = {
 }
 const emit = defineEmits<EmitFn>();
 
-const currentPage = ref(0);
-const disableTransition = ref(false);
-const pageRefs = ref<Array<HTMLElement | null>>([]);
-
-const equipments = computed(() => {
+const pagedResources = computed(() => {
   const allEquipments = getAllEquipmentFromCache();
-  if (!allEquipments || Object.keys(allEquipments).length === 0) return [];
-  return Object.values(applyFilters(allEquipments, EQUIPMENT));
+  if (!allEquipments || Object.keys(allEquipments).length === 0) return [] as any[][];
+  const all = Object.values(applyFilters(allEquipments, EQUIPMENT));
+  const pages: any[][] = [];
+  for (let i = 0; i < all.length; i += ITEMS_PER_PAGE) {
+    pages.push(all.slice(i, i + ITEMS_PER_PAGE));
+  }
+  return pages;
 });
 
-const totalPages = computed(() => Math.ceil(equipments.value.length / ITEMS_PER_PAGE));
-
-const sliderStyle = computed(() => ({
-  transform: `translate3d(${-currentPage.value * 100}%, 0, 0)`,
-  transition: disableTransition.value ? 'none' : 'transform 0.3s ease'
-}));
-
-function getPageResources(pageIndex: number) {
-  const start = pageIndex * ITEMS_PER_PAGE;
-  return equipments.value.slice(start, start + ITEMS_PER_PAGE);
-}
-
-function setPageRef(el: Element | ComponentPublicInstance | null, pageIndex: number) {
-  const resolved =
-    el instanceof Element
-      ? (el as HTMLElement)
-      : ((el as ComponentPublicInstance | null)?.$el as HTMLElement | undefined);
-  pageRefs.value[pageIndex] = resolved ?? null;
-}
+const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBoundaryTab } =
+  usePaginatedGrid(pagedResources);
 
 function handleEquipmentInput(item: any, event: Event) {
   emit('update-equipment', item.Id.toString(), event);
-}
-
-function focusPageBoundaryInput(pageIndex: number, target: 'first' | 'last') {
-  const pageElement = pageRefs.value[pageIndex];
-  if (!pageElement) return;
-
-  const inputs = pageElement.querySelectorAll<HTMLInputElement>('input.resource-input');
-  if (inputs.length === 0) return;
-
-  const targetInput = target === 'first' ? inputs[0] : inputs[inputs.length - 1];
-  targetInput.focus();
-}
-
-async function goToPage(pageIndex: number, focusTarget?: 'first' | 'last', instant = false) {
-  const maxPage = Math.max(0, totalPages.value - 1);
-  const safePage = Math.min(Math.max(pageIndex, 0), maxPage);
-
-  disableTransition.value = instant;
-  currentPage.value = safePage;
-
-  await nextTick();
-
-  if (focusTarget) {
-    focusPageBoundaryInput(safePage, focusTarget);
-  }
-
-  if (instant) {
-    requestAnimationFrame(() => {
-      disableTransition.value = false;
-    });
-  }
-}
-
-function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: number, pageLength: number) {
-  if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
-  if (pageIndex !== currentPage.value) return;
-
-  if (!event.shiftKey && itemIndex === pageLength - 1 && pageIndex < totalPages.value - 1) {
-    event.preventDefault();
-    void goToPage(pageIndex + 1, 'first', true);
-  }
-
-  if (event.shiftKey && itemIndex === 0 && pageIndex > 0) {
-    event.preventDefault();
-    void goToPage(pageIndex - 1, 'last', true);
-  }
 }
 </script>
 
@@ -106,22 +45,22 @@ function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: n
         :style="sliderStyle"
       >
         <div
-          v-for="page in totalPages"
-          :key="page"
-          :ref="(el) => setPageRef(el, page - 1)"
+          v-for="(pageItems, pageIndex) in pagedResources"
+          :key="pageIndex"
+          :ref="(el) => setPageRef(el, pageIndex)"
           class="resources-page"
-          :aria-hidden="currentPage !== page - 1"
+          :aria-hidden="currentPage !== pageIndex"
         >
           <div class="resources-grid">
             <ResourceCard
-              v-for="(item, itemIndex) in getPageResources(page - 1)"
+              v-for="(item, itemIndex) in pageItems"
               :key="`equipment-${item.Id}`"
               :item="item"
               :value="equipmentFormData[item.Id]"
               :item-type="'equipment'"
-              :input-tab-index="currentPage === page - 1 ? 0 : -1"
+              :input-tab-index="currentPage === pageIndex ? 0 : -1"
               @update:value="(e) => handleEquipmentInput(item, e)"
-              @keydown:input="(e) => handleBoundaryTab(e, page - 1, itemIndex, getPageResources(page - 1).length)"
+              @keydown:input="(e) => handleBoundaryTab(e, pageIndex, itemIndex, pageItems.length)"
             />
           </div>
         </div>

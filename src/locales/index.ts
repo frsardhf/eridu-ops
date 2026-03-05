@@ -117,6 +117,7 @@ export const translations = {
     showMissing: "Show Missing",
     showNeeded: "Show Needed",
     missing: "Missing",
+    leftover: "Leftover",
     
     // Resource summary component
     itemsNeeded: "Items Needed",
@@ -134,6 +135,7 @@ export const translations = {
     price: "Eligma Price",
     purchasable: "Purchasable",
     noUpgradeNeeded: "No upgrade needed",
+    noLeftoverResources: "No leftover resources",
     
     // Equipment types and gear component
     equipmentTypes: {
@@ -364,6 +366,7 @@ export const translations = {
     showMissing: "不足アイテムを表示",
     showNeeded: "必要アイテムを表示",
     missing: "不足",
+    leftover: "余剰",
     
     // Resource summary component
     itemsNeeded: "全体の必要アイテム",
@@ -381,6 +384,7 @@ export const translations = {
     price: "エリグマ価格",
     purchasable: "購入可能数",
     noUpgradeNeeded: "アップグレード不要",
+    noLeftoverResources: "余っている素材はありません",
     
     // Equipment types and gear component
     equipmentTypes: {

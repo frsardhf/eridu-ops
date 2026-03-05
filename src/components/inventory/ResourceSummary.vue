@@ -1,26 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { Material } from '@/types/upgrade';
-import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
-import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
-import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
-import { getAllItemsFromCache, getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
 import {
   formatLargeNumber,
   formatLargeNumberAmount,
   isExpReport,
   isExpBall,
   getMaterialName,
-  getMaterialIconSrc
+  getMaterialIconSrc,
 } from '@/consumables/utils/materialUtils';
 import { formatUsageQuantity } from '@/consumables/utils/tooltipUtils';
+import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import { useResourceTooltip } from '@/composables/useResourceTooltip';
+import { useResourceSummary, type ViewTab, type ViewMode } from '@/composables/useResourceSummary';
 import { $t } from '@/locales';
 import '@/styles/resourceDisplay.css';
-
-// Define view options - 3 main tabs
-type ViewTab = 'materials' | 'equipment' | 'gifts';
-type ViewMode = 'needed' | 'missing';
 
 const props = withDefaults(defineProps<{
   activeTabExternal?: ViewTab | null;
@@ -34,26 +27,16 @@ const props = withDefaults(defineProps<{
   showModeTabs: true
 });
 
-// Define types for material items with remaining property
-interface MaterialWithRemaining extends Material {
-  remaining: number;
-}
-
 // UI state
 const activeTab = ref<ViewTab>('materials');
 const activeMode = ref<ViewMode>('needed');
 
 const {
-  totalMaterialsNeeded,
-  calculateExpNeeds
-} = useMaterialCalculation();
-
-const {
-  totalEquipmentsNeeded,
-  calculateExpNeeds: calculateEquipmentExpNeeds
-} = useGearCalculation();
-
-const { getStudentsWithGifts } = useGiftCalculation();
+  studentsWithGifts,
+  displayResources, hasDisplayResources, noResourcesText,
+  pagedLeftoverResources,
+  leftoverByMaterialId,
+} = useResourceSummary(activeTab, activeMode);
 
 const {
   hoveredItemId, hoveredStudentId, tooltipPosition, isHoveringTooltip,
@@ -66,156 +49,44 @@ const {
   getMaterialLeftover, clearHoverState,
 } = useResourceTooltip(activeTab, activeMode);
 
+const {
+  currentPage: leftoverCurrentPage,
+  totalPages: leftoverTotalPages,
+  sliderStyle: leftoverSliderStyle,
+  setPageRef: setLeftoverPageRef,
+  goToPage: goToLeftoverPage
+} = usePaginatedGrid(pagedLeftoverResources);
+
 // Add ref for current exp report icon
 const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
 
 // Add ref for current exp ball icon
 const currentExpBall = ref(1); // Start with Novice exp ball (ID: 1)
 
-// Generic function to calculate missing items
-const calculateMissingItems = (
-  items: any[],
-  getStorage: () => Record<string, any>,
-  isSpecialItem: (id: number) => boolean,
-  getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number }
-): MaterialWithRemaining[] => {
-  // Get storage directly to ensure we have latest data
-  const storage = getStorage();
-  
-  // Generate items that are missing
-  return items
-    .filter(item => {
-      // Get the material ID and check if we have it
-      const materialId = item.material?.Id;
-      if (!materialId) return false;
-      
-      // Special handling for special items (XP reports/balls)
-      if (isSpecialItem(materialId)) {
-        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
-        return ownedXp < totalXpNeeded;
-      }
-      
-      // Get resource for this material
-      const resource = storage[materialId.toString()];
-      if (!resource) return true; // If resource doesn't exist, consider it missing
-      
-      // Get owned quantity
-      const owned = resource.QuantityOwned || 0;
-      
-      // Consider missing if owned < needed
-      return owned < item.materialQuantity;
-    })
-    .map(item => {
-      const materialId = item.material?.Id;
-      
-      // Special handling for special items (XP reports/balls)
-      if (isSpecialItem(materialId)) {
-        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
-        return {
-          material: item.material,
-          materialQuantity: totalXpNeeded,
-          remaining: ownedXp - totalXpNeeded,
-          type: 'xp' as const
-        };
-      }
-      
-      const resource = storage[materialId?.toString() || ''];
-      const owned = resource?.QuantityOwned || 0;
-      const remaining = owned - item.materialQuantity;
-      
-      return {
-        material: item.material,
-        materialQuantity: item.materialQuantity,
-        remaining: remaining,
-        type: item.type
-      };
-    })
-    .sort((a, b) => a.remaining - b.remaining); // Sort by most negative first
-};
-
-// Materials that are missing (negative leftover)
-const missingMaterials = computed<MaterialWithRemaining[]>(() =>
-  calculateMissingItems(
-    totalMaterialsNeeded.value,
-    getAllItemsFromCache,
-    isExpReport,
-    calculateExpNeeds
-  )
+watch(
+  [activeTab, activeMode],
+  () => {
+    if (activeMode.value !== 'leftover') return;
+    void goToLeftoverPage(0, undefined, true);
+  }
 );
 
-// Equipments that are missing (negative leftover)
-const missingEquipments = computed<MaterialWithRemaining[]>(() =>
-  calculateMissingItems(
-    totalEquipmentsNeeded.value,
-    getAllEquipmentFromCache,
-    isExpBall,
-    calculateEquipmentExpNeeds
-  )
-);
+let expReportInterval: ReturnType<typeof setInterval> | null = null;
+let expBallInterval: ReturnType<typeof setInterval> | null = null;
 
-// Students with gifts for the Gifts tab (Student → Gifts pattern)
-const studentsWithGifts = computed(() => {
-  return getStudentsWithGifts(activeMode.value);
-});
-
-// Computed property to get the resources based on active tab and mode
-const displayResources = computed(() => {
-  let resources: any[] = [];
-
-  if (activeTab.value === 'materials') {
-    resources = activeMode.value === 'needed' ? totalMaterialsNeeded.value : missingMaterials.value;
-  } else if (activeTab.value === 'equipment') {
-    resources = activeMode.value === 'needed' ? totalEquipmentsNeeded.value : missingEquipments.value;
-  }
-  // Note: Gifts tab uses studentsWithGifts computed, not displayResources
-
-  const filtered = resources.filter(r => (r.materialQuantity ?? 0) > 0);
-
-  // Sort to put credits first, then exp reports, then other materials
-  return filtered.sort((a, b) => {
-    const aId = a.material?.Id || 0;
-    const bId = b.material?.Id || 0;
-
-    // Always put credits (ID: 5) first
-    if (aId === 5) return -1;
-    if (bId === 5) return 1;
-
-    // Put exp reports next (IDs: 10, 11, 12, 13)
-    if (isExpReport(aId) && !isExpReport(bId)) return -1;
-    if (!isExpReport(aId) && isExpReport(bId)) return 1;
-
-    // For all other materials, sort by ID
-    return aId - bId;
-  });
-});
-
-const totalMaterialQuantity = computed(() => {
-  // For gifts tab, count students with gifts
-  if (activeTab.value === 'gifts') {
-    return studentsWithGifts.value.length;
-  }
-  return displayResources.value.reduce((sum, item) => {
-    return sum + (item.materialQuantity ?? 0);
-  }, 0);
-});
-
-// Set up intervals to rotate exp report and exp ball icons
 onMounted(() => {
-  // Set up interval for exp reports (10-13)
-  const expReportInterval = setInterval(() => {
+  expReportInterval = setInterval(() => {
     currentExpIcon.value = currentExpIcon.value === 13 ? 10 : currentExpIcon.value + 1;
   }, 1000);
 
-  // Set up interval for exp balls (1-4)
-  const expBallInterval = setInterval(() => {
+  expBallInterval = setInterval(() => {
     currentExpBall.value = currentExpBall.value === 4 ? 1 : currentExpBall.value + 1;
   }, 1000);
+});
 
-  // Clean up intervals on component unmount
-  onUnmounted(() => {
-    clearInterval(expReportInterval);
-    clearInterval(expBallInterval);
-  });
+onUnmounted(() => {
+  if (expReportInterval) clearInterval(expReportInterval);
+  if (expBallInterval) clearInterval(expBallInterval);
 });
 
 // Helper function to get material icon source and alt text (Materials and Equipment tabs)
@@ -227,26 +98,59 @@ const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
   };
 };
 
-// Helper function to format quantity
-const formatQuantity = (item: any): string => {
-  if (isExpReport(item.material?.Id) || isExpBall(item.material?.Id)) {
-    return '';
-  }
+// Pre-compute icon src/alt and quantity text per item for needed and missing mode
+const displayResourceStates = computed(() =>
+  displayResources.value.map(item => {
+    const { src, alt } = getMaterialIconSrcAndAlt(item);
+    const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
+    const quantity = isExp ? 0
+      : activeMode.value === 'needed'  ? (item.materialQuantity || 0)
+      : activeMode.value === 'missing' ? Math.abs(item.remaining || 0)
+      : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
+    return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
+  })
+);
 
-  let quantity = 0;
-  
-  if (activeMode.value === 'needed') {
-    quantity = item.materialQuantity || 0;
-  } else {
-    quantity = Math.abs(item.remaining || 0);
-  }
-  
-  return quantity > 0 ? formatLargeNumber(quantity) : '';
-};
+// Pre-compute icon src/alt and quantity text per item for leftover mode
+const pagedLeftoverResourceStates = computed(() =>
+  pagedLeftoverResources.value.map(page =>
+    page.map(item => {
+      const { src, alt } = getMaterialIconSrcAndAlt(item);
+      const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
+      const quantity = isExp ? 0 : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
+      return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
+    })
+  )
+);
 
 // Helper function to get quantity class
 const getQuantityClass = (): string => {
-  return activeMode.value === 'missing' ? 'negative' : '';
+  if (activeMode.value === 'missing') return 'negative';
+  if (activeMode.value === 'leftover') return 'positive';
+  return '';
+};
+
+const getLeftoverTooltipValue = (materialId: number | null): number => {
+  if (materialId === null) return 0;
+
+  const leftoverValue = leftoverByMaterialId.value.get(materialId);
+  if (typeof leftoverValue === 'number') {
+    return leftoverValue;
+  }
+
+  if (materialId === 5) {
+    return creditRemaining.value;
+  }
+
+  if (isExpReport(materialId)) {
+    return expInfo.value.remaining;
+  }
+
+  if (isExpBall(materialId)) {
+    return expBallInfo.value.remaining;
+  }
+
+  return Math.max(0, getMaterialLeftover(materialId));
 };
 
 const setTab = (tab: ViewTab) => {
@@ -318,45 +222,110 @@ watch(
       <div v-if="showModeTabs" class="mode-segmented" role="tablist" aria-label="Summary mode">
         <button
           type="button"
-          class="mode-segment-btn"
-          :class="{ active: activeMode === 'needed' }"
+          :class="['mode-segment-btn', 'mode-needed', { active: activeMode === 'needed' }]"
           @click="setMode('needed')"
         >
           {{ $t('needed') }}
         </button>
         <button
           type="button"
-          class="mode-segment-btn"
-          :class="{ active: activeMode === 'missing' }"
+          :class="['mode-segment-btn', 'mode-missing', { active: activeMode === 'missing' }]"
           @click="setMode('missing')"
         >
           {{ $t('missing') }}
+        </button>
+        <button
+          type="button"
+          :class="['mode-segment-btn', 'mode-leftover', { active: activeMode === 'leftover' }]"
+          @click="setMode('leftover')"
+        >
+          {{ $t('leftover') }}
         </button>
       </div>
     </div>
     
     <div class="resources-content">
-      <div v-if="totalMaterialQuantity === 0" class="no-resources">
-        <span v-if="activeMode === 'needed'">{{ $t('noResourcesNeeded') }}</span>
-        <span v-else>{{ $t('allMaterialsAvailable') }}</span>
+      <div v-if="!hasDisplayResources" class="no-resources">
+        <span>{{ noResourcesText }}</span>
       </div>
 
-      <!-- Materials and Equipment tabs: Show resource icons -->
+      <!-- Leftover mode: show full paginated catalog-style grids -->
+      <div v-else-if="activeMode === 'leftover'" class="resources-tab">
+        <div class="resources-container">
+          <div class="resources-slider" :style="leftoverSliderStyle">
+            <div
+              v-for="(pageItems, pageIndex) in pagedLeftoverResourceStates"
+              :key="`leftover-page-${pageIndex}`"
+              :ref="(el) => setLeftoverPageRef(el, pageIndex)"
+              class="resources-page"
+              :aria-hidden="leftoverCurrentPage !== pageIndex"
+            >
+              <div class="resources-grid">
+                <div
+                  v-for="(item, itemIndex) in pageItems"
+                  :key="`resource-${item.material?.Id || pageIndex}-${itemIndex}`"
+                  class="resource-item"
+                  :title="getMaterialName(item, activeTab === 'equipment')"
+                  @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
+                  @mouseleave="hideTooltip()"
+                >
+                  <div class="resource-content">
+                    <img
+                      v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
+                      :src="item.iconSrc"
+                      :alt="item.iconAlt"
+                      class="resource-icon"
+                    />
+                    <div
+                      v-else
+                      class="resource-icon missing-icon"
+                    >?</div>
+
+                    <div
+                      class="resource-quantity"
+                      :class="getQuantityClass()"
+                    >
+                      {{ item.quantityText }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="leftoverTotalPages > 1" class="resources-pagination">
+          <div class="page-indicator">
+            <button
+              v-for="page in leftoverTotalPages"
+              :key="`leftover-dot-${page}`"
+              type="button"
+              class="page-dot"
+              :class="{ active: leftoverCurrentPage === page - 1 }"
+              :aria-label="`Go to page ${page}`"
+              :aria-current="leftoverCurrentPage === page - 1 ? 'page' : undefined"
+              @click="goToLeftoverPage(page - 1)"
+            ></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Needed/Missing materials and equipment -->
       <div v-else-if="activeTab !== 'gifts'" class="resources-grid-wrap">
         <div class="resources-grid">
           <div
-            v-for="(item, index) in displayResources"
+            v-for="(item, index) in displayResourceStates"
             :key="`resource-${item.material?.Id || index}`"
             class="resource-item"
             :title="getMaterialName(item, activeTab === 'equipment')"
-            @mousemove="showTooltip($event, item.material?.Id)"
+            @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
             @mouseleave="hideTooltip()"
           >
             <div class="resource-content">
               <img
                 v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-                :src="getMaterialIconSrcAndAlt(item).src"
-                :alt="getMaterialIconSrcAndAlt(item).alt"
+                :src="item.iconSrc"
+                :alt="item.iconAlt"
                 class="resource-icon"
               />
               <div
@@ -368,7 +337,7 @@ watch(
                 class="resource-quantity"
                 :class="getQuantityClass()"
               >
-                {{ formatQuantity(item) }}
+                {{ item.quantityText }}
               </div>
             </div>
           </div>
@@ -405,7 +374,7 @@ watch(
       
       <!-- Material Usage Tooltip -->
       <div 
-        v-if="hoveredItemId !== null && studentUsageForMaterial.length > 0" 
+        v-if="hoveredItemId !== null && (activeMode === 'leftover' || studentUsageForMaterial.length > 0)"
         class="material-tooltip"
         :style="{
           left: tooltipPosition.left,
@@ -415,8 +384,20 @@ watch(
         @mouseenter="handleTooltipMouseEnter"
         @mouseleave="handleTooltipMouseLeave"
       >
+        <div v-if="activeMode === 'leftover'" class="credit-info">
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('leftover') }}</span>
+              <span class="value positive">
+                {{ formatLargeNumberAmount(getLeftoverTooltipValue(hoveredItemId)) }}
+              </span>
+            </div>
+          </div>
+          <div class="separator"></div>
+        </div>
+
         <!-- Credit Information Section -->
-        <div v-if="hoveredItemId === 5" class="credit-info">
+        <div v-if="activeMode !== 'leftover' && hoveredItemId === 5" class="credit-info">
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('owned') }}</span>
@@ -440,7 +421,7 @@ watch(
         </div>
 
         <!-- EXP Information Section -->
-        <div v-if="hoveredItemId !== null && isExpReport(hoveredItemId)" class="credit-info">
+        <div v-if="activeMode !== 'leftover' && hoveredItemId !== null && isExpReport(hoveredItemId)" class="credit-info">
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('owned') }}</span>
@@ -464,7 +445,7 @@ watch(
         </div>
 
         <!-- EXP Balls Information Section -->
-        <div v-if="hoveredItemId !== null && isExpBall(hoveredItemId)" class="credit-info">
+        <div v-if="activeMode !== 'leftover' && hoveredItemId !== null && isExpBall(hoveredItemId)" class="credit-info">
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('owned') }}</span>
@@ -489,7 +470,7 @@ watch(
 
         <!-- Material Information Section -->
         <div
-          v-if="hoveredItemId !== null && !isExpReport(hoveredItemId)
+          v-if="activeMode !== 'leftover' && hoveredItemId !== null && !isExpReport(hoveredItemId)
             && hoveredItemId !== 5 && !isExpBall(hoveredItemId)"
           class="credit-info"
         >
@@ -507,7 +488,7 @@ watch(
           <div class="separator"></div>
         </div>
 
-        <div class="student-icons-grid">
+        <div v-if="studentUsageForMaterial.length > 0" class="student-icons-grid">
           <div
             v-for="(usage, i) in studentUsageForMaterial"
             :key="`usage-${i}`"
@@ -605,8 +586,7 @@ watch(
   color: var(--text-primary);
 }
 
-.view-segment-btn.active,
-.mode-segment-btn.active {
+.view-segment-btn.active {
   background: var(--accent-color);
   color: #fff;
 }
@@ -638,6 +618,25 @@ watch(
   letter-spacing: 0.02em;
 }
 
+.mode-segment-btn.active {
+  border-left-color: transparent;
+}
+
+.mode-segment-btn.mode-needed.active {
+  color: #1f4fd6;
+  background: color-mix(in srgb, #1f4fd6 18%, var(--card-background));
+}
+
+.mode-segment-btn.mode-missing.active {
+  color: #c62828;
+  background: color-mix(in srgb, #c62828 16%, var(--card-background));
+}
+
+.mode-segment-btn.mode-leftover.active {
+  color: #2e7d32;
+  background: color-mix(in srgb, #2e7d32 18%, var(--card-background));
+}
+
 .view-segment-btn + .view-segment-btn,
 .mode-segment-btn + .mode-segment-btn {
   border-left: 1px solid var(--border-color);
@@ -648,9 +647,14 @@ watch(
   border-left-color: transparent;
 }
 
-.view-segment-btn:focus-visible,
-.mode-segment-btn:focus-visible {
+.view-segment-btn:focus-visible {
   outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+  border: 1px solid var(--border-color);
+}
+
+.mode-segment-btn:focus-visible {
+  outline: 2px solid currentColor;
   outline-offset: 1px;
   border: 1px solid var(--border-color);
 }
@@ -666,6 +670,72 @@ watch(
 .resources-grid-wrap {
   display: flex;
   justify-content: center;
+}
+
+.resources-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.resources-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+.resources-slider {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.resources-page {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+
+.resources-page .resources-grid {
+  width: 100%;
+}
+
+.resources-pagination {
+  padding-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.page-indicator {
+  display: flex;
+  gap: 8px;
+}
+
+.page-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--border-color);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.page-dot.active {
+  background-color: var(--accent-color);
+  transform: scale(1.2);
+}
+
+.page-dot:hover {
+  transform: scale(1.2);
+}
+
+.page-dot:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
 }
 
 .resources-grid-wrap :deep(.resources-grid) {

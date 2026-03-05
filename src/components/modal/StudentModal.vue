@@ -82,7 +82,6 @@ const {
   loadFromIndexedDB: loadUpgradeData,
 } = useStudentUpgrade(props, emit);
 
-// Keep resource/equipment hooks alive for data persistence
 const {
   itemFormData,
   handleItemInput,
@@ -108,7 +107,6 @@ const {
   targetGearsMaxed,
   toggleMaxAllGears,
   toggleMaxTargetGears,
-  // Exclusive gear
   exclusiveGearLevel,
   hasExclusiveGear,
   maxUnlockableGearTier,

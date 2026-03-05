@@ -10,7 +10,7 @@ import { getTooltipGridColumns } from '@/consumables/utils/tooltipUtils';
 import { positionAtCursor } from '@/composables/useTooltip';
 
 type ViewTab = 'materials' | 'equipment' | 'gifts';
-type ViewMode = 'needed' | 'missing';
+type ViewMode = 'needed' | 'missing' | 'leftover';
 
 interface StudentUsage {
   student: { Id: number; Name: string; [key: string]: any };
@@ -50,17 +50,19 @@ export function useResourceTooltip(
   // Student usage for the hovered material (Materials and Equipment tabs)
   const studentUsageForMaterial = computed(() => {
     if (hoveredItemId.value === null) return [];
+    if (activeTab.value === 'gifts') return [];
 
     const materialId = hoveredItemId.value;
     const isEquipmentView = activeTab.value === 'equipment';
+    const usageMode = activeMode.value === 'leftover' ? 'needed' : activeMode.value;
     const cache = isEquipmentView ? equipmentUsageCache.value : materialUsageCache.value;
     const cacheKey = `${materialId}-${activeTab.value}-${activeMode.value}`;
 
     // XP reports, credits, and XP balls always get fresh data
     if (isExpReport(materialId) || materialId === 5 || isExpBall(materialId)) {
       const usage = isEquipmentView
-        ? getEquipmentUsageByStudents(materialId, activeMode.value)
-        : getMaterialUsageByStudents(materialId, activeMode.value);
+        ? getEquipmentUsageByStudents(materialId, usageMode)
+        : getMaterialUsageByStudents(materialId, usageMode);
       return usage.sort((a, b) => b.quantity - a.quantity);
     }
 
@@ -68,11 +70,11 @@ export function useResourceTooltip(
 
     let usage: StudentUsage[] = [];
     if (isEquipmentView) {
-      usage = getEquipmentUsageByStudents(materialId, activeMode.value)
+      usage = getEquipmentUsageByStudents(materialId, usageMode)
         .sort((a, b) => b.quantity - a.quantity);
       equipmentUsageCache.value.set(cacheKey, usage);
     } else {
-      usage = getMaterialUsageByStudents(materialId, activeMode.value)
+      usage = getMaterialUsageByStudents(materialId, usageMode)
         .sort((a, b) => b.quantity - a.quantity);
       materialUsageCache.value.set(cacheKey, usage);
     }
@@ -83,6 +85,7 @@ export function useResourceTooltip(
   // Gifts for the hovered student (Gifts tab)
   const giftsForHoveredStudent = computed(() => {
     if (hoveredStudentId.value === null) return [];
+    if (activeMode.value === 'leftover') return [];
     return getGiftsForStudent(hoveredStudentId.value, activeMode.value);
   });
 

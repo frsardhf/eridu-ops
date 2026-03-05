@@ -16,6 +16,10 @@ export interface Material {
   type?: MaterialType;
 }
 
+export interface MaterialWithRemaining extends Material {
+  remaining: number;
+}
+
 export interface CharacterLevels {
   current: number;
   target: number;

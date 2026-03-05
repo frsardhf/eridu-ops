@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, type ComponentPublicInstance } from 'vue';
+import { computed } from 'vue';
 import ResourceCard from './ResourceCard.vue';
 import { applyFilters } from '@/consumables/utils/filterUtils';
 import { MATERIAL } from '@/types/resource';
 import { getAllItemsFromCache } from '@/consumables/stores/resourceCacheStore';
+import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import '@/styles/resourceDisplay.css';
 
 const DEFAULT_ITEMS_PER_PAGE = 89;
@@ -18,10 +19,6 @@ type EmitFn = {
   (e: 'update-resource', id: string, event: Event): void;
 }
 const emit = defineEmits<EmitFn>();
-
-const currentPage = ref(0);
-const disableTransition = ref(false);
-const pageRefs = ref<Array<HTMLElement | null>>([]);
 
 const resources = computed(() => {
   const allMaterials = getAllItemsFromCache();
@@ -56,80 +53,13 @@ const pagedResources = computed(() => {
   return pages;
 });
 
-const totalPages = computed(() => pagedResources.value.length);
-
-const sliderStyle = computed(() => ({
-  transform: `translate3d(${-currentPage.value * 100}%, 0, 0)`,
-  transition: disableTransition.value ? 'none' : 'transform 0.3s ease'
-}));
-
-function setPageRef(el: Element | ComponentPublicInstance | null, pageIndex: number) {
-  const resolved =
-    el instanceof Element
-      ? (el as HTMLElement)
-      : ((el as ComponentPublicInstance | null)?.$el as HTMLElement | undefined);
-  pageRefs.value[pageIndex] = resolved ?? null;
-}
+const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBoundaryTab } =
+  usePaginatedGrid(pagedResources);
 
 function handleResourceInput(item: any, event: Event) {
   emit('update-resource', item.Id.toString(), event);
 }
 
-function focusPageBoundaryInput(pageIndex: number, target: 'first' | 'last') {
-  const pageElement = pageRefs.value[pageIndex];
-  if (!pageElement) return;
-
-  const inputs = pageElement.querySelectorAll<HTMLInputElement>('input.resource-input');
-  if (inputs.length === 0) return;
-
-  const targetInput = target === 'first' ? inputs[0] : inputs[inputs.length - 1];
-  targetInput.focus();
-}
-
-async function goToPage(pageIndex: number, focusTarget?: 'first' | 'last', instant = false) {
-  const maxPage = Math.max(0, totalPages.value - 1);
-  const safePage = Math.min(Math.max(pageIndex, 0), maxPage);
-
-  disableTransition.value = instant;
-  currentPage.value = safePage;
-
-  await nextTick();
-
-  if (focusTarget) {
-    focusPageBoundaryInput(safePage, focusTarget);
-  }
-
-  if (instant) {
-    requestAnimationFrame(() => {
-      disableTransition.value = false;
-    });
-  }
-}
-
-function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: number, pageLength: number) {
-  if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
-  if (pageIndex !== currentPage.value) return;
-
-  if (!event.shiftKey && itemIndex === pageLength - 1 && pageIndex < totalPages.value - 1) {
-    event.preventDefault();
-    void goToPage(pageIndex + 1, 'first', true);
-  }
-
-  if (event.shiftKey && itemIndex === 0 && pageIndex > 0) {
-    event.preventDefault();
-    void goToPage(pageIndex - 1, 'last', true);
-  }
-}
-
-watch(totalPages, (nextTotal) => {
-  if (nextTotal === 0) {
-    currentPage.value = 0;
-    return;
-  }
-  if (currentPage.value > nextTotal - 1) {
-    currentPage.value = nextTotal - 1;
-  }
-});
 </script>
 
 <template>
