@@ -31,11 +31,13 @@ const props = withDefaults(defineProps<{
 const activeTab = ref<ViewTab>('materials');
 const activeMode = ref<ViewMode>('needed');
 
+// Animation state (exp-report and exp-ball icon cycling)
+const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
+const currentExpBall = ref(1);  // Start with Novice exp ball (ID: 1)
+
 const {
-  studentsWithGifts,
+  studentsWithGifts, pagedLeftoverResources, leftoverByMaterialId,
   displayResources, hasDisplayResources, noResourcesText,
-  pagedLeftoverResources,
-  leftoverByMaterialId,
 } = useResourceSummary(activeTab, activeMode);
 
 const {
@@ -56,20 +58,6 @@ const {
   setPageRef: setLeftoverPageRef,
   goToPage: goToLeftoverPage
 } = usePaginatedGrid(pagedLeftoverResources);
-
-// Add ref for current exp report icon
-const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
-
-// Add ref for current exp ball icon
-const currentExpBall = ref(1); // Start with Novice exp ball (ID: 1)
-
-watch(
-  [activeTab, activeMode],
-  () => {
-    if (activeMode.value !== 'leftover') return;
-    void goToLeftoverPage(0, undefined, true);
-  }
-);
 
 let expReportInterval: ReturnType<typeof setInterval> | null = null;
 let expBallInterval: ReturnType<typeof setInterval> | null = null;
@@ -165,6 +153,14 @@ const setMode = (mode: ViewMode) => {
   activeMode.value = mode;
   clearHoverState();
 };
+
+watch(
+  [activeTab, activeMode],
+  () => {
+    if (activeMode.value !== 'leftover') return;
+    void goToLeftoverPage(0, undefined, true);
+  }
+);
 
 watch(
   () => props.activeTabExternal,

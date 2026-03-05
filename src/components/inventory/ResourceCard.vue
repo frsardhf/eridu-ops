@@ -17,13 +17,7 @@ const emit = defineEmits<{
   'keydown:input': [event: KeyboardEvent];
 }>();
 
-const { 
-  isInputFocused, 
-  inputEl, 
-  handleFocus, 
-  handleBlur, 
-  forceInputFocus 
-} = useFocusInput();
+const { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus } = useFocusInput();
 </script>
 
 <template>

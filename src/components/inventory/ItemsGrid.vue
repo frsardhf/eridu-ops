@@ -15,10 +15,9 @@ const props = defineProps<{
   resourceFormData: Record<string, number>,
 }>();
 
-type EmitFn = {
+const emit = defineEmits<{
   (e: 'update-resource', id: string, event: Event): void;
-}
-const emit = defineEmits<EmitFn>();
+}>();
 
 const resources = computed(() => {
   const allMaterials = getAllItemsFromCache();
@@ -55,11 +54,6 @@ const pagedResources = computed(() => {
 
 const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBoundaryTab } =
   usePaginatedGrid(pagedResources);
-
-function handleResourceInput(item: any, event: Event) {
-  emit('update-resource', item.Id.toString(), event);
-}
-
 </script>
 
 <template>
@@ -84,7 +78,7 @@ function handleResourceInput(item: any, event: Event) {
               :value="resourceFormData[item.Id]"
               :item-type="'resource'"
               :input-tab-index="currentPage === pageIndex ? 0 : -1"
-              @update:value="(e) => handleResourceInput(item, e)"
+              @update:value="(e) => emit('update-resource', item.Id.toString(), e)"
               @keydown:input="(e) => handleBoundaryTab(e, pageIndex, itemIndex, pageItems.length)"
             />
           </div>

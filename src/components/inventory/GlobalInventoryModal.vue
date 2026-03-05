@@ -25,14 +25,6 @@ const summaryMode = ref(false);
 const summaryTab = ref<SummaryTab>('materials');
 const summaryViewMode = ref<SummaryViewMode>('needed');
 
-function handleResourceInput(id: string, event: Event) {
-  emit('update-resource', id, event);
-}
-
-function handleEquipmentInput(id: string, event: Event) {
-  emit('update-equipment', id, event);
-}
-
 const toggleSummaryMode = () => {
   const next = !summaryMode.value;
 
@@ -144,14 +136,14 @@ const toggleSummaryMode = () => {
         <div v-if="!summaryMode && activeTab === 'items'" class="inventory-tab-content">
           <ItemsGrid
             :resource-form-data="resourceFormData"
-            @update-resource="handleResourceInput"
+            @update-resource="(id, e) => emit('update-resource', id, e)"
           />
         </div>
 
         <div v-if="!summaryMode && activeTab === 'equipment'" class="inventory-tab-content">
           <EquipmentGrid
             :equipment-form-data="equipmentFormData"
-            @update-equipment="handleEquipmentInput"
+            @update-equipment="(id, e) => emit('update-equipment', id, e)"
           />
         </div>
 

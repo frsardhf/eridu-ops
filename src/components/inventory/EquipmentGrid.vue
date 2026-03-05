@@ -13,10 +13,9 @@ const props = defineProps<{
   equipmentFormData: Record<string, number>,
 }>();
 
-type EmitFn = {
+const emit = defineEmits<{
   (e: 'update-equipment', id: string, event: Event): void;
-}
-const emit = defineEmits<EmitFn>();
+}>();
 
 const pagedResources = computed(() => {
   const allEquipments = getAllEquipmentFromCache();
@@ -31,10 +30,6 @@ const pagedResources = computed(() => {
 
 const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBoundaryTab } =
   usePaginatedGrid(pagedResources);
-
-function handleEquipmentInput(item: any, event: Event) {
-  emit('update-equipment', item.Id.toString(), event);
-}
 </script>
 
 <template>
@@ -59,7 +54,7 @@ function handleEquipmentInput(item: any, event: Event) {
               :value="equipmentFormData[item.Id]"
               :item-type="'equipment'"
               :input-tab-index="currentPage === pageIndex ? 0 : -1"
-              @update:value="(e) => handleEquipmentInput(item, e)"
+              @update:value="(e) => emit('update-equipment', item.Id.toString(), e)"
               @keydown:input="(e) => handleBoundaryTab(e, pageIndex, itemIndex, pageItems.length)"
             />
           </div>
