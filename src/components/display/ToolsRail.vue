@@ -92,8 +92,35 @@ onBeforeUnmount(() => {
         class="tools-action-btn"
         type="button"
         @click="emit('open-bulk-modify')"
+        :title="$t('bulkModify.title')"
+        :aria-label="$t('bulkModify.title')"
       >
-        {{ $t('bulkModify.title') }}
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M9 10.5a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6Zm0 1.8c-2.7 0-4.9 2-4.9 4.4v.6h8.8"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M14.6 7.8a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Zm0 1.4c2 0 3.6 1.3 4 3.1"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="18" cy="16.7" r="2.1" fill="none" stroke="currentColor" stroke-width="1.6" />
+          <path
+            d="M18 13.7v1M18 18.7v1M15 16.7h1M20 16.7h1M15.9 14.6l.7.7M19.4 18.1l.7.7M15.9 18.8l.7-.7M19.4 15.3l.7-.7"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.4"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
   </section>
@@ -130,18 +157,18 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow:
-    0 18px 34px rgba(0, 0, 0, 0.4),
-    0 8px 16px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 18px 34px rgba(0, 0, 0, 0.14),
+      0 8px 16px rgba(0, 0, 0, 0.14);
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .tools-rail-trigger:hover {
   border-color: var(--accent-color);
   box-shadow:
-    0 20px 38px rgba(0, 0, 0, 0.44),
-    0 10px 18px rgba(0, 0, 0, 0.28);
+    0 20px 38px rgba(0, 0, 0, 0.14),
+    0 10px 18px rgba(0, 0, 0, 0.14);
 }
 
 .tools-rail-trigger:focus-visible {
@@ -207,12 +234,16 @@ onBeforeUnmount(() => {
 
 .tools-action-btn {
   min-height: 42px;
-  padding: 0 16px;
+  min-width: 42px;
+  width: 42px;
+  padding: 0;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--background-primary);
   color: var(--text-primary);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: border-color 0.18s ease, color 0.18s ease;
 }
@@ -225,6 +256,11 @@ onBeforeUnmount(() => {
 .tools-action-btn:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
+}
+
+.tools-action-icon {
+  width: 22px;
+  height: 22px;
 }
 
 @media (max-width: 768px) {
@@ -242,6 +278,7 @@ onBeforeUnmount(() => {
 
   .tools-action-btn {
     width: 100%;
+    min-width: 0;
   }
 }
 </style>
