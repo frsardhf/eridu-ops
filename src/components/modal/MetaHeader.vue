@@ -140,10 +140,12 @@ const levelPillClass = computed(() => ({
   display: flex;
   align-items: center;
   min-width: 170px;
+  height: 30px;
   background: var(--background-primary);
   border: 1px solid #4e7eff;
   border-radius: 999px;
-} 
+  overflow: visible;
+}
 
 .level-pill.maxed {
   background: var(--background-primary);
@@ -197,7 +199,7 @@ const levelPillClass = computed(() => ({
 .level-label {
   font-style: italic;
   font-weight: 700;
-  font-size: 0.72rem;
+  font-size: 0.92rem;
   color: var(--text-secondary);
   letter-spacing: 0.45px;
 }
