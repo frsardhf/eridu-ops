@@ -34,52 +34,31 @@ const props = defineProps<{
   studentsArray?: StudentProps[]
 }>();
 
-type EmitFn = (event: 'close' | 'navigate', payload?: any) => void;
-const emit = defineEmits<EmitFn>();
+const emit = defineEmits<(event: 'close' | 'navigate', payload?: any) => void>();
 
 const activeTab = ref('info');
+
 const isInventoryOpen = ref(false);
+
 const displayedStudent = ref<StudentProps | null>(null);
+
 let hydrateRequestToken = 0;
 
 const {
-  closeModal,
-  currentBond,
-  newBondLevel,
-  remainingXp: bondRemainingXp,
-  totalCumulativeExp,
-  convertBoxes,
-  handleBondInput,
-  giftFormData,
-  boxFormData,
-  handleGiftInput,
-  handleBoxInput,
-  shouldShowGiftGrade,
-  autoFillGifts,
-  resetGifts,
-  undoChanges,
+  currentBond, newBondLevel, totalCumulativeExp, remainingXp: bondRemainingXp,
+  giftFormData, boxFormData, shouldShowGiftGrade,
+  closeModal, convertBoxes, handleBondInput, handleGiftInput, handleBoxInput,
+  autoFillGifts, resetGifts, undoChanges,
   loadFromIndexedDB: loadGiftData,
 } = useStudentGifts(props, emit);
 
 const {
-  characterLevels,
-  potentialLevels,
-  skillLevels,
-  allMaterialsNeeded,
+  characterLevels, skillLevels, potentialLevels, allMaterialsNeeded,
+  allSkillsMaxed, targetSkillsMaxed, allPotentialsMaxed, targetPotentialsMaxed,
   remainingXp: characterRemainingXp,
-  allSkillsMaxed,
-  targetSkillsMaxed,
-  allPotentialsMaxed,
-  targetPotentialsMaxed,
-  handleLevelUpdate,
-  handlePotentialUpdate,
-  handleSkillUpdate,
-  toggleMaxAllSkills,
-  toggleMaxTargetSkills,
-  toggleMaxAllPotentials,
-  toggleMaxTargetPotentials,
-  saveBeforeClose: saveUpgradeBeforeClose,
-  loadFromIndexedDB: loadUpgradeData,
+  handleLevelUpdate, handleSkillUpdate, handlePotentialUpdate,
+  toggleMaxAllSkills, toggleMaxTargetSkills, toggleMaxAllPotentials, toggleMaxTargetPotentials,
+  saveBeforeClose: saveUpgradeBeforeClose, loadFromIndexedDB: loadUpgradeData,
 } = useStudentUpgrade(props, emit);
 
 const {
@@ -95,24 +74,84 @@ const {
 } = useStudentEquipment(props);
 
 const {
-  equipmentLevels,
-  gradeLevels,
-  gradeInfos,
-  handleEquipmentUpdate,
-  handleGradeUpdate,
-  handleGradeInfoUpdate,
-  equipmentMaterialsNeeded,
-  getElephsForGrade,
-  allGearsMaxed,
-  targetGearsMaxed,
-  toggleMaxAllGears,
-  toggleMaxTargetGears,
-  exclusiveGearLevel,
-  hasExclusiveGear,
-  maxUnlockableGearTier,
-  handleExclusiveGearUpdate,
+  equipmentLevels, gradeLevels, gradeInfos, equipmentMaterialsNeeded, exclusiveGearLevel,
+  allGearsMaxed, targetGearsMaxed, hasExclusiveGear, maxUnlockableGearTier,
+  handleEquipmentUpdate, handleGradeUpdate, handleGradeInfoUpdate, getElephsForGrade,
+  toggleMaxAllGears, toggleMaxTargetGears, handleExclusiveGearUpdate,
   loadFromIndexedDB: loadGearData,
 } = useStudentGear(props, emit);
+
+// Image preloading for neighbor students
+function preloadStudentImages(s: StudentProps) {
+  new Image().src = `https://schaledb.com/images/student/portrait/${s.Id}.webp`;
+  if (s.CollectionBG) {
+    new Image().src = `https://schaledb.com/images/background/${s.CollectionBG}.jpg`;
+  }
+}
+
+// Navigation
+function navigateToPrevious() {
+  if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
+  const currentIndex = props.studentsArray.findIndex(s => s.Id === props.student?.Id);
+  const previousIndex = currentIndex > 0 ? currentIndex - 1 : props.studentsArray.length - 1;
+  emit('navigate', props.studentsArray[previousIndex]);
+}
+
+function navigateToNext() {
+  if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
+  const currentIndex = props.studentsArray.findIndex(s => s.Id === props.student?.Id);
+  const nextIndex = currentIndex < props.studentsArray.length - 1 ? currentIndex + 1 : 0;
+  emit('navigate', props.studentsArray[nextIndex]);
+}
+
+async function handleClose() {
+  (document.activeElement as HTMLElement)?.blur();
+  await saveUpgradeBeforeClose();
+  closeModal();
+}
+
+// Keyboard
+function handleKeyDown(event: KeyboardEvent) {
+  if (!props.isVisible) return;
+
+  // If inventory modal is open, Escape closes it first
+  if (isInventoryOpen.value) {
+    if (event.key === 'Escape') {
+      isInventoryOpen.value = false;
+      event.preventDefault();
+    }
+    return;
+  }
+
+  // Don't hijack arrows when user is typing in an input
+  const target = event.target as HTMLElement;
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+    if (event.key === 'Escape') {
+      handleClose();
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (event.key === 'ArrowLeft') {
+    navigateToPrevious();
+    event.preventDefault();
+  } else if (event.key === 'ArrowRight') {
+    navigateToNext();
+    event.preventDefault();
+  } else if (event.key === 'Escape') {
+    handleClose();
+    event.preventDefault();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+});
 
 // Centralized hydration flow: initialize defaults once, then load all hook data together.
 watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
@@ -151,91 +190,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
     // no-op: previous student remains displayed until hydrate completes
   }
 }, { immediate: true });
-
-// Image preloading for neighbor students
-function preloadStudentImages(s: StudentProps) {
-  new Image().src = `https://schaledb.com/images/student/portrait/${s.Id}.webp`;
-  if (s.CollectionBG) {
-    new Image().src = `https://schaledb.com/images/background/${s.CollectionBG}.jpg`;
-  }
-}
-
-// Navigation
-function navigateToStudent(student: StudentProps) {
-  emit('navigate', student);
-}
-
-function navigateToPrevious() {
-  if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
-  const currentIndex = props.studentsArray.findIndex(s => s.Id === props.student?.Id);
-  const previousIndex = currentIndex > 0 ? currentIndex - 1 : props.studentsArray.length - 1;
-  emit('navigate', props.studentsArray[previousIndex]);
-}
-
-function navigateToNext() {
-  if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
-  const currentIndex = props.studentsArray.findIndex(s => s.Id === props.student?.Id);
-  const nextIndex = currentIndex < props.studentsArray.length - 1 ? currentIndex + 1 : 0;
-  emit('navigate', props.studentsArray[nextIndex]);
-}
-
-async function handleClose() {
-  (document.activeElement as HTMLElement)?.blur();
-  await saveUpgradeBeforeClose();
-  closeModal();
-}
-
-// Inventory modal
-function openInventory() {
-  isInventoryOpen.value = true;
-}
-
-function closeInventory() {
-  isInventoryOpen.value = false;
-}
-
-// Keyboard
-function handleKeyDown(event: KeyboardEvent) {
-  if (!props.isVisible) return;
-
-  // If inventory modal is open, Escape closes it first
-  if (isInventoryOpen.value) {
-    if (event.key === 'Escape') {
-      closeInventory();
-      event.preventDefault();
-    }
-    return;
-  }
-
-  // Don't hijack arrows when user is typing in an input
-  const target = event.target as HTMLElement;
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-    if (event.key === 'Escape') {
-      handleClose();
-      event.preventDefault();
-    }
-    return;
-  }
-
-  if (event.key === 'ArrowLeft') {
-    navigateToPrevious();
-    event.preventDefault();
-  } else if (event.key === 'ArrowRight') {
-    navigateToNext();
-    event.preventDefault();
-  } else if (event.key === 'Escape') {
-    handleClose();
-    event.preventDefault();
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
-});
 </script>
 
 <template>
@@ -246,7 +200,7 @@ onUnmounted(() => {
         {{ $t('studentDetails') }}
       </div>
       <div class="modal-header-actions">
-        <button class="header-action-btn inventory-btn" @click="openInventory">
+        <button class="header-action-btn inventory-btn" @click="isInventoryOpen = true">
           <svg viewBox="0 0 24 24" width="18" height="18">
             <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
           </svg>
@@ -448,7 +402,7 @@ onUnmounted(() => {
       v-if="studentsArray && studentsArray.length > 0"
       :students="studentsArray"
       :active-student-id="displayedStudent?.Id"
-      @select-student="navigateToStudent"
+      @select-student="(s) => emit('navigate', s)"
       @navigate-prev="navigateToPrevious"
       @navigate-next="navigateToNext"
     />
@@ -458,7 +412,7 @@ onUnmounted(() => {
       v-if="isInventoryOpen"
       :resource-form-data="itemFormData"
       :equipment-form-data="equipmentFormData"
-      @close="closeInventory"
+      @close="isInventoryOpen = false"
       @update-resource="handleItemInput"
       @update-equipment="handleEquipmentInput"
     />

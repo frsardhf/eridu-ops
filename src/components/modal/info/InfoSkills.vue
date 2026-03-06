@@ -13,29 +13,19 @@ const props = defineProps<{
 }>();
 
 const studentRef = toRef(() => props.student);
+
 const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 
 const { bulletTypeColor } = useStudentInfo(studentRef);
+
 const {
-  useExtraExSkill,
-  hasExtraExSkill,
-  isBasicEnhanced,
-  isPassiveEnhanced,
-  toggleExtraExSkill,
-  getSkillIcon,
-  getSkillName,
-  getLevelDisplay,
-  getSkillDescription,
-  getSkillCostDisplay,
-  getSkillIconUrl
+  useExtraExSkill, hasExtraExSkill, isBasicEnhanced, isPassiveEnhanced,
+  toggleExtraExSkill, getSkillIcon, getSkillName,
+  getLevelDisplay, getSkillDescription, getSkillCostDisplay, getSkillIconUrl
 } = useStudentSkillDisplay(studentRef, toRef(() => props.skillLevels));
-const { 
-  activeTooltip, 
-  tooltipStyle, 
-  tooltipRef, 
-  showTooltip, 
-  hideTooltip 
-} = useTooltip<SkillType>();
+
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<SkillType>();
 </script>
 
 <template>

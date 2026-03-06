@@ -12,14 +12,8 @@ const props = defineProps<{
 const emit = defineEmits<(e: 'update-bond', value: number) => void>();
 
 const {
-  bondState,
-  bondEditorRef,
-  isMaxBond,
-  isEditing,
-  editValue,
-  startEdit,
-  commitEdit,
-  handleEditorKeydown,
+  bondState, bondEditorRef, isMaxBond, isEditing, editValue,
+  startEdit, commitEdit, handleEditorKeydown,
 } = useBondEditor(() => props.currentBond, (value) => emit('update-bond', value));
 </script>
 

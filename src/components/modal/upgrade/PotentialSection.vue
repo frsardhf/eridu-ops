@@ -24,15 +24,6 @@ const POTENTIAL_ICONS: Record<PotentialType, string> = {
   healpower: 'item_icon_workbook_potentialhealpower'
 };
 
-const getPotentialName = (potType: PotentialType): string => {
-  const names: Record<PotentialType, string> = {
-    attack: $t('attack'),
-    maxhp: $t('maxHp'),
-    healpower: $t('healPower')
-  };
-  return names[potType];
-};
-
 const potentialStates = computed(() =>
   (['attack', 'maxhp', 'healpower'] as PotentialType[]).map(type => ({
     type,
@@ -43,14 +34,25 @@ const potentialStates = computed(() =>
   }))
 );
 
+function getPotentialName(potType: PotentialType): string {
+  const names: Record<PotentialType, string> = {
+    attack: $t('attack'),
+    maxhp: $t('maxHp'),
+    healpower: $t('healPower')
+  };
+  return names[potType];
+}
+
 // Handle potential type changes (using props directly, no internal state)
 const updatePotentialCurrent = (type: PotentialType, value: number) => {
-  const result = clampLevelPair(value, props.potentialLevels[type]?.target ?? 0, 0, MAX_POTENTIAL_LEVEL, false);
+  const target = props.potentialLevels[type]?.target;
+  const result = clampLevelPair(value, target ?? 0, 0, MAX_POTENTIAL_LEVEL, false);
   if (result) emit('update-potential', type, result.current, result.target);
 };
 
 const updatePotentialTarget = (type: PotentialType, value: number) => {
-  const result = clampLevelPair(value, props.potentialLevels[type]?.current ?? 0, 0, MAX_POTENTIAL_LEVEL, true);
+  const current = props.potentialLevels[type]?.current;
+  const result = clampLevelPair(value, current ?? 0, 0, MAX_POTENTIAL_LEVEL, true);
   if (result) emit('update-potential', type, result.current, result.target);
 };
 </script>

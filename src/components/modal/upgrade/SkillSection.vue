@@ -23,7 +23,9 @@ const emit = defineEmits<{
 }>();
 
 const studentRef = toRef(() => props.student);
+
 const { bulletTypeColor } = useStudentInfo(studentRef);
+
 const {
   useExtraExSkill,
   hasExtraExSkill,
@@ -42,6 +44,9 @@ const {
   toRef(() => props.skillLevels),
 );
 
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<SkillType>();
+
 const skillStates = computed(() =>
   SKILL_TYPES.map(type => ({
     type,
@@ -50,13 +55,6 @@ const skillStates = computed(() =>
     max:     getMaxLevel(type),
   }))
 );
-const { 
-  activeTooltip, 
-  tooltipStyle, 
-  tooltipRef, 
-  showTooltip, 
-  hideTooltip 
-} = useTooltip<SkillType>();
 
 // Handle skill level changes (using props directly, no internal state)
 const updateSkillCurrent = (type: SkillType, value: number) => {

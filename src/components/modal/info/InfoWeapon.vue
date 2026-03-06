@@ -12,8 +12,7 @@ const props = defineProps<{
 }>();
 
 const {
-  isWeaponLocked,
-  blueStars,
+  isWeaponLocked, blueStars,
   getWeaponIconUrl
 } = useStudentGearDisplay(
   toRef(() => props.student),

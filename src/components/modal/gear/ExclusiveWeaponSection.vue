@@ -20,27 +20,14 @@ const emit = defineEmits<{
 }>();
 
 const { 
-  isMaxGrade, 
-  isWeaponLocked, 
+  isMaxGrade, isWeaponLocked, currentGrade, targetGrade,
   getWeaponIconUrl, 
-  currentGrade, 
-  targetGrade 
 } = useStudentGearDisplay(
   toRef(() => props.student),
   toRef(() => props.gradeLevels),
   () => ({}),
   () => ({})
 );
-
-const updateCurrentGrade = (grade: number) => {
-  const result = clampLevelPair(grade, props.gradeLevels?.target ?? 1, 1, MAX_GRADE, false);
-  if (result) emit('update-grade', result.current, result.target);
-};
-
-const updateTargetGrade = (grade: number) => {
-  const result = clampLevelPair(grade, props.gradeLevels?.current ?? 1, 1, MAX_GRADE, true);
-  if (result) emit('update-grade', result.current, result.target);
-};
 
 const currentStars = computed(() => {
   const current = props.gradeLevels?.current ?? 1;
@@ -59,6 +46,18 @@ const targetStars = computed(() => {
     active: i + 1 <= target,
   }));
 });
+
+const updateCurrentGrade = (grade: number) => {
+  const target = props.gradeLevels?.target;
+  const result = clampLevelPair(grade, target ?? 1, 1, MAX_GRADE, false);
+  if (result) emit('update-grade', result.current, result.target);
+};
+
+const updateTargetGrade = (grade: number) => {
+  const current = props.gradeLevels?.current;
+  const result = clampLevelPair(grade, current ?? 1, 1, MAX_GRADE, true);
+  if (result) emit('update-grade', result.current, result.target);
+};
 </script>
 
 <template>

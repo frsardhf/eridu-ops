@@ -15,13 +15,8 @@ const emit = defineEmits<{
   (e: 'update-info', owned: number, price: number, purchasable: number): void;
 }>();
 
-const { 
-  isInputFocused, 
-  inputEl, 
-  handleFocus, 
-  handleBlur, 
-  forceInputFocus 
-} = useFocusInput();
+const { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus } = useFocusInput();
+
 const { gradeState, updateValue } = useGradeInfoEditor(
   () => props.gradeInfos,
   (owned, price, purchasable) => emit('update-info', owned, price, purchasable),

@@ -15,7 +15,9 @@ const emit = defineEmits<{
 }>();
 
 const searchQuery = ref('');
+
 const isExpanded = ref(false);
+
 const scrollContainer = ref<HTMLElement | null>(null);
 
 const filteredStudents = computed(() => {
@@ -26,18 +28,6 @@ const filteredStudents = computed(() => {
     student.Name.toLowerCase().includes(query)
   );
 });
-
-function selectStudent(student: StudentProps) {
-  emit('select-student', student);
-}
-
-function handleMouseEnter() {
-  isExpanded.value = true;
-}
-
-function handleMouseLeave() {
-  isExpanded.value = false;
-}
 
 // Auto-scroll to keep active student visible
 watch(() => [props.activeStudentId, isExpanded.value], async () => {
@@ -63,8 +53,8 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
   <div
     class="student-strip-container"
     :class="{ expanded: isExpanded }"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
+    @mouseenter="isExpanded = true"
+    @mouseleave="isExpanded = false"
   >
     <!-- Collapsed indicator -->
     <div v-if="!isExpanded" class="strip-indicator">
@@ -99,7 +89,7 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
           :key="student.Id"
           :data-student-id="student.Id"
           :class="['strip-thumb', { active: student.Id === activeStudentId }]"
-          @click="selectStudent(student)"
+          @click="emit('select-student', student)"
           :title="student.Name"
         >
           <img

@@ -4,13 +4,8 @@ import { $t } from '@/locales';
 
 const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
 
-const { 
-  activeTooltip, 
-  tooltipStyle, 
-  tooltipRef, 
-  showTooltip, 
-  hideTooltip 
-} = useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>();
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = 
+  useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>();
 </script>
 
 <template>

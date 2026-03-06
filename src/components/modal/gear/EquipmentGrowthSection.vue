@@ -37,6 +37,24 @@ const {
   toRef(() => props.exclusiveGearLevel)
 );
 
+const equipmentStates = computed(() =>
+  (props.student?.Equipment || []).map(type => ({
+    type,
+    current: props.equipmentLevels[type]?.current || 1,
+    target:  props.equipmentLevels[type]?.target  || 1,
+    max:     getMaxTierForTypeSync(type),
+  }))
+);
+
+const exclusiveGearState = computed(() => {
+  const d = getExclusiveGearDisplay();
+  return {
+    current:    d.current,
+    target:     d.target,
+    maxCurrent: props.maxUnlockableGearTier,
+  };
+});
+
 // Function to handle current level changes
 function updateEquipmentCurrent(type: string, value: number) {
   const equipmentType = type as EquipmentType;
@@ -56,32 +74,16 @@ function updateEquipmentTarget(type: string, value: number) {
 }
 
 function updateExclusiveGearCurrent(value: number) {
-  const result = clampLevelPair(value, getExclusiveGearDisplay().target, 0, props.maxUnlockableGearTier, false);
+  const target = getExclusiveGearDisplay().target;
+  const result = clampLevelPair(value, target, 0, props.maxUnlockableGearTier, false);
   if (result) emit('update-exclusive-gear', result.current, result.target);
 }
 
 function updateExclusiveGearTarget(value: number) {
-  const result = clampLevelPair(value, getExclusiveGearDisplay().current, 0, MAX_EXCLUSIVE_GEAR_LEVEL, true);
+  const current = getExclusiveGearDisplay().current;
+  const result = clampLevelPair(value, current, 0, MAX_EXCLUSIVE_GEAR_LEVEL, true);
   if (result) emit('update-exclusive-gear', result.current, result.target);
 }
-
-const equipmentStates = computed(() =>
-  (props.student?.Equipment || []).map(type => ({
-    type,
-    current: props.equipmentLevels[type]?.current || 1,
-    target:  props.equipmentLevels[type]?.target  || 1,
-    max:     getMaxTierForTypeSync(type),
-  }))
-);
-
-const exclusiveGearState = computed(() => {
-  const d = getExclusiveGearDisplay();
-  return {
-    current:    d.current,
-    target:     d.target,
-    maxCurrent: props.maxUnlockableGearTier,
-  };
-});
 </script>
 
 <template>

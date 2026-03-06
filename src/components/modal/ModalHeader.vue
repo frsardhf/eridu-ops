@@ -8,13 +8,8 @@ const props = defineProps<{
 }>();
 
 const {
-  portraitSrc,
-  backgroundSrc,
-  imageLoading,
-  handlePortraitLoad,
-  handlePortraitError,
-  handleBackgroundLoad,
-  handleBackgroundError,
+  portraitSrc, backgroundSrc, imageLoading,
+  handlePortraitLoad, handlePortraitError, handleBackgroundLoad, handleBackgroundError,
 } = useStudentImages(toRef(() => props.student));
 </script>
 

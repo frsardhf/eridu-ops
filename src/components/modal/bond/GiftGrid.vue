@@ -16,16 +16,10 @@ const emit = defineEmits<{
   (e: 'update-box', id: number, event: Event): void
 }>();
 
-function handleGiftInput(id: number, event: Event) {
-  emit('update-gift', id, event);
-}
-
-function handleBoxInput(id: number, event: Event) {
-  emit('update-box', id, event);
-}
-
 const hasGifts = computed(() => Object.keys(props.student.Gifts ?? {}).length > 0);
+
 const hasBoxes = computed(() => Object.keys(props.student.Boxes ?? {}).length > 0);
+
 const convertBox = computed(() => !!props.convertBox);
 </script>
 
@@ -40,7 +34,7 @@ const convertBox = computed(() => !!props.convertBox);
         :item="item"
         :value="giftFormData[item.gift.Id]"
         :is-box="false"
-        @update:value="(e) => handleGiftInput(item.gift.Id, e)"
+        @update:value="(e) => emit('update-gift', item.gift.Id, e)"
       />
     </template>
     
@@ -55,7 +49,7 @@ const convertBox = computed(() => !!props.convertBox);
         :convert-box="convertBox"
         :show-gift-grade="shouldShowGiftGrade(Number(item.gift.Id))"
         :is-box="true"
-        @update:value="(e) => handleBoxInput(Number(item.gift.Id), e)"
+        @update:value="(e) => emit('update-box', Number(item.gift.Id), e)"
       />
     </template>
   </div>

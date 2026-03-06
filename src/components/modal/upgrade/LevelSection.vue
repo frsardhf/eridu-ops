@@ -12,14 +12,8 @@ const emit = defineEmits<(e: 'update-level', current: number, target: number) =>
 
 const { isMaxLevel } = useStudentLevels(() => props.characterLevels);
 const {
-  levelState,
-  editingField,
-  editValue,
-  currentEditorRef,
-  targetEditorRef,
-  startEdit,
-  commitEdit,
-  handleEditorKeydown,
+  levelState, editingField, editValue, currentEditorRef, targetEditorRef,
+  startEdit, commitEdit, handleEditorKeydown,
 } = useLevelEditor(
   () => props.characterLevels,
   (current, target) => emit('update-level', current, target),

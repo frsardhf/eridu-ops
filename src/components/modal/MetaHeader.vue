@@ -14,9 +14,14 @@ const props = defineProps<{
 
 const studentRef = toRef(() => props.student);
 
-const { squadTypeName, bulletTypeName, armorTypeName, squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight } = useStudentInfo(studentRef);
+const { squadTypeName, bulletTypeName, armorTypeName, squadTypeColor, 
+  bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight 
+} = useStudentInfo(studentRef);
+
 const { showLevelArrow } = useStudentLevels(() => props.characterLevels);
+
 const showBondArrow = computed(() => props.currentBond !== props.newBondLevel);
+
 const levelPillClass = computed(() => ({
   maxed50: props.currentBond >= 50 && props.currentBond < 100,
   maxed100: props.currentBond >= 100

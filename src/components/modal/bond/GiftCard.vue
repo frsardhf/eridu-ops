@@ -15,13 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{'update:value': [event: Event];}>();
 
-const { 
-  isInputFocused, 
-  inputEl, 
-  handleFocus, 
-  handleBlur, 
-  forceInputFocus 
-} = useFocusInput();
+const { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus } = useFocusInput();
 </script>
 
 <template>
