@@ -74,6 +74,81 @@
 }
 
 /* ==========================================================================
+   Modal Motion
+   ========================================================================== */
+.student-modal-shell-enter-active,
+.student-modal-shell-leave-active {
+  transition: transform var(--motion-duration-shell) var(--motion-ease-standard),
+    opacity var(--motion-duration-medium) var(--motion-ease-standard);
+  will-change: transform, opacity;
+}
+
+.student-modal-shell-enter-from.modal-origin-ready {
+  opacity: 0;
+  transform-origin: top left;
+  transform: translate3d(var(--modal-origin-x, 0), var(--modal-origin-y, 0), 0)
+    scale(var(--modal-origin-scale-x, 1), var(--modal-origin-scale-y, 1));
+}
+
+.student-modal-shell-enter-from:not(.modal-origin-ready) {
+  opacity: 0;
+  transform: scale(var(--motion-modal-fallback-scale));
+}
+
+.student-modal-shell-enter-to,
+.student-modal-shell-leave-from {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.student-modal-shell-leave-to {
+  opacity: 0;
+  transform: scale(0.995);
+}
+
+.modal-pane-forward-enter-active,
+.modal-pane-forward-leave-active,
+.modal-pane-backward-enter-active,
+.modal-pane-backward-leave-active {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+  will-change: transform, opacity;
+}
+
+.modal-pane-forward-enter-from,
+.modal-pane-backward-leave-to {
+  opacity: 0;
+  transform: translate3d(var(--motion-distance-sm), 0, 0);
+}
+
+.modal-pane-forward-leave-to,
+.modal-pane-backward-enter-from {
+  opacity: 0;
+  transform: translate3d(calc(var(--motion-distance-sm) * -1), 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-modal-shell-enter-active,
+  .student-modal-shell-leave-active,
+  .modal-pane-forward-enter-active,
+  .modal-pane-forward-leave-active,
+  .modal-pane-backward-enter-active,
+  .modal-pane-backward-leave-active {
+    transition-duration: 1ms !important;
+  }
+
+  .student-modal-shell-enter-from.modal-origin-ready,
+  .student-modal-shell-enter-from:not(.modal-origin-ready),
+  .student-modal-shell-leave-to,
+  .modal-pane-forward-enter-from,
+  .modal-pane-backward-leave-to,
+  .modal-pane-forward-leave-to,
+  .modal-pane-backward-enter-from {
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
    Layout Structure
    ========================================================================== */
 .fullscreen-modal {
@@ -121,9 +196,21 @@
   flex-shrink: 0;
 }
 
+.tab-pane-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--student-modal-gap);
+  min-width: 0;
+}
+
 /* Upgrade, Gear, Bond: fixed height with scrollable content */
 .right-column--scrollable {
   height: var(--student-modal-hero-height);
+}
+
+.right-column--scrollable .tab-pane-state {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .right-column--scrollable .tab-pane-scroll {

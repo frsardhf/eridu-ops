@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, CSSProperties } from 'vue';
 import { $t } from '@/locales';
 import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '@/consumables/hooks/useStudentGear';
@@ -27,18 +27,34 @@ import PotentialSection from '@/components/modal/upgrade/PotentialSection.vue';
 import SkillSection from '@/components/modal/upgrade/SkillSection.vue';
 import ModalHeader from '@/components/modal/ModalHeader.vue';
 import StudentStrip from '@/components/modal/StudentStrip.vue';
+import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
 import '@/styles/studentModal.css'
 
+type ModalTab = 'info' | 'bond' | 'upgrade' | 'gear';
+
+const MODAL_TAB_ORDER: Record<ModalTab, number> = {
+  info: 0,
+  bond: 1,
+  upgrade: 2,
+  gear: 3
+};
+
 const props = defineProps<{
   student: StudentProps,
+  originRect?: ModalOriginRect | null,
   isVisible?: boolean,
   studentsArray?: StudentProps[]
 }>();
 
 const emit = defineEmits<(event: 'close' | 'navigate', payload?: any) => void>();
 
-const activeTab = ref('info');
+const activeTab = ref<ModalTab>('info');
+const tabDirection = ref<'forward' | 'backward'>('forward');
+const activeTabTransitionName = computed(() =>
+  tabDirection.value === 'forward' ? 'modal-pane-forward' : 'modal-pane-backward'
+);
+const activeTabTransitionKey = computed(() => activeTab.value);
 
 const isInventoryOpen = ref(false);
 
@@ -51,6 +67,30 @@ let hydrateRequestToken = 0;
 const { studentData: rawStudentData } = useStudentData();
 
 const hasStyleSwitch = computed(() => hasLinkedPartner(props.student?.Id));
+
+const hasOriginMorph = computed(() => {
+  const origin = props.originRect;
+  return !!origin && origin.width > 0 && origin.height > 0;
+});
+
+const modalOriginStyle = computed<CSSProperties>(() => {
+  if (!hasOriginMorph.value || typeof window === 'undefined') {
+    return {};
+  }
+
+  const origin = props.originRect as ModalOriginRect;
+  const viewportWidth = Math.max(window.innerWidth || 1, 1);
+  const viewportHeight = Math.max(window.innerHeight || 1, 1);
+  const scaleX = Math.min(1, Math.max(0.05, origin.width / viewportWidth));
+  const scaleY = Math.min(1, Math.max(0.05, origin.height / viewportHeight));
+
+  return {
+    '--modal-origin-x': `${origin.left}px`,
+    '--modal-origin-y': `${origin.top}px`,
+    '--modal-origin-scale-x': `${scaleX}`,
+    '--modal-origin-scale-y': `${scaleY}`
+  } as CSSProperties;
+});
 
 const styleStudent = computed<StudentProps | null>(() => {
   if (!displayedStudent.value) return null;
@@ -133,6 +173,14 @@ function handleStyleToggle() {
   const partnerId = getLinkedPartnerId(displayedStudent.value.Id);
   if (!partnerId) return;
   activeStyleId.value = activeStyleId.value === partnerId ? null : partnerId;
+}
+
+function setActiveTab(nextTab: ModalTab) {
+  if (nextTab === activeTab.value) return;
+  tabDirection.value = MODAL_TAB_ORDER[nextTab] >= MODAL_TAB_ORDER[activeTab.value]
+    ? 'forward'
+    : 'backward';
+  activeTab.value = nextTab;
 }
 
 // Keyboard
@@ -219,7 +267,12 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
 </script>
 
 <template>
-  <div v-if="isVisible" class="fullscreen-modal">
+  <div
+    v-if="isVisible"
+    class="fullscreen-modal"
+    :class="{ 'modal-origin-ready': hasOriginMorph }"
+    :style="modalOriginStyle"
+  >
     <!-- TOP ROW: Title + Actions (above tabs) -->
     <div class="modal-header-row">
       <div class="modal-title">
@@ -269,159 +322,163 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
             <div class="modal-tabs">
               <button
                 :class="['tab-button', { active: activeTab === 'info' }]"
-                @click="activeTab = 'info'"
+                @click="setActiveTab('info')"
               >
                 {{ $t('info') }}
               </button>
               <button
                 :class="['tab-button', { active: activeTab === 'bond' }]"
-                @click="activeTab = 'bond'"
+                @click="setActiveTab('bond')"
               >
                 {{ $t('bond') }}
               </button>
               <button
                 :class="['tab-button', { active: activeTab === 'upgrade' }]"
-                @click="activeTab = 'upgrade'"
+                @click="setActiveTab('upgrade')"
               >
                 {{ $t('upgrade') }}
               </button>
               <button
                 :class="['tab-button', { active: activeTab === 'gear' }]"
-                @click="activeTab = 'gear'"
+                @click="setActiveTab('gear')"
               >
                 {{ $t('gear') }}
               </button>
             </div>
 
-            <template v-if="activeTab === 'info'">
-              <InfoSkills
-                :student="activeStyleStudent"
-                :skill-levels="skillLevels"
-              />
-
-              <InfoWeapon
-                :student="activeStyleStudent"
-                :grade-levels="gradeLevels"
-                :equipment-levels="equipmentLevels"
-                :exclusive-gear-level="exclusiveGearLevel"
-              />
-
-              <InfoGear
-                :student="displayedStudent"
-                :grade-levels="gradeLevels"
-                :equipment-levels="equipmentLevels"
-                :exclusive-gear-level="exclusiveGearLevel"
-                :has-exclusive-gear="hasExclusiveGear"
-              />
-            </template>
-
-            <template v-if="activeTab === 'bond'">
-              <div class="bond-layout" :class="{ 'bond-layout-max': currentBond === 100 }">
-                <div class="bond-top-row">
-                  <BondSection
-                    class="bond-panel"
-                    :class="{ 'bond-panel-full': currentBond === 100 }"
-                    :current-bond="currentBond"
-                    :new-bond-level="newBondLevel"
-                    :remaining-xp="bondRemainingXp"
-                    :total-exp="totalCumulativeExp"
-                    @update-bond="handleBondInput"
+            <Transition :name="activeTabTransitionName" mode="out-in">
+              <div :key="activeTabTransitionKey" class="tab-pane-state">
+                <template v-if="activeTab === 'info'">
+                  <InfoSkills
+                    :student="activeStyleStudent"
+                    :skill-levels="skillLevels"
                   />
 
-                  <GiftOption
-                    v-if="currentBond < 100"
-                    class="bond-options-panel"
-                    @toggle-convert="convertBoxes"
-                    @auto-fill-gift="autoFillGifts"
-                    @reset-gifts="resetGifts"
-                    @undo-changes="undoChanges"
+                  <InfoWeapon
+                    :student="activeStyleStudent"
+                    :grade-levels="gradeLevels"
+                    :equipment-levels="equipmentLevels"
+                    :exclusive-gear-level="exclusiveGearLevel"
                   />
-                </div>
 
-                <div v-if="currentBond < 100" class="bond-gift-scroll">
-                  <GiftGrid
-                    class="bond-gift-grid"
+                  <InfoGear
                     :student="displayedStudent"
-                    :gift-form-data="giftFormData"
-                    :box-form-data="boxFormData"
-                    :should-show-gift-grade="shouldShowGiftGrade"
-                    @update-gift="handleGiftInput"
-                    @update-box="handleBoxInput"
+                    :grade-levels="gradeLevels"
+                    :equipment-levels="equipmentLevels"
+                    :exclusive-gear-level="exclusiveGearLevel"
+                    :has-exclusive-gear="hasExclusiveGear"
                   />
-                </div>
+                </template>
+
+                <template v-else-if="activeTab === 'bond'">
+                  <div class="bond-layout" :class="{ 'bond-layout-max': currentBond === 100 }">
+                    <div class="bond-top-row">
+                      <BondSection
+                        class="bond-panel"
+                        :class="{ 'bond-panel-full': currentBond === 100 }"
+                        :current-bond="currentBond"
+                        :new-bond-level="newBondLevel"
+                        :remaining-xp="bondRemainingXp"
+                        :total-exp="totalCumulativeExp"
+                        @update-bond="handleBondInput"
+                      />
+
+                      <GiftOption
+                        v-if="currentBond < 100"
+                        class="bond-options-panel"
+                        @toggle-convert="convertBoxes"
+                        @auto-fill-gift="autoFillGifts"
+                        @reset-gifts="resetGifts"
+                        @undo-changes="undoChanges"
+                      />
+                    </div>
+
+                    <div v-if="currentBond < 100" class="bond-gift-scroll">
+                      <GiftGrid
+                        class="bond-gift-grid"
+                        :student="displayedStudent"
+                        :gift-form-data="giftFormData"
+                        :box-form-data="boxFormData"
+                        :should-show-gift-grade="shouldShowGiftGrade"
+                        @update-gift="handleGiftInput"
+                        @update-box="handleBoxInput"
+                      />
+                    </div>
+                  </div>
+                </template>
+
+                <template v-else-if="activeTab === 'upgrade'">
+                  <div class="tab-pane-scroll tab-pane-scroll--upgrade">
+                    <LevelSection
+                      class="upgrade-level-panel"
+                      :character-levels="characterLevels"
+                      :total-xp-needed="characterRemainingXp"
+                      @update-level="handleLevelUpdate"
+                    />
+
+                    <SkillSection
+                      :student="activeStyleStudent"
+                      :skill-levels="skillLevels"
+                      :all-skills-maxed="allSkillsMaxed"
+                      :target-skills-maxed="targetSkillsMaxed"
+                      @update-skill="handleSkillUpdate"
+                      @toggle-max-skills="toggleMaxAllSkills"
+                      @toggle-max-target="toggleMaxTargetSkills"
+                    />
+
+                    <PotentialSection
+                      :potential-levels="potentialLevels"
+                      :all-potentials-maxed="allPotentialsMaxed"
+                      :target-potentials-maxed="targetPotentialsMaxed"
+                      @update-potential="handlePotentialUpdate"
+                      @toggle-max-potentials="toggleMaxAllPotentials"
+                      @toggle-max-target-potentials="toggleMaxTargetPotentials"
+                    />
+
+                    <MaterialsSection
+                      :materials="allMaterialsNeeded"
+                    />
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="tab-pane-scroll tab-pane-scroll--gear">
+                    <ElephEligmaSection
+                      v-if="(gradeLevels.current ?? 1) < 9"
+                      :student="displayedStudent"
+                      :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
+                      :grade-infos="gradeInfos"
+                      @update-info="handleGradeInfoUpdate"
+                    />
+
+                    <EquipmentGrowthSection
+                      :student="displayedStudent"
+                      :equipment-levels="equipmentLevels"
+                      :exclusive-gear-level="exclusiveGearLevel"
+                      :has-exclusive-gear="hasExclusiveGear"
+                      :max-unlockable-gear-tier="maxUnlockableGearTier"
+                      :all-gears-maxed="allGearsMaxed"
+                      :target-gears-maxed="targetGearsMaxed"
+                      @update-equipment="handleEquipmentUpdate"
+                      @update-exclusive-gear="handleExclusiveGearUpdate"
+                      @toggle-max-gears="toggleMaxAllGears"
+                      @toggle-max-target-gears="toggleMaxTargetGears"
+                    />
+
+                    <ExclusiveWeaponSection
+                      :student="activeStyleStudent"
+                      :grade-levels="gradeLevels"
+                      @update-grade="handleGradeUpdate"
+                    />
+
+                    <MaterialsSection
+                      :materials="equipmentMaterialsNeeded"
+                      :is-equipment-tab="true"
+                    />
+                  </div>
+                </template>
               </div>
-            </template>
-
-            <template v-if="activeTab === 'upgrade'">
-              <div class="tab-pane-scroll tab-pane-scroll--upgrade">
-                <LevelSection
-                  class="upgrade-level-panel"
-                  :character-levels="characterLevels"
-                  :total-xp-needed="characterRemainingXp"
-                  @update-level="handleLevelUpdate"
-                />
-
-                <SkillSection
-                  :student="activeStyleStudent"
-                  :skill-levels="skillLevels"
-                  :all-skills-maxed="allSkillsMaxed"
-                  :target-skills-maxed="targetSkillsMaxed"
-                  @update-skill="handleSkillUpdate"
-                  @toggle-max-skills="toggleMaxAllSkills"
-                  @toggle-max-target="toggleMaxTargetSkills"
-                />
-
-                <PotentialSection
-                  :potential-levels="potentialLevels"
-                  :all-potentials-maxed="allPotentialsMaxed"
-                  :target-potentials-maxed="targetPotentialsMaxed"
-                  @update-potential="handlePotentialUpdate"
-                  @toggle-max-potentials="toggleMaxAllPotentials"
-                  @toggle-max-target-potentials="toggleMaxTargetPotentials"
-                />
-
-                <MaterialsSection
-                  :materials="allMaterialsNeeded"
-                />
-              </div>
-            </template>
-
-            <template v-if="activeTab === 'gear'">
-              <div class="tab-pane-scroll tab-pane-scroll--gear">
-                <ElephEligmaSection
-                  v-if="(gradeLevels.current ?? 1) < 9"
-                  :student="displayedStudent"
-                  :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
-                  :grade-infos="gradeInfos"
-                  @update-info="handleGradeInfoUpdate"
-                />
-
-                <EquipmentGrowthSection
-                  :student="displayedStudent"
-                  :equipment-levels="equipmentLevels"
-                  :exclusive-gear-level="exclusiveGearLevel"
-                  :has-exclusive-gear="hasExclusiveGear"
-                  :max-unlockable-gear-tier="maxUnlockableGearTier"
-                  :all-gears-maxed="allGearsMaxed"
-                  :target-gears-maxed="targetGearsMaxed"
-                  @update-equipment="handleEquipmentUpdate"
-                  @update-exclusive-gear="handleExclusiveGearUpdate"
-                  @toggle-max-gears="toggleMaxAllGears"
-                  @toggle-max-target-gears="toggleMaxTargetGears"
-                />
-
-                <ExclusiveWeaponSection
-                  :student="activeStyleStudent"
-                  :grade-levels="gradeLevels"
-                  @update-grade="handleGradeUpdate"
-                />
-
-                <MaterialsSection
-                  :materials="equipmentMaterialsNeeded"
-                  :is-equipment-tab="true"
-                />
-              </div>
-            </template>
+            </Transition>
           </div>
         </div>
       </div>
@@ -438,14 +495,16 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
     />
 
     <!-- Level 2: Global Inventory Modal -->
-    <GlobalInventoryModal
-      v-if="isInventoryOpen"
-      :resource-form-data="itemFormData"
-      :equipment-form-data="equipmentFormData"
-      @close="isInventoryOpen = false"
-      @update-resource="handleItemInput"
-      @update-equipment="handleEquipmentInput"
-    />
+    <Transition name="inventory-modal-shell">
+      <GlobalInventoryModal
+        v-if="isInventoryOpen"
+        :resource-form-data="itemFormData"
+        :equipment-form-data="equipmentFormData"
+        @close="isInventoryOpen = false"
+        @update-resource="handleItemInput"
+        @update-equipment="handleEquipmentInput"
+      />
+    </Transition>
   </div>
 </template>
 

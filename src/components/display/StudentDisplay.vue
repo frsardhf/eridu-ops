@@ -10,6 +10,7 @@ import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/modal/StudentModal.vue'
 import { GiftProps } from '@/types/gift';
 import { SortOption } from '@/types/header';
+import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
 import { ThemeId } from '@/types/theme';
 
@@ -33,6 +34,7 @@ const {
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
 const isBulkModifyModalVisible = ref(false);
+const modalOriginRect = ref<ModalOriginRect | null>(null);
 const savedOrder = getManualOrder();
 const isManualOrderActive = ref(savedOrder.length > 0);
 const manualOrderedIds = ref<number[]>(savedOrder);
@@ -114,13 +116,15 @@ function prepareStudentForModal(student: StudentProps): StudentProps {
 }
 
 // Event handlers
-function openModal(student: StudentProps) {
-  selectedStudent.value = prepareStudentForModal(student);
+function openModal(payload: { student: StudentProps; originRect: ModalOriginRect | null }) {
+  selectedStudent.value = prepareStudentForModal(payload.student);
+  modalOriginRect.value = payload.originRect;
   isModalVisible.value = true;
 }
 
 function closeModal() {
   isModalVisible.value = false;
+  modalOriginRect.value = null;
   selectedStudent.value = null;
 }
 
@@ -229,14 +233,17 @@ async function handleReinitializeData() {
       @reorder-students="handleStudentsReordered"
     />
 
-    <StudentModal 
-      v-if="isModalVisible && selectedStudent" 
-      :student="selectedStudent" 
-      :isVisible="isModalVisible"
-      :studentsArray="displayStudentsArray"
-      @close="closeModal"
-      @navigate="handleNavigate"
-    />
+    <Transition name="student-modal-shell" appear>
+      <StudentModal 
+        v-if="isModalVisible && selectedStudent" 
+        :student="selectedStudent" 
+        :origin-rect="modalOriginRect"
+        :isVisible="isModalVisible"
+        :studentsArray="displayStudentsArray"
+        @close="closeModal"
+        @navigate="handleNavigate"
+      />
+    </Transition>
 
     <BulkModifyStudentsModal
       v-if="isBulkModifyModalVisible"

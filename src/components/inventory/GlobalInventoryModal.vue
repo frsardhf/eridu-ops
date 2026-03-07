@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import ItemsGrid from './ItemsGrid.vue';
 import EquipmentGrid from './EquipmentGrid.vue';
@@ -20,12 +20,65 @@ type InventoryTab = 'items' | 'equipment';
 type SummaryTab = 'materials' | 'equipment' | 'gifts';
 type SummaryViewMode = 'needed' | 'missing' | 'leftover';
 
+const INVENTORY_TAB_ORDER: Record<InventoryTab, number> = {
+  items: 0,
+  equipment: 1
+};
+
+const SUMMARY_TAB_ORDER: Record<SummaryTab, number> = {
+  materials: 0,
+  equipment: 1,
+  gifts: 2
+};
+
+const SUMMARY_MODE_ORDER: Record<SummaryViewMode, number> = {
+  needed: 0,
+  missing: 1,
+  leftover: 2
+};
+
 const activeTab = ref<InventoryTab>('items');
 const summaryMode = ref(false);
 const summaryTab = ref<SummaryTab>('materials');
 const summaryViewMode = ref<SummaryViewMode>('needed');
+const contentDirection = ref<'forward' | 'backward'>('forward');
+
+const contentTransitionName = computed(() =>
+  contentDirection.value === 'forward' ? 'inventory-pane-forward' : 'inventory-pane-backward'
+);
+
+const contentTransitionKey = computed(() =>
+  summaryMode.value
+    ? `summary-${summaryTab.value}-${summaryViewMode.value}`
+    : `inventory-${activeTab.value}`
+);
+
+function setInventoryTab(nextTab: InventoryTab) {
+  if (nextTab === activeTab.value) return;
+  contentDirection.value = INVENTORY_TAB_ORDER[nextTab] >= INVENTORY_TAB_ORDER[activeTab.value]
+    ? 'forward'
+    : 'backward';
+  activeTab.value = nextTab;
+}
+
+function setSummaryTab(nextTab: SummaryTab) {
+  if (nextTab === summaryTab.value) return;
+  contentDirection.value = SUMMARY_TAB_ORDER[nextTab] >= SUMMARY_TAB_ORDER[summaryTab.value]
+    ? 'forward'
+    : 'backward';
+  summaryTab.value = nextTab;
+}
+
+function setSummaryViewMode(nextMode: SummaryViewMode) {
+  if (nextMode === summaryViewMode.value) return;
+  contentDirection.value = SUMMARY_MODE_ORDER[nextMode] >= SUMMARY_MODE_ORDER[summaryViewMode.value]
+    ? 'forward'
+    : 'backward';
+  summaryViewMode.value = nextMode;
+}
 
 const toggleSummaryMode = () => {
+  const previousIndex = summaryMode.value ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
   const next = !summaryMode.value;
 
   if (next) {
@@ -36,6 +89,8 @@ const toggleSummaryMode = () => {
     }
   }
 
+  const nextIndex = next ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
+  contentDirection.value = nextIndex >= previousIndex ? 'forward' : 'backward';
   summaryMode.value = next;
 };
 </script>
@@ -72,13 +127,13 @@ const toggleSummaryMode = () => {
         <template v-if="!summaryMode">
           <button
             :class="['inv-tab-btn', { active: activeTab === 'items' }]"
-            @click="activeTab = 'items'"
+            @click="setInventoryTab('items')"
           >
             {{ $t('items') }}
           </button>
           <button
             :class="['inv-tab-btn', { active: activeTab === 'equipment' }]"
-            @click="activeTab = 'equipment'"
+            @click="setInventoryTab('equipment')"
           >
             {{ $t('equipment') }}
           </button>
@@ -87,19 +142,19 @@ const toggleSummaryMode = () => {
           <div class="inventory-tab-group">
             <button
               :class="['inv-tab-btn', { active: summaryTab === 'materials' }]"
-              @click="summaryTab = 'materials'"
+              @click="setSummaryTab('materials')"
             >
               {{ $t('items') }}
             </button>
             <button
               :class="['inv-tab-btn', { active: summaryTab === 'equipment' }]"
-              @click="summaryTab = 'equipment'"
+              @click="setSummaryTab('equipment')"
             >
               {{ $t('equipment') }}
             </button>
             <button
               :class="['inv-tab-btn', { active: summaryTab === 'gifts' }]"
-              @click="summaryTab = 'gifts'"
+              @click="setSummaryTab('gifts')"
             >
               {{ $t('gifts') }}
             </button>
@@ -109,21 +164,21 @@ const toggleSummaryMode = () => {
             <button
               type="button"
               :class="['inventory-mode-btn', 'inventory-mode-needed', { active: summaryViewMode === 'needed' }]"
-              @click="summaryViewMode = 'needed'"
+              @click="setSummaryViewMode('needed')"
             >
               {{ $t('needed') }}
             </button>
             <button
               type="button"
               :class="['inventory-mode-btn', 'inventory-mode-missing', { active: summaryViewMode === 'missing' }]"
-              @click="summaryViewMode = 'missing'"
+              @click="setSummaryViewMode('missing')"
             >
               {{ $t('missing') }}
             </button>
             <button
               type="button"
               :class="['inventory-mode-btn', 'inventory-mode-leftover', { active: summaryViewMode === 'leftover' }]"
-              @click="summaryViewMode = 'leftover'"
+              @click="setSummaryViewMode('leftover')"
             >
               {{ $t('leftover') }}
             </button>
@@ -133,28 +188,29 @@ const toggleSummaryMode = () => {
 
       <!-- Content -->
       <div class="inventory-content">
-        <div v-if="!summaryMode && activeTab === 'items'" class="inventory-tab-content">
-          <ItemsGrid
-            :resource-form-data="resourceFormData"
-            @update-resource="(id, e) => emit('update-resource', id, e)"
-          />
-        </div>
+        <Transition :name="contentTransitionName" mode="out-in">
+          <div :key="contentTransitionKey" class="inventory-tab-content">
+            <ItemsGrid
+              v-if="!summaryMode && activeTab === 'items'"
+              :resource-form-data="resourceFormData"
+              @update-resource="(id, e) => emit('update-resource', id, e)"
+            />
 
-        <div v-if="!summaryMode && activeTab === 'equipment'" class="inventory-tab-content">
-          <EquipmentGrid
-            :equipment-form-data="equipmentFormData"
-            @update-equipment="(id, e) => emit('update-equipment', id, e)"
-          />
-        </div>
+            <EquipmentGrid
+              v-else-if="!summaryMode && activeTab === 'equipment'"
+              :equipment-form-data="equipmentFormData"
+              @update-equipment="(id, e) => emit('update-equipment', id, e)"
+            />
 
-        <div v-if="summaryMode" class="inventory-tab-content">
-          <ResourceSummary
-            :active-tab-external="summaryTab"
-            :active-mode-external="summaryViewMode"
-            :show-category-tabs="false"
-            :show-mode-tabs="false"
-          />
-        </div>
+            <ResourceSummary
+              v-else
+              :active-tab-external="summaryTab"
+              :active-mode-external="summaryViewMode"
+              :show-category-tabs="false"
+              :show-mode-tabs="false"
+            />
+          </div>
+        </Transition>
       </div>
     </div>
   </div>
@@ -362,6 +418,76 @@ const toggleSummaryMode = () => {
 
 .inventory-tab-content {
   width: 100%;
+}
+
+:global(.inventory-modal-shell-enter-active),
+:global(.inventory-modal-shell-leave-active) {
+  transition: opacity var(--motion-duration-medium) var(--motion-ease-standard);
+}
+
+:global(.inventory-modal-shell-enter-from),
+:global(.inventory-modal-shell-leave-to) {
+  opacity: 0;
+}
+
+:global(.inventory-modal-shell-enter-active) .inventory-modal,
+:global(.inventory-modal-shell-leave-active) .inventory-modal {
+  transition: transform var(--motion-duration-medium) var(--motion-ease-standard),
+    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+  will-change: transform, opacity;
+}
+
+:global(.inventory-modal-shell-enter-from) .inventory-modal {
+  transform: translate3d(0, var(--motion-distance-sm), 0) scale(var(--motion-modal-fallback-scale));
+  opacity: 0;
+}
+
+:global(.inventory-modal-shell-leave-to) .inventory-modal {
+  transform: translate3d(0, 6px, 0) scale(0.995);
+  opacity: 0;
+}
+
+.inventory-pane-forward-enter-active,
+.inventory-pane-forward-leave-active,
+.inventory-pane-backward-enter-active,
+.inventory-pane-backward-leave-active {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+  will-change: transform, opacity;
+}
+
+.inventory-pane-forward-enter-from,
+.inventory-pane-backward-leave-to {
+  opacity: 0;
+  transform: translate3d(var(--motion-distance-sm), 0, 0);
+}
+
+.inventory-pane-forward-leave-to,
+.inventory-pane-backward-enter-from {
+  opacity: 0;
+  transform: translate3d(calc(var(--motion-distance-sm) * -1), 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.inventory-modal-shell-enter-active),
+  :global(.inventory-modal-shell-leave-active),
+  :global(.inventory-modal-shell-enter-active) .inventory-modal,
+  :global(.inventory-modal-shell-leave-active) .inventory-modal,
+  .inventory-pane-forward-enter-active,
+  .inventory-pane-forward-leave-active,
+  .inventory-pane-backward-enter-active,
+  .inventory-pane-backward-leave-active {
+    transition-duration: 1ms !important;
+  }
+
+  :global(.inventory-modal-shell-enter-from) .inventory-modal,
+  :global(.inventory-modal-shell-leave-to) .inventory-modal,
+  .inventory-pane-forward-enter-from,
+  .inventory-pane-backward-leave-to,
+  .inventory-pane-forward-leave-to,
+  .inventory-pane-backward-enter-from {
+    transform: none !important;
+  }
 }
 
 @media (max-width: 976px) {

@@ -4,6 +4,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useStudentFormData } from '@/consumables/stores/studentStore'
 import { SkillType, SkillTypeName } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
+import { ModalOriginRect } from '@/types/modal';
 import {
   isStudentPinned,
   togglePinnedStudent
@@ -12,7 +13,7 @@ import { currentLanguage } from '@/consumables/stores/localizationStore'
 
 const props = defineProps<{ student: StudentProps }>();
 const emit = defineEmits<{
-  (e: 'click', student: StudentProps): void;
+  (e: 'click', payload: { student: StudentProps; originRect: ModalOriginRect | null }): void;
   (e: 'pin-toggled', studentId: string | number, isPinned: boolean): void;
 }>();
 
@@ -164,10 +165,27 @@ function handlePinToggle(event: MouseEvent) {
   forceUpdate.value++;
   emit('pin-toggled', props.student.Id, newPinStatus);
 }
+
+function handleCardClick(event: MouseEvent) {
+  const sourceEl = event.currentTarget as HTMLElement | null;
+  let originRect: ModalOriginRect | null = null;
+
+  if (sourceEl) {
+    const rect = sourceEl.getBoundingClientRect();
+    originRect = {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  emit('click', { student: props.student, originRect });
+}
 </script>
 
 <template>
-  <div class="student-card" @click="emit('click', student)" 
+  <div class="student-card"
     :key="`card-${student.Id}-${isPinned}`">
     <!-- Pin icon -->
     <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle"
@@ -179,7 +197,7 @@ function handlePinToggle(event: MouseEvent) {
       />
     </div>
     
-    <a class="selection-grid-card">
+    <a class="selection-grid-card" @click="handleCardClick">
       <div class="card-img">
         <img 
           :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"

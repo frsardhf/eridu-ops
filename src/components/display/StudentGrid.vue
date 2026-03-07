@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { StudentProps } from '@/types/student'
+import { ModalOriginRect } from '@/types/modal';
 import StudentCard from './StudentCard.vue';
 
 const props = defineProps<{ 
@@ -8,7 +9,7 @@ const props = defineProps<{
 }>();
 
 type EmitEvents = {
-  'openModal': [student: StudentProps];
+  'openModal': [payload: { student: StudentProps; originRect: ModalOriginRect | null }];
   'studentPinned': [studentId: string | number, isPinned: boolean];
   'reorderStudents': [fromId: number, toId: number];
 }
@@ -17,8 +18,8 @@ const emit = defineEmits<EmitEvents>();
 const draggedStudentId = ref<number | null>(null);
 const dropTargetStudentId = ref<number | null>(null);
 
-function handleOpenModal(student: StudentProps) {
-  emit('openModal', student);
+function handleOpenModal(payload: { student: StudentProps; originRect: ModalOriginRect | null }) {
+  emit('openModal', payload);
 }
 
 function handlePinToggled(studentId: string | number, isPinned: boolean) {
@@ -87,7 +88,7 @@ function handleDragEnd() {
       >
         <StudentCard
           :student="student"
-          @click="handleOpenModal(student)"
+          @click="handleOpenModal"
           @pin-toggled="handlePinToggled"
         />
       </div>
