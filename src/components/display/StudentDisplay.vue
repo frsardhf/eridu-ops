@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
+import { filterSecondaryStudents } from '@/consumables/constants/linkedStudents';
 import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
 import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
@@ -36,7 +37,9 @@ const savedOrder = getManualOrder();
 const isManualOrderActive = ref(savedOrder.length > 0);
 const manualOrderedIds = ref<number[]>(savedOrder);
 const allStudentsArray = computed<StudentProps[]>(() => {
-  return Object.values(studentData.value).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
+  return filterSecondaryStudents(
+    Object.values(studentData.value)
+  ).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
 const displayStudentsArray = computed<StudentProps[]>(() => {

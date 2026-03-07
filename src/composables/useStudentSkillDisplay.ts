@@ -3,6 +3,7 @@ import { formatSkillDescription } from '@/consumables/utils/localizationUtils';
 import { formatSkillCost } from '@/consumables/utils/upgradeUtils';
 import { getSkillIconUrl } from '@/consumables/utils/iconUtils';
 import { getStudentData } from '@/consumables/stores/studentStore';
+import { getPrimaryStudentId } from '@/consumables/constants/linkedStudents';
 import {
   GEAR_UNLOCK_PASSIVE_SKILL,
   GEAR_UNLOCK_PUBLIC_SKILL,
@@ -38,7 +39,7 @@ export function useStudentSkillDisplay(
   student: MaybeRefOrGetter<StudentProps>,
   skillLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
 ) {
-  const studentData = computed(() => getStudentData(toValue(student).Id));
+  const studentData = computed(() => getStudentData(getPrimaryStudentId(toValue(student).Id)));
   const isPassiveEnhanced = computed(() => (studentData.value?.gradeLevels?.current ?? 0) >= GEAR_UNLOCK_PASSIVE_SKILL);
   const isBasicEnhanced   = computed(() => (studentData.value?.exclusiveGearLevel?.current ?? 0) >= GEAR_UNLOCK_PUBLIC_SKILL);
   const skillLabels: Record<SkillType, string> = {

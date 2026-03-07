@@ -165,13 +165,6 @@ img, svg {
   vertical-align: middle;
 }
 
-/* Override enhanced-overlay size for info tab */
-.enhanced-overlay {
-  width: 18px;
-  height: 18px;
-  font-size: 16px;
-}
-
 /* Skill Level */
 .skill-level {
   display: flex;

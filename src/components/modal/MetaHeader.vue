@@ -10,6 +10,13 @@ const props = defineProps<{
   characterLevels: { current: number; target: number };
   currentBond: number;
   newBondLevel: number;
+  hasStyleSwitch?: boolean;
+  activeStyleId?: number;
+  primaryStudentId?: number;
+}>();
+
+const emit = defineEmits<{
+  (e: 'toggle-style'): void;
 }>();
 
 const studentRef = toRef(() => props.student);
@@ -26,19 +33,44 @@ const levelPillClass = computed(() => ({
   maxed50: props.currentBond >= 50 && props.currentBond < 100,
   maxed100: props.currentBond >= 100
 }));
+
+const styleModeLabel = computed(() => {
+  if (typeof props.activeStyleId !== 'number') {
+    return 'I';
+  }
+
+  if (typeof props.primaryStudentId === 'number') {
+    return props.activeStyleId === props.primaryStudentId ? 'I' : 'II';
+  }
+
+  return props.activeStyleId === 2 ? 'II' : 'I';
+});
 </script>
 
 <template>
   <section class="student-meta-header" aria-label="Student Summary">
     <div class="identity-row">
       <h2 class="student-name">{{ student.Name }}</h2>
-      <span
-        v-if="squadTypeName"
-        class="role-chip"
-        :style="{ backgroundColor: squadTypeColor }"
-      >
-        {{ squadTypeName }}
-      </span>
+      <div class="identity-actions">
+        <button
+          v-if="hasStyleSwitch"
+          class="style-toggle-btn"
+          :class="{ active: activeStyleId !== primaryStudentId }"
+          @click="emit('toggle-style')"
+          type="button"
+          :title="`${$t('switchStyle')} (${styleModeLabel})`"
+          :aria-label="`${$t('switchStyle')} ${styleModeLabel}`"
+        >
+          <span class="style-mode-label">{{ styleModeLabel }}</span>
+        </button>
+        <span
+          v-if="squadTypeName"
+          class="role-chip"
+          :style="{ backgroundColor: squadTypeColor }"
+        >
+          {{ squadTypeName }}
+        </span>
+      </div>
     </div>
 
     <div class="meta-row">
@@ -111,6 +143,43 @@ const levelPillClass = computed(() => ({
   line-height: 1;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.identity-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.style-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.style-toggle-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.style-toggle-btn.active {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: white;
+}
+
+.style-mode-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .role-chip {

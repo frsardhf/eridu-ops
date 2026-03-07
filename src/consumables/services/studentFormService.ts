@@ -10,6 +10,7 @@ import {
   DEFAULT_POTENTIAL_LEVELS
 } from '../../types/upgrade';
 import { DEFAULT_BOND_DETAIL } from '../../types/gift';
+import { getPrimaryStudentId } from '../constants/linkedStudents';
 
 // Track which students have been initialized this session to avoid redundant checks
 const initializedStudents = new Set<number>();
@@ -54,7 +55,8 @@ export function buildDefaultFormData(student: StudentProps): FormRecord {
  * @returns The form data (either existing or newly created defaults)
  */
 export async function initializeStudentFormData(student: StudentProps): Promise<FormRecord> {
-  const studentId = student.Id;
+  // For linked students, always use the primary ID for form data
+  const studentId = getPrimaryStudentId(student.Id);
 
   // Quick check: if already initialized this session, just fetch and return
   if (initializedStudents.has(studentId)) {

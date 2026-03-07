@@ -23,9 +23,6 @@ const { gradeState, updateValue } = useGradeInfoEditor(
 );
 
 const elephIcon = computed(() => {
-  if (String(props.student?.Id) === '10099') {
-    return 'https://schaledb.com/images/item/icon/item_icon_secretstone_ch0258.webp';
-  }
   if (!props.student?.ElephIcon) return '';
   return `https://schaledb.com/images/item/icon/${props.student.ElephIcon}.webp`;
 });

@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { $t } from '@/locales';
 import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '@/consumables/hooks/useStudentGear';
 import { useStudentGifts } from '@/consumables/hooks/useStudentGifts';
 import { useStudentItems } from '@/consumables/hooks/useStudentItems';
 import { useStudentUpgrade } from '@/consumables/hooks/useStudentUpgrade';
+import { useStudentData } from '@/consumables/hooks/useStudentData';
 import { initializeStudentFormData } from '@/consumables/services/studentFormService';
 import { setStudentDataDirect } from '@/consumables/stores/studentStore';
+import { hasLinkedPartner, getLinkedPartnerId } from '@/consumables/constants/linkedStudents';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import BondSection from '@/components/modal/bond/BondSection.vue';
 import GiftOption from '@/components/modal/bond/GiftOption.vue';
@@ -42,7 +44,23 @@ const isInventoryOpen = ref(false);
 
 const displayedStudent = ref<StudentProps | null>(null);
 
+const activeStyleId = ref<number | null>(null);
+
 let hydrateRequestToken = 0;
+
+const { studentData: rawStudentData } = useStudentData();
+
+const hasStyleSwitch = computed(() => hasLinkedPartner(props.student?.Id));
+
+const styleStudent = computed<StudentProps | null>(() => {
+  if (!displayedStudent.value) return null;
+  if (!activeStyleId.value || activeStyleId.value === displayedStudent.value.Id) {
+    return displayedStudent.value;
+  }
+  return rawStudentData.value[activeStyleId.value] ?? displayedStudent.value;
+});
+
+const activeStyleStudent = computed(() => styleStudent.value ?? displayedStudent.value);
 
 const {
   currentBond, newBondLevel, totalCumulativeExp, remainingXp: bondRemainingXp,
@@ -110,6 +128,13 @@ async function handleClose() {
   closeModal();
 }
 
+function handleStyleToggle() {
+  if (!displayedStudent.value) return;
+  const partnerId = getLinkedPartnerId(displayedStudent.value.Id);
+  if (!partnerId) return;
+  activeStyleId.value = activeStyleId.value === partnerId ? null : partnerId;
+}
+
 // Keyboard
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.isVisible) return;
@@ -157,6 +182,7 @@ onUnmounted(() => {
 watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
   if (!visible || !student) return;
 
+  activeStyleId.value = null;
   const requestToken = ++hydrateRequestToken;
 
   try {
@@ -219,7 +245,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       <div v-if="displayedStudent" class="modal-grid">
         <div class="tab-content">
           <div class="left-column">
-            <ModalHeader class="student-hero-card" :student="displayedStudent" />
+            <ModalHeader class="student-hero-card" :student="activeStyleStudent" />
           </div>
 
           <div
@@ -230,10 +256,14 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
             }"
           >
             <MetaHeader
-              :student="displayedStudent"
+              :student="activeStyleStudent"
               :character-levels="characterLevels"
               :current-bond="currentBond"
               :new-bond-level="newBondLevel"
+              :has-style-switch="hasStyleSwitch"
+              :active-style-id="activeStyleId ?? displayedStudent?.Id"
+              :primary-student-id="displayedStudent?.Id"
+              @toggle-style="handleStyleToggle"
             />
 
             <div class="modal-tabs">
@@ -265,12 +295,12 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
 
             <template v-if="activeTab === 'info'">
               <InfoSkills
-                :student="displayedStudent"
+                :student="activeStyleStudent"
                 :skill-levels="skillLevels"
               />
 
               <InfoWeapon
-                :student="displayedStudent"
+                :student="activeStyleStudent"
                 :grade-levels="gradeLevels"
                 :equipment-levels="equipmentLevels"
                 :exclusive-gear-level="exclusiveGearLevel"
@@ -332,7 +362,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                 />
 
                 <SkillSection
-                  :student="displayedStudent"
+                  :student="activeStyleStudent"
                   :skill-levels="skillLevels"
                   :all-skills-maxed="allSkillsMaxed"
                   :target-skills-maxed="targetSkillsMaxed"
@@ -381,7 +411,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                 />
 
                 <ExclusiveWeaponSection
-                  :student="displayedStudent"
+                  :student="activeStyleStudent"
                   :grade-levels="gradeLevels"
                   @update-grade="handleGradeUpdate"
                 />

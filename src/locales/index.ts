@@ -176,6 +176,9 @@ export const translations = {
     school: "School",
     club: "Club",
 
+    // Linked students
+    switchStyle: "Switch Style",
+
     // Inventory modal
     inventory: "Inventory",
     studentDetails: "Student Details",
@@ -424,6 +427,9 @@ export const translations = {
     def: "DEF",
     school: "学園",
     club: "部活",
+
+    // Linked students
+    switchStyle: "スタイル切替",
 
     // Inventory modal
     inventory: "所持品",

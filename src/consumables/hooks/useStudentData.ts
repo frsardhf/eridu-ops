@@ -31,6 +31,7 @@ import { fetchAllData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
 import { resolveLocalized } from '../utils/localizationUtils';
 import { sortStudentsWithPins } from '../utils/sortUtils';
+import { filterSecondaryStudents, isSecondaryStudent } from '../constants/linkedStudents';
 import { normalizeTheme } from '../utils/themeUtils';
 import { ThemeId } from '@/types/theme';
 import { buildGiftsByStudent } from '../utils/giftUtils';
@@ -176,7 +177,9 @@ async function preloadStudentStore() {
     const allFormData = await getAllFormData();
     const numericKeyData: Record<number, any> = {};
     Object.entries(allFormData).forEach(([studentId, formData]) => {
-      numericKeyData[Number(studentId)] = formData;
+      const id = Number(studentId);
+      if (isSecondaryStudent(id)) return;
+      numericKeyData[id] = formData;
     });
     batchSetStudentData(numericKeyData);
   } catch (error) {
@@ -245,7 +248,7 @@ export function useStudentData() {
       void _version;
 
       return sortStudentsWithPins({
-        students: Object.values(_studentData.value),
+        students: filterSecondaryStudents(Object.values(_studentData.value)),
         pinnedStudentIds: _pinnedStudentIds.value,
         searchQuery: _searchQuery.value,
         sortOption: _currentSort.value,
