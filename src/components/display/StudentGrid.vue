@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { StudentProps } from '@/types/student'
 import { ModalOriginRect } from '@/types/modal';
+import { useDragReorder } from '@/composables/useDragReorder';
 import StudentCard from './StudentCard.vue';
 
-const props = defineProps<{ 
+const props = defineProps<{
   studentsArray: StudentProps[]
 }>();
 
@@ -15,8 +15,9 @@ type EmitEvents = {
 }
 
 const emit = defineEmits<EmitEvents>();
-const draggedStudentId = ref<number | null>(null);
-const dropTargetStudentId = ref<number | null>(null);
+
+const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isDropTarget } =
+  useDragReorder<number>((fromId, toId) => emit('reorderStudents', fromId, toId));
 
 function handleOpenModal(payload: { student: StudentProps; originRect: ModalOriginRect | null }) {
   emit('openModal', payload);
@@ -24,47 +25,6 @@ function handleOpenModal(payload: { student: StudentProps; originRect: ModalOrig
 
 function handlePinToggled(studentId: string | number, isPinned: boolean) {
   emit('studentPinned', studentId, isPinned);
-}
-
-function handleDragStart(studentId: number, event: DragEvent) {
-  draggedStudentId.value = studentId;
-  event.dataTransfer?.setData('text/plain', String(studentId));
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-  }
-}
-
-function handleDragOver(studentId: number, event: DragEvent) {
-  if (draggedStudentId.value == null || draggedStudentId.value === studentId) return;
-  event.preventDefault();
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move';
-  }
-  dropTargetStudentId.value = studentId;
-}
-
-function handleDragLeave(studentId: number) {
-  if (dropTargetStudentId.value === studentId) {
-    dropTargetStudentId.value = null;
-  }
-}
-
-function handleDrop(studentId: number, event: DragEvent) {
-  event.preventDefault();
-  const fallbackId = Number(event.dataTransfer?.getData('text/plain'));
-  const fromId = draggedStudentId.value ?? (Number.isNaN(fallbackId) ? null : fallbackId);
-
-  if (fromId != null && fromId !== studentId) {
-    emit('reorderStudents', fromId, studentId);
-  }
-
-  draggedStudentId.value = null;
-  dropTargetStudentId.value = null;
-}
-
-function handleDragEnd() {
-  draggedStudentId.value = null;
-  dropTargetStudentId.value = null;
 }
 </script>
 
@@ -76,15 +36,15 @@ function handleDragEnd() {
         :key="student.Id"
         class="student-card-slot"
         :class="{
-          dragging: draggedStudentId === student.Id,
-          'drop-target': dropTargetStudentId === student.Id
+          dragging: isDragging(student.Id),
+          'drop-target': isDropTarget(student.Id)
         }"
         draggable="true"
-        @dragstart="handleDragStart(student.Id, $event)"
-        @dragover="handleDragOver(student.Id, $event)"
-        @dragleave="handleDragLeave(student.Id)"
-        @drop="handleDrop(student.Id, $event)"
-        @dragend="handleDragEnd"
+        @dragstart="onDragStart(student.Id, $event)"
+        @dragover="onDragOver(student.Id, $event)"
+        @dragleave="onDragLeave(student.Id)"
+        @drop="onDrop(student.Id)"
+        @dragend="onDragEnd"
       >
         <StudentCard
           :student="student"
@@ -131,7 +91,7 @@ function handleDragEnd() {
   .student-grid-wrapper {
     padding: 1.5rem 0 4rem 0.5rem;
   }
-  
+
   .student-grid {
     grid-template-columns: repeat(auto-fit, 100px);
     gap: 0.75rem;

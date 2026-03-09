@@ -7,6 +7,7 @@ const railRef = ref<HTMLElement | null>(null);
 
 const emit = defineEmits<{
   'open-bulk-modify': [];
+  'open-deck-builder': [];
 }>();
 
 function handleFocusOut(event: FocusEvent) {
@@ -88,6 +89,34 @@ onBeforeUnmount(() => {
       class="tools-rail-panel"
       v-show="isExpanded"
     >
+      <button
+        class="tools-action-btn"
+        type="button"
+        @click="emit('open-deck-builder')"
+        title="Deck Builder"
+        aria-label="Deck Builder"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+          />
+          <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+          />
+        </svg>
+      </button>
+
       <button
         class="tools-action-btn"
         type="button"

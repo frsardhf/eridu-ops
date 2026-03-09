@@ -5,6 +5,7 @@ import { filterSecondaryStudents } from '@/consumables/constants/linkedStudents'
 import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
 import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
+import DeckBuilderModal from '@/components/display/DeckBuilderModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/modal/StudentModal.vue'
@@ -34,6 +35,7 @@ const {
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
 const isBulkModifyModalVisible = ref(false);
+const isDeckBuilderVisible = ref(false);
 const modalOriginRect = ref<ModalOriginRect | null>(null);
 const savedOrder = getManualOrder();
 const isManualOrderActive = ref(savedOrder.length > 0);
@@ -223,6 +225,7 @@ async function handleReinitializeData() {
 
     <ToolsRail
       @open-bulk-modify="isBulkModifyModalVisible = true"
+      @open-deck-builder="isDeckBuilderVisible = true"
     />
 
     <StudentGrid
@@ -249,6 +252,12 @@ async function handleReinitializeData() {
       v-if="isBulkModifyModalVisible"
       :students="allStudentsArray"
       @close="isBulkModifyModalVisible = false"
+    />
+
+    <DeckBuilderModal
+      v-if="isDeckBuilderVisible"
+      :students="allStudentsArray"
+      @close="isDeckBuilderVisible = false"
     />
   </div>
 </template>

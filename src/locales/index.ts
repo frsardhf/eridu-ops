@@ -213,6 +213,25 @@ export const translations = {
       acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
     },
 
+    // Deck Builder modal
+    deckBuilder: {
+      title: "Deck Builder",
+      presetName: "Preset name",
+      removeTeam: "Remove team",
+      copyTeamToPreset: "Copy team to preset",
+      dragToReorder: "Drag to reorder team",
+      selectStriker: "Select Striker",
+      selectSpecial: "Select Special",
+      filterByName: "Filter by name...",
+      assistLimitReached: "Assist limit reached (1/1) — students already used as assist are hidden",
+      noStudentsAvailable: "No students available for this slot",
+      addTeam: "+ Add Team",
+      exportImage: "Export Image",
+      exporting: "Exporting…",
+      copiedTo: "Copied to",
+      removeStudent: "Remove student",
+    },
+
     // Bulk Modify Students modal
     bulkModify: {
       title: "Bulk Modify Students",
@@ -463,6 +482,25 @@ export const translations = {
       translationsBody: "English translations of skills are provided by Lonqie and are used with permission. Please note that translations in other languages may be contributed by other translators and are not free to use in other projects without explicit permission.",
       acknowledgements: "謝辞",
       acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
+    },
+
+    // Deck Builder modal
+    deckBuilder: {
+      title: "デッキビルダー",
+      presetName: "プリセット名",
+      removeTeam: "チームを削除",
+      copyTeamToPreset: "プリセットにコピー",
+      dragToReorder: "ドラッグして並び替え",
+      selectStriker: "ストライカーを選択",
+      selectSpecial: "スペシャルを選択",
+      filterByName: "名前で絞り込み...",
+      assistLimitReached: "アシスト制限に達しました (1/1) — 既にアシストとして使用中の生徒は非表示",
+      noStudentsAvailable: "このスロットに配置できる生徒はいません",
+      addTeam: "+ チームを追加",
+      exportImage: "画像をエクスポート",
+      exporting: "エクスポート中…",
+      copiedTo: "コピー先：",
+      removeStudent: "生徒を削除",
     },
 
     // Bulk Modify Students modal

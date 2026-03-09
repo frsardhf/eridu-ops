@@ -71,6 +71,17 @@ export interface EquipmentInventoryRecord {
   QuantityOwned: number;
 }
 
+export interface DeckTeam {
+  units: (number | null)[];
+}
+
+export interface DeckRecord {
+  id: number; // Primary key (1–5)
+  name: string;
+  teams: DeckTeam[];
+  updatedAt: number;
+}
+
 // Define the database class
 export class EriduOpsDatabase extends Dexie {
   // Declare tables
@@ -81,6 +92,7 @@ export class EriduOpsDatabase extends Dexie {
   forms!: Table<FormRecord, number>;
   items_inventory!: Table<ItemsInventoryRecord, number>;
   equipment_inventory!: Table<EquipmentInventoryRecord, number>;
+  decks!: Table<DeckRecord, number>;
 
   constructor() {
     super('eridu-ops-db');
@@ -129,6 +141,11 @@ export class EriduOpsDatabase extends Dexie {
         });
         await tx.table('forms').bulkPut(cleaned);
       }
+    });
+
+    // Version 3: Add decks table
+    this.version(3).stores({
+      decks: 'id, updatedAt'
     });
   }
 }
