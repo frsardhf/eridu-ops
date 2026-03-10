@@ -51,7 +51,7 @@ export function useStudentGear(props: {
   });
 
   const canUnlockT1 = computed(() => currentBond.value > 15);
-  const canUnlockT2 = computed(() => currentBond.value > 20);
+  const canUnlockT2 = computed(() => currentBond.value >= 20);
 
   const maxUnlockableGearTier = computed(() => {
     if (!hasExclusiveGear.value) return 0;
