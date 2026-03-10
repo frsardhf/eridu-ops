@@ -509,10 +509,9 @@ watch(
         :style="{
           left: tooltipPosition.left,
           top: tooltipPosition.top,
-          '--grid-columns': giftTooltipGridColumns
+          '--grid-columns': giftTooltipGridColumns,
+          pointerEvents: 'none'
         }"
-        @mouseenter="handleTooltipMouseEnter"
-        @mouseleave="handleTooltipMouseLeave"
       >
         <div class="gift-icons-grid">
           <div
