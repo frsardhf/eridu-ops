@@ -263,17 +263,19 @@ export function useMaterialCalculation() {
       
       // First pass: collect all needed credits
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
+        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
         const quantity = getStudentCredits(studentId, materials as Material[], allGearsData.value[studentId] || []);
         if (quantity > 0) {
           studentCredits.set(studentId, quantity);
         }
       });
-      
+
       // Check gear data for students who only have gear upgrades
       Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
         // Skip if we already processed this student's credits from materials
         if (studentCredits.has(studentId)) return;
-        
+        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+
         const quantity = getStudentCredits(studentId, [], gears as Material[]);
         if (quantity > 0) {
           studentCredits.set(studentId, quantity);
@@ -348,6 +350,7 @@ export function useMaterialCalculation() {
 
         let quantity = 0;
         (gears as Material[]).forEach(gear => {
+          if (gear.type === 'equipments') return;
           if (gear.material?.Id === materialId) {
             quantity += gear.materialQuantity;
           }

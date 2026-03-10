@@ -156,12 +156,14 @@ const updateSkillTarget = (type: SkillType, value: number) => {
             <!-- EX skill toggle -->
             <button
               v-if="state.type === 'Ex' && hasExtraExSkill"
-              @click="toggleExtraExSkill"
               class="ex-toggle-btn"
               :class="{ active: useExtraExSkill }"
               :title="useExtraExSkill ? $t('skillToggle.normal') : $t('skillToggle.enhanced')"
+              :style="{ borderColor: bulletTypeColor, color: useExtraExSkill ? 'white' : bulletTypeColor, backgroundColor: useExtraExSkill ? bulletTypeColor : 'transparent' }"
+              @click="toggleExtraExSkill"
+              type="button"
             >
-              {{ useExtraExSkill ? 'II' : 'I' }}
+              EX+
             </button>
           </div>
         </div>
@@ -216,32 +218,19 @@ const updateSkillTarget = (type: SkillType, value: number) => {
 
 .ex-toggle-btn {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
-  background: var(--background-primary);
-  border: 1px solid var(--border-color);
+  top: -2px;
+  right: -40px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  min-width: 40px;
+  padding: 1px 6px;
   border-radius: 4px;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 1.5px solid;
   cursor: pointer;
-  font-size: 11px;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
   z-index: 3;
-}
-
-.ex-toggle-btn:hover {
-  background: var(--hover-bg);
-  border-color: var(--accent-color);
-}
-
-.ex-toggle-btn.active {
-  background: var(--accent-color);
-  border-color: var(--accent-color);
-  color: white;
 }
 
 .skill-name {
