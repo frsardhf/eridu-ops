@@ -59,6 +59,7 @@ export interface FormRecord {
     current: number;
     target: number;
   };
+  isOwned?: boolean;
 }
 
 export interface ItemsInventoryRecord {

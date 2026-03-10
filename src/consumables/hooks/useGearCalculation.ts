@@ -38,6 +38,7 @@ export function useGearCalculation() {
     allStudentIds.forEach(studentId => {
       const form = studentDataStore.value[parseInt(studentId)];
       if (!form?.equipmentLevels) return;
+      if (form.isOwned === false) return; // skip unowned
 
       const equipmentLevels = form.equipmentLevels as EquipmentLevels;
 
@@ -107,6 +108,7 @@ export function useGearCalculation() {
     const materialMap = new Map<number, Material>();
 
     Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
+      if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
         // Skip credits (5) and eligma (23) - they go to Items tab
@@ -274,7 +276,8 @@ export function useGearCalculation() {
       Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
         const student = studentsCollection[studentId];
         if (!student) return;
-        
+        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+
         let quantity = 0;
         const equipmentTypes: EquipmentType[] = [];
         

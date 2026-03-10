@@ -8,9 +8,12 @@ import {
   type BulkFormPatch
 } from '@/consumables/services/bulkStudentFormService';
 import type { FormRecord } from '@/consumables/db/database';
+import { db } from '@/consumables/db/database';
 import { batchSetStudentData } from '@/consumables/stores/studentStore';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+
+type OwnershipFilter = 'all' | 'owned' | 'unowned';
 
 const BULK_CONFIRM_THRESHOLD = 100;
 
@@ -56,6 +59,8 @@ const enableTargets = ref(false);
 const characterLevelFilter = ref('');
 const debouncedCharLevelFilter = ref('');
 const showUnfilledOnly = ref(false);
+// Default: show owned students only; user can change to 'all' or 'unowned'
+const ownershipFilter = ref<OwnershipFilter>('owned');
 
 const fieldValues = ref<BulkFieldValues>({
   bond: '',
@@ -96,6 +101,13 @@ const filteredStudents = computed<StudentProps[]>(() => {
     if (!matchStar || !matchAvailability) return false;
 
     if (isFormDataLoaded.value) {
+      // Ownership filter
+      if (ownershipFilter.value !== 'all') {
+        const isOwned = allFormData.value[student.Id]?.isOwned !== false;
+        if (ownershipFilter.value === 'owned' && !isOwned) return false;
+        if (ownershipFilter.value === 'unowned' && isOwned) return false;
+      }
+
       if (showUnfilledOnly.value) {
         if (allFormData.value[student.Id]) return false;
       }
@@ -264,6 +276,49 @@ function toggleAvailabilityFilter(filter: AvailabilityFilter) {
   toggleArrayItem(selectedAvailabilityFilters, filter);
 }
 
+async function bulkSetOwnership(owned: boolean) {
+  if (selectedStudentIds.value.length === 0) return;
+
+  const ids = selectedStudentIds.value;
+  if (ids.length > BULK_CONFIRM_THRESHOLD) {
+    const label = owned ? 'recruited' : 'not recruited';
+    const confirmed = window.confirm(
+      `You are about to mark ${ids.length} students as ${label}. Continue?`
+    );
+    if (!confirmed) return;
+  }
+
+  isSubmitting.value = true;
+  try {
+    // Write to IndexedDB for all selected students in one transaction
+    await db.transaction('rw', db.forms, async () => {
+      for (const studentId of ids) {
+        const existing = await db.forms.get(studentId);
+        if (existing) {
+          await db.forms.update(studentId, { isOwned: owned });
+        } else {
+          // Create minimal record if none exists (student never opened their modal)
+          await db.forms.put({ studentId, isOwned: owned });
+        }
+      }
+    });
+
+    // Update in-memory store + local allFormData ref so filter updates immediately
+    const storeUpdates: Record<number, FormRecord> = {};
+    for (const studentId of ids) {
+      const current = allFormData.value[studentId] ?? { studentId };
+      const updated = { ...current, isOwned: owned };
+      storeUpdates[studentId] = updated as FormRecord;
+      allFormData.value[studentId] = updated as FormRecord;
+    }
+    batchSetStudentData(storeUpdates);
+  } catch (error) {
+    console.error('Failed to bulk-update ownership:', error);
+  } finally {
+    isSubmitting.value = false;
+  }
+}
+
 async function submitBulkModify() {
   if (isSubmitDisabled.value) return;
 
@@ -377,6 +432,22 @@ async function submitBulkModify() {
                 </button>
               </div>
             </div>
+
+            <div class="filter-type">
+              <span class="filter-label">{{ $t('ownership.ownershipFilter') }}</span>
+              <div class="filter-pills-wrap">
+                <button
+                  v-for="opt in (['all', 'owned', 'unowned'] as OwnershipFilter[])"
+                  :key="`ownership-${opt}`"
+                  type="button"
+                  class="filter-pill"
+                  :class="{ active: ownershipFilter === opt }"
+                  @click="ownershipFilter = opt"
+                >
+                  {{ opt === 'all' ? $t('ownership.filterAll') : opt === 'owned' ? $t('ownership.filterOwned') : $t('ownership.filterUnowned') }}
+                </button>
+              </div>
+            </div>
           </div>
 
           <label class="select-all-row">
@@ -408,6 +479,26 @@ async function submitBulkModify() {
               />
               <span class="student-name">{{ student.Name }}</span>
               <span v-if="selectedIdSet.has(student.Id)" class="student-check">✓</span>
+            </button>
+          </div>
+
+          <!-- Bulk ownership actions -->
+          <div class="ownership-actions">
+            <button
+              type="button"
+              class="ownership-btn ownership-btn--recruit"
+              :disabled="selectedCount === 0 || isSubmitting"
+              @click="bulkSetOwnership(true)"
+            >
+              {{ $t('ownership.markRecruited') }}
+            </button>
+            <button
+              type="button"
+              class="ownership-btn ownership-btn--unrecruit"
+              :disabled="selectedCount === 0 || isSubmitting"
+              @click="bulkSetOwnership(false)"
+            >
+              {{ $t('ownership.markNotRecruited') }}
             </button>
           </div>
         </section>
@@ -1001,6 +1092,50 @@ async function submitBulkModify() {
 .footer-btn.primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Bulk ownership action buttons */
+.ownership-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ownership-btn {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.ownership-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ownership-btn--recruit {
+  background: rgba(80, 200, 120, 0.12);
+  color: #4caf82;
+  border-color: rgba(80, 200, 120, 0.3);
+}
+
+.ownership-btn--recruit:hover:not(:disabled) {
+  border-color: #4caf82;
+}
+
+.ownership-btn--unrecruit {
+  background: rgba(180, 120, 60, 0.12);
+  color: #c8915a;
+  border-color: rgba(180, 120, 60, 0.3);
+}
+
+.ownership-btn--unrecruit:hover:not(:disabled) {
+  border-color: #c8915a;
 }
 
 @media (max-width: 768px) {

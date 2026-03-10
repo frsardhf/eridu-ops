@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, CSSProperties } from 'vue';
 import { $t } from '@/locales';
+import { studentDataStore, studentDataVersion } from '@/consumables/stores/studentStore';
+import { useStudentOwnership } from '@/consumables/hooks/useStudentOwnership';
 import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
 import { useStudentGear } from '@/consumables/hooks/useStudentGear';
 import { useStudentGifts } from '@/consumables/hooks/useStudentGifts';
@@ -49,6 +51,8 @@ const props = defineProps<{
 
 const emit = defineEmits<(event: 'close' | 'navigate', payload?: any) => void>();
 
+const { setOwned } = useStudentOwnership();
+
 const activeTab = ref<ModalTab>('info');
 const tabDirection = ref<'forward' | 'backward'>('forward');
 const activeTabTransitionName = computed(() =>
@@ -67,6 +71,14 @@ let hydrateRequestToken = 0;
 const { studentData: rawStudentData } = useStudentData();
 
 const hasStyleSwitch = computed(() => hasLinkedPartner(props.student?.Id));
+
+// Ownership — undefined / true treated as owned (backward-compat)
+const isOwned = computed(() => {
+  // Access version so this recomputes on any store update
+  void studentDataVersion.value;
+  if (!displayedStudent.value) return true;
+  return studentDataStore.value[displayedStudent.value.Id]?.isOwned !== false;
+});
 
 const hasOriginMorph = computed(() => {
   const origin = props.originRect;
@@ -182,6 +194,18 @@ function setActiveTab(nextTab: ModalTab) {
     : 'backward';
   activeTab.value = nextTab;
 }
+
+async function toggleOwnership() {
+  if (!displayedStudent.value) return;
+  await setOwned(displayedStudent.value.Id, !isOwned.value);
+}
+
+// Auto-reset to Info tab when a student becomes unowned or when unowned student is opened
+watch(isOwned, (owned) => {
+  if (!owned && activeTab.value !== 'info') {
+    activeTab.value = 'info';
+  }
+});
 
 // Keyboard
 function handleKeyDown(event: KeyboardEvent) {
@@ -302,11 +326,8 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
           </div>
 
           <div
-            class="right-column"
-            :class="{
-              'right-column--scrollable': activeTab === 'upgrade' || activeTab === 'gear' || activeTab === 'bond',
-              'right-column--bond': activeTab === 'bond'
-            }"
+            class="right-column right-column--scrollable"
+            :class="{ 'right-column--bond': activeTab === 'bond' }"
           >
             <MetaHeader
               :student="activeStyleStudent"
@@ -319,6 +340,16 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
               @toggle-style="handleStyleToggle"
             />
 
+            <!-- Recruitment status bar -->
+            <div class="recruitment-bar" :class="{ 'recruitment-bar--unowned': !isOwned }">
+              <span class="recruitment-status">
+                {{ isOwned ? $t('ownership.recruited') : $t('ownership.notRecruited') }}
+              </span>
+              <button class="recruitment-toggle-btn" type="button" @click="toggleOwnership">
+                {{ isOwned ? $t('ownership.markNotRecruited') : $t('ownership.markRecruited') }}
+              </button>
+            </div>
+
             <div class="modal-tabs">
               <button
                 :class="['tab-button', { active: activeTab === 'info' }]"
@@ -327,20 +358,23 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                 {{ $t('info') }}
               </button>
               <button
-                :class="['tab-button', { active: activeTab === 'bond' }]"
-                @click="setActiveTab('bond')"
+                :class="['tab-button', { active: activeTab === 'bond', 'tab-button--disabled': !isOwned }]"
+                :disabled="!isOwned"
+                @click="isOwned ? setActiveTab('bond') : undefined"
               >
                 {{ $t('bond') }}
               </button>
               <button
-                :class="['tab-button', { active: activeTab === 'upgrade' }]"
-                @click="setActiveTab('upgrade')"
+                :class="['tab-button', { active: activeTab === 'upgrade', 'tab-button--disabled': !isOwned }]"
+                :disabled="!isOwned"
+                @click="isOwned ? setActiveTab('upgrade') : undefined"
               >
                 {{ $t('upgrade') }}
               </button>
               <button
-                :class="['tab-button', { active: activeTab === 'gear' }]"
-                @click="setActiveTab('gear')"
+                :class="['tab-button', { active: activeTab === 'gear', 'tab-button--disabled': !isOwned }]"
+                :disabled="!isOwned"
+                @click="isOwned ? setActiveTab('gear') : undefined"
               >
                 {{ $t('gear') }}
               </button>
@@ -349,25 +383,27 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
             <Transition :name="activeTabTransitionName" mode="out-in">
               <div :key="activeTabTransitionKey" class="tab-pane-state">
                 <template v-if="activeTab === 'info'">
-                  <InfoSkills
-                    :student="activeStyleStudent"
-                    :skill-levels="skillLevels"
-                  />
+                  <div class="tab-pane-scroll tab-pane-scroll--info">
+                    <InfoSkills
+                      :student="activeStyleStudent"
+                      :skill-levels="skillLevels"
+                    />
 
-                  <InfoWeapon
-                    :student="activeStyleStudent"
-                    :grade-levels="gradeLevels"
-                    :equipment-levels="equipmentLevels"
-                    :exclusive-gear-level="exclusiveGearLevel"
-                  />
+                    <InfoWeapon
+                      :student="activeStyleStudent"
+                      :grade-levels="gradeLevels"
+                      :equipment-levels="equipmentLevels"
+                      :exclusive-gear-level="exclusiveGearLevel"
+                    />
 
-                  <InfoGear
-                    :student="displayedStudent"
-                    :grade-levels="gradeLevels"
-                    :equipment-levels="equipmentLevels"
-                    :exclusive-gear-level="exclusiveGearLevel"
-                    :has-exclusive-gear="hasExclusiveGear"
-                  />
+                    <InfoGear
+                      :student="displayedStudent"
+                      :grade-levels="gradeLevels"
+                      :equipment-levels="equipmentLevels"
+                      :exclusive-gear-level="exclusiveGearLevel"
+                      :has-exclusive-gear="hasExclusiveGear"
+                    />
+                  </div>
                 </template>
 
                 <template v-else-if="activeTab === 'bond'">
@@ -587,6 +623,62 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   width: 100%;
 }
 
+
+/* Recruitment status bar */
+.recruitment-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-secondary);
+  flex-shrink: 0;
+}
+
+.recruitment-bar--unowned {
+  background: rgba(120, 120, 120, 0.08);
+}
+
+.recruitment-status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.recruitment-bar--unowned .recruitment-status {
+  color: var(--text-secondary);
+}
+
+.recruitment-toggle-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.recruitment-toggle-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* Disabled tab styling for unowned students */
+.tab-button--disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.tab-button--disabled:hover {
+  background: transparent !important;
+  color: inherit !important;
+}
 
 @media (max-width: 576px) {
   .modal-header-row {

@@ -213,6 +213,18 @@ export const translations = {
       acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
     },
 
+    // Ownership (recruited / not recruited)
+    ownership: {
+      recruited: "Recruited",
+      notRecruited: "Not Recruited",
+      markRecruited: "Mark as Recruited",
+      markNotRecruited: "Mark as Not Recruited",
+      ownershipFilter: "Recruitment",
+      filterAll: "All",
+      filterOwned: "Recruited",
+      filterUnowned: "Not Recruited",
+    },
+
     // Deck Builder modal
     deckBuilder: {
       title: "Deck Builder",
@@ -482,6 +494,18 @@ export const translations = {
       translationsBody: "English translations of skills are provided by Lonqie and are used with permission. Please note that translations in other languages may be contributed by other translators and are not free to use in other projects without explicit permission.",
       acknowledgements: "謝辞",
       acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
+    },
+
+    // Ownership (recruited / not recruited)
+    ownership: {
+      recruited: "加入済み",
+      notRecruited: "未加入",
+      markRecruited: "加入済みにする",
+      markNotRecruited: "未加入にする",
+      ownershipFilter: "加入状態",
+      filterAll: "全て",
+      filterOwned: "加入済み",
+      filterUnowned: "未加入",
     },
 
     // Deck Builder modal

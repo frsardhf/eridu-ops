@@ -25,6 +25,7 @@ function buildGiftNeededMap() {
 
   Object.values(studentDataStore.value).forEach(form => {
     if (!form) return;
+    if (form.isOwned === false) return; // skip unowned
 
     const giftFormData = (form as any).giftFormData || {};
     Object.entries(giftFormData).forEach(([giftId, qty]) => {
@@ -37,7 +38,8 @@ function buildGiftNeededMap() {
     });
   });
 
-  Object.values(allGearsData).forEach(materials => {
+  Object.entries(allGearsData).forEach(([studentId, materials]) => {
+    if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
     (materials as Material[]).forEach(material => {
       const materialId = material.material?.Id;
       const category = material.material?.Category;
@@ -59,6 +61,7 @@ export function getAllocatedGifts(excludeStudentId?: number): Record<number, num
 
   Object.entries(studentDataStore.value).forEach(([studentId, form]) => {
     if (excludeStudentId && parseInt(studentId) === excludeStudentId) return;
+    if (form?.isOwned === false) return; // skip unowned
 
     // Sum giftFormData (favored gifts)
     const giftFormData = (form as any).giftFormData || {};
@@ -99,6 +102,7 @@ export function useGiftCalculation() {
     Object.entries(studentDataStore.value).forEach(([studentId, form]) => {
       const student = studentsCollection[studentId];
       if (!student || !form) return;
+      if (form.isOwned === false) return; // skip unowned
 
       const gifts: { gift: any; quantity: number }[] = [];
       let totalGifts = 0;
@@ -165,6 +169,7 @@ export function useGiftCalculation() {
     Object.entries(allGearsData).forEach(([studentId, materials]) => {
       const student = studentsCollection[studentId];
       if (!student) return;
+      if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
 
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;

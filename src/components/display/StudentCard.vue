@@ -145,6 +145,9 @@ const hasEquipmentData = computed(() => {
     Object.keys(studentData.value.equipmentLevels).length > 0;
 });
 
+// Ownership: undefined / true = owned (backward-compat), false = not recruited
+const isOwned = computed(() => studentData.value?.isOwned !== false);
+
 const bondLevel = computed(() => {
   return studentData.value?.bondDetailData?.currentBond || 0;
 });
@@ -201,14 +204,15 @@ function handleCardClick(event: MouseEvent) {
     
     <a class="selection-grid-card" @click="handleCardClick">
       <div class="card-img">
-        <img 
+        <img
           :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
           :alt="student.Name"
+          :class="{ 'img--unowned': !isOwned }"
         >
         <!-- Stats overlay -->
         <div class="stats-overlay">
           <!-- Bond Level -->
-          <div class="bond-container" v-if="bondLevel > 0">
+          <div class="bond-container" v-if="bondLevel > 0 && isOwned">
             <div class="bond-icon-container">
               <img 
                 src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
@@ -220,7 +224,7 @@ function handleCardClick(event: MouseEvent) {
           </div>
 
           <!-- Grade Level -->
-          <div class="grade-container" v-if="gradeLevel > 0">
+          <div class="grade-container" v-if="gradeLevel > 0 && isOwned">
             <div class="grade-stars-row">
               <!-- Gold stars only for grades 1-5 -->
               <template v-if="gradeLevel <= 5">
@@ -263,8 +267,8 @@ function handleCardClick(event: MouseEvent) {
           </div>
           
           <!-- Character Level -->
-          <div class="level-container" 
-          v-if="characterCurrentLevel > 0">
+          <div class="level-container"
+          v-if="characterCurrentLevel > 0 && isOwned">
             <span class="level-number">{{ characterCurrentLevel }}</span>
             <span class="level-max" 
               v-if="shouldShowTarget(characterCurrentLevel,
@@ -275,8 +279,8 @@ function handleCardClick(event: MouseEvent) {
           <!-- Bottom overlays container -->
           <div class="bottom-overlays">
             <!-- Equipment Levels -->
-            <div class="equipment-levels" 
-              v-if="hasEquipmentData && displayEquipment.length > 0">
+            <div class="equipment-levels"
+              v-if="hasEquipmentData && displayEquipment.length > 0 && isOwned">
               <div class="equipment-row">
                 <span 
                   v-for="type in displayEquipment" 
@@ -300,7 +304,7 @@ function handleCardClick(event: MouseEvent) {
             </div>
             
             <!-- Skill Levels -->
-            <div class="skill-levels" v-if="studentData?.skillLevels">
+            <div class="skill-levels" v-if="studentData?.skillLevels && isOwned">
               <div class="skill-row">
                 <span 
                   v-for="(skillType, idx) in skillTypes" 
@@ -539,6 +543,12 @@ function handleCardClick(event: MouseEvent) {
 .skill-value[title]:hover, .equipment-value[title]:hover {
   background: rgba(80, 180, 255, 0.5);
 }
+
+/* Unowned (not recruited) state */
+.img--unowned {
+  filter: brightness(0.35) grayscale(0.25);
+}
+
 
 .card-label {
   margin-top: 0;

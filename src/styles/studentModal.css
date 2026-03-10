@@ -203,7 +203,7 @@
   min-width: 0;
 }
 
-/* Upgrade, Gear, Bond: fixed height with scrollable content */
+/* All tabs: fixed height with scrollable content */
 .right-column--scrollable {
   height: var(--student-modal-hero-height);
 }
