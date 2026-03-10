@@ -201,6 +201,9 @@
   flex-direction: column;
   gap: var(--student-modal-gap);
   min-width: 0;
+  /* Pre-create compositor layer so Safari doesn't rasterize on the first animation frame */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* All tabs: fixed height with scrollable content */
@@ -221,6 +224,8 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 2px;
+  /* Own compositor sub-layer: parent animation texture stays small (viewport rect only, not full scroll height) */
+  transform: translateZ(0);
 }
 
 .bond-layout {
