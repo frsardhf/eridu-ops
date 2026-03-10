@@ -224,8 +224,6 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 2px;
-  /* Own compositor sub-layer: parent animation texture stays small (viewport rect only, not full scroll height) */
-  transform: translateZ(0);
 }
 
 .bond-layout {
