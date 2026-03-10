@@ -70,7 +70,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
           :checked="props.allPotentialsMaxed"
           @change="(e) => emit('toggle-max-potentials', (e.target as HTMLInputElement).checked)"
         />
-        <label for="max-all-potentials">{{ $t('maxAllPotentials') }}</label>
+        <label for="max-all-potentials">{{ $t('maxAll') }}</label>
       </div>
       <div class="modal-toggle-item">
         <input
@@ -80,7 +80,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
           :checked="props.targetPotentialsMaxed"
           @change="(e) => emit('toggle-max-target-potentials', (e.target as HTMLInputElement).checked)"
         />
-        <label for="max-target-potentials">{{ $t('maxTargetPotentials') }}</label>
+        <label for="max-target-potentials">{{ $t('maxTarget') }}</label>
       </div>
     </div>
 

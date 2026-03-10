@@ -83,7 +83,7 @@ const updateSkillTarget = (type: SkillType, value: number) => {
           :checked="props.allSkillsMaxed"
           @change="(e) => emit('toggle-max-skills', (e.target as HTMLInputElement).checked)"
         />
-        <label for="max-all-skills">{{ $t('maxAllSkills') }}</label>
+        <label for="max-all-skills">{{ $t('maxAll') }}</label>
       </div>
       <div class="modal-toggle-item">
         <input
@@ -93,7 +93,7 @@ const updateSkillTarget = (type: SkillType, value: number) => {
           :checked="props.targetSkillsMaxed"
           @change="(e) => emit('toggle-max-target', (e.target as HTMLInputElement).checked)"
         />
-        <label for="max-target-skills">{{ $t('maxTargetSkills') }}</label>
+        <label for="max-target-skills">{{ $t('maxTarget') }}</label>
       </div>
     </div>
 

@@ -73,8 +73,8 @@ export const translations = {
 
     // Upgrade component - Skills
     skills: "Skills",
-    maxAllSkills: "Max All Skills",
-    maxTargetSkills: "Max Target Skills",
+    maxAll: "Max All",
+    maxTarget: "Max Target",
     max: "MAX",
     cost: "Cost",
     level: "Level",
@@ -101,8 +101,6 @@ export const translations = {
     attack: "Attack",
     maxHp: "Max HP",
     healPower: "Heal Power",
-    maxAllPotentials: "Max All",
-    maxTargetPotentials: "Max Target",
     
     // Upgrade/Gear component - Materials
     totalMaterialsNeeded: "Total Materials Needed",
@@ -151,8 +149,6 @@ export const translations = {
     },
     tier: "T",
     gears: "Gears",
-    maxAllGears: "Max All Gears",
-    maxTargetGears: "Max Target Gears",
     currentEquipment: "Current",
     targetEquipment: "Target",
     setMinLevel: "Set to minimum level",
@@ -356,8 +352,8 @@ export const translations = {
 
     // Upgrade component - Skills
     skills: "スキル",
-    maxAllSkills: "全てのスキルを最大化",
-    maxTargetSkills: "目標スキルを最大化",
+    maxAll: "全て最大化",
+    maxTarget: "目標を最大化",
     max: "最大",
     cost: "コスト",
     level: "レベル",
@@ -384,8 +380,6 @@ export const translations = {
     attack: "攻撃力",
     maxHp: "最大HP",
     healPower: "回復力",
-    maxAllPotentials: "全て最大化",
-    maxTargetPotentials: "目標を最大化",
 
     // Upgrade/Gear component - Materials
     totalMaterialsNeeded: "必要な素材の合計",
@@ -434,8 +428,6 @@ export const translations = {
     },
     tier: "T",
     gears: "装備",
-    maxAllGears: "全装備を最大化",
-    maxTargetGears: "目標装備を最大化",
     currentEquipment: "現在",
     targetEquipment: "目標",
     setMinLevel: "最小レベルに設定",

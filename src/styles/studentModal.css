@@ -206,6 +206,7 @@
 /* All tabs: fixed height with scrollable content */
 .right-column--scrollable {
   height: var(--student-modal-hero-height);
+  overflow: hidden; /* clip compositor layer to column bounds for smooth transitions */
 }
 
 .right-column--scrollable .tab-pane-state {

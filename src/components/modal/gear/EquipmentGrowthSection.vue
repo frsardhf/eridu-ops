@@ -99,7 +99,7 @@ function updateExclusiveGearTarget(value: number) {
           :checked="props.allGearsMaxed"
           @change="(e) => emit('toggle-max-gears', (e.target as HTMLInputElement).checked)"
         />
-        <label for="max-all-gears">{{ $t('maxAllGears') }}</label>
+        <label for="max-all-gears">{{ $t('maxAll') }}</label>
       </div>
       <div class="modal-toggle-item">
         <input
@@ -109,7 +109,7 @@ function updateExclusiveGearTarget(value: number) {
           :checked="props.targetGearsMaxed"
           @change="(e) => emit('toggle-max-target-gears', (e.target as HTMLInputElement).checked)"
         />
-        <label for="max-target-gears">{{ $t('maxTargetGears') }}</label>
+        <label for="max-target-gears">{{ $t('maxTarget') }}</label>
       </div>
     </div>
 
