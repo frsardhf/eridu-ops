@@ -29,6 +29,10 @@ self.addEventListener('fetch', (e) => {
   // Only cache schaledb images
   if (url.origin !== 'https://schaledb.com' || !url.pathname.startsWith('/images/')) return;
 
+  // CORS requests need readable responses — cached opaque entries can't satisfy them.
+  // Pass through to the network so the export function can read the response body.
+  if (e.request.mode === 'cors') return;
+
   e.respondWith((async () => {
     const cached = await caches.match(e.request);
     if (cached) return cached;
