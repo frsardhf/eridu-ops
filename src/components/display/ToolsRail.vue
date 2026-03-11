@@ -91,6 +91,7 @@ onBeforeUnmount(() => {
     >
       <button
         class="tools-action-btn"
+        style="--i: 0;"
         type="button"
         @click="emit('open-deck-builder')"
         title="Deck Builder"
@@ -119,6 +120,7 @@ onBeforeUnmount(() => {
 
       <button
         class="tools-action-btn"
+        style="--i: 1;"
         type="button"
         @click="emit('open-bulk-modify')"
         :title="$t('bulkModify.title')"
@@ -290,6 +292,36 @@ onBeforeUnmount(() => {
 .tools-action-icon {
   width: 22px;
   height: 22px;
+}
+
+.tools-rail-panel .tools-action-btn {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.tools-rail.expanded .tools-action-btn {
+  opacity: 1;
+  transform: scale(1);
+  animation: tools-action-pop 0.26s ease both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes tools-action-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tools-rail.expanded .tools-action-btn {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
 }
 
 @media (max-width: 768px) {

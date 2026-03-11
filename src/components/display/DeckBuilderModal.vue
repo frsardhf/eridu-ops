@@ -799,8 +799,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
 }
 
 .team-block.is-team-drop-target {
-  outline: 2px solid var(--accent-color);
+  outline: 2px solid rgba(var(--accent-color-rgb), 0.6);
   border-radius: 8px;
+  animation: drop-pulse 0.9s ease-in-out infinite;
 }
 
 /* Two slot groups (striker + special) in one row; stack at < 1024px */
@@ -866,8 +867,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
 }
 
 .slot-card-inner.is-drop-target {
-  box-shadow: 0 0 0 2px var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6);
   border-radius: 8px;
+  animation: drop-pulse 0.9s ease-in-out infinite;
 }
 
 @keyframes shake-slot {
@@ -934,12 +936,31 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
 .slot-empty.is-drop-target {
   border-color: var(--accent-color);
   background: color-mix(in srgb, var(--accent-color) 8%, var(--background-primary));
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.4);
+  animation: drop-pulse 0.9s ease-in-out infinite;
 }
 
 .slot-empty-icon {
   font-size: 2rem;
   color: var(--text-secondary);
   opacity: 0.35;
+}
+
+@keyframes drop-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(var(--accent-color-rgb), 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-card-inner.is-drop-target,
+  .slot-empty.is-drop-target {
+    animation: none;
+  }
 }
 
 /* Assist badge */

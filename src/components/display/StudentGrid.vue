@@ -83,7 +83,24 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
 }
 
 .student-card-slot.drop-target {
-  box-shadow: 0 0 0 2px var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6);
+  animation: drop-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes drop-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(var(--accent-color-rgb), 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-card-slot.drop-target {
+    animation: none;
+  }
 }
 
 /* Media Queries */

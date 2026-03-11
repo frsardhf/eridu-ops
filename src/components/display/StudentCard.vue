@@ -42,6 +42,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenWidth);
+  if (pinPopTimer) {
+    clearTimeout(pinPopTimer);
+  }
 });
 
 function getFontSizeClass(name: string): string {
@@ -107,6 +110,9 @@ const hasAnyPotentialDifference = computed(() => {
   if (!p) return false;
   return potentialTypes.some(t => (p[t]?.current ?? 0) !== (p[t]?.target ?? 0));
 });
+
+const pinPop = ref(false);
+let pinPopTimer: ReturnType<typeof setTimeout> | null = null;
 
 const hasAnySkillDifference = computed(() => {
   if (!studentData.value?.skillLevels) return false;
@@ -186,6 +192,16 @@ function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
   const newPinStatus = togglePinnedStudent(props.student.Id);
   forceUpdate.value++;
+  if (pinPopTimer) {
+    clearTimeout(pinPopTimer);
+  }
+  pinPop.value = false;
+  requestAnimationFrame(() => {
+    pinPop.value = true;
+    pinPopTimer = setTimeout(() => {
+      pinPop.value = false;
+    }, 240);
+  });
   emit('pin-toggled', props.student.Id, newPinStatus);
 }
 
@@ -215,7 +231,7 @@ function handleCardClick(event: MouseEvent) {
       :key="`pin-${student.Id}-${isPinned}`">
       <img 
         src="/assets/push-pin.png" 
-        :class="['pin-img', { 'pinned': isPinned }]"
+        :class="['pin-img', { 'pinned': isPinned, 'pin-pop': pinPop }]"
         alt="Pin icon"
       />
     </div>
@@ -706,6 +722,28 @@ function handleCardClick(event: MouseEvent) {
 
 .pin-img.pinned {
   opacity: 1;
+}
+
+.pin-img.pin-pop {
+  animation: pin-pop 0.24s ease;
+}
+
+@keyframes pin-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-img.pin-pop {
+    animation-duration: 1ms;
+  }
 }
 
 @media screen and (max-width: 768px) {
