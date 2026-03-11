@@ -421,11 +421,8 @@ const toggleSummaryMode = () => {
 }
 
 .inventory-pane-state {
-  /* Pre-create compositor layer so Safari doesn't rasterize on the first animation frame */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
 
 :global(.inventory-modal-shell-enter-active),
