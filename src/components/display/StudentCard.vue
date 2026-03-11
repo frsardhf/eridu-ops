@@ -2,7 +2,7 @@
 import { StudentProps } from '@/types/student'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useStudentFormData } from '@/consumables/stores/studentStore'
-import { SkillType, SkillTypeName } from '@/types/upgrade'
+import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
 import { ModalOriginRect } from '@/types/modal';
 import {
@@ -29,6 +29,7 @@ const isPinned = computed(() => {
 });
 const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 const skillTypeNames: SkillTypeName[] = ['Ex', 'Basic', 'Enhanced', 'Sub'];
+const potentialTypes: PotentialType[] = ['maxhp', 'attack', 'healpower'];
 
 function checkScreenWidth() {
   isMobile.value = window.innerWidth <= 768;
@@ -89,6 +90,23 @@ function formatSkillValue(
   if (!isEx && value === 10) return 'M';
   return value.toString();
 }
+
+function formatPotentialValue(value: number | undefined): string {
+  if (value === 25) return 'M';
+  return value?.toString() ?? '0';
+}
+
+const hasAnyPotentialData = computed(() => {
+  const p = studentData.value?.potentialLevels;
+  if (!p) return false;
+  return potentialTypes.some(t => (p[t]?.current ?? 0) > 0 || (p[t]?.target ?? 0) > 0);
+});
+
+const hasAnyPotentialDifference = computed(() => {
+  const p = studentData.value?.potentialLevels;
+  if (!p) return false;
+  return potentialTypes.some(t => (p[t]?.current ?? 0) !== (p[t]?.target ?? 0));
+});
 
 const hasAnySkillDifference = computed(() => {
   if (!studentData.value?.skillLevels) return false;
@@ -303,33 +321,60 @@ function handleCardClick(event: MouseEvent) {
               </div>
             </div>
             
-            <!-- Skill Levels -->
-            <div class="skill-levels" v-if="studentData?.skillLevels && isOwned">
-              <div class="skill-row">
-                <span 
-                  v-for="(skillType, idx) in skillTypes" 
-                  :key="skillType"
-                  class="skill-value"
-                  :title="skillTypeNames[idx] + ' Skill Level'"
-                >
-                  {{ formatSkillValue(
-                    studentData.skillLevels[skillType]?.current, 
-                    skillType === 'Ex'
-                  ) }}
-                </span>
+            <!-- Right column: potential + skill stacked -->
+            <div class="right-overlays">
+              <!-- Potential Levels -->
+              <div class="potential-levels" v-if="hasAnyPotentialData && isOwned">
+                <div class="potential-row">
+                  <span
+                    v-for="type in potentialTypes"
+                    :key="type"
+                    class="potential-value"
+                    :title="type + ' Potential'"
+                  >
+                    {{ formatPotentialValue(studentData?.potentialLevels?.[type]?.current) }}
+                  </span>
+                </div>
+                <div class="potential-row" v-if="hasAnyPotentialDifference">
+                  <span
+                    v-for="type in potentialTypes"
+                    :key="`target-${type}`"
+                    class="potential-value target-value"
+                    :title="'Target ' + type + ' Potential'"
+                  >
+                    {{ formatPotentialValue(studentData?.potentialLevels?.[type]?.target) }}
+                  </span>
+                </div>
               </div>
-              <div class="skill-row" v-if="hasAnySkillDifference">
-                <span 
-                  v-for="(skillType, idx) in skillTypes" 
-                  :key="`target-${skillType}`"
-                  class="skill-value"
-                  :title="'Target ' + skillTypeNames[idx] + ' Skill Level'"
-                >
-                  {{ formatSkillValue(
-                    studentData.skillLevels[skillType]?.target, 
-                    skillType === 'Ex'
-                  ) }}
-                </span>
+
+              <!-- Skill Levels -->
+              <div class="skill-levels" v-if="studentData?.skillLevels && isOwned">
+                <div class="skill-row">
+                  <span
+                    v-for="(skillType, idx) in skillTypes"
+                    :key="skillType"
+                    class="skill-value"
+                    :title="skillTypeNames[idx] + ' Skill Level'"
+                  >
+                    {{ formatSkillValue(
+                      studentData.skillLevels[skillType]?.current,
+                      skillType === 'Ex'
+                    ) }}
+                  </span>
+                </div>
+                <div class="skill-row" v-if="hasAnySkillDifference">
+                  <span
+                    v-for="(skillType, idx) in skillTypes"
+                    :key="`target-${skillType}`"
+                    class="skill-value"
+                    :title="'Target ' + skillTypeNames[idx] + ' Skill Level'"
+                  >
+                    {{ formatSkillValue(
+                      studentData.skillLevels[skillType]?.target,
+                      skillType === 'Ex'
+                    ) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -504,8 +549,42 @@ function handleCardClick(event: MouseEvent) {
   border-radius: 4px;
 }
 
-.skill-levels {
-  margin-left: 2px;
+.right-overlays {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.potential-levels {
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+}
+
+.potential-row {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.potential-value {
+  color: white;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
+  min-width: 20px;
+  width: 20px;
+  text-align: center;
+  display: inline-block;
+  box-sizing: border-box;
+  transition: background 0.15s;
+}
+
+.potential-value[title]:hover {
+  background: rgba(80, 180, 255, 0.5);
 }
 
 .equipment-levels {
@@ -675,17 +754,19 @@ function handleCardClick(event: MouseEvent) {
     font-size: 10px;
   }
 
-  .skill-levels, 
-  .equipment-levels {
+  .skill-levels,
+  .equipment-levels,
+  .potential-levels {
     gap: 1px;
     padding: 1px;
   }
 
   .skill-value,
-  .equipment-value {
+  .equipment-value,
+  .potential-value {
     font-size: 10px;
-    min-width: 12px; 
-    width: 10px; 
+    min-width: 12px;
+    width: 10px;
   }
 
   .pin-icon {
