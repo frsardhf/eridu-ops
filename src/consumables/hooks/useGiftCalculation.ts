@@ -165,6 +165,27 @@ export function useGiftCalculation() {
     });
 
     // Also include exclusive gear gift materials (Category === 'Favor') from gears store
+    // Pre-compute bond allocations so the gear section uses remaining-after-bond for missing mode
+    const bondAllocated = new Map<number, number>();
+    Object.values(studentDataStore.value).forEach(form => {
+      if (!form || form.isOwned === false) return;
+      const giftFormData = (form as any).giftFormData || {};
+      const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
+      [...Object.entries(giftFormData), ...Object.entries(nonFavorGiftsMap)].forEach(([id, qty]) => {
+        const giftId = parseInt(id);
+        bondAllocated.set(giftId, (bondAllocated.get(giftId) ?? 0) + (qty as number));
+      });
+    });
+    // Track remaining available after bond allocations (drained across multiple gear students)
+    const giftRemainingForGear = new Map<number, number>();
+    const getGiftRemaining = (giftId: number) => {
+      if (!giftRemainingForGear.has(giftId)) {
+        const owned = resources[giftId]?.QuantityOwned ?? 0;
+        giftRemainingForGear.set(giftId, Math.max(0, owned - (bondAllocated.get(giftId) ?? 0)));
+      }
+      return giftRemainingForGear.get(giftId)!;
+    };
+
     const allGearsData = getAllGearsData();
     Object.entries(allGearsData).forEach(([studentId, materials]) => {
       const student = studentsCollection[studentId];
@@ -183,12 +204,15 @@ export function useGiftCalculation() {
         const quantity = material.materialQuantity;
         if (quantity <= 0) return;
 
-        const owned = resources[materialId]?.QuantityOwned ?? 0;
-
         let displayQuantity = quantity;
         if (viewMode === 'missing') {
-          if (owned >= quantity) return; // Not missing
-          displayQuantity = quantity - owned;
+          const remaining = getGiftRemaining(materialId);
+          if (remaining >= quantity) {
+            giftRemainingForGear.set(materialId, remaining - quantity); // drain without marking missing
+            return;
+          }
+          displayQuantity = quantity - remaining;
+          giftRemainingForGear.set(materialId, 0);
         }
 
         // Add to existing student entry or create new one
@@ -261,6 +285,20 @@ export function useGiftCalculation() {
     });
 
     // Process exclusive gear gift materials (Category === 'Favor') from gears store
+    // For missing mode, compare against remaining after all students' bond allocations
+    const bondAllocatedForGear = new Map<number, number>();
+    if (viewMode === 'missing') {
+      Object.values(studentDataStore.value).forEach(form => {
+        if (!form || form.isOwned === false) return;
+        const giftFormData = (form as any).giftFormData || {};
+        const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
+        [...Object.entries(giftFormData), ...Object.entries(nonFavorGiftsMap)].forEach(([id, qty]) => {
+          const giftId = parseInt(id);
+          bondAllocatedForGear.set(giftId, (bondAllocatedForGear.get(giftId) ?? 0) + (qty as number));
+        });
+      });
+    }
+
     const allGearsData = getAllGearsData();
     const studentGearMaterials = allGearsData[studentId] || [];
     (studentGearMaterials as Material[]).forEach(material => {
@@ -278,8 +316,9 @@ export function useGiftCalculation() {
       const owned = resources[materialId]?.QuantityOwned ?? 0;
 
       if (viewMode === 'missing') {
-        if (owned < quantity) {
-          gifts.push({ gift, quantity: quantity - owned });
+        const remaining = Math.max(0, owned - (bondAllocatedForGear.get(materialId) ?? 0));
+        if (remaining < quantity) {
+          gifts.push({ gift, quantity: quantity - remaining });
         }
       } else {
         gifts.push({ gift, quantity });
