@@ -8,6 +8,7 @@ const railRef = ref<HTMLElement | null>(null);
 const emit = defineEmits<{
   'open-bulk-modify': [];
   'open-deck-builder': [];
+  'open-inventory': [];
 }>();
 
 function handleFocusOut(event: FocusEvent) {
@@ -121,6 +122,19 @@ onBeforeUnmount(() => {
       <button
         class="tools-action-btn"
         style="--i: 1;"
+        type="button"
+        @click="emit('open-inventory')"
+        :title="$t('inventory')"
+        :aria-label="$t('inventory')"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+        </svg>
+      </button>
+
+      <button
+        class="tools-action-btn"
+        style="--i: 2;"
         type="button"
         @click="emit('open-bulk-modify')"
         :title="$t('bulkModify.title')"

@@ -6,7 +6,10 @@ import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables
 import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
 import DeckBuilderModal from '@/components/display/DeckBuilderModal.vue';
+import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
+import { useStudentItems } from '@/consumables/hooks/useStudentItems';
+import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/modal/StudentModal.vue'
 import { GiftProps } from '@/types/gift';
@@ -36,6 +39,11 @@ const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
 const isBulkModifyModalVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
+const isInventoryModalVisible = ref(false);
+
+const inventoryProps = { get isVisible() { return isInventoryModalVisible.value; } };
+const { itemFormData, handleItemInput, loadItems } = useStudentItems(inventoryProps);
+const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment(inventoryProps);
 const modalOriginRect = ref<ModalOriginRect | null>(null);
 const savedOrder = getManualOrder();
 const isManualOrderActive = ref(savedOrder.length > 0);
@@ -226,6 +234,7 @@ async function handleReinitializeData() {
     <ToolsRail
       @open-bulk-modify="isBulkModifyModalVisible = true"
       @open-deck-builder="isDeckBuilderVisible = true"
+      @open-inventory="isInventoryModalVisible = true; loadItems(); loadEquipments();"
     />
 
     <StudentGrid
@@ -247,6 +256,15 @@ async function handleReinitializeData() {
         @navigate="handleNavigate"
       />
     </Transition>
+
+    <GlobalInventoryModal
+      v-if="isInventoryModalVisible"
+      :resource-form-data="itemFormData"
+      :equipment-form-data="equipmentFormData"
+      @close="isInventoryModalVisible = false"
+      @update-resource="handleItemInput"
+      @update-equipment="handleEquipmentInput"
+    />
 
     <BulkModifyStudentsModal
       v-if="isBulkModifyModalVisible"
