@@ -282,6 +282,7 @@ export function useGearCalculation() {
         const equipmentTypes: EquipmentType[] = [];
         
         (materials as Material[]).forEach(material => {
+          if (material.type === 'materials') return;
           if (material.material?.Id === materialId) {
             quantity += material.materialQuantity;
           }
