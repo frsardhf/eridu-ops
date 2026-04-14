@@ -129,11 +129,14 @@ export function useGearCalculation() {
     const { totalXpNeeded } = calculateExpNeeds();
 
     // Add XP as a special material type
-    materialMap.set(1, { // Using Novice exp ball ID as the XP material ID
-      material: getEquipmentDataByIdSync(1),
-      materialQuantity: totalXpNeeded,
-      type: 'xp'
-    });
+    const xpBallMaterial = getEquipmentDataByIdSync(1);
+    if (xpBallMaterial) {
+      materialMap.set(1, { // Using Novice exp ball ID as the XP material ID
+        material: xpBallMaterial,
+        materialQuantity: totalXpNeeded,
+        type: 'xp'
+      });
+    }
 
     return Array.from(materialMap.values());
     });

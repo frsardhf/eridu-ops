@@ -165,27 +165,34 @@ export function useMaterialCalculation() {
       });
     });
     
-    materialMap.set(CREDITS_ID, { 
-      material: creditsMaterial, 
-      materialQuantity: creditsQuantity, 
-      type: 'credits'}
-    );
+    if (creditsMaterial) {
+      materialMap.set(CREDITS_ID, { 
+        material: creditsMaterial, 
+        materialQuantity: creditsQuantity, 
+        type: 'credits'}
+      );
+    }
 
-    materialMap.set(ELIGMAS_ID, { 
-      material: eligmasMaterial, 
-      materialQuantity: eligmasQuantity, 
-      type: 'materials'}
-    );
+    if (eligmasMaterial) {
+      materialMap.set(ELIGMAS_ID, { 
+        material: eligmasMaterial, 
+        materialQuantity: eligmasQuantity, 
+        type: 'materials'}
+      );
+    }
 
     // Add XP materials from helper function
     const { totalXpNeeded } = calculateExpNeeds();
 
     // Add XP as a special material type
-    materialMap.set(10, { // Using Novice report ID as the XP material ID
-      material: getResourceDataByIdSync(10),
-      materialQuantity: totalXpNeeded,
-      type: 'xp'
-    });
+    const xpMaterial = getResourceDataByIdSync(10);
+    if (xpMaterial) {
+      materialMap.set(10, { // Using Novice report ID as the XP material ID
+        material: xpMaterial,
+        materialQuantity: totalXpNeeded,
+        type: 'xp'
+      });
+    }
     
     return Array.from(materialMap.values());
     });
