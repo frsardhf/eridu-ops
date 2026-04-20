@@ -13,6 +13,7 @@ import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import { useResourceTooltip } from '@/composables/useResourceTooltip';
 import { useResourceSummary, type ViewTab, type ViewMode } from '@/composables/useResourceSummary';
 import { $t } from '@/locales';
+import { getModeQuantityClass, getResourceQuantityClass } from '@/consumables/utils/colorUtils';
 import '@/styles/resourceDisplay.css';
 
 const props = withDefaults(defineProps<{
@@ -44,7 +45,7 @@ const {
   hoveredItemId, hoveredStudentId, tooltipPosition, isHoveringTooltip,
   studentUsageForMaterial, giftsForHoveredStudent,
   tooltipGridColumns, giftTooltipGridColumns,
-  creditOwned, creditNeeded, creditRemaining, isCreditDeficit, isCreditSurplus,
+  creditOwned, creditNeeded, creditRemaining,
   expInfo, expBallInfo,
   showTooltip, hideTooltip, handleTooltipMouseEnter, handleTooltipMouseLeave,
   showStudentTooltip, hideStudentTooltip,
@@ -111,12 +112,6 @@ const pagedLeftoverResourceStates = computed(() =>
   )
 );
 
-// Helper function to get quantity class
-const getQuantityClass = (): string => {
-  if (activeMode.value === 'missing') return 'negative';
-  if (activeMode.value === 'leftover') return 'positive';
-  return '';
-};
 
 const getLeftoverTooltipValue = (materialId: number | null): number => {
   if (materialId === null) return 0;
@@ -279,7 +274,7 @@ watch(
 
                     <div
                       class="resource-quantity"
-                      :class="getQuantityClass()"
+                      :class="getModeQuantityClass(activeMode)"
                     >
                       {{ item.quantityText }}
                     </div>
@@ -331,7 +326,7 @@ watch(
 
               <div
                 class="resource-quantity"
-                :class="getQuantityClass()"
+                :class="getModeQuantityClass(activeMode)"
               >
                 {{ item.quantityText }}
               </div>
@@ -359,7 +354,7 @@ watch(
               />
               <div
                 class="resource-quantity"
-                :class="getQuantityClass()"
+                :class="getModeQuantityClass(activeMode)"
               >
                 {{ formatLargeNumber(studentGift.totalGifts) }}
               </div>
@@ -405,10 +400,7 @@ watch(
             </div>
             <div class="stat">
               <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="{ 
-                'negative': isCreditDeficit,
-                'positive': isCreditSurplus 
-              }">
+              <span class="value" :class="getResourceQuantityClass(creditRemaining)">
                 {{ formatLargeNumberAmount(creditRemaining) }}
               </span>
             </div>
@@ -429,10 +421,7 @@ watch(
             </div>
             <div class="stat">
               <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="{ 
-                'negative': expInfo.isDeficit,
-                'positive': expInfo.isSurplus 
-              }">
+              <span class="value" :class="getResourceQuantityClass(expInfo.remaining)">
                 {{ formatLargeNumberAmount(expInfo.remaining) }}
               </span>
             </div>
@@ -453,10 +442,7 @@ watch(
             </div>
             <div class="stat">
               <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="{ 
-                'negative': expBallInfo.isDeficit,
-                'positive': expBallInfo.isSurplus 
-              }">
+              <span class="value" :class="getResourceQuantityClass(expBallInfo.remaining)">
                 {{ formatLargeNumberAmount(expBallInfo.remaining) }}
               </span>
             </div>
@@ -473,10 +459,7 @@ watch(
           <div class="credit-stats">
             <div class="stat">
               <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="{ 
-                'negative': getMaterialLeftover(hoveredItemId) < 0,
-                'positive': getMaterialLeftover(hoveredItemId) > 0 
-              }">
+              <span class="value" :class="getResourceQuantityClass(getMaterialLeftover(hoveredItemId))">
                 {{ formatLargeNumberAmount(Math.abs(getMaterialLeftover(hoveredItemId))) }}
               </span>
             </div>

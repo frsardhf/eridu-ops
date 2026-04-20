@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
 import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
-import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
+import { makeCurrentTargetPair } from '@/consumables/utils/upgradeUtils';
 import {
   MAX_GRADE,
   WEAPON_STAR_THRESHOLD as TRESHOLD
@@ -20,8 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const { 
-  isMaxGrade, isWeaponLocked, currentGrade, targetGrade,
-  getWeaponIconUrl, 
+  isMaxGrade, isWeaponLocked, currentGrade, targetGrade, getWeaponIconUrl
 } = useStudentGearDisplay(
   toRef(() => props.student),
   toRef(() => props.gradeLevels),
@@ -47,17 +46,15 @@ const targetStars = computed(() => {
   }));
 });
 
-const updateCurrentGrade = (grade: number) => {
-  const target = props.gradeLevels?.target;
-  const result = clampLevelPair(grade, target ?? 1, 1, MAX_GRADE, false);
-  if (result) emit('update-grade', result.current, result.target);
-};
-
-const updateTargetGrade = (grade: number) => {
-  const current = props.gradeLevels?.current;
-  const result = clampLevelPair(grade, current ?? 1, 1, MAX_GRADE, true);
-  if (result) emit('update-grade', result.current, result.target);
-};
+const { 
+  updateCurrent: updateCurrentGrade, 
+  updateTarget: updateTargetGrade 
+} = makeCurrentTargetPair(
+  () => ({ current: props.gradeLevels?.current ?? 1, target: props.gradeLevels?.target ?? 1 }),
+  (c, t) => emit('update-grade', c, t),
+  1,
+  () => MAX_GRADE,
+);
 </script>
 
 <template>

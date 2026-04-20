@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, CSSProperties } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, CSSProperties } from 'vue';
 import { $t } from '@/locales';
 import { studentDataStore, studentDataVersion } from '@/consumables/stores/studentStore';
 import { useStudentOwnership } from '@/consumables/hooks/useStudentOwnership';
@@ -24,6 +24,7 @@ import InfoSkills from '@/components/modal/info/InfoSkills.vue';
 import InfoWeapon from '@/components/modal/info/InfoWeapon.vue';
 import MetaHeader from '@/components/modal/MetaHeader.vue';
 import MaterialsSection from '@/components/modal/shared/MaterialsSection.vue';
+import ApplyUpgradePanel from '@/components/modal/ApplyUpgradePanel.vue';
 import LevelSection from '@/components/modal/upgrade/LevelSection.vue';
 import PotentialSection from '@/components/modal/upgrade/PotentialSection.vue';
 import SkillSection from '@/components/modal/upgrade/SkillSection.vue';
@@ -31,6 +32,14 @@ import ModalHeader from '@/components/modal/ModalHeader.vue';
 import StudentStrip from '@/components/modal/StudentStrip.vue';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
+import { SkillType, PotentialType, Material, MaterialPreviewItem, type SectionId } from '@/types/upgrade';
+import type { EquipmentType } from '@/types/gear';
+import { positionAtElement } from '@/composables/useTooltip';
+import { computeCharacterXpCost, getCharXpItems } from '@/consumables/utils/upgradeMaterialUtils';
+import { computeEquipmentXpCost, getEquipXpItems } from '@/consumables/utils/gearMaterialUtils';
+import { deductXpItems, simulateXpDeduction } from '@/consumables/utils/upgradeUtils';
+import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/consumables/stores/resourceCacheStore';
+import ApplyConfirmModal from '@/components/modal/ApplyConfirmModal.vue';
 import '@/styles/studentModal.css'
 
 type ModalTab = 'info' | 'bond' | 'upgrade' | 'gear';
@@ -60,7 +69,12 @@ const activeTabTransitionName = computed(() =>
 );
 const activeTabTransitionKey = computed(() => activeTab.value);
 
-const isInventoryOpen = ref(false);
+const isInventoryOpen  = ref(false);
+const showApplyPanel      = ref(false);
+const showConfirmModal    = ref(false);
+const pendingSelectedIds  = ref<SectionId[]>([]);
+const applyPanelStyle  = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+const applyPanelWrapper = ref<HTMLElement | null>(null);
 
 const displayedStudent = ref<StudentProps | null>(null);
 
@@ -187,6 +201,257 @@ function handleStyleToggle() {
   activeStyleId.value = activeStyleId.value === partnerId ? null : partnerId;
 }
 
+// ── Apply Upgrade panel positioning ─────────────────────────────────────────
+
+async function openApplyPanel(event: MouseEvent) {
+  const btn = event.currentTarget as HTMLElement;
+  applyPanelStyle.value = positionAtElement(btn);
+  showApplyPanel.value = true;
+  await nextTick();
+  applyPanelStyle.value = positionAtElement(btn, applyPanelWrapper.value);
+}
+
+function toggleApplyPanel(event: MouseEvent) {
+  if (showApplyPanel.value) {
+    showApplyPanel.value = false;
+  } else {
+    openApplyPanel(event);
+  }
+}
+
+// ── Apply Upgrade ────────────────────────────────────────────────────────────
+
+// Conservative material check: all pending materials vs inventory
+const insufficientList = computed<string[]>(() => {
+  const allMats = [
+    ...allMaterialsNeeded.value,
+    ...equipmentMaterialsNeeded.value,
+  ];
+  // Aggregate quantities by ID
+  const needed = new Map<number, { name: string; qty: number; isEquip: boolean }>();
+  for (const mat of allMats) {
+    const id = mat.material.Id;
+    const isEquip = mat.type === 'equipments';
+    const ex = needed.get(id);
+    if (ex) {
+      ex.qty += mat.materialQuantity;
+    } else {
+      needed.set(id, { name: mat.material.Name, qty: mat.materialQuantity, isEquip });
+    }
+  }
+  const out: string[] = [];
+  for (const [id, { name, qty, isEquip }] of needed.entries()) {
+    const owned = isEquip
+      ? (equipmentFormData.value[id] ?? 0)
+      : (itemFormData.value[id] ?? 0);
+    if (owned < qty) out.push(name);
+  }
+  // Check EXP sufficiency (activity reports for level, XP balls for equipment)
+  const levelPending = (characterLevels.value.current ?? 1) < (characterLevels.value.target ?? 1);
+  if (levelPending) {
+    const xpNeeded = computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target);
+    const ownedXp  = getCharXpItems(id => itemFormData.value[id] ?? 0)
+      .reduce((s, item) => s + item.owned * item.xpValue, 0);
+    if (ownedXp < xpNeeded) out.push('Activity Report');
+  }
+
+  const equipPending = Object.values(equipmentLevels.value).some(e => e && e.current < e.target);
+  if (equipPending) {
+    const xpNeeded = computeEquipmentXpCost(equipmentLevels.value);
+    const ownedXp  = getEquipXpItems(id => equipmentFormData.value[id] ?? 0)
+      .reduce((s, item) => s + item.owned * item.xpValue, 0);
+    if (ownedXp < xpNeeded) out.push('Equipment XP');
+  }
+
+  return out;
+});
+
+const hasSufficientMaterials = computed(() => insufficientList.value.length === 0);
+
+const materialsPreview = computed<Material[]>(() => {
+  const map = new Map<number, Material>();
+  const add = (mats: Material[]) => {
+    for (const m of mats) {
+      const id = m.material.Id;
+      const ex = map.get(id);
+      if (ex) {
+        ex.materialQuantity += m.materialQuantity;
+      } else {
+        map.set(id, { ...m });
+      }
+    }
+  };
+  add(allMaterialsNeeded.value);
+  add(equipmentMaterialsNeeded.value);
+  return Array.from(map.values()).filter(m => m.materialQuantity > 0);
+});
+
+const confirmPreviewItems = computed<MaterialPreviewItem[]>(() => {
+  const result: MaterialPreviewItem[] = [];
+
+  // Regular materials (aggregated by ID, enriched with owned + remaining)
+  materialsPreview.value.forEach(m => {
+    const id = m.material.Id;
+    const owned = m.type === 'equipments'
+      ? (equipmentFormData.value[id] ?? 0)
+      : (itemFormData.value[id] ?? 0);
+    result.push({
+      material: m.material,
+      needed: m.materialQuantity,
+      owned,
+      remaining: owned - m.materialQuantity,
+      type: m.type ?? 'materials',
+    });
+  });
+
+  // Char XP items — only when 'level' is selected
+  if (pendingSelectedIds.value.includes('level')) {
+    const cost = computeCharacterXpCost(
+      characterLevels.value.current, characterLevels.value.target
+    );
+    if (cost > 0) {
+      const charItems = getCharXpItems(id => itemFormData.value[id] ?? 0);
+      const consumed  = simulateXpDeduction(cost, charItems);
+      charItems.forEach((item, i) => {
+        if (consumed[i] <= 0) return;
+        const mat = getResourceDataByIdSync(item.id);
+        if (!mat) return;
+        result.push({
+          material: mat,
+          needed: consumed[i],
+          owned: item.owned,
+          remaining: item.owned - consumed[i],
+          type: 'xp',
+        });
+      });
+    }
+  }
+
+  // Equip XP items — only when 'equipment' is selected
+  if (pendingSelectedIds.value.includes('equipment')) {
+    const cost = computeEquipmentXpCost(equipmentLevels.value);
+    if (cost > 0) {
+      const equipItems = getEquipXpItems(id => equipmentFormData.value[id] ?? 0);
+      const consumed   = simulateXpDeduction(cost, equipItems);
+      equipItems.forEach((item, i) => {
+        if (consumed[i] <= 0) return;
+        const mat = getEquipmentDataByIdSync(item.id);
+        if (!mat) return;
+        result.push({
+          material: mat,
+          needed: consumed[i],
+          owned: item.owned,
+          remaining: item.owned - consumed[i],
+          type: 'xp',
+        });
+      });
+    }
+  }
+
+  return result;
+});
+
+const hasAnyPendingUpgrade = computed(() => {
+  if ((characterLevels.value.current ?? 1) < (characterLevels.value.target ?? 1)) return true;
+  if (Object.values(skillLevels.value).some(s => s.current < s.target)) return true;
+  if (Object.values(potentialLevels.value).some(p => p.current < p.target)) return true;
+  if (Object.values(equipmentLevels.value).some(e => e && e.current < e.target)) return true;
+  if ((gradeLevels.value.current ?? 1) < (gradeLevels.value.target ?? 1)) return true;
+  if ((exclusiveGearLevel.value.current ?? 0) < (exclusiveGearLevel.value.target ?? 0)) return true;
+  return false;
+});
+
+function applyMaterialDelta(snapshot: Material[], afterMap: Map<number, number>) {
+  for (const mat of snapshot) {
+    const deducted = mat.materialQuantity - (afterMap.get(mat.material.Id) ?? 0);
+    if (deducted <= 0) continue;
+    const id = mat.material.Id;
+    if (mat.type === 'equipments') {
+      equipmentFormData.value[id] = Math.max(0, (equipmentFormData.value[id] ?? 0) - deducted);
+    } else {
+      itemFormData.value[id] = Math.max(0, (itemFormData.value[id] ?? 0) - deducted);
+    }
+  }
+}
+
+function handleApplySelected(selectedIds: SectionId[]) {
+  pendingSelectedIds.value = selectedIds;
+  showApplyPanel.value = false;
+  showConfirmModal.value = true;
+}
+
+function doApplyUpgrade() {
+  const selectedIds = pendingSelectedIds.value;
+
+  // 0. Snapshot XP costs BEFORE levels change (step 2 sets current = target)
+  const charXpCost = selectedIds.includes('level')
+    ? computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target)
+    : 0;
+  const equipXpCost = selectedIds.includes('equipment')
+    ? computeEquipmentXpCost(equipmentLevels.value)
+    : 0;
+
+  // 1. Snapshot materials BEFORE applying level changes
+  const beforeUpgrade = [...allMaterialsNeeded.value];
+  const beforeGear    = [...equipmentMaterialsNeeded.value];
+
+  // 2. Apply: set current = target for each selected section
+  if (selectedIds.includes('level')) {
+    characterLevels.value.current = characterLevels.value.target;
+  }
+  if (selectedIds.includes('skills')) {
+    Object.keys(skillLevels.value).forEach(t => {
+      const sk = skillLevels.value[t as SkillType];
+      if (sk) sk.current = sk.target;
+    });
+  }
+  if (selectedIds.includes('potential')) {
+    Object.keys(potentialLevels.value).forEach(t => {
+      const pt = potentialLevels.value[t as PotentialType];
+      if (pt) pt.current = pt.target;
+    });
+  }
+  if (selectedIds.includes('equipment')) {
+    Object.keys(equipmentLevels.value).forEach(t => {
+      const eq = equipmentLevels.value[t as EquipmentType];
+      if (eq) eq.current = eq.target;
+    });
+  }
+  if (selectedIds.includes('grade')) {
+    gradeLevels.value.current = gradeLevels.value.target;
+  }
+  if (selectedIds.includes('exclusive') && exclusiveGearLevel.value.current !== undefined) {
+    exclusiveGearLevel.value.current = exclusiveGearLevel.value.target ?? 0;
+  }
+
+  // 3. Read materials AFTER (computed reacts synchronously on next read)
+  const afterUpgrade = new Map(allMaterialsNeeded.value.map(m => [m.material.Id, m.materialQuantity]));
+  const afterGear    = new Map(equipmentMaterialsNeeded.value.map(m => [m.material.Id, m.materialQuantity]));
+
+  // 4. Deduct the delta from inventory (watchers auto-persist to IndexedDB)
+  applyMaterialDelta(beforeUpgrade, afterUpgrade);
+  applyMaterialDelta(beforeGear, afterGear);
+
+  // 5. Deduct EXP items (greedy coin-change, highest-value first)
+  if (charXpCost > 0) {
+    deductXpItems(
+      charXpCost,
+      getCharXpItems(id => itemFormData.value[id] ?? 0),
+      (id, qty) => { itemFormData.value[id] = qty; },
+    );
+  }
+  if (equipXpCost > 0) {
+    deductXpItems(
+      equipXpCost,
+      getEquipXpItems(id => equipmentFormData.value[id] ?? 0),
+      (id, qty) => { equipmentFormData.value[id] = qty; },
+    );
+  }
+
+  showConfirmModal.value = false;
+  pendingSelectedIds.value = [];
+}
+
 function setActiveTab(nextTab: ModalTab) {
   if (nextTab === activeTab.value) return;
   tabDirection.value = MODAL_TAB_ORDER[nextTab] >= MODAL_TAB_ORDER[activeTab.value]
@@ -210,6 +475,15 @@ watch(isOwned, (owned) => {
 // Keyboard
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.isVisible) return;
+
+  // If apply panel is open, Escape closes it first
+  if (showApplyPanel.value) {
+    if (event.key === 'Escape') {
+      showApplyPanel.value = false;
+      event.preventDefault();
+    }
+    return;
+  }
 
   // If inventory modal is open, Escape closes it first
   if (isInventoryOpen.value) {
@@ -322,7 +596,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       <div v-if="displayedStudent" class="modal-grid">
         <div class="tab-content">
           <div class="left-column">
-            <ModalHeader class="student-hero-card" :student="activeStyleStudent" />
+            <ModalHeader class="student-hero-card" :student="activeStyleStudent!" />
           </div>
 
           <div
@@ -330,7 +604,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
             :class="{ 'right-column--bond': activeTab === 'bond' }"
           >
             <MetaHeader
-              :student="activeStyleStudent"
+              :student="activeStyleStudent!"
               :character-levels="characterLevels"
               :current-bond="currentBond"
               :new-bond-level="newBondLevel"
@@ -340,14 +614,30 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
               @toggle-style="handleStyleToggle"
             />
 
-            <!-- Recruitment status bar -->
-            <div class="recruitment-bar" :class="{ 'recruitment-bar--unowned': !isOwned }">
-              <span class="recruitment-status">
-                {{ isOwned ? $t('ownership.recruited') : $t('ownership.notRecruited') }}
-              </span>
-              <button class="recruitment-toggle-btn" type="button" @click="toggleOwnership">
-                {{ isOwned ? $t('ownership.markNotRecruited') : $t('ownership.markRecruited') }}
-              </button>
+            <!-- Status bars row: Recruitment | Apply Upgrade -->
+            <div class="status-bars-row">
+              <!-- Recruitment -->
+              <div class="recruitment-bar" :class="{ 'recruitment-bar--unowned': !isOwned }">
+                <span class="recruitment-status">
+                  {{ isOwned ? $t('ownership.recruited') : $t('ownership.notRecruited') }}
+                </span>
+                <button class="recruitment-toggle-btn" type="button" @click="toggleOwnership">
+                  {{ isOwned ? $t('ownership.markNotRecruited') : $t('ownership.markRecruited') }}
+                </button>
+              </div>
+
+              <!-- Apply Upgrade -->
+              <div v-if="isOwned" class="upgrade-bar">
+                <span class="upgrade-bar-label">Progression</span>
+                <button
+                  class="apply-upgrade-btn"
+                  type="button"
+                  :disabled="!hasAnyPendingUpgrade"
+                  @click="toggleApplyPanel($event)"
+                >
+                  Apply Upgrade
+                </button>
+              </div>
             </div>
 
             <div class="modal-tabs">
@@ -385,12 +675,12 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                 <template v-if="activeTab === 'info'">
                   <div class="tab-pane-scroll tab-pane-scroll--info">
                     <InfoSkills
-                      :student="activeStyleStudent"
+                      :student="activeStyleStudent!"
                       :skill-levels="skillLevels"
                     />
 
                     <InfoWeapon
-                      :student="activeStyleStudent"
+                      :student="activeStyleStudent!"
                       :grade-levels="gradeLevels"
                       :equipment-levels="equipmentLevels"
                       :exclusive-gear-level="exclusiveGearLevel"
@@ -432,7 +722,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                     <div v-if="currentBond < 100" class="bond-gift-scroll">
                       <GiftGrid
                         class="bond-gift-grid"
-                        :student="displayedStudent"
+                        :student="displayedStudent!"
                         :gift-form-data="giftFormData"
                         :box-form-data="boxFormData"
                         :should-show-gift-grade="shouldShowGiftGrade"
@@ -453,7 +743,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                     />
 
                     <SkillSection
-                      :student="activeStyleStudent"
+                      :student="activeStyleStudent!"
                       :skill-levels="skillLevels"
                       :all-skills-maxed="allSkillsMaxed"
                       :target-skills-maxed="targetSkillsMaxed"
@@ -502,7 +792,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                     />
 
                     <ExclusiveWeaponSection
-                      :student="activeStyleStudent"
+                      :student="activeStyleStudent!"
                       :grade-levels="gradeLevels"
                       @update-grade="handleGradeUpdate"
                     />
@@ -541,6 +831,36 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
         @update-equipment="handleEquipmentInput"
       />
     </Transition>
+
+    <!-- Apply Upgrade panel — teleported to body for viewport-aware positioning -->
+    <Teleport to="body">
+      <template v-if="displayedStudent && showApplyPanel">
+        <div class="apply-panel-backdrop" @click="showApplyPanel = false" />
+        <div ref="applyPanelWrapper" class="apply-panel-wrapper" :style="applyPanelStyle">
+          <ApplyUpgradePanel
+            :student="displayedStudent"
+            :character-levels="characterLevels"
+            :skill-levels="skillLevels"
+            :potential-levels="potentialLevels"
+            :equipment-levels="equipmentLevels"
+            :grade-levels="gradeLevels"
+            :exclusive-gear-level="exclusiveGearLevel"
+            :has-sufficient-materials="hasSufficientMaterials"
+            :insufficient-list="insufficientList"
+            @apply="handleApplySelected"
+            @close="showApplyPanel = false"
+          />
+        </div>
+      </template>
+    </Teleport>
+
+    <!-- Confirmation modal — shown after Apply is clicked in ApplyUpgradePanel -->
+    <ApplyConfirmModal
+      v-if="showConfirmModal"
+      :preview-items="confirmPreviewItems"
+      @confirm="doApplyUpgrade"
+      @cancel="showConfirmModal = false; pendingSelectedIds = []"
+    />
   </div>
 </template>
 
@@ -624,21 +944,87 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
 }
 
 
-/* Recruitment status bar */
-.recruitment-bar {
+/* Status bars row: Recruitment + Apply Upgrade side-by-side */
+.status-bars-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px 10px;
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
   background: var(--background-secondary);
   flex-shrink: 0;
 }
 
+.recruitment-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--border-color);
+}
+
 .recruitment-bar--unowned {
   background: rgba(120, 120, 120, 0.08);
+}
+
+/* Upgrade bar (right half) */
+.upgrade-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.upgrade-bar-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.apply-upgrade-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.apply-upgrade-btn:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+.apply-upgrade-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.apply-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.apply-panel-wrapper {
+  position: fixed;
+  z-index: 201;
+}
+
+@media (max-width: 480px) {
+  .apply-panel-wrapper {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0;
+  }
 }
 
 .recruitment-status {

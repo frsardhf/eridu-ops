@@ -1,5 +1,34 @@
 import { ref, nextTick } from 'vue';
 
+/**
+ * Position a panel anchored to a trigger element.
+ * First call (panelEl = null) gives an approximate position; call again after
+ * nextTick with the rendered panelEl to flip if it clips the viewport.
+ */
+export function positionAtElement(
+  triggerEl: HTMLElement,
+  panelEl: HTMLElement | null = null,
+  offsetY = 6,
+): { top: string; left: string } {
+  const tr = triggerEl.getBoundingClientRect();
+  let x = tr.left;
+  let y = tr.bottom + offsetY;
+
+  if (panelEl) {
+    const pr = panelEl.getBoundingClientRect();
+    // flip right → align right edge of panel with right edge of trigger
+    if (x + pr.width > window.innerWidth - 12) {
+      x = Math.max(12, tr.right - pr.width);
+    }
+    // flip up → open above the trigger
+    if (y + pr.height > window.innerHeight - 12) {
+      y = Math.max(12, tr.top - pr.height - offsetY);
+    }
+  }
+
+  return { top: `${y}px`, left: `${x}px` };
+}
+
 export function positionAtCursor(
   event: MouseEvent,
   element: HTMLElement | null = null,

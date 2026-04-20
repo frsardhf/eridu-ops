@@ -121,6 +121,7 @@ function calculateEquipmentMaterials(
 
         const materialId = parseInt(recipeId.toString().substring(2));
         const materialData = getEquipmentDataByIdSync(materialId);
+        if (!materialData) continue;
 
         const existingMaterial = materialsNeeded.find(m =>
           m.material?.Id === materialId && m.type === type
@@ -156,7 +157,7 @@ function calculateEquipmentCredits(
 
     const creditsQuantity = getCreditsForEquipmentTier(current, target);
 
-    if (creditsQuantity > 0) {
+    if (creditsData && creditsQuantity > 0) {
       materialsNeeded.push({
         material: creditsData,
         materialQuantity: creditsQuantity,
@@ -182,7 +183,7 @@ function calculateGradeCredits(
 
   const creditsQuantity = getCreditsForGrade(current, target);
 
-  if (creditsQuantity > 0) {
+  if (creditsData && creditsQuantity > 0) {
     materialsNeeded.push({
       material: creditsData,
       materialQuantity: creditsQuantity,
@@ -212,7 +213,7 @@ function calculateGradeMaterials(
   const elephsNeeded = getElephsForGrade(current, target, owned);
   const eligmasQuantity = getEligmasForGrade(elephsNeeded, price, purchasable);
 
-  if (eligmasQuantity > 0) {
+  if (eligmasData && eligmasQuantity > 0) {
     materialsNeeded.push({
       material: eligmasData,
       materialQuantity: eligmasQuantity,
@@ -289,16 +290,49 @@ export function calculateAllGears(
   return consolidateAndSortMaterials(materials);
 }
 
+/**
+ * XP cost to grow one equipment slot from `current` to `target` tier.
+ * Uses the cumulative equipment_xp table from data.json.
+ */
+export function computeEquipmentSlotXpCost(current: number, target: number): number {
+  if (current >= target) return 0;
+  const t = (dataTable as any).equipment_xp as number[];
+  const curXp = current <= 1 ? 0 : (t[current - 2] ?? 0);
+  return Math.max(0, (t[target - 2] ?? 0) - curXp);
+}
+
+/** Total XP cost across all pending equipment slots. */
+export function computeEquipmentXpCost(equipmentLevels: EquipmentLevels): number {
+  return Object.values(equipmentLevels)
+    .reduce((sum, lv) => sum + (lv ? computeEquipmentSlotXpCost(lv.current, lv.target) : 0), 0);
+}
+
+/**
+ * XP Ball items (IDs 4 → 1) sorted descending by LevelUpFeedExp,
+ * each carrying its current owned count — ready for deductXpItems.
+ * @param getOwned  Returns how many of a given item ID the player owns.
+ */
+export function getEquipXpItems(
+  getOwned: (id: number) => number,
+  eqCache?: ReturnType<typeof getAllEquipmentFromCache>,
+): Array<{ id: number; xpValue: number; owned: number }> {
+  const eq = eqCache ?? getAllEquipmentFromCache();
+  return ([4, 3, 2, 1] as const).map(id => ({
+    id,
+    xpValue: eq[id]?.LevelUpFeedExp ?? 0,
+    owned: getOwned(id),
+  }));
+}
+
 export function getMaxTierForTypeSync(type: string): number {
   const equipments = getAllEquipmentFromCache();
   const matchingEquipments = Object.values(equipments)
-    .filter((item: any) => item.Category === type)
+    .filter(item => item.Category === type)
     .filter(
       (item): item is CachedResource & { Tier: number } =>
         typeof item.Tier === 'number'
     )
-    .sort((a: any, b: any) => b.Id - a.Id);
+    .sort((a, b) => b.Id - a.Id);
 
-  const highestTierEquipment = matchingEquipments[0];
-  return highestTierEquipment.Tier;
+  return matchingEquipments[0]?.Tier ?? 0;
 }

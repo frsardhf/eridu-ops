@@ -56,6 +56,31 @@ export function calculateLevelMaterials(
   return materialsNeeded;
 }
 
+/**
+ * XP cost to level a character from `current` to `target`.
+ * Uses the cumulative character_xp table from data.json.
+ */
+export function computeCharacterXpCost(current: number, target: number): number {
+  if (current >= target) return 0;
+  const t = (dataTable as any).character_xp as number[];
+  return Math.max(0, (t[target - 1] ?? 0) - (t[current - 1] ?? 0));
+}
+
+/**
+ * Activity Report items (IDs 13 → 10) sorted descending by ExpValue,
+ * each carrying its current owned count — ready for deductXpItems.
+ * @param getOwned  Returns how many of a given item ID the player owns.
+ */
+export function getCharXpItems(
+  getOwned: (id: number) => number,
+): Array<{ id: number; xpValue: number; owned: number }> {
+  return ([13, 12, 11, 10] as const).map(id => ({
+    id,
+    xpValue: getResourceDataByIdSync(id)?.ExpValue ?? 0,
+    owned: getOwned(id),
+  }));
+}
+
 export function calculateSkillMaterials(
   student: StudentProps,
   skillLevels: SkillLevels
@@ -90,17 +115,21 @@ export function calculateSkillMaterials(
       // Special case: ADD SECRET_TECH_NOTE for level 9 to 10 for non-Ex skills
       if (level === 9 && type !== 'Ex') {
         const secretTechData = getResourceDataByIdSync(SECRET_TECH_NOTE_ID);
-        materialsNeeded.push({
-          material: secretTechData,
-          materialQuantity: 1,
-          type: 'special'
-        });
+        if (secretTechData) {
+          materialsNeeded.push({
+            material: secretTechData,
+            materialQuantity: 1,
+            type: 'special'
+          });
+        }
 
-        materialsNeeded.push({
-          material: creditsData,
-          materialQuantity: 4000000,
-          type: 'credits'
-        });
+        if (creditsData) {
+          materialsNeeded.push({
+            material: creditsData,
+            materialQuantity: 4000000,
+            type: 'credits'
+          });
+        }
       }
 
       // Needs to be placed after special case since
@@ -115,6 +144,7 @@ export function calculateSkillMaterials(
         if (!materialId || !quantity) continue;
 
         const materialData = getResourceDataByIdSync(materialId);
+        if (!materialData) continue;
 
         materialsNeeded.push({
           material: materialData,
@@ -123,11 +153,13 @@ export function calculateSkillMaterials(
         });
       }
 
-      materialsNeeded.push({
-        material: creditsData,
-        materialQuantity: levelCreditsQuantities,
-        type: 'credits'
-      });
+      if (creditsData) {
+        materialsNeeded.push({
+          material: creditsData,
+          materialQuantity: levelCreditsQuantities,
+          type: 'credits'
+        });
+      }
     }
   }
 
@@ -189,23 +221,15 @@ export function calculatePotentialMaterials(
     const scaledWorkbookQuantity = Math.ceil(workbookQuantity * levelsInBlock);
     const scaledCreditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
 
-    result.push(
-      {
-        material: materialData,
-        materialQuantity: scaledMaterialQuantity,
-        type: 'materials'
-      },
-      {
-        material: workbookData,
-        materialQuantity: scaledWorkbookQuantity,
-        type: 'materials'
-      },
-      {
-        material: creditsData,
-        materialQuantity: scaledCreditsQuantity,
-        type: 'credits'
-      }
-    );
+    if (materialData) {
+      result.push({ material: materialData, materialQuantity: scaledMaterialQuantity, type: 'materials' });
+    }
+    if (workbookData) {
+      result.push({ material: workbookData, materialQuantity: scaledWorkbookQuantity, type: 'materials' });
+    }
+    if (creditsData) {
+      result.push({ material: creditsData, materialQuantity: scaledCreditsQuantity, type: 'credits' });
+    }
     return result;
   }
 

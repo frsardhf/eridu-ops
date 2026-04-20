@@ -3,7 +3,7 @@ import { computed, toRef } from 'vue';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentSkillDisplay } from '@/composables/useStudentSkillDisplay';
 import { useTooltip } from '@/composables/useTooltip';
-import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
+import { makeCurrentTargetPair } from '@/consumables/utils/upgradeUtils';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType, SKILL_TYPES } from '@/types/upgrade';
@@ -56,18 +56,18 @@ const skillStates = computed(() =>
   }))
 );
 
-// Handle skill level changes (using props directly, no internal state)
-const updateSkillCurrent = (type: SkillType, value: number) => {
-  const target = props.skillLevels[type]?.target;
-  const result = clampLevelPair(value, target ?? 1, 1, getMaxLevel(type), false);
-  if (result) emit('update-skill', type, result.current, result.target);
-};
-
-const updateSkillTarget = (type: SkillType, value: number) => {
-  const current = props.skillLevels[type]?.current;
-  const result = clampLevelPair(value, current ?? 1, 1, getMaxLevel(type), true);
-  if (result) emit('update-skill', type, result.current, result.target);
-};
+// One current/target pair per skill type (SKILL_TYPES is static: Ex, Public, Passive, ExtraPassive)
+const skillPairs = Object.fromEntries(
+  SKILL_TYPES.map(type => [
+    type,
+    makeCurrentTargetPair(
+      () => props.skillLevels[type] ?? { current: 1, target: 1 },
+      (c, t) => emit('update-skill', type, c, t),
+      1,
+      () => getMaxLevel(type),
+    ),
+  ])
+) as Record<SkillType, { updateCurrent: (v: number) => void; updateTarget: (v: number) => void }>;
 </script>
 
 <template>
@@ -109,7 +109,7 @@ const updateSkillTarget = (type: SkillType, value: number) => {
             :value="state.current" :min="1" :max="state.max"
             :name="`skill-current-${state.type}`"
             :aria-label="`${$t('current')} ${getSkillName(state.type)}`"
-            @change="updateSkillCurrent(state.type, $event)"
+            @change="skillPairs[state.type].updateCurrent($event)"
           />
         </div>
 
@@ -175,7 +175,7 @@ const updateSkillTarget = (type: SkillType, value: number) => {
             variant="target"
             :name="`skill-target-${state.type}`"
             :aria-label="`${$t('target')} ${getSkillName(state.type)}`"
-            @change="updateSkillTarget(state.type, $event)"
+            @change="skillPairs[state.type].updateTarget($event)"
           />
         </div>
 

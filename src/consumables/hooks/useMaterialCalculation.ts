@@ -7,7 +7,7 @@ import { Material, CREDITS_ID, ELIGMAS_ID } from '../../types/upgrade';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/gearsStore';
 import { isExpReport } from '../utils/materialUtils';
-import dataTable from '../../data/data.json';
+import { computeCharacterXpCost, getCharXpItems } from '../utils/upgradeMaterialUtils';
 
 // Singleton state
 let _totalMaterialsNeeded: ComputedRef<Material[]>;
@@ -41,7 +41,6 @@ export function useMaterialCalculation() {
 
   // Helper function to get student XP details
   const getStudentXpDetails = () => {
-    const characterXpTable = dataTable.character_xp ?? [];
     const studentXpDetails: {
       studentId: string;
       xpNeeded: number;
@@ -63,11 +62,7 @@ export function useMaterialCalculation() {
       const currentLevel = form.characterLevels.current ?? 1;
       const targetLevel = form.characterLevels.target ?? currentLevel;
 
-      if (currentLevel >= targetLevel || !characterXpTable.length) return;
-
-      const currentXp = characterXpTable[currentLevel - 1] ?? 0;
-      const targetXp = characterXpTable[targetLevel - 1] ?? 0;
-      const studentXpNeeded = Math.max(0, targetXp - currentXp);
+      const studentXpNeeded = computeCharacterXpCost(currentLevel, targetLevel);
 
       if (studentXpNeeded > 0) {
         const student = studentData.value[studentId];
@@ -91,12 +86,9 @@ export function useMaterialCalculation() {
     // Calculate total XP needed
     const totalXpNeeded = studentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
 
-    // Calculate owned XP (sum of all XP report quantities * their values)
-    const ownedXp =
-      (resources['10']?.QuantityOwned ?? 0) * (resources['10']?.ExpValue ?? 0) +
-      (resources['11']?.QuantityOwned ?? 0) * (resources['11']?.ExpValue ?? 0) +
-      (resources['12']?.QuantityOwned ?? 0) * (resources['12']?.ExpValue ?? 0) +
-      (resources['13']?.QuantityOwned ?? 0) * (resources['13']?.ExpValue ?? 0);
+    // Calculate owned XP using the shared helper (avoids hardcoded ID sums)
+    const ownedXp = getCharXpItems(id => resources[id]?.QuantityOwned ?? 0)
+      .reduce((s, item) => s + item.owned * item.xpValue, 0);
 
     return {
       totalXpNeeded,

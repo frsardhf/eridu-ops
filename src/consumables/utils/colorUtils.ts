@@ -46,6 +46,26 @@ export const SQUAD_TYPE_COLORS: Record<string, string> = {
 const FALLBACK_COLOR = 'var(--text-secondary)';
 
 /**
+ * CSS class for a resource quantity overlay (.resource-quantity in resourceDisplay.css).
+ * positive = green surplus, negative = red deficit, '' = neutral (zero).
+ */
+export function getResourceQuantityClass(value: number): 'positive' | 'negative' | '' {
+  if (value < 0) return 'negative';
+  if (value > 0) return 'positive';
+  return '';
+}
+
+/**
+ * CSS class for a resource quantity overlay based on ResourceSummary view mode.
+ * missing → negative (red), leftover → positive (green), needed → neutral.
+ */
+export function getModeQuantityClass(mode: 'needed' | 'missing' | 'leftover'): 'positive' | 'negative' | '' {
+  if (mode === 'missing') return 'negative';
+  if (mode === 'leftover') return 'positive';
+  return '';
+}
+
+/**
  * Convert an rgb/rgba color string to rgba with specified opacity
  * @param color - The color string (e.g., 'rgb(167, 12, 25)' or 'rgba(167, 12, 25, 1)')
  * @param opacity - The opacity value (0-1)

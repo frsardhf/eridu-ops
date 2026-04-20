@@ -8,7 +8,7 @@ import { EquipmentType, EquipmentLevels } from '../../types/gear';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/gearsStore';
 import { isExpBall } from '../utils/materialUtils';
-import dataTable from '../../data/data.json';
+import { computeEquipmentSlotXpCost, getEquipXpItems } from '../utils/gearMaterialUtils';
 
 // Singleton state
 let _allGearsData: ComputedRef<Record<string, Material[]>>;
@@ -20,7 +20,6 @@ export function useGearCalculation() {
 
   // Helper function to get equipment XP details
   const getEquipmentXpDetails = () => {
-    const equipmentXpTable = dataTable.equipment_xp ?? [];
     const equipmentXpDetails: {
       studentId: string;
       xpNeeded: number;
@@ -42,20 +41,12 @@ export function useGearCalculation() {
 
       const equipmentLevels = form.equipmentLevels as EquipmentLevels;
 
-      // Calculate XP for each equipment type
+      // Calculate XP for each equipment type using the shared per-slot utility
       Object.entries(equipmentLevels).forEach(([type, levels]) => {
         const currentLevel = levels.current ?? 1;
         const targetLevel = levels.target ?? currentLevel;
 
-        if (currentLevel >= targetLevel || !equipmentXpTable.length) return;
-
-        // Calculate XP needed using cumulative values
-        // equipmentXpTable[0] = XP from 1->2
-        // equipmentXpTable[1] = XP from 1->3
-        // equipmentXpTable[8] = XP from 1->10
-        const currentXp = currentLevel === 1 ? 0 : equipmentXpTable[currentLevel - 2] ?? 0;
-        const targetXp = equipmentXpTable[targetLevel - 2] ?? 0;
-        const totalXpNeeded = targetXp - currentXp;
+        const totalXpNeeded = computeEquipmentSlotXpCost(currentLevel, targetLevel);
 
         if (totalXpNeeded > 0) {
           const student = studentData.value[studentId];
@@ -81,12 +72,9 @@ export function useGearCalculation() {
     // Calculate total XP needed
     const totalXpNeeded = equipmentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
 
-    // Calculate owned XP (sum of all XP ball quantities * their values)
-    const ownedXp =
-      (resources['1']?.QuantityOwned ?? 0) * (resources['1']?.LevelUpFeedExp ?? 0) +
-      (resources['2']?.QuantityOwned ?? 0) * (resources['2']?.LevelUpFeedExp ?? 0) +
-      (resources['3']?.QuantityOwned ?? 0) * (resources['3']?.LevelUpFeedExp ?? 0) +
-      (resources['4']?.QuantityOwned ?? 0) * (resources['4']?.LevelUpFeedExp ?? 0);
+    // Calculate owned XP using the shared helper (avoids hardcoded ID sums)
+    const ownedXp = getEquipXpItems(id => resources[id]?.QuantityOwned ?? 0, resources)
+      .reduce((s, item) => s + item.owned * item.xpValue, 0);
 
     return {
       totalXpNeeded,

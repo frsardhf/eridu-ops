@@ -2,7 +2,8 @@
 import { computed } from 'vue';
 import { PotentialType } from '@/types/upgrade';
 import { $t } from '@/locales';
-import { clampLevelPair, MAX_POTENTIAL_LEVEL } from '@/consumables/utils/upgradeUtils';
+import { MAX_POTENTIAL_LEVEL } from '@/consumables/utils/upgradeUtils';
+import { makeCurrentTargetPair } from '@/consumables/utils/upgradeUtils';
 import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
@@ -43,18 +44,19 @@ function getPotentialName(potType: PotentialType): string {
   return names[potType];
 }
 
-// Handle potential type changes (using props directly, no internal state)
-const updatePotentialCurrent = (type: PotentialType, value: number) => {
-  const target = props.potentialLevels[type]?.target;
-  const result = clampLevelPair(value, target ?? 0, 0, MAX_POTENTIAL_LEVEL, false);
-  if (result) emit('update-potential', type, result.current, result.target);
-};
-
-const updatePotentialTarget = (type: PotentialType, value: number) => {
-  const current = props.potentialLevels[type]?.current;
-  const result = clampLevelPair(value, current ?? 0, 0, MAX_POTENTIAL_LEVEL, true);
-  if (result) emit('update-potential', type, result.current, result.target);
-};
+// One current/target pair per potential type (static: attack, maxhp, healpower)
+const POTENTIAL_TYPES: PotentialType[] = ['attack', 'maxhp', 'healpower'];
+const potentialPairs = Object.fromEntries(
+  POTENTIAL_TYPES.map(type => [
+    type,
+    makeCurrentTargetPair(
+      () => props.potentialLevels[type] ?? { current: 0, target: 0 },
+      (c, t) => emit('update-potential', type, c, t),
+      0,
+      () => MAX_POTENTIAL_LEVEL,
+    ),
+  ])
+) as Record<PotentialType, { updateCurrent: (v: number) => void; updateTarget: (v: number) => void }>;
 </script>
 
 <template>
@@ -96,7 +98,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
             :value="state.current" :min="0" :max="MAX_POTENTIAL_LEVEL"
             :name="`potential-current-${state.type}`"
             :aria-label="`${$t('current')} ${state.name}`"
-            @change="updatePotentialCurrent(state.type, $event)"
+            @change="potentialPairs[state.type].updateCurrent($event)"
           />
         </div>
 
@@ -118,7 +120,7 @@ const updatePotentialTarget = (type: PotentialType, value: number) => {
             variant="target"
             :name="`potential-target-${state.type}`"
             :aria-label="`${$t('target')} ${state.name}`"
-            @change="updatePotentialTarget(state.type, $event)"
+            @change="potentialPairs[state.type].updateTarget($event)"
           />
         </div>
 

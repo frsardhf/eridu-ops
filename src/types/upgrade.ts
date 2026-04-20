@@ -8,6 +8,16 @@ export type SkillTypeName = 'Ex' | 'Basic' | 'Enhanced' | 'Sub';
 
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 
+export const SKILL_LABELS: Record<SkillType, string> = {
+  Ex: 'EX', Public: 'Basic', Passive: 'Passive', ExtraPassive: 'Sub',
+};
+
+export const POTENTIAL_LABELS: Record<PotentialType, string> = {
+  attack: 'ATK', maxhp: 'HP', healpower: 'Heal',
+};
+
+export type SectionId = 'level' | 'skills' | 'potential' | 'equipment' | 'grade' | 'exclusive';
+
 export type MaterialType = 'materials' | 'special' | 'equipments' | 'credits' | 'xp';
 
 export interface Material {
@@ -18,6 +28,14 @@ export interface Material {
 
 export interface MaterialWithRemaining extends Material {
   remaining: number;
+}
+
+export interface MaterialPreviewItem {
+  material: ResourceProps;
+  needed: number;    // amount to be consumed
+  owned: number;     // current inventory count
+  remaining: number; // owned − needed (negative = deficit)
+  type: MaterialType;
 }
 
 export interface CharacterLevels {

@@ -86,7 +86,7 @@ export const translations = {
     },
     
     // Upgrade component - Levels
-    characterLevel: "Character Level",
+    characterLevel: "Level",
     currentLevel: "Current Level",
     targetLevel: "Target Level",
     xpRequired: "XP Required",
@@ -107,6 +107,9 @@ export const translations = {
     noMaterialsNeeded: "No resources needed for upgrades",
     allMaterialsAvailable: "You have all the materials you need! ✓",
     noResourcesNeeded: "No resources needed",
+    noPendingUpgrades: "No pending upgrades.",
+    noMaterialsToConsume: "No materials to consume.",
+    confirmApplyUpgrade: "Confirm Apply Upgrade",
     material: "Material",
     unknownResource: "Unknown Resource",
     unknown: "Unknown",
@@ -116,6 +119,8 @@ export const translations = {
     showNeeded: "Show Needed",
     missing: "Missing",
     leftover: "Leftover",
+    used: "Used",
+    notEnough: "Not enough",
     
     // Resource summary component
     itemsNeeded: "Items Needed",
@@ -157,7 +162,7 @@ export const translations = {
     increaseLevel: "Increase level",
     
     // Weapon Grade component
-    exclusiveWeapon: "Exclusive Weapon",
+    exclusiveWeapon: "Ex Weapon",
     currentGrade: "Current",
     targetGrade: "Target",
     maxGrade: "MAX",
@@ -186,6 +191,8 @@ export const translations = {
     update: "Update",
     confirm: "Confirm",
     cancel: "Cancel",
+    apply: "Apply",
+    selectAll: "Select All",
 
     // Navigation
     previous: "Previous",
@@ -239,6 +246,21 @@ export const translations = {
       copiedTo: "Copied to",
       removeStudent: "Remove student",
     },
+
+    // Inventory screenshot parser modal
+    scanInventory: "Scan Inventory",
+    inventoryScreenshot: "Inventory Screenshot",
+    selectInventoryType: "What are you scanning?",
+    uploadScreenshot: "Upload Screenshot",
+    dragDropScreenshot: "Drag & drop inventory screenshot here",
+    parsingScreenshot: "Parsing screenshot…",
+    parseFailed: "Parse failed. Is the parser service running?",
+    parseResults: "Review Results",
+    applyInventory: "Apply",
+    reupload: "Re-upload",
+    confidence: "Confidence",
+    lowConfidenceWarning: "Low-confidence items may be incorrect — check before applying.",
+    noItemsDetected: "No items detected. Check that the parser service is running and the screenshot is correct.",
 
     // Bulk Modify Students modal
     bulkModify: {
@@ -365,7 +387,7 @@ export const translations = {
     },
     
     // Upgrade component - Levels
-    characterLevel: "キャラクターレベル",
+    characterLevel: "レベル",
     currentLevel: "現在のレベル",
     targetLevel: "目標のレベル",
     xpRequired: "必要な経験値",
@@ -386,6 +408,9 @@ export const translations = {
     noMaterialsNeeded: "アップグレードに必要な素材はありません",
     allMaterialsAvailable: "必要な素材はすべて揃っています! ✓",
     noResourcesNeeded: "アップグレードに必要な素材はありません",
+    noPendingUpgrades: "保留中のアップグレードはありません。",
+    noMaterialsToConsume: "消費する素材はありません。",
+    confirmApplyUpgrade: "アップグレードの確認",
     material: "素材",
     unknownResource: "不明な素材",
     unknown: "不明",
@@ -395,6 +420,8 @@ export const translations = {
     showNeeded: "必要アイテムを表示",
     missing: "不足",
     leftover: "余剰",
+    used: "使用",
+    notEnough: "不足素材",
     
     // Resource summary component
     itemsNeeded: "全体の必要アイテム",
@@ -465,6 +492,8 @@ export const translations = {
     update: "更新",
     confirm: "確認",
     cancel: "キャンセル",
+    apply: "適用",
+    selectAll: "全選択",
 
     // Navigation
     previous: "前へ",
@@ -518,6 +547,21 @@ export const translations = {
       copiedTo: "コピー先：",
       removeStudent: "生徒を削除",
     },
+
+    // Inventory screenshot parser modal
+    scanInventory: "インベントリスキャン",
+    inventoryScreenshot: "インベントリスクリーンショット",
+    selectInventoryType: "何をスキャンしますか？",
+    uploadScreenshot: "スクリーンショットをアップロード",
+    dragDropScreenshot: "インベントリのスクリーンショットをここにドロップ",
+    parsingScreenshot: "スクリーンショットを解析中…",
+    parseFailed: "解析に失敗しました。パーサーサービスが起動しているか確認してください。",
+    parseResults: "結果を確認",
+    applyInventory: "適用",
+    reupload: "再アップロード",
+    confidence: "信頼度",
+    lowConfidenceWarning: "信頼度の低いアイテムは誤認識の可能性があります。適用前にご確認ください。",
+    noItemsDetected: "アイテムが検出されませんでした。パーサーサービスとスクリーンショットを確認してください。",
 
     // Bulk Modify Students modal
     bulkModify: {
