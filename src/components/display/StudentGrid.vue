@@ -102,6 +102,7 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
 }
 
 .student-card-slot {
+  position: relative;
   border-radius: 10px;
 }
 
@@ -123,23 +124,24 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
   opacity: 0.55;
 }
 
-.student-card-slot.drop-target {
-  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6);
+.student-card-slot.drop-target::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6),
+              0 0 0 6px rgba(var(--accent-color-rgb), 0.2);
   animation: drop-pulse 0.9s ease-in-out infinite;
 }
 
 @keyframes drop-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(var(--accent-color-rgb), 0.2);
-  }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .student-card-slot.drop-target {
+  .student-card-slot.drop-target::after {
     animation: none;
   }
 }
