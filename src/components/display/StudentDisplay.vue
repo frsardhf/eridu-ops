@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
+import { studentDataStore } from '@/consumables/stores/studentStore';
 import { filterSecondaryStudents } from '@/consumables/constants/linkedStudents';
 import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
 import ToolsRail from '@/components/display/ToolsRail.vue';
@@ -25,6 +26,8 @@ const {
   currentTheme,
   searchQuery,
   sortedStudentsArray,
+  ownedStudentsArray,
+  unownedStudentsArray,
   setTheme,
   setSortOption,
   currentSort,
@@ -54,34 +57,24 @@ const allStudentsArray = computed<StudentProps[]>(() => {
   ).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
-const displayStudentsArray = computed<StudentProps[]>(() => {
-  const baseStudents = sortedStudentsArray.value;
+function applyManualOrder(base: StudentProps[]): StudentProps[] {
+  if (!isManualOrderActive.value || manualOrderedIds.value.length === 0) return base;
 
-  if (!isManualOrderActive.value || manualOrderedIds.value.length === 0) {
-    return baseStudents;
-  }
-
-  const studentsById = new Map<number, StudentProps>(
-    baseStudents.map(student => [student.Id, student])
-  );
-  const orderedStudents: StudentProps[] = [];
+  const byId = new Map<number, StudentProps>(base.map(s => [s.Id, s]));
+  const ordered: StudentProps[] = [];
 
   manualOrderedIds.value.forEach(id => {
-    const student = studentsById.get(id);
-    if (student) {
-      orderedStudents.push(student);
-      studentsById.delete(id);
-    }
+    const s = byId.get(id);
+    if (s) { ordered.push(s); byId.delete(id); }
   });
 
-  baseStudents.forEach(student => {
-    if (studentsById.has(student.Id)) {
-      orderedStudents.push(student);
-    }
-  });
+  base.forEach(s => { if (byId.has(s.Id)) ordered.push(s); });
 
-  return orderedStudents;
-});
+  return ordered;
+}
+
+const displayOwnedStudents   = computed<StudentProps[]>(() => applyManualOrder(ownedStudentsArray.value));
+const displayUnownedStudents = computed<StudentProps[]>(() => applyManualOrder(unownedStudentsArray.value));
 
 function resetManualOrder() {
   isManualOrderActive.value = false;
@@ -186,6 +179,10 @@ function handleStudentsReordered(fromId: number, toId: number) {
   if (fromId === toId) return;
   if (isPinned(fromId) !== isPinned(toId)) return;
 
+  // Block dragging across the recruited / not-recruited boundary
+  const isOwnedFn = (id: number) => studentDataStore.value[id]?.isOwned !== false;
+  if (isOwnedFn(fromId) !== isOwnedFn(toId)) return;
+
   const baseIds = (isManualOrderActive.value
     ? [...manualOrderedIds.value]
     : sortedStudentsArray.value.map(student => student.Id));
@@ -238,7 +235,8 @@ async function handleReinitializeData() {
     />
 
     <StudentGrid
-      :students-array="displayStudentsArray"
+      :students-array="displayOwnedStudents"
+      :unowned-students-array="displayUnownedStudents"
       :key="`${currentSort}-${sortDirection}-${searchQuery}`"
       @open-modal="openModal"
       @student-pinned="handleStudentPinned"
@@ -246,12 +244,12 @@ async function handleReinitializeData() {
     />
 
     <Transition name="student-modal-shell" appear>
-      <StudentModal 
-        v-if="isModalVisible && selectedStudent" 
-        :student="selectedStudent" 
+      <StudentModal
+        v-if="isModalVisible && selectedStudent"
+        :student="selectedStudent"
         :origin-rect="modalOriginRect"
         :isVisible="isModalVisible"
-        :studentsArray="displayStudentsArray"
+        :studentsArray="sortedStudentsArray"
         @close="closeModal"
         @navigate="handleNavigate"
       />

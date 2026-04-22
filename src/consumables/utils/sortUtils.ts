@@ -1,6 +1,11 @@
 import { SortDirection, SortOption } from '@/types/header';
 import { StudentProps } from '@/types/student';
 
+export interface StudentSplit {
+  owned: StudentProps[];
+  unowned: StudentProps[];
+}
+
 type ResolveCategory = 'School' | 'Club';
 
 interface SortStudentsParams {
@@ -110,4 +115,19 @@ export function sortStudentsWithPins({
   });
 
   return [...pinnedStudentsOrdered, ...unpinnedStudents];
+}
+
+/**
+ * Splits students into owned/unowned groups then sorts each independently
+ * using the same sort parameters. Pinned students sort to the top of their
+ * respective group.
+ */
+export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
+  const allOwned   = params.students.filter(s => params.studentStore[s.Id]?.isOwned !== false);
+  const allUnowned = params.students.filter(s => params.studentStore[s.Id]?.isOwned === false);
+
+  return {
+    owned:   sortStudentsWithPins({ ...params, students: allOwned }),
+    unowned: sortStudentsWithPins({ ...params, students: allUnowned }),
+  };
 }

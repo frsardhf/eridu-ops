@@ -30,7 +30,7 @@ import { currentLanguage, initializeLocalizationData } from '../stores/localizat
 import { fetchAllData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
 import { resolveLocalized } from '../utils/localizationUtils';
-import { sortStudentsWithPins } from '../utils/sortUtils';
+import { splitAndSortStudents, StudentSplit } from '../utils/sortUtils';
 import { filterSecondaryStudents, isSecondaryStudent } from '../constants/linkedStudents';
 import { normalizeTheme } from '../utils/themeUtils';
 import { ThemeId } from '@/types/theme';
@@ -57,6 +57,7 @@ let _currentTheme: Ref<ThemeId>;
 let _currentSort: Ref<SortOption>;
 let _sortDirection: Ref<SortDirection>;
 let _sortedStudentsArray: ComputedRef<StudentProps[]>;
+let _splitStudents: ComputedRef<StudentSplit>;
 let _isLoading: Ref<boolean>;
 let _isReady: Ref<boolean>;
 let _isInitialized = false;
@@ -243,20 +244,26 @@ export function useStudentData() {
     _isLoading = ref<boolean>(true);
     _isReady = ref<boolean>(false);
 
-    _sortedStudentsArray = computed(() => {
+    _splitStudents = computed(() => {
       const _version = studentDataVersion.value;
       void _version;
 
-      return sortStudentsWithPins({
+      return splitAndSortStudents({
         students: filterSecondaryStudents(Object.values(_studentData.value)),
         pinnedStudentIds: _pinnedStudentIds.value,
         searchQuery: _searchQuery.value,
         sortOption: _currentSort.value,
         sortDirection: _sortDirection.value,
         studentStore: studentDataStore.value,
-        resolveLocalized
+        resolveLocalized,
       });
     });
+
+    // Concatenated owned + unowned for modal prev/next navigation
+    _sortedStudentsArray = computed(() => [
+      ..._splitStudents.value.owned,
+      ..._splitStudents.value.unowned,
+    ]);
   }
 
   // Watch for language changes and reinitialize data (only once).
@@ -292,6 +299,8 @@ export function useStudentData() {
     searchQuery: _searchQuery,
     currentTheme: _currentTheme,
     sortedStudentsArray: _sortedStudentsArray,
+    ownedStudentsArray:   computed(() => _splitStudents.value.owned),
+    unownedStudentsArray: computed(() => _splitStudents.value.unowned),
     setTheme,
     setSortOption,
     currentSort: _currentSort,

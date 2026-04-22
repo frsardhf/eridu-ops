@@ -3,9 +3,11 @@ import { StudentProps } from '@/types/student'
 import { ModalOriginRect } from '@/types/modal';
 import { useDragReorder } from '@/composables/useDragReorder';
 import StudentCard from './StudentCard.vue';
+import { $t } from '@/locales';
 
 const props = defineProps<{
-  studentsArray: StudentProps[]
+  studentsArray: StudentProps[];
+  unownedStudentsArray?: StudentProps[];
 }>();
 
 type EmitEvents = {
@@ -52,6 +54,31 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
           @pin-toggled="handlePinToggled"
         />
       </div>
+
+      <template v-if="unownedStudentsArray?.length">
+        <div class="not-recruited-banner">{{ $t('ownership.notRecruited') }}</div>
+        <div
+          v-for="student in unownedStudentsArray"
+          :key="student.Id"
+          class="student-card-slot"
+          :class="{
+            dragging: isDragging(student.Id),
+            'drop-target': isDropTarget(student.Id)
+          }"
+          draggable="true"
+          @dragstart="onDragStart(student.Id, $event)"
+          @dragover="onDragOver(student.Id, $event)"
+          @dragleave="onDragLeave(student.Id)"
+          @drop="onDrop(student.Id)"
+          @dragend="onDragEnd"
+        >
+          <StudentCard
+            :student="student"
+            @click="handleOpenModal"
+            @pin-toggled="handlePinToggled"
+          />
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -76,6 +103,20 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
 
 .student-card-slot {
   border-radius: 10px;
+}
+
+.not-recruited-banner {
+  grid-column: 1 / -1;
+  padding: 8px 16px;
+  margin: 8px 0 4px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  letter-spacing: 0.06em;
 }
 
 .student-card-slot.dragging {
