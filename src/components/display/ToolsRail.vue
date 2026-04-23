@@ -9,6 +9,7 @@ const emit = defineEmits<{
   'open-bulk-modify': [];
   'open-deck-builder': [];
   'open-inventory': [];
+  'open-bond-update': [];
 }>();
 
 function handleFocusOut(event: FocusEvent) {
@@ -164,6 +165,25 @@ onBeforeUnmount(() => {
             stroke="currentColor"
             stroke-width="1.4"
             stroke-linecap="round"
+          />
+        </svg>
+      </button>
+      <button
+        class="tools-action-btn"
+        style="--i: 3;"
+        type="button"
+        @click="emit('open-bond-update')"
+        :title="$t('bondUpdate.title')"
+        :aria-label="$t('bondUpdate.title')"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
           />
         </svg>
       </button>

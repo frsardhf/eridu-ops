@@ -303,6 +303,21 @@ export const translations = {
       applying: "Applying...",
       apply: "Apply Bulk Update",
     },
+
+    // Bond Update tool
+    bondUpdate: {
+      title: "Bond Update",
+      placeholder: "name bond\ns.name bond\n...",
+      parse: "Parse",
+      flagged: "Needs Resolution",
+      skip: "Skip",
+      searchPlaceholder: "Search student...",
+      guideTitle: "Format Guide",
+      guideLine1: "One student per line",
+      guideLine2: "Names are case-insensitive",
+      guideLine3: "Use prefix.name for variants:",
+      guideLine4: "Unmatched names are flagged for manual pick",
+    },
   },
   jp: {
     // Navbar
@@ -603,6 +618,21 @@ export const translations = {
       overwriteWarningSuffix: "人の生徒にデフォルト以外の保存済みフォームデータがあります。入力されたフィールドはそれらの値を上書きします。",
       applying: "適用中...",
       apply: "一括変更を適用",
+    },
+
+    // Bond Update tool
+    bondUpdate: {
+      title: "絆更新",
+      placeholder: "name bond\ns.name bond\n...",
+      parse: "解析",
+      flagged: "要解決",
+      skip: "スキップ",
+      searchPlaceholder: "生徒を検索...",
+      guideTitle: "フォーマットガイド",
+      guideLine1: "1行につき1人",
+      guideLine2: "名前は大文字・小文字を区別しません",
+      guideLine3: "バリアントはprefix.nameで指定:",
+      guideLine4: "マッチしない名前は手動で選択できます",
     },
   }
 };

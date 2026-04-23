@@ -239,6 +239,37 @@ function applyPatchToForm(
   return next;
 }
 
+/**
+ * Applies per-student bond updates. Each student gets a different bond value.
+ * Reads existing FormRecord, merges only currentBond, batch-writes to IndexedDB.
+ */
+export async function applyBondUpdates(
+  updates: Array<{ studentId: number; bond: number }>
+): Promise<Record<number, FormRecord>> {
+  if (updates.length === 0) return {};
+
+  const ids = updates.map(u => u.studentId);
+  const existingForms = await db.forms.bulkGet(ids);
+
+  const updatedRows: FormRecord[] = [];
+  const updatedMap: Record<number, FormRecord> = {};
+
+  updates.forEach(({ studentId, bond }, index) => {
+    const existing = existingForms[index] ?? { studentId };
+    const merged: FormRecord = {
+      ...existing,
+      studentId,
+      bondDetailData: { currentBond: bond },
+    };
+    updatedRows.push(merged);
+    updatedMap[studentId] = merged;
+  });
+
+  await db.forms.bulkPut(updatedRows);
+
+  return updatedMap;
+}
+
 export async function applyBulkStudentFormPatch(
   students: StudentProps[],
   selectedIds: number[],

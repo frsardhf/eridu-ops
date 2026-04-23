@@ -6,6 +6,7 @@ import { filterSecondaryStudents } from '@/consumables/constants/linkedStudents'
 import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
 import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
+import BondUpdateModal from '@/components/display/BondUpdateModal.vue';
 import DeckBuilderModal from '@/components/display/DeckBuilderModal.vue';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
@@ -13,7 +14,6 @@ import { useStudentItems } from '@/consumables/hooks/useStudentItems';
 import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/modal/StudentModal.vue'
-import { GiftProps } from '@/types/gift';
 import { SortOption } from '@/types/header';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
@@ -41,6 +41,7 @@ const {
 const selectedStudent = ref<StudentProps | null>(null)
 const isModalVisible = ref(false)
 const isBulkModifyModalVisible = ref(false);
+const isBondUpdateVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
 
@@ -88,32 +89,13 @@ function isPinned(studentId: number): boolean {
 
 // Prepare student for modal
 function prepareStudentForModal(student: StudentProps): StudentProps {
-  const studentGifts = favoredGift.value[student.Id] || {};
-  const studentBoxes = giftBoxData.value[student.Id] || {};
+  const studentGifts = favoredGift.value[student.Id] || [];
+  const studentBoxes = giftBoxData.value[student.Id] || [];
 
-  const giftsObject = Array.isArray(studentGifts)
-    ? studentGifts.reduce((acc, gift) => {
-        if (gift.gift && gift.gift.Id) {
-          acc[gift.gift.Id] = gift;
-        }
-        return acc;
-      }, {})
-    : studentGifts;
-
-  const boxesObject = Array.isArray(studentBoxes)
-    ? studentBoxes.reduce((acc, box) => {
-        if (box.gift && box.gift.Id) {
-          acc[box.gift.Id] = box;
-        }
-        return acc;
-      }, {})
-    : studentBoxes;
-
-  // ElephIcon should already be part of student data from useStudentData
   return {
     ...student,
-    Gifts: giftsObject as GiftProps[],
-    Boxes: boxesObject as GiftProps[],
+    Gifts: Array.isArray(studentGifts) ? studentGifts : Object.values(studentGifts),
+    Boxes: Array.isArray(studentBoxes) ? studentBoxes : Object.values(studentBoxes),
     ElephIcon: student.ElephIcon || ''
   };
 }
@@ -232,6 +214,7 @@ async function handleReinitializeData() {
       @open-bulk-modify="isBulkModifyModalVisible = true"
       @open-deck-builder="isDeckBuilderVisible = true"
       @open-inventory="isInventoryModalVisible = true; loadItems(); loadEquipments();"
+      @open-bond-update="isBondUpdateVisible = true"
     />
 
     <StudentGrid
@@ -268,6 +251,12 @@ async function handleReinitializeData() {
       v-if="isBulkModifyModalVisible"
       :students="allStudentsArray"
       @close="isBulkModifyModalVisible = false"
+    />
+
+    <BondUpdateModal
+      v-if="isBondUpdateVisible"
+      :students="allStudentsArray"
+      @close="isBondUpdateVisible = false"
     />
 
     <DeckBuilderModal
