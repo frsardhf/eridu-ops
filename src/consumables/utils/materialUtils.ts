@@ -211,18 +211,21 @@ export function formatItemQuantity(value: number | string | null | undefined): s
   return `×${value}`;
 }
 
+const EXP_REPORT_IDS = new Set([10, 11, 12, 13]);
+const EXP_BALL_IDS   = new Set([1, 2, 3, 4]);
+
 /**
  * Helper function to check if a material ID is an EXP report
  */
 export function isExpReport(materialId: number): boolean {
-  return [10, 11, 12, 13].includes(materialId);
+  return EXP_REPORT_IDS.has(materialId);
 }
 
 /**
  * Helper function to check if a material ID is an EXP ball
  */
 export function isExpBall(materialId: number): boolean {
-  return [1, 2, 3, 4].includes(materialId);
+  return EXP_BALL_IDS.has(materialId);
 }
 
 /**
@@ -298,6 +301,7 @@ export function calculateMissingItems(
   getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number }
 ): MaterialWithRemaining[] {
   const storage = getStorage();
+  const specialNeeds = getSpecialItemNeeds();
 
   return items
     .filter(item => {
@@ -305,8 +309,7 @@ export function calculateMissingItems(
       if (!materialId) return false;
 
       if (isSpecialItem(materialId)) {
-        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
-        return ownedXp < totalXpNeeded;
+        return specialNeeds.ownedXp < specialNeeds.totalXpNeeded;
       }
 
       const resource = storage[materialId.toString()];
@@ -319,11 +322,10 @@ export function calculateMissingItems(
       const materialId = item.material?.Id;
 
       if (isSpecialItem(materialId)) {
-        const { totalXpNeeded, ownedXp } = getSpecialItemNeeds();
         return {
           material: item.material,
-          materialQuantity: totalXpNeeded,
-          remaining: ownedXp - totalXpNeeded,
+          materialQuantity: specialNeeds.totalXpNeeded,
+          remaining: specialNeeds.ownedXp - specialNeeds.totalXpNeeded,
           type: 'xp'
         };
       }

@@ -244,9 +244,8 @@ function calculateExclusiveGearMaterials(
 
   // Only T1→T2 upgrade costs materials (T0→T1 is free, just needs bond)
   if (current < 2 && target >= 2) {
-    const gearData = student.Gear as any;
-    const tierUpMaterials = gearData.TierUpMaterial?.[0] || [];
-    const tierUpAmounts = gearData.TierUpMaterialAmount?.[0] || [];
+    const tierUpMaterials = student.Gear.TierUpMaterial?.[0] ?? [];
+    const tierUpAmounts = student.Gear.TierUpMaterialAmount?.[0] ?? [];
 
     tierUpMaterials.forEach((materialId: number, index: number) => {
       const materialData = getResourceDataByIdSync(materialId);
@@ -296,7 +295,7 @@ export function calculateAllGears(
  */
 export function computeEquipmentSlotXpCost(current: number, target: number): number {
   if (current >= target) return 0;
-  const t = (dataTable as any).equipment_xp as number[];
+  const t = dataTable.equipment_xp;
   const curXp = current <= 1 ? 0 : (t[current - 2] ?? 0);
   return Math.max(0, (t[target - 2] ?? 0) - curXp);
 }

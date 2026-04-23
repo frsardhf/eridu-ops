@@ -19,9 +19,9 @@ const emit = defineEmits<{
 
 const pagedResources = computed(() => {
   const allEquipments = getAllEquipmentFromCache();
-  if (!allEquipments || Object.keys(allEquipments).length === 0) return [] as any[][];
   const all = Object.values(applyFilters(allEquipments, EQUIPMENT));
-  const pages: any[][] = [];
+  if (!allEquipments || all.length === 0) return [] as typeof all[];
+  const pages: typeof all[] = [];
   for (let i = 0; i < all.length; i += ITEMS_PER_PAGE) {
     pages.push(all.slice(i, i + ITEMS_PER_PAGE));
   }

@@ -7,14 +7,14 @@ import {
 } from '@/types/resource';
 import { StudentProps } from '@/types/student';
 
-function getAllStudentTags(student: StudentProps): string[] {
-  const uniqueGiftTags = student.FavorItemUniqueTags;
-  const rareGiftTags = student.FavorItemTags;
-  return [...uniqueGiftTags, ...rareGiftTags, ...GENERIC_GIFT_TAGS];
+const GENERIC_GIFT_TAGS_SET = new Set(GENERIC_GIFT_TAGS);
+
+function getAllStudentTags(student: StudentProps): Set<string> {
+  return new Set([...student.FavorItemUniqueTags, ...student.FavorItemTags, ...GENERIC_GIFT_TAGS]);
 }
 
 function countGenericTags(item: ResourceProps): number {
-  return item.Tags.filter((tag: string) => GENERIC_GIFT_TAGS.includes(tag)).length;
+  return item.Tags.filter((tag: string) => GENERIC_GIFT_TAGS_SET.has(tag)).length;
 }
 
 function calculateGiftExp(item: ResourceProps, tags: string[]): number {
@@ -23,9 +23,9 @@ function calculateGiftExp(item: ResourceProps, tags: string[]): number {
 
 function evaluateRegularGift(
   item: ResourceProps,
-  allTags: string[]
+  allTagsSet: Set<string>
 ): { shouldGift: boolean; expValue: number; favorGrade: number } {
-  const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
+  const commonTags = item.Tags.filter((tag: string) => allTagsSet.has(tag));
   const favorGrade = Math.min(commonTags.length, 3);
   const genericTagCount = countGenericTags(item);
   const expValue = calculateGiftExp(item, commonTags);
@@ -38,12 +38,12 @@ function evaluateRegularGift(
 
 function evaluateGiftBoxItem(
   item: ResourceProps,
-  allTags: string[],
+  allTagsSet: Set<string>,
   highestExpGift: number,
   highestGradeGift: number,
   isCollabStudent: boolean
 ): { shouldGift: boolean; expValue: number; newFavorGrade: number } {
-  const commonTags = item.Tags.filter((tag: string) => allTags.includes(tag));
+  const commonTags = item.Tags.filter((tag: string) => allTagsSet.has(tag));
   const favorGrade = Math.min(commonTags.length, 3);
   const genericTagCount = countGenericTags(item);
   const shouldGift = favorGrade + genericTagCount >= 0;
@@ -93,13 +93,13 @@ function getStudentGiftBoxInfo(
 
 function processRegularGiftItems(
   items: Record<string, ResourceProps>,
-  allTags: string[]
+  allTagsSet: Set<string>
 ): GiftProps[] {
   const studentGifts: GiftProps[] = [];
 
   for (const itemId in items) {
     const item = items[itemId];
-    const giftDetails = evaluateRegularGift(item, allTags);
+    const giftDetails = evaluateRegularGift(item, allTagsSet);
 
     if (giftDetails.shouldGift) {
       studentGifts.push({
@@ -116,7 +116,7 @@ function processRegularGiftItems(
 function processGiftBoxItems(
   studentId: string,
   items: Record<string, ResourceProps>,
-  allTags: string[],
+  allTagsSet: Set<string>,
   favoredGiftByStudent: Record<string, GiftProps[]>
 ): GiftProps[] {
   const studentGifts: GiftProps[] = [];
@@ -129,7 +129,7 @@ function processGiftBoxItems(
     const item = items[itemId];
     const giftDetails = evaluateGiftBoxItem(
       item,
-      allTags,
+      allTagsSet,
       highestExpGift,
       highestGradeGift,
       isCollabStudent
@@ -163,10 +163,10 @@ export function buildGiftsByStudent(
 
   for (const studentId in students) {
     const student = students[studentId];
-    const allTags = getAllStudentTags(student);
+    const allTagsSet = getAllStudentTags(student);
     result[studentId] = isGiftBox
-      ? processGiftBoxItems(studentId, items, allTags, favoredGiftByStudent)
-      : processRegularGiftItems(items, allTags);
+      ? processGiftBoxItems(studentId, items, allTagsSet, favoredGiftByStudent)
+      : processRegularGiftItems(items, allTagsSet);
   }
 
   return result;

@@ -56,8 +56,8 @@ export interface StudentGear {
   Released: number[];        // [0] = JP release, [1] = Global release
   StatType: string[];        // e.g., ["AttackPower", "MaxHP"]
   StatValue: number[][];     // Stats per tier [[T1 values], [T2 values]]
-  TierUpMaterial: number[];  // [giftId, itemId1, itemId2]
-  TierUpMaterialAmount: number[]; // [giftQty, itemQty1, itemQty2]
+  TierUpMaterial: number[][];        // [[materialId1, materialId2, ...], ...]
+  TierUpMaterialAmount: number[][];  // [[qty1, qty2, ...], ...]
   Name: string;              // Gear name
   Desc: string;              // Gear description
   Icon: string;              // Icon name

@@ -1,6 +1,6 @@
 import { ref, computed, watch, toRaw } from 'vue';
 import { StudentProps } from '../../types/student';
-import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
+import { BondDetailDataProps, DEFAULT_BOND_DETAIL, GiftProps } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import { getAllItemsFromCache } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
@@ -155,20 +155,22 @@ export function useStudentGifts(props: {
 
   // Calculate EXP for a single item type (gifts or boxes)
   const calculateItemTypeExp = (
-    items: Record<string, any> | undefined,
+    items: GiftProps[] | undefined,
     formData: Record<string, number>,
     itemType: string // For logging
   ): number => {
     if (!items || !formData) return 0;
-    
+
+    const itemMap = Object.fromEntries(items.map(g => [String(g.gift.Id), g]));
+
     let typeTotal = 0;
-    
+
     // Process each item with quantity in the form data
     Object.entries(formData).forEach(([itemId, quantity]) => {
       if (quantity <= 0) return;
-      
+
       // Get the item by ID
-      const item = items[itemId];
+      const item = itemMap[itemId];
       if (!item) return;
       
       // Get exp value
@@ -280,7 +282,7 @@ export function useStudentGifts(props: {
     // Save current state before modifying
     savePreviousState();
     
-    if (!props.student?.Boxes || Object.keys(props.student.Boxes).length === 0) {
+    if (!props.student?.Boxes?.length) {
       return;
     }
     
@@ -392,7 +394,7 @@ export function useStudentGifts(props: {
 
           // Check if this gift ID exists in the student's Gifts
           // This depends on the structure of student.Gifts
-          const isStudentGift = Object.values(props.student?.Gifts ?? {}).some(
+          const isStudentGift = (props.student?.Gifts ?? []).some(
             g => g.gift.Id === gift.Id
           );
 

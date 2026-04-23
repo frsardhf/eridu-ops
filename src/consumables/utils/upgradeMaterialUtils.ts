@@ -62,7 +62,7 @@ export function calculateLevelMaterials(
  */
 export function computeCharacterXpCost(current: number, target: number): number {
   if (current >= target) return 0;
-  const t = (dataTable as any).character_xp as number[];
+  const t = dataTable.character_xp;
   return Math.max(0, (t[target - 1] ?? 0) - (t[current - 1] ?? 0));
 }
 

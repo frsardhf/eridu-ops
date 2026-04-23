@@ -19,6 +19,7 @@ function defaultDecks(): DeckRecord[] {
 
 // Singleton state
 const decks = ref<DeckRecord[]>([]);
+const deckIndex = new Map<number, DeckRecord>();
 let initialized = false;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -44,18 +45,21 @@ export function useDeckBuilder() {
       decks.value = defaults;
     }
 
+    deckIndex.clear();
+    decks.value.forEach(d => deckIndex.set(d.id, d));
+
     watch(decks, scheduleSave, { deep: true });
   }
 
   function setUnit(deckId: number, teamIdx: number, slotIdx: number, studentId: number | null) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck || !deck.teams[teamIdx]) return;
     deck.teams[teamIdx].units[slotIdx] = studentId;
     deck.updatedAt = Date.now();
   }
 
   function moveUnit(deckId: number, teamIdx: number, fromSlot: number, toSlot: number) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck || !deck.teams[teamIdx]) return;
     const units = deck.teams[teamIdx].units;
     const temp = units[fromSlot];
@@ -65,35 +69,35 @@ export function useDeckBuilder() {
   }
 
   function addTeam(deckId: number) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck) return;
     deck.teams.push(emptyTeam());
     deck.updatedAt = Date.now();
   }
 
   function removeTeam(deckId: number, teamIdx: number) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck || deck.teams.length <= 1) return;
     deck.teams.splice(teamIdx, 1);
     deck.updatedAt = Date.now();
   }
 
   function renameDeck(deckId: number, name: string) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck) return;
     deck.name = name;
     deck.updatedAt = Date.now();
   }
 
   function clearTeam(deckId: number, teamIdx: number) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck || !deck.teams[teamIdx]) return;
     deck.teams[teamIdx] = emptyTeam();
     deck.updatedAt = Date.now();
   }
 
   function swapUnits(deckId: number, fromTeam: number, fromSlot: number, toTeam: number, toSlot: number) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck || !deck.teams[fromTeam] || !deck.teams[toTeam]) return;
     const a = deck.teams[fromTeam].units[fromSlot];
     deck.teams[fromTeam].units[fromSlot] = deck.teams[toTeam].units[toSlot];
@@ -102,15 +106,15 @@ export function useDeckBuilder() {
   }
 
   function copyTeamToPreset(fromDeckId: number, teamIdx: number, toDeckId: number) {
-    const fromDeck = decks.value.find(d => d.id === fromDeckId);
-    const toDeck = decks.value.find(d => d.id === toDeckId);
+    const fromDeck = deckIndex.get(fromDeckId);
+    const toDeck = deckIndex.get(toDeckId);
     if (!fromDeck || !toDeck || !fromDeck.teams[teamIdx]) return;
     toDeck.teams.push({ units: [...fromDeck.teams[teamIdx].units] });
     toDeck.updatedAt = Date.now();
   }
 
   function reorderTeam(deckId: number, fromIdx: number, toIdx: number) {
-    const deck = decks.value.find(d => d.id === deckId);
+    const deck = deckIndex.get(deckId);
     if (!deck) return;
     const [team] = deck.teams.splice(fromIdx, 1);
     deck.teams.splice(toIdx, 0, team);

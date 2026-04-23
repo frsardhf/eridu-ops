@@ -130,12 +130,18 @@ export function useResourceTooltip(
   const expInfo = createExpInfo(() => calculateExpNeeds());
   const expBallInfo = createExpInfo(() => calculateEquipmentExpNeeds());
 
+  const materialsLeftoverById = computed(() =>
+    new Map(materialsLeftover.value.map(m => [m.material?.Id, m]))
+  );
+  const equipmentsLeftoverById = computed(() =>
+    new Map(equipmentsLeftover.value.map(m => [m.material?.Id, m]))
+  );
+
   // Leftover quantity for a regular material
   const getMaterialLeftover = (materialId: number) => {
     const isEquipmentView = activeTab.value === 'equipment';
-    const leftover = isEquipmentView ? equipmentsLeftover.value : materialsLeftover.value;
-    const material = leftover.find(m => m.material?.Id === materialId);
-    return material?.materialQuantity ?? 0;
+    const leftoverMap = isEquipmentView ? equipmentsLeftoverById.value : materialsLeftoverById.value;
+    return leftoverMap.get(materialId)?.materialQuantity ?? 0;
   };
 
   // Show / hide for material tooltip

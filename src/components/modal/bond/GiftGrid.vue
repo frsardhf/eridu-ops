@@ -16,9 +16,9 @@ const emit = defineEmits<{
   (e: 'update-box', id: number, event: Event): void
 }>();
 
-const hasGifts = computed(() => Object.keys(props.student.Gifts ?? {}).length > 0);
+const hasGifts = computed(() => (props.student.Gifts?.length ?? 0) > 0);
 
-const hasBoxes = computed(() => Object.keys(props.student.Boxes ?? {}).length > 0);
+const hasBoxes = computed(() => (props.student.Boxes?.length ?? 0) > 0);
 
 const convertBox = computed(() => !!props.convertBox);
 </script>

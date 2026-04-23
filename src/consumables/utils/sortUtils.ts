@@ -123,8 +123,15 @@ export function sortStudentsWithPins({
  * respective group.
  */
 export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
-  const allOwned   = params.students.filter(s => params.studentStore[s.Id]?.isOwned !== false);
-  const allUnowned = params.students.filter(s => params.studentStore[s.Id]?.isOwned === false);
+  const allOwned: StudentProps[] = [];
+  const allUnowned: StudentProps[] = [];
+  for (const s of params.students) {
+    if (params.studentStore[s.Id]?.isOwned === false) {
+      allUnowned.push(s);
+    } else {
+      allOwned.push(s);
+    }
+  }
 
   return {
     owned:   sortStudentsWithPins({ ...params, students: allOwned }),

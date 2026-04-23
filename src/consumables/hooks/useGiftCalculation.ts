@@ -1,3 +1,4 @@
+import { computed } from 'vue';
 import { getResourceDataByIdSync, getAllItemsFromCache } from '../stores/resourceCacheStore';
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
@@ -27,12 +28,12 @@ function buildGiftNeededMap() {
     if (!form) return;
     if (form.isOwned === false) return; // skip unowned
 
-    const giftFormData = (form as any).giftFormData || {};
+    const giftFormData = form.giftFormData ?? {};
     Object.entries(giftFormData).forEach(([giftId, qty]) => {
       addGiftNeed(parseInt(giftId, 10), qty as number);
     });
 
-    const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
+    const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
     Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
       addGiftNeed(parseInt(giftId, 10), qty as number);
     });
@@ -51,6 +52,24 @@ function buildGiftNeededMap() {
   return giftNeededMap;
 }
 
+// Reactively cached bond-allocation map — rebuilt only when studentDataStore
+// changes, not on every tooltip hover or viewMode switch.
+// Shared by getStudentsWithGifts and getGiftsForStudent to avoid redundant
+// full-store scans.
+const _bondAllocated = computed(() => {
+  const map = new Map<number, number>();
+  Object.values(studentDataStore.value).forEach(form => {
+    if (!form || form.isOwned === false) return;
+    const giftFormData = form.giftFormData ?? {};
+    const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
+    [...Object.entries(giftFormData), ...Object.entries(nonFavorGiftsMap)].forEach(([id, qty]) => {
+      const giftId = parseInt(id, 10);
+      map.set(giftId, (map.get(giftId) ?? 0) + (qty as number));
+    });
+  });
+  return map;
+});
+
 /**
  * Get total allocated gifts across all students
  * Used to calculate available quantities for autoFill
@@ -64,7 +83,7 @@ export function getAllocatedGifts(excludeStudentId?: number): Record<number, num
     if (form?.isOwned === false) return; // skip unowned
 
     // Sum giftFormData (favored gifts)
-    const giftFormData = (form as any).giftFormData || {};
+    const giftFormData = form.giftFormData ?? {};
     Object.entries(giftFormData).forEach(([giftId, qty]) => {
       const id = parseInt(giftId);
       const quantity = qty as number;
@@ -75,7 +94,7 @@ export function getAllocatedGifts(excludeStudentId?: number): Record<number, num
 
     // Sum nonFavorGiftsMap (individual non-favor gifts)
     // NOT boxFormData - that only has aggregated totals (100000, 100009)
-    const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
+    const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
     Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
       const id = parseInt(giftId);
       const quantity = qty as number;
@@ -98,6 +117,7 @@ export function useGiftCalculation() {
     const studentsCollection = studentData.value || {};
     const resources = getAllItemsFromCache();
     const studentGiftsMap = new Map<string, StudentGiftUsage>();
+    const bondAllocated = _bondAllocated.value;
 
     Object.entries(studentDataStore.value).forEach(([studentId, form]) => {
       const student = studentsCollection[studentId];
@@ -107,20 +127,21 @@ export function useGiftCalculation() {
       const gifts: { gift: any; quantity: number }[] = [];
       let totalGifts = 0;
 
+      const giftFormData = form.giftFormData ?? {};
+      const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
+
       // Process giftFormData (favored gifts)
-      const giftFormData = (form as any).giftFormData || {};
       Object.entries(giftFormData).forEach(([giftId, qty]) => {
+        const id = parseInt(giftId, 10);
         const quantity = qty as number;
         if (quantity <= 0) return;
 
-        const gift = getResourceDataByIdSync(parseInt(giftId));
+        const gift = getResourceDataByIdSync(id);
         if (!gift) return;
 
-        const owned = resources[parseInt(giftId)]?.QuantityOwned ?? 0;
+        const owned = resources[id]?.QuantityOwned ?? 0;
 
         if (viewMode === 'missing') {
-          // For missing mode, we need to calculate how much is missing
-          // This is simplified - just show if owned < needed
           if (owned < quantity) {
             const missing = quantity - owned;
             gifts.push({ gift, quantity: missing });
@@ -133,15 +154,15 @@ export function useGiftCalculation() {
       });
 
       // Process nonFavorGiftsMap (non-favor gifts)
-      const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
       Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
+        const id = parseInt(giftId, 10);
         const quantity = qty as number;
         if (quantity <= 0) return;
 
-        const gift = getResourceDataByIdSync(parseInt(giftId));
+        const gift = getResourceDataByIdSync(id);
         if (!gift) return;
 
-        const owned = resources[parseInt(giftId)]?.QuantityOwned ?? 0;
+        const owned = resources[id]?.QuantityOwned ?? 0;
 
         if (viewMode === 'missing') {
           if (owned < quantity) {
@@ -165,17 +186,6 @@ export function useGiftCalculation() {
     });
 
     // Also include exclusive gear gift materials (Category === 'Favor') from gears store
-    // Pre-compute bond allocations so the gear section uses remaining-after-bond for missing mode
-    const bondAllocated = new Map<number, number>();
-    Object.values(studentDataStore.value).forEach(form => {
-      if (!form || form.isOwned === false) return;
-      const giftFormData = (form as any).giftFormData || {};
-      const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
-      [...Object.entries(giftFormData), ...Object.entries(nonFavorGiftsMap)].forEach(([id, qty]) => {
-        const giftId = parseInt(id);
-        bondAllocated.set(giftId, (bondAllocated.get(giftId) ?? 0) + (qty as number));
-      });
-    });
     // Track remaining available after bond allocations (drained across multiple gear students)
     const giftRemainingForGear = new Map<number, number>();
     const getGiftRemaining = (giftId: number) => {
@@ -245,7 +255,7 @@ export function useGiftCalculation() {
     const gifts: { gift: any; quantity: number }[] = [];
 
     // Process giftFormData (favored gifts)
-    const giftFormData = (form as any).giftFormData || {};
+    const giftFormData = form.giftFormData ?? {};
     Object.entries(giftFormData).forEach(([giftId, qty]) => {
       const quantity = qty as number;
       if (quantity <= 0) return;
@@ -265,7 +275,7 @@ export function useGiftCalculation() {
     });
 
     // Process nonFavorGiftsMap (non-favor gifts)
-    const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
+    const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
     Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
       const quantity = qty as number;
       if (quantity <= 0) return;
@@ -285,19 +295,8 @@ export function useGiftCalculation() {
     });
 
     // Process exclusive gear gift materials (Category === 'Favor') from gears store
-    // For missing mode, compare against remaining after all students' bond allocations
-    const bondAllocatedForGear = new Map<number, number>();
-    if (viewMode === 'missing') {
-      Object.values(studentDataStore.value).forEach(form => {
-        if (!form || form.isOwned === false) return;
-        const giftFormData = (form as any).giftFormData || {};
-        const nonFavorGiftsMap = (form as any).nonFavorGiftsMap || {};
-        [...Object.entries(giftFormData), ...Object.entries(nonFavorGiftsMap)].forEach(([id, qty]) => {
-          const giftId = parseInt(id);
-          bondAllocatedForGear.set(giftId, (bondAllocatedForGear.get(giftId) ?? 0) + (qty as number));
-        });
-      });
-    }
+    // For missing mode, use the cached bondAllocated map (O(1) — no store scan).
+    const bondAllocatedForGear = viewMode === 'missing' ? _bondAllocated.value : new Map<number, number>();
 
     const allGearsData = getAllGearsData();
     const studentGearMaterials = allGearsData[studentId] || [];

@@ -1,6 +1,6 @@
 import { computed, type Ref } from 'vue';
 import type { MaterialWithRemaining } from '@/types/upgrade';
-import { MATERIAL, EQUIPMENT } from '@/types/resource';
+import { MATERIAL, EQUIPMENT, type CachedResource } from '@/types/resource';
 import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
 import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
 import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
@@ -53,7 +53,7 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
 
   const materialCatalog = computed(() => {
     const allItems = getAllItemsFromCache();
-    if (!allItems || Object.keys(allItems).length === 0) return [] as any[];
+    if (!allItems || Object.keys(allItems).length === 0) return [] as CachedResource[];
     return Object.values(applyFilters(allItems, MATERIAL)).filter(item =>
       item.Category !== 'Favor' && (!isExpReport(item.Id) || item.Id === 10)
     );
@@ -61,13 +61,13 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
 
   const giftCatalog = computed(() => {
     const allItems = getAllItemsFromCache();
-    if (!allItems || Object.keys(allItems).length === 0) return [] as any[];
+    if (!allItems || Object.keys(allItems).length === 0) return [] as CachedResource[];
     return Object.values(applyFilters(allItems, MATERIAL)).filter(item => item.Category === 'Favor');
   });
 
   const equipmentCatalog = computed(() => {
     const allEquipments = getAllEquipmentFromCache();
-    if (!allEquipments || Object.keys(allEquipments).length === 0) return [] as any[];
+    if (!allEquipments || Object.keys(allEquipments).length === 0) return [] as CachedResource[];
     return Object.values(applyFilters(allEquipments, EQUIPMENT)).filter(item =>
       !isExpBall(item.Id) || item.Id === 1
     );
