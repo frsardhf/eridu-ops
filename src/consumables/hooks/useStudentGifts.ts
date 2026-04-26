@@ -1,12 +1,22 @@
-import { ref, computed, watch, toRaw } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL, GiftProps } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
-import { getAllItemsFromCache } from '../stores/resourceCacheStore';
+import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
-import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
-import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
+import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
+import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
 import { getAllocatedGifts } from './useGiftCalculation';
+import { getAllGearsData } from '../stores/gearsStore';
+import { Material } from '../../types/upgrade';
+
+const HISTORY_LIMIT = 10;
+
+interface GiftSnapshot {
+  giftFormData: Record<string, number>;
+  boxFormData: Record<string, number>;
+  nonFavorGiftsMap: Record<number, number>;
+}
 
 export function useStudentGifts(props: {
   student: StudentProps,
@@ -25,10 +35,19 @@ export function useStudentGifts(props: {
   // Track loading state to prevent watch from triggering saves during load
   const isLoading = ref(false);
 
-  // Add previous state storage for undo functionality
-  const previousGiftFormData = ref<Record<string, number>>({});
-  const previousBoxFormData = ref<Record<string, number>>({});
-  const previousNonFavorGiftsMap = ref<Record<number, number>>({});
+  // Convert modal state
+  const showConvertModal = ref(false);
+  const convertModalNeeded = ref(0);
+
+  // Sync Gifts mode modal state
+  const showSyncGiftsModal = ref(false);
+
+  // Undo/redo stacks
+  const undoStack = ref<GiftSnapshot[]>([]);
+  const redoStack = ref<GiftSnapshot[]>([]);
+
+  const canUndo = computed(() => undoStack.value.length > 0);
+  const canRedo = computed(() => redoStack.value.length > 0);
 
   const bondXpTable = bondData.bond_xp;
 
@@ -39,13 +58,16 @@ export function useStudentGifts(props: {
     bondDetailData.value = {...DEFAULT_BOND_DETAIL};
   }
 
-  // Store previous state before any changes.
-  // toRaw() strips the Vue Proxy wrapper before cloning — structuredClone
-  // cannot handle Proxy objects and throws DataCloneError without it.
+  // Push current state onto undo stack; any new action clears redo history.
+  // Spread is sufficient because all three objects are flat (Record<string, number>).
   const savePreviousState = () => {
-    previousGiftFormData.value = structuredClone(toRaw(giftFormData.value));
-    previousBoxFormData.value = structuredClone(toRaw(boxFormData.value));
-    previousNonFavorGiftsMap.value = structuredClone(toRaw(nonFavorGiftsMap.value));
+    if (undoStack.value.length >= HISTORY_LIMIT) undoStack.value.shift();
+    undoStack.value.push({
+      giftFormData: { ...giftFormData.value },
+      boxFormData: { ...boxFormData.value },
+      nonFavorGiftsMap: { ...nonFavorGiftsMap.value },
+    });
+    redoStack.value = [];
   };
 
   // Watch for changes to form data and save to IndexedDB
@@ -123,8 +145,9 @@ export function useStudentGifts(props: {
       nonFavorGiftsMap.value = stagedNonFavorGiftsMap.value;
       bondDetailData.value = stagedBondDetailData.value;
 
-      // Store initial state for undo after loading
-      savePreviousState();
+      // Clear history on load so loaded state isn't undoable
+      undoStack.value = [];
+      redoStack.value = [];
     } finally {
       isLoading.value = false;
     }
@@ -139,17 +162,17 @@ export function useStudentGifts(props: {
   // Extract exp value from an item regardless of its structure
   const getItemExpValue = (item: any): number => {
     if (!item) return 0;
-    
+
     // Direct exp property
     if (typeof item.exp === 'number') {
       return item.exp;
     }
-    
+
     // Nested in gift object
     if (item.gift && typeof item.gift.exp === 'number') {
       return item.gift.exp;
     }
-    
+
     return 0;
   };
 
@@ -172,16 +195,16 @@ export function useStudentGifts(props: {
       // Get the item by ID
       const item = itemMap[itemId];
       if (!item) return;
-      
+
       // Get exp value
       const expValue = getItemExpValue(item);
       if (expValue <= 0) return;
-      
+
       // Calculate and add exp
       const itemExp = calculateItemExp(expValue, quantity);
       typeTotal += itemExp;
     });
-    
+
     return typeTotal;
   };
 
@@ -193,16 +216,16 @@ export function useStudentGifts(props: {
       giftFormData.value,
       'Gift'
     );
-    
+
     // Calculate exp for boxes
     const boxesExp = calculateItemTypeExp(
       props.student.Boxes,
       boxFormData.value,
       'Box'
     );
-    
+
     const totalExp = giftsExp + boxesExp;
-    
+
     return totalExp;
   };
 
@@ -212,14 +235,14 @@ export function useStudentGifts(props: {
   const newBondLevel = computed(() => {
     // Return early if we're already at max level
     if (bondDetailData.value.currentBond >= 100) return 100;
-    
+
     // No gifts added, stay at current level
     if (totalCumulativeExp.value <= 0) return bondDetailData.value.currentBond;
-    
+
     // Calculate total XP including current level's cumulative XP and gift XP
     const currentLevelCumulativeXp = bondXpTable[bondDetailData.value.currentBond - 1] ?? 0;
     const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
-    
+
     // Find the highest level we can reach with this total XP
     let newLevel = bondDetailData.value.currentBond;
     for (let i = bondDetailData.value.currentBond; i < 100; i++) {
@@ -229,7 +252,7 @@ export function useStudentGifts(props: {
         break;
       }
     }
-    
+
     return newLevel;
   });
 
@@ -237,17 +260,17 @@ export function useStudentGifts(props: {
   const remainingXp = computed(() => {
     // Return 0 if already at max level
     if (newBondLevel.value >= 100) return 0;
-    
+
     // Calculate total XP including current level's cumulative XP and gift XP
     const currentLevelCumulativeXp = bondXpTable[bondDetailData.value.currentBond - 1] ?? 0;
     const totalXp = currentLevelCumulativeXp + totalCumulativeExp.value;
-    
+
     // Get the XP needed for the next level
     const nextLevelXp = bondXpTable[newBondLevel.value];
-    
+
     // Calculate remaining XP needed
     const remainingExp = nextLevelXp - totalXp;
-    
+
     return Math.max(0, remainingExp);
   });
 
@@ -259,7 +282,7 @@ export function useStudentGifts(props: {
   const handleGiftInput = (giftId: number, event: Event) => {
     // Save current state before modifying
     savePreviousState();
-    
+
     removeLeadingZeros(event);
     const input = event.target as HTMLInputElement;
     giftFormData.value[giftId] = parseInt(input.value) || 0;
@@ -268,61 +291,108 @@ export function useStudentGifts(props: {
   const handleBoxInput = (boxId: number, event: Event) => {
     // Save current state before modifying
     savePreviousState();
-    
+
     removeLeadingZeros(event);
     const input = event.target as HTMLInputElement;
-    boxFormData.value[boxId] = parseInt(input.value) || 0;
+    const newValue = parseInt(input.value) || 0;
+    boxFormData.value[boxId] = newValue;
+
+    // Clear individual gift tracking for the rarity when manual input would cause overcount
+    if (boxId === SR_GIFT_MATERIAL_ID) clearNonFavorIfOvercount('SR', newValue);
+    if (boxId === SSR_GIFT_MATERIAL_ID) clearNonFavorIfOvercount('SSR', newValue);
   };
+
+  // When the aggregate SR/SSR stepper is lowered below the tracked per-gift sum,
+  // we can't know which specific gifts were removed, so clear that rarity's entries.
+  function clearNonFavorIfOvercount(rarity: 'SR' | 'SSR', newTotal: number) {
+    const ids = Object.keys(nonFavorGiftsMap.value)
+      .filter(id => getResourceDataByIdSync(Number(id))?.Rarity === rarity);
+    const currentSum = ids.reduce((s, id) => s + (nonFavorGiftsMap.value[Number(id)] ?? 0), 0);
+    if (newTotal < currentSum) {
+      ids.forEach(id => delete nonFavorGiftsMap.value[Number(id)]);
+    }
+  }
 
   const handleBondInput = (value: number) => {
     bondDetailData.value.currentBond = value;
   };
 
   const convertBoxes = () => {
-    // Save current state before modifying
-    savePreviousState();
-    
-    if (!props.student?.Boxes?.length) {
-      return;
+    if (!props.student?.Boxes?.length) return;
+
+    const srCount = boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0;
+    const stoneCount = boxFormData.value[YELLOW_STONE_ID] ?? 0;
+    if (srCount <= 0 || stoneCount <= 0) return;
+
+    const convertedCount = Math.min(Math.floor(srCount / 2), stoneCount);
+    const giftsNeeded = convertedCount * 2;
+
+    const hasIndividualTracking = Object.keys(nonFavorGiftsMap.value).length > 0;
+    if (hasIndividualTracking) {
+      convertModalNeeded.value = giftsNeeded;
+      showConvertModal.value = true;
+    } else {
+      savePreviousState();
+      calculateOptimalConversion();
     }
-    
-    // Run conversion immediately (no toggling needed)
+  };
+
+  const confirmConversion = (selection: Record<number, number>) => {
+    showConvertModal.value = false;
+    savePreviousState();
+
+    // Deduct the selected individual gifts from nonFavorGiftsMap
+    for (const [id, qty] of Object.entries(selection)) {
+      const giftId = Number(id);
+      const remaining = (nonFavorGiftsMap.value[giftId] ?? 0) - qty;
+      if (remaining <= 0) {
+        delete nonFavorGiftsMap.value[giftId];
+      } else {
+        nonFavorGiftsMap.value[giftId] = remaining;
+      }
+    }
+
+    // calculateOptimalConversion reads SR_GIFT_MATERIAL_ID directly and subtracts
+    // convertedCount * 2 on its own — do not pre-subtract here or the materials
+    // get deducted twice.
     calculateOptimalConversion();
+  };
+
+  const cancelConversion = () => {
+    showConvertModal.value = false;
   };
 
   // Function to calculate optimal conversion
   const calculateOptimalConversion = () => {
     // Prevent recalculation if already calculating
     if (isCalculating.value) return;
-    
+
     try {
       isCalculating.value = true;
-      
+
       // Get current values
       const yellowStoneQuantity = boxFormData.value[YELLOW_STONE_ID] || 0;
       const srGiftMaterialQuantity = boxFormData.value[SR_GIFT_MATERIAL_ID] || 0;
       const selectorBoxQuantity = boxFormData.value[SELECTOR_BOX_ID] || 0;
-      
+
       // Ensure we have valid values
       if (yellowStoneQuantity <= 0 || srGiftMaterialQuantity <= 0) {
-        // Not enough materials to convert, no changes needed
         return;
       }
-      
+
       // Calculate how many boxes can be converted based on available materials
       // Each conversion requires 2 materials and 1 stone
       const maxConvertibleByMaterials = Math.floor(srGiftMaterialQuantity / 2);
       const maxConvertibleByStones = yellowStoneQuantity;
-      
+
       // Use the minimum of what materials and stones allow
       const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
-      
-      // Set the quantities in boxFormData without triggering the watcher
+
       boxFormData.value = {
         ...boxFormData.value,
-        [YELLOW_STONE_ID]: yellowStoneQuantity - convertedQuantity, // Leftover stones
-        [SR_GIFT_MATERIAL_ID]: srGiftMaterialQuantity - (convertedQuantity * 2), // Remaining materials
-        [SELECTOR_BOX_ID]: selectorBoxQuantity + convertedQuantity // Number of selector boxes
+        [YELLOW_STONE_ID]: yellowStoneQuantity - convertedQuantity,
+        [SR_GIFT_MATERIAL_ID]: srGiftMaterialQuantity - (convertedQuantity * 2),
+        [SELECTOR_BOX_ID]: selectorBoxQuantity + convertedQuantity
       };
     } finally {
       isCalculating.value = false;
@@ -341,30 +411,63 @@ export function useStudentGifts(props: {
 
   // Reset all gifts to zero
   const resetGifts = () => {
-    // Save current state before resetting
     savePreviousState();
-
-    // Reset all gift and box data to empty objects (zero values)
     giftFormData.value = {};
     boxFormData.value = {};
     nonFavorGiftsMap.value = {};
   };
 
-  // Undo changes to previous state
+  // Undo last action
   const undoChanges = () => {
-    // Restore from previous state
-    giftFormData.value = JSON.parse(JSON.stringify(previousGiftFormData.value));
-    boxFormData.value = JSON.parse(JSON.stringify(previousBoxFormData.value));
-    nonFavorGiftsMap.value = JSON.parse(JSON.stringify(previousNonFavorGiftsMap.value));
+    const snapshot = undoStack.value.pop();
+    if (!snapshot) return;
+    redoStack.value.push({
+      giftFormData: { ...giftFormData.value },
+      boxFormData: { ...boxFormData.value },
+      nonFavorGiftsMap: { ...nonFavorGiftsMap.value },
+    });
+    giftFormData.value = snapshot.giftFormData;
+    boxFormData.value = snapshot.boxFormData;
+    nonFavorGiftsMap.value = snapshot.nonFavorGiftsMap;
   };
 
-  const autoFillGifts = () => {
-    // Save current state before autofilling
+  // Redo last undone action
+  const redoChanges = () => {
+    const snapshot = redoStack.value.pop();
+    if (!snapshot) return;
+    undoStack.value.push({
+      giftFormData: { ...giftFormData.value },
+      boxFormData: { ...boxFormData.value },
+      nonFavorGiftsMap: { ...nonFavorGiftsMap.value },
+    });
+    giftFormData.value = snapshot.giftFormData;
+    boxFormData.value = snapshot.boxFormData;
+    nonFavorGiftsMap.value = snapshot.nonFavorGiftsMap;
+  };
+
+  // Returns gear material needs (Category === 'Favor') for all recruited students except the given one.
+  function getGearGiftNeedsExcluding(excludeStudentId: number): Record<number, number> {
+    const needs: Record<number, number> = {};
+    const allGearsData = getAllGearsData();
+    Object.entries(allGearsData).forEach(([studentId, materials]) => {
+      if (Number(studentId) === excludeStudentId) return;
+      if (studentDataStore.value[Number(studentId)]?.isOwned === false) return;
+      (materials as Material[]).forEach(material => {
+        if (material.material?.Category !== 'Favor') return;
+        const id = material.material?.Id;
+        if (!id) return;
+        needs[id] = (needs[id] ?? 0) + material.materialQuantity;
+      });
+    });
+    return needs;
+  }
+
+  const syncGifts = (mode: 'greedy' | 'aware') => {
     savePreviousState();
 
     const resources = getAllItemsFromCache();
-    // Get gifts already allocated by other students to prevent autofill abuse
     const allocatedByOthers = getAllocatedGifts(props.student?.Id);
+    const gearNeeds = mode === 'aware' ? getGearGiftNeedsExcluding(props.student.Id) : {};
 
     // Filter out gifts from the resources
     const gifts = Object.values(resources ?? {}).filter(resource =>
@@ -375,7 +478,7 @@ export function useStudentGifts(props: {
       giftFormData.value = {};
     }
 
-    // Reset nonFavorGiftsMap for fresh autofill
+    // Reset nonFavorGiftsMap for fresh sync
     nonFavorGiftsMap.value = {};
 
     let nonFavorGiftsSr = 0;
@@ -387,19 +490,16 @@ export function useStudentGifts(props: {
       // Loop through all gifts from resources
       gifts.forEach(gift => {
         if (gift.Id) {
-          // Calculate available quantity (owned - allocated by others)
+          // Calculate available quantity (owned - allocated by others - gear needs if aware mode)
           const owned = gift.QuantityOwned ?? 0;
           const alreadyAllocated = allocatedByOthers[gift.Id] ?? 0;
-          const available = Math.max(0, owned - alreadyAllocated);
+          const available = Math.max(0, owned - alreadyAllocated - (gearNeeds[gift.Id] ?? 0));
 
-          // Check if this gift ID exists in the student's Gifts
-          // This depends on the structure of student.Gifts
           const isStudentGift = (props.student?.Gifts ?? []).some(
             g => g.gift.Id === gift.Id
           );
 
           if (isStudentGift) {
-            // Set the quantity in giftFormData based on what's available
             giftFormData.value[gift.Id] = available;
           } else {
             // Track individual non-favor gifts for Gifts tab display
@@ -412,7 +512,6 @@ export function useStudentGifts(props: {
               nonFavorGiftsSr += available;
             }
             if (gift.Rarity === 'SSR' && !blackListIds.includes(gift.Id)) {
-              // Exclude specific IDs from SSR count
               nonFavorGiftsSsr += available;
             }
           }
@@ -421,9 +520,9 @@ export function useStudentGifts(props: {
     }
 
     // Set the quantities for non-favor gifts in boxFormData (aggregated for bond calculation)
-    boxFormData.value[100000] = nonFavorGiftsSr;
-    boxFormData.value[100009] = nonFavorGiftsSsr;
-  }
+    boxFormData.value[SR_GIFT_MATERIAL_ID] = nonFavorGiftsSr;
+    boxFormData.value[SSR_GIFT_MATERIAL_ID] = nonFavorGiftsSsr;
+  };
 
 function closeModal() {
     // Save the current state (including conversion state) before closing
@@ -441,7 +540,22 @@ function closeModal() {
     // State
     giftFormData,
     boxFormData,
-    currentBond, // Computed getter/setter for compatibility
+    nonFavorGiftsMap,
+    currentBond,
+
+    // Convert modal
+    showConvertModal,
+    convertModalNeeded,
+    confirmConversion,
+    cancelConversion,
+
+    // Sync Gifts modal
+    showSyncGiftsModal,
+    syncGifts,
+
+    // Undo/redo
+    canUndo,
+    canRedo,
 
     // Computed
     totalCumulativeExp,
@@ -456,8 +570,8 @@ function closeModal() {
     handleBoxInput,
     handleBondInput,
     convertBoxes,
-    autoFillGifts,
     resetGifts,
     undoChanges,
+    redoChanges,
   };
 }

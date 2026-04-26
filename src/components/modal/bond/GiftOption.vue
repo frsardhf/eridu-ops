@@ -2,10 +2,16 @@
 import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 
-const emit = defineEmits(['toggle-convert', 'auto-fill-gift', 'reset-gifts', 'undo-changes']);
+const props = defineProps<{
+  canConvert: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+}>();
 
-const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = 
-  useTooltip<'convert' | 'autofill' | 'reset' | 'undo'>();
+const emit = defineEmits(['toggle-convert', 'sync-gifts', 'reset-gifts', 'undo-changes', 'redo-changes']);
+
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<'convert' | 'sync' | 'reset' | 'undo' | 'redo'>();
 </script>
 
 <template>
@@ -14,6 +20,8 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
       <div class="button-group">
         <button
           class="button button-convert"
+          :class="{ 'button-disabled': !props.canConvert }"
+          :disabled="!props.canConvert"
           @click="emit('toggle-convert')"
           @mouseenter="showTooltip($event, 'convert')"
           @mouseleave="hideTooltip()"
@@ -22,16 +30,16 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
         >
           <span class="button-text">{{ $t('convertGiftBox') }}</span>
         </button>
-        
+
         <button
           class="button button-primary"
-          @click="emit('auto-fill-gift')"
-          @mouseenter="showTooltip($event, 'autofill')"
+          @click="emit('sync-gifts')"
+          @mouseenter="showTooltip($event, 'sync')"
           @mouseleave="hideTooltip()"
-          :aria-label="$t('autoFillGifts')"
-          :title="$t('autoFillGifts')"
+          :aria-label="$t('syncGifts')"
+          :title="$t('syncGifts')"
         >
-          <span class="button-text">{{ $t('autoFillGifts') }}</span>
+          <span class="button-text">{{ $t('syncGifts') }}</span>
         </button>
 
         <button
@@ -44,9 +52,11 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
         >
           <span class="button-text">{{ $t('resetGifts') }}</span>
         </button>
-        
+
         <button
           class="button button-secondary"
+          :class="{ 'button-disabled': !props.canUndo }"
+          :disabled="!props.canUndo"
           @click="emit('undo-changes')"
           @mouseenter="showTooltip($event, 'undo')"
           @mouseleave="hideTooltip()"
@@ -55,8 +65,21 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
         >
           <span class="button-text">{{ $t('undoChanges') }}</span>
         </button>
+
+        <button
+          class="button button-secondary"
+          :class="{ 'button-disabled': !props.canRedo }"
+          :disabled="!props.canRedo"
+          @click="emit('redo-changes')"
+          @mouseenter="showTooltip($event, 'redo')"
+          @mouseleave="hideTooltip()"
+          :aria-label="$t('redoChanges')"
+          :title="$t('redoChanges')"
+        >
+          <span class="button-text">{{ $t('redoChanges') }}</span>
+        </button>
       </div>
-      
+
       <!-- Tooltip for all buttons -->
       <div
         v-if="activeTooltip !== null"
@@ -67,14 +90,17 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
         <template v-if="activeTooltip === 'convert'">
           {{ $t('convertGiftBoxTooltip') }}
         </template>
-        <template v-else-if="activeTooltip === 'autofill'">
-          {{ $t('autoFillGiftsTooltip') }}
+        <template v-else-if="activeTooltip === 'sync'">
+          {{ $t('syncGiftsTooltip') }}
         </template>
         <template v-else-if="activeTooltip === 'reset'">
           {{ $t('resetGiftsTooltip') }}
         </template>
         <template v-else-if="activeTooltip === 'undo'">
           {{ $t('undoChangesTooltip') }}
+        </template>
+        <template v-else-if="activeTooltip === 'redo'">
+          {{ $t('redoChangesTooltip') }}
         </template>
       </div>
     </div>

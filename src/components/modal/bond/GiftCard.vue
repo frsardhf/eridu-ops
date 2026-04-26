@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { GiftProps } from '@/types/gift';
 import '@/styles/resourceDisplay.css';
 import { useFocusInput } from '@/composables/useInputEditor';
 import { formatItemQuantity } from '@/consumables/utils/materialUtils';
 import { getGiftIconUrl, getGiftGradeIconUrl } from '@/consumables/utils/iconUtils';
+import { SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID } from '@/types/resource';
+import { $t } from '@/locales';
 
 const props = defineProps<{
   item: GiftProps,
@@ -16,10 +19,19 @@ const props = defineProps<{
 const emit = defineEmits<{'update:value': [event: Event];}>();
 
 const { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus } = useFocusInput();
+
+const manualStepperTitle = computed(() => {
+  if (!props.isBox) return undefined;
+  const id = props.item.gift.Id;
+  if (id === SR_GIFT_MATERIAL_ID || id === SSR_GIFT_MATERIAL_ID) {
+    return $t('manualStepperWarning');
+  }
+  return undefined;
+});
 </script>
 
 <template>
-  <div class="gift-card" :class="{ 'box-card': isBox }" @click="forceInputFocus">
+  <div class="gift-card" :class="{ 'box-card': isBox }" :title="manualStepperTitle" @click="forceInputFocus">
     <div class="gift-header">
       <div class="gift-icon-container">
         <img
