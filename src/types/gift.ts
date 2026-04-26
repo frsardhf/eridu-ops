@@ -1,5 +1,7 @@
+import type { ResourceProps } from '@/types/resource';
+
 export interface GiftProps {
-  gift: any;
+  gift: ResourceProps;
   exp: number;
   grade: number;
   quantity?: number;

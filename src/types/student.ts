@@ -20,7 +20,14 @@ export interface StudentProps {
   SkillMaterial: number[][];
   SkillExMaterialAmount: number[][];
   SkillMaterialAmount: number[][];
-  [key: string]: any;
+  School: string;
+  CollectionBG: string;
+  Club: string;
+  SquadType: string;
+  BulletType: string;
+  ArmorType: string;
+  IsLimited: number[];
+  Skills: Record<string, { Parameters: number[][] }>;
 }
 
 export interface FetchedData {
