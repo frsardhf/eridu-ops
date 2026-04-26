@@ -43,9 +43,16 @@ export function useResourceTooltip(
   const tooltipPosition = ref({ top: '0px', left: '0px' });
   const isHoveringTooltip = ref(false);
 
-  // Usage caches
+  // Usage caches (capped at 60 entries to avoid unbounded growth in long sessions)
   const materialUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
   const equipmentUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
+
+  function setCapped(map: Map<string, StudentUsage[]>, key: string, value: StudentUsage[], limit = 60): void {
+    if (map.size >= limit) {
+      map.delete(map.keys().next().value as string);
+    }
+    map.set(key, value);
+  }
 
   // Student usage for the hovered material (Materials and Equipment tabs)
   const studentUsageForMaterial = computed(() => {
@@ -72,11 +79,11 @@ export function useResourceTooltip(
     if (isEquipmentView) {
       usage = getEquipmentUsageByStudents(materialId, usageMode)
         .sort((a, b) => b.quantity - a.quantity);
-      equipmentUsageCache.value.set(cacheKey, usage);
+      setCapped(equipmentUsageCache.value, cacheKey, usage);
     } else {
       usage = getMaterialUsageByStudents(materialId, usageMode)
         .sort((a, b) => b.quantity - a.quantity);
-      materialUsageCache.value.set(cacheKey, usage);
+      setCapped(materialUsageCache.value, cacheKey, usage);
     }
 
     return usage;

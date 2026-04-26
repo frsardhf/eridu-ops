@@ -64,6 +64,11 @@ export function sortMaterials(a: Material, b: Material): number {
   if (aIsArtifact && !bIsArtifact) return -1;
   if (!aIsArtifact && bIsArtifact) return 1;
 
+  const aIsEquip = a.type === 'equipments';
+  const bIsEquip = b.type === 'equipments';
+  if (aIsEquip && !bIsEquip) return 1;
+  if (!aIsEquip && bIsEquip) return -1;
+
   return aId - bId;
 }
 

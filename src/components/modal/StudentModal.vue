@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick, CSSProperties } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, CSSProperties } from 'vue';
 import { $t } from '@/locales';
 import { studentDataStore, studentDataVersion } from '@/consumables/stores/studentStore';
 import { useStudentOwnership } from '@/consumables/hooks/useStudentOwnership';
@@ -16,6 +16,8 @@ import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vu
 import BondSection from '@/components/modal/bond/BondSection.vue';
 import GiftOption from '@/components/modal/bond/GiftOption.vue';
 import GiftGrid from '@/components/modal/bond/GiftGrid.vue';
+import ConvertMaterialModal from '@/components/modal/bond/ConvertMaterialModal.vue';
+import SyncGiftsModeModal from '@/components/modal/bond/SyncGiftsModeModal.vue';
 import EquipmentGrowthSection from '@/components/modal/gear/EquipmentGrowthSection.vue';
 import ElephEligmaSection from '@/components/modal/gear/ElephEligmaSection.vue';
 import ExclusiveWeaponSection from '@/components/modal/gear/ExclusiveWeaponSection.vue';
@@ -24,7 +26,7 @@ import InfoSkills from '@/components/modal/info/InfoSkills.vue';
 import InfoWeapon from '@/components/modal/info/InfoWeapon.vue';
 import MetaHeader from '@/components/modal/MetaHeader.vue';
 import MaterialsSection from '@/components/modal/shared/MaterialsSection.vue';
-import ApplyUpgradePanel from '@/components/modal/ApplyUpgradePanel.vue';
+import ApplyUpgradeModal from '@/components/modal/ApplyUpgradeModal.vue';
 import LevelSection from '@/components/modal/upgrade/LevelSection.vue';
 import PotentialSection from '@/components/modal/upgrade/PotentialSection.vue';
 import SkillSection from '@/components/modal/upgrade/SkillSection.vue';
@@ -34,12 +36,12 @@ import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
 import { SkillType, PotentialType, Material, MaterialPreviewItem, type SectionId } from '@/types/upgrade';
 import type { EquipmentType } from '@/types/gear';
-import { positionAtElement } from '@/composables/useTooltip';
-import { computeCharacterXpCost, getCharXpItems } from '@/consumables/utils/upgradeMaterialUtils';
-import { computeEquipmentXpCost, getEquipXpItems } from '@/consumables/utils/gearMaterialUtils';
+import { computeCharacterXpCost, getCharXpItems, calculateLevelMaterials, calculateSkillMaterials, calculatePotentialMaterials } from '@/consumables/utils/upgradeMaterialUtils';
+import { computeEquipmentXpCost, getEquipXpItems, calculateEquipmentMaterials, calculateEquipmentCredits, calculateGradeMaterials, calculateGradeCredits, calculateExclusiveGearMaterials } from '@/consumables/utils/gearMaterialUtils';
 import { deductXpItems, simulateXpDeduction } from '@/consumables/utils/upgradeUtils';
+import { sortMaterials } from '@/consumables/utils/materialUtils';
 import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/consumables/stores/resourceCacheStore';
-import ApplyConfirmModal from '@/components/modal/ApplyConfirmModal.vue';
+import { YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID } from '@/types/resource';
 import '@/styles/studentModal.css'
 
 type ModalTab = 'info' | 'bond' | 'upgrade' | 'gear';
@@ -70,11 +72,7 @@ const activeTabTransitionName = computed(() =>
 const activeTabTransitionKey = computed(() => activeTab.value);
 
 const isInventoryOpen  = ref(false);
-const showApplyPanel      = ref(false);
-const showConfirmModal    = ref(false);
-const pendingSelectedIds  = ref<SectionId[]>([]);
-const applyPanelStyle  = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
-const applyPanelWrapper = ref<HTMLElement | null>(null);
+const showApplyModal = ref(false);
 
 const displayedStudent = ref<StudentProps | null>(null);
 
@@ -130,11 +128,17 @@ const activeStyleStudent = computed(() => styleStudent.value ?? displayedStudent
 
 const {
   currentBond, newBondLevel, totalCumulativeExp, remainingXp: bondRemainingXp,
-  giftFormData, boxFormData, shouldShowGiftGrade,
+  giftFormData, boxFormData, nonFavorGiftsMap, shouldShowGiftGrade,
   closeModal, convertBoxes, handleBondInput, handleGiftInput, handleBoxInput,
-  autoFillGifts, resetGifts, undoChanges,
+  showConvertModal, convertModalNeeded, confirmConversion, cancelConversion,
+  showSyncGiftsModal, syncGifts,
+  canUndo, canRedo, undoChanges, redoChanges, resetGifts,
   loadFromIndexedDB: loadGiftData,
 } = useStudentGifts(props, emit);
+
+const canConvert = computed(() =>
+  (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 && (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2
+);
 
 const {
   characterLevels, skillLevels, potentialLevels, allMaterialsNeeded,
@@ -201,23 +205,6 @@ function handleStyleToggle() {
   activeStyleId.value = activeStyleId.value === partnerId ? null : partnerId;
 }
 
-// ── Apply Upgrade panel positioning ─────────────────────────────────────────
-
-async function openApplyPanel(event: MouseEvent) {
-  const btn = event.currentTarget as HTMLElement;
-  applyPanelStyle.value = positionAtElement(btn);
-  showApplyPanel.value = true;
-  await nextTick();
-  applyPanelStyle.value = positionAtElement(btn, applyPanelWrapper.value);
-}
-
-function toggleApplyPanel(event: MouseEvent) {
-  if (showApplyPanel.value) {
-    showApplyPanel.value = false;
-  } else {
-    openApplyPanel(event);
-  }
-}
 
 // ── Apply Upgrade ────────────────────────────────────────────────────────────
 
@@ -286,29 +273,53 @@ const materialsPreview = computed<Material[]>(() => {
   return Array.from(map.values()).filter(m => m.materialQuantity > 0);
 });
 
-const confirmPreviewItems = computed<MaterialPreviewItem[]>(() => {
-  const result: MaterialPreviewItem[] = [];
+function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
+  const student = displayedStudent.value;
+  if (!student) return [];
 
-  // Regular materials (aggregated by ID, enriched with owned + remaining)
-  materialsPreview.value.forEach(m => {
+  // Collect raw materials for selected sections only
+  const raw: Material[] = [];
+
+  if (selectedIds.includes('level'))
+    raw.push(...calculateLevelMaterials(student, characterLevels.value));
+  if (selectedIds.includes('skills'))
+    raw.push(...calculateSkillMaterials(student, skillLevels.value));
+  if (selectedIds.includes('potential'))
+    raw.push(...calculatePotentialMaterials(student, potentialLevels.value));
+  if (selectedIds.includes('equipment')) {
+    raw.push(...calculateEquipmentMaterials(student, equipmentLevels.value));
+    raw.push(...calculateEquipmentCredits(equipmentLevels.value));
+  }
+  if (selectedIds.includes('grade')) {
+    raw.push(...calculateGradeMaterials(gradeLevels.value, gradeInfos.value));
+    raw.push(...calculateGradeCredits(gradeLevels.value));
+  }
+  if (selectedIds.includes('exclusive'))
+    raw.push(...calculateExclusiveGearMaterials(student, exclusiveGearLevel.value));
+
+  // Aggregate by material ID
+  const map = new Map<number, Material>();
+  for (const m of raw) {
+    const id = m.material.Id;
+    const ex = map.get(id);
+    if (ex) ex.materialQuantity += m.materialQuantity;
+    else map.set(id, { ...m });
+  }
+
+  // Convert to preview items
+  const result: MaterialPreviewItem[] = [];
+  for (const m of map.values()) {
+    if (m.materialQuantity <= 0) continue;
     const id = m.material.Id;
     const owned = m.type === 'equipments'
       ? (equipmentFormData.value[id] ?? 0)
       : (itemFormData.value[id] ?? 0);
-    result.push({
-      material: m.material,
-      needed: m.materialQuantity,
-      owned,
-      remaining: owned - m.materialQuantity,
-      type: m.type ?? 'materials',
-    });
-  });
+    result.push({ material: m.material, needed: m.materialQuantity, owned, remaining: owned - m.materialQuantity, type: m.type ?? 'materials' });
+  }
 
-  // Char XP items — only when 'level' is selected
-  if (pendingSelectedIds.value.includes('level')) {
-    const cost = computeCharacterXpCost(
-      characterLevels.value.current, characterLevels.value.target
-    );
+  // XP items for level (activity reports)
+  if (selectedIds.includes('level')) {
+    const cost = computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target);
     if (cost > 0) {
       const charItems = getCharXpItems(id => itemFormData.value[id] ?? 0);
       const consumed  = simulateXpDeduction(cost, charItems);
@@ -316,19 +327,13 @@ const confirmPreviewItems = computed<MaterialPreviewItem[]>(() => {
         if (consumed[i] <= 0) return;
         const mat = getResourceDataByIdSync(item.id);
         if (!mat) return;
-        result.push({
-          material: mat,
-          needed: consumed[i],
-          owned: item.owned,
-          remaining: item.owned - consumed[i],
-          type: 'xp',
-        });
+        result.push({ material: mat, needed: consumed[i], owned: item.owned, remaining: item.owned - consumed[i], type: 'xp' });
       });
     }
   }
 
-  // Equip XP items — only when 'equipment' is selected
-  if (pendingSelectedIds.value.includes('equipment')) {
+  // XP items for equipment (XP balls)
+  if (selectedIds.includes('equipment')) {
     const cost = computeEquipmentXpCost(equipmentLevels.value);
     if (cost > 0) {
       const equipItems = getEquipXpItems(id => equipmentFormData.value[id] ?? 0);
@@ -337,19 +342,18 @@ const confirmPreviewItems = computed<MaterialPreviewItem[]>(() => {
         if (consumed[i] <= 0) return;
         const mat = getEquipmentDataByIdSync(item.id);
         if (!mat) return;
-        result.push({
-          material: mat,
-          needed: consumed[i],
-          owned: item.owned,
-          remaining: item.owned - consumed[i],
-          type: 'xp',
-        });
+        result.push({ material: mat, needed: consumed[i], owned: item.owned, remaining: item.owned - consumed[i], type: 'xp' });
       });
     }
   }
 
+  result.sort((a, b) => sortMaterials(
+    { material: a.material, materialQuantity: a.needed, type: a.type },
+    { material: b.material, materialQuantity: b.needed, type: b.type },
+  ));
+
   return result;
-});
+}
 
 const hasAnyPendingUpgrade = computed(() => {
   if ((characterLevels.value.current ?? 1) < (characterLevels.value.target ?? 1)) return true;
@@ -374,14 +378,7 @@ function applyMaterialDelta(snapshot: Material[], afterMap: Map<number, number>)
   }
 }
 
-function handleApplySelected(selectedIds: SectionId[]) {
-  pendingSelectedIds.value = selectedIds;
-  showApplyPanel.value = false;
-  showConfirmModal.value = true;
-}
-
-function doApplyUpgrade() {
-  const selectedIds = pendingSelectedIds.value;
+function doApplyUpgrade(selectedIds: SectionId[]) {
 
   // 0. Snapshot XP costs BEFORE levels change (step 2 sets current = target)
   const charXpCost = selectedIds.includes('level')
@@ -448,8 +445,7 @@ function doApplyUpgrade() {
     );
   }
 
-  showConfirmModal.value = false;
-  pendingSelectedIds.value = [];
+  showApplyModal.value = false;
 }
 
 function setActiveTab(nextTab: ModalTab) {
@@ -476,10 +472,10 @@ watch(isOwned, (owned) => {
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.isVisible) return;
 
-  // If apply panel is open, Escape closes it first
-  if (showApplyPanel.value) {
+  // If apply modal is open, Escape closes it first
+  if (showApplyModal.value) {
     if (event.key === 'Escape') {
-      showApplyPanel.value = false;
+      showApplyModal.value = false;
       event.preventDefault();
     }
     return;
@@ -633,7 +629,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                   class="apply-upgrade-btn"
                   type="button"
                   :disabled="!hasAnyPendingUpgrade"
-                  @click="toggleApplyPanel($event)"
+                  @click="showApplyModal = true"
                 >
                   Apply Upgrade
                 </button>
@@ -712,10 +708,14 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                       <GiftOption
                         v-if="currentBond < 100"
                         class="bond-options-panel"
+                        :can-convert="canConvert"
+                        :can-undo="canUndo"
+                        :can-redo="canRedo"
                         @toggle-convert="convertBoxes"
-                        @auto-fill-gift="autoFillGifts"
+                        @sync-gifts="showSyncGiftsModal = true"
                         @reset-gifts="resetGifts"
                         @undo-changes="undoChanges"
+                        @redo-changes="redoChanges"
                       />
                     </div>
 
@@ -832,34 +832,37 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       />
     </Transition>
 
-    <!-- Apply Upgrade panel — teleported to body for viewport-aware positioning -->
-    <Teleport to="body">
-      <template v-if="displayedStudent && showApplyPanel">
-        <div class="apply-panel-backdrop" @click="showApplyPanel = false" />
-        <div ref="applyPanelWrapper" class="apply-panel-wrapper" :style="applyPanelStyle">
-          <ApplyUpgradePanel
-            :student="displayedStudent"
-            :character-levels="characterLevels"
-            :skill-levels="skillLevels"
-            :potential-levels="potentialLevels"
-            :equipment-levels="equipmentLevels"
-            :grade-levels="gradeLevels"
-            :exclusive-gear-level="exclusiveGearLevel"
-            :has-sufficient-materials="hasSufficientMaterials"
-            :insufficient-list="insufficientList"
-            @apply="handleApplySelected"
-            @close="showApplyPanel = false"
-          />
-        </div>
-      </template>
-    </Teleport>
+    <!-- Apply Upgrade modal — combined section selection + material preview -->
+    <ApplyUpgradeModal
+      v-if="showApplyModal && displayedStudent"
+      :student="displayedStudent"
+      :character-levels="characterLevels"
+      :skill-levels="skillLevels"
+      :potential-levels="potentialLevels"
+      :equipment-levels="equipmentLevels"
+      :grade-levels="gradeLevels"
+      :exclusive-gear-level="exclusiveGearLevel"
+      :has-sufficient-materials="hasSufficientMaterials"
+      :insufficient-list="insufficientList"
+      :compute-preview="computePreview"
+      @apply="doApplyUpgrade"
+      @close="showApplyModal = false"
+    />
 
-    <!-- Confirmation modal — shown after Apply is clicked in ApplyUpgradePanel -->
-    <ApplyConfirmModal
-      v-if="showConfirmModal"
-      :preview-items="confirmPreviewItems"
-      @confirm="doApplyUpgrade"
-      @cancel="showConfirmModal = false; pendingSelectedIds = []"
+    <!-- Sync Gifts mode selection dialog -->
+    <SyncGiftsModeModal
+      v-if="showSyncGiftsModal"
+      @confirm="(mode) => { showSyncGiftsModal = false; syncGifts(mode); }"
+      @cancel="showSyncGiftsModal = false"
+    />
+
+    <!-- Convert material selection dialog -->
+    <ConvertMaterialModal
+      v-if="showConvertModal"
+      :non-favor-gifts-map="nonFavorGiftsMap"
+      :needed-count="convertModalNeeded"
+      @confirm="confirmConversion"
+      @cancel="cancelConversion"
     />
   </div>
 </template>
@@ -1007,25 +1010,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   cursor: not-allowed;
 }
 
-.apply-panel-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-}
-
-.apply-panel-wrapper {
-  position: fixed;
-  z-index: 201;
-}
-
-@media (max-width: 480px) {
-  .apply-panel-wrapper {
-    top: auto !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0;
-  }
-}
 
 .recruitment-status {
   font-size: 0.82rem;

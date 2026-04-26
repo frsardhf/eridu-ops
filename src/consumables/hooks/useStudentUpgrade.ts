@@ -46,7 +46,7 @@ export function useStudentUpgrade(props: {
 
   const checkAllSkillsMaxed = () => {
     return Object.entries(skillLevels.value).every(([type, levels]) => {
-      const student = props.student as Record<string, any>;
+      const student = props.student;
       const maxLevel = student?.Skills?.[type]?.Parameters?.[0]?.length;
       return levels.current === maxLevel && levels.target === maxLevel;
     });
@@ -54,7 +54,7 @@ export function useStudentUpgrade(props: {
 
   const checkTargetSkillsMaxed = () => {
     return Object.entries(skillLevels.value).every(([type, levels]) => {
-      const student = props.student as Record<string, any>;
+      const student = props.student;
       const maxLevel = student?.Skills?.[type]?.Parameters?.[0]?.length;
       return levels.target === maxLevel;
     });
@@ -75,7 +75,7 @@ export function useStudentUpgrade(props: {
   const toggleMaxAllSkills = (checked: boolean) => {
     Object.keys(skillLevels.value).forEach((type) => {
       const skillType = type as SkillType;
-      const student = props.student as Record<string, any>;
+      const student = props.student;
       const maxLevel = student?.Skills?.[skillType]?.Parameters?.[0]?.length
 
       if (checked) {
@@ -99,7 +99,7 @@ export function useStudentUpgrade(props: {
   const toggleMaxTargetSkills = (checked: boolean) => {
     Object.keys(skillLevels.value).forEach((type) => {
       const skillType = type as SkillType;
-      const student = props.student as Record<string, any>;
+      const student = props.student;
       const maxLevel = student?.Skills?.[skillType]?.Parameters?.[0]?.length
 
       if (checked) {
