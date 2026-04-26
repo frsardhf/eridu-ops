@@ -37,6 +37,7 @@ const step = ref<Step>('type');
 const inventoryType = ref<InventoryType>('items');
 const isDragging = ref(false);
 const isLoading = ref(false);
+const loadingProgress = ref({ current: 0, total: 1 });
 const errorMessage = ref('');
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
@@ -51,6 +52,17 @@ const searchQuery      = ref('');
 function posKey(item: ParsedItem): string {
   return `${item.row}-${item.col}`;
 }
+
+// ── Grouped results (one group per screenshot) ────────────────────────────
+const groupedResults = computed(() => {
+  const groups: ParsedItem[][] = [];
+  for (const item of parsedResults.value) {
+    const idx = Math.floor(item.row / 4);
+    if (!groups[idx]) groups[idx] = [];
+    groups[idx].push(item);
+  }
+  return groups;
+});
 
 // ── Item search ──────────────────────────────────────────────────────────
 const searchResults = computed<CachedResource[]>(() => {
@@ -107,49 +119,55 @@ function handleDrop(event: DragEvent) {
   event.preventDefault();
   isDragging.value = false;
   const files = event.dataTransfer?.files;
-  if (files?.length) processFile(files[0]);
+  if (files?.length) processFiles(Array.from(files).slice(0, 3));
 }
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files?.length) {
-    processFile(input.files[0]);
+    processFiles(Array.from(input.files).slice(0, 3));
     input.value = '';
   }
 }
 
-async function processFile(file: File) {
-  if (!file.type.startsWith('image/')) {
-    errorMessage.value = 'Please select an image file (PNG, JPG, or WebP).';
+async function processFiles(files: File[]) {
+  const imageFiles = files.filter(f => f.type.startsWith('image/'));
+  if (!imageFiles.length) {
+    errorMessage.value = 'Please select image files (PNG, JPG, or WebP).';
     return;
   }
 
   isLoading.value = true;
   errorMessage.value = '';
+  loadingProgress.value = { current: 0, total: imageFiles.length };
 
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('inventoryType', inventoryType.value);
-
-    const response = await fetch(`${PARSER_BASE}/inventory/parse`, {
-      method: 'POST',
-      body: formData,
+    const requests = imageFiles.map((file, idx) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('inventoryType', inventoryType.value);
+      return fetch(`${PARSER_BASE}/inventory/parse`, {
+        method: 'POST',
+        body: formData,
+      }).then(async res => {
+        loadingProgress.value.current++;
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as any).error || `HTTP ${res.status}`);
+        }
+        const data = await res.json() as { results: ParsedItem[] };
+        // Offset rows by screenshot index * 4 to keep posKeys unique across screenshots
+        return data.results.map(r => ({ ...r, row: r.row + idx * 4 }));
+      });
     });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as any).error || `HTTP ${response.status}`);
-    }
+    const allResults = (await Promise.all(requests)).flat();
+    parsedResults.value = allResults;
+    hasLowConfidence.value = allResults.some(r => r.confidence < 0.8);
 
-    const data = await response.json() as { results: ParsedItem[] };
-    parsedResults.value = data.results;
-    hasLowConfidence.value = data.results.some(r => r.confidence < 0.8);
-
-    // Initialise editable maps keyed by position
     editedQuantities.value = {};
     editedItemIds.value = {};
-    data.results.forEach(r => {
+    allResults.forEach(r => {
       editedQuantities.value[`${r.row}-${r.col}`] = r.quantity;
     });
 
@@ -280,12 +298,18 @@ function closeModal(event: MouseEvent) {
               id="screenshot-input"
               class="file-input"
               accept="image/png,image/jpeg,image/webp"
+              multiple
               @change="handleFileSelect"
             />
 
             <div v-if="isLoading" class="status-message">
               <span class="loader"></span>
-              <p>{{ $t('parsingScreenshot') }}</p>
+              <p>
+                {{ $t('parsingScreenshot') }}
+                <span v-if="loadingProgress.total > 1">
+                  ({{ loadingProgress.current }}/{{ loadingProgress.total }})
+                </span>
+              </p>
             </div>
 
             <div v-else-if="errorMessage" class="status-message error">
@@ -311,7 +335,7 @@ function closeModal(event: MouseEvent) {
               <label for="screenshot-input" class="browse-button">{{ $t('browseFiles') }}</label>
             </div>
           </div>
-          <p class="sort-disclaimer">⚠️ Before scanning, set inventory sort to <strong>ascending or descending by item ID</strong> (default). Name / usage / owned sort is not supported.</p>
+          <p class="sort-disclaimer">⚠️ Before scanning, set inventory sort to <strong>ascending or descending by item ID</strong> (default). Name / usage / owned sort is not supported. Maximum 3 screenshots per scan.</p>
         </template>
 
         <!-- Step 3: Review -->
@@ -338,9 +362,17 @@ function closeModal(event: MouseEvent) {
           <!-- Click-away backdrop for item search -->
           <div v-if="activeSearchPos" class="search-backdrop" @click="closeSearch" />
 
-          <div v-if="parsedResults.length > 0" class="results-grid">
+          <div v-if="parsedResults.length > 0" class="results-groups">
             <div
-              v-for="item in parsedResults"
+              v-for="(group, groupIdx) in groupedResults"
+              :key="groupIdx"
+              class="screenshot-group"
+              :class="`group-${groupIdx % 2}`"
+            >
+              <div class="group-label">#{{ groupIdx + 1 }}</div>
+              <div class="results-grid">
+            <div
+              v-for="item in group"
               :key="posKey(item)"
               class="result-card-wrapper"
               :class="{
@@ -418,6 +450,8 @@ function closeModal(event: MouseEvent) {
                   title="Icon changed"
                 />
               </template>
+            </div>
+              </div>
             </div>
           </div>
 
@@ -676,16 +710,36 @@ function closeModal(event: MouseEvent) {
   padding: 24px 0;
 }
 
+.results-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.screenshot-group {
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.screenshot-group.group-0 { background: var(--background-secondary); }
+.screenshot-group.group-1 { background: color-mix(in srgb, var(--accent-color) 5%, var(--background-secondary)); }
+
+.group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
 /* 5-column ResourceCard grid matching the game's inventory layout */
 .results-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
-  margin-bottom: 14px;
   padding: 4px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--background-secondary);
 }
 
 .result-card-wrapper {
