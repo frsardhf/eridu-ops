@@ -11,6 +11,7 @@ import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 
 const HISTORY_LIMIT = 10;
+const BOX_ITEM_IDS = new Set([YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, SELECTOR_BOX_ID]);
 
 interface GiftSnapshot {
   giftFormData: Record<string, number>;
@@ -303,13 +304,20 @@ export function useStudentGifts(props: {
   };
 
   // When the aggregate SR/SSR stepper is lowered below the tracked per-gift sum,
-  // we can't know which specific gifts were removed, so clear that rarity's entries.
+  // we can't know which specific gifts were removed, so clear that rarity's entries
+  // from both nonFavorGiftsMap and any converted gift IDs stored in boxFormData.
   function clearNonFavorIfOvercount(rarity: 'SR' | 'SSR', newTotal: number) {
-    const ids = Object.keys(nonFavorGiftsMap.value)
+    const nonFavorIds = Object.keys(nonFavorGiftsMap.value)
       .filter(id => getResourceDataByIdSync(Number(id))?.Rarity === rarity);
-    const currentSum = ids.reduce((s, id) => s + (nonFavorGiftsMap.value[Number(id)] ?? 0), 0);
-    if (newTotal < currentSum) {
-      ids.forEach(id => delete nonFavorGiftsMap.value[Number(id)]);
+    const nonFavorSum = nonFavorIds.reduce((s, id) => s + (nonFavorGiftsMap.value[Number(id)] ?? 0), 0);
+
+    const convertedIds = Object.keys(boxFormData.value)
+      .filter(id => !BOX_ITEM_IDS.has(Number(id)) && getResourceDataByIdSync(Number(id))?.Rarity === rarity);
+    const convertedSum = convertedIds.reduce((s, id) => s + (boxFormData.value[Number(id)] ?? 0), 0);
+
+    if (newTotal < nonFavorSum + convertedSum) {
+      nonFavorIds.forEach(id => delete nonFavorGiftsMap.value[Number(id)]);
+      convertedIds.forEach(id => delete boxFormData.value[Number(id)]);
     }
   }
 
@@ -341,7 +349,9 @@ export function useStudentGifts(props: {
     showConvertModal.value = false;
     savePreviousState();
 
-    // Deduct the selected individual gifts from nonFavorGiftsMap
+    // Deduct the selected individual gifts from nonFavorGiftsMap and record
+    // them in boxFormData so they remain counted as "needed" for the leftover
+    // calculation (they will be physically consumed during conversion).
     for (const [id, qty] of Object.entries(selection)) {
       const giftId = Number(id);
       const remaining = (nonFavorGiftsMap.value[giftId] ?? 0) - qty;
@@ -349,6 +359,9 @@ export function useStudentGifts(props: {
         delete nonFavorGiftsMap.value[giftId];
       } else {
         nonFavorGiftsMap.value[giftId] = remaining;
+      }
+      if (qty > 0) {
+        boxFormData.value[giftId] = (boxFormData.value[giftId] ?? 0) + qty;
       }
     }
 

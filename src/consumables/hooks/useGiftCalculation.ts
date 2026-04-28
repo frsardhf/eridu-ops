@@ -37,6 +37,11 @@ function buildGiftNeededMap() {
     Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
       addGiftNeed(parseInt(giftId, 10), qty as number);
     });
+
+    const boxFormData = form.boxFormData ?? {};
+    Object.entries(boxFormData).forEach(([boxId, qty]) => {
+      addGiftNeed(parseInt(boxId, 10), qty as number);
+    });
   });
 
   Object.entries(allGearsData).forEach(([studentId, materials]) => {
