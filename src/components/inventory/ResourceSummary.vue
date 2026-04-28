@@ -81,22 +81,22 @@ onUnmounted(() => {
 });
 
 
-// Per-student XP tooltip
-const xpTooltipData = ref<{ quantity: number } | null>(null);
-const xpTooltipPos = ref({ left: '0px', top: '0px' });
+// Per-student chip tooltip (XP items + credits)
+const chipTooltipData = ref<{ quantity: number; label: string } | null>(null);
+const chipTooltipPos = ref({ left: '0px', top: '0px' });
 
-function showXpTooltip(e: MouseEvent, quantity: number) {
-  xpTooltipData.value = { quantity };
+function showChipTooltip(e: MouseEvent, quantity: number, label: string) {
+  chipTooltipData.value = { quantity, label };
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const tipWidth = 140;
   const left = rect.right + 6 + tipWidth > window.innerWidth
     ? rect.left - tipWidth - 6
     : rect.right + 6;
-  xpTooltipPos.value = { left: `${left}px`, top: `${rect.top}px` };
+  chipTooltipPos.value = { left: `${left}px`, top: `${rect.top}px` };
 }
 
-function hideXpTooltip() {
-  xpTooltipData.value = null;
+function hideChipTooltip() {
+  chipTooltipData.value = null;
 }
 
 // Helper function to get material icon source and alt text (Materials and Equipment tabs)
@@ -134,28 +134,6 @@ const pagedLeftoverResourceStates = computed(() =>
 );
 
 
-const getLeftoverTooltipValue = (materialId: number | null): number => {
-  if (materialId === null) return 0;
-
-  const leftoverValue = leftoverByMaterialId.value.get(materialId);
-  if (typeof leftoverValue === 'number') {
-    return leftoverValue;
-  }
-
-  if (materialId === 5) {
-    return creditRemaining.value;
-  }
-
-  if (isExpReport(materialId)) {
-    return expInfo.value.remaining;
-  }
-
-  if (isExpBall(materialId)) {
-    return expBallInfo.value.remaining;
-  }
-
-  return Math.max(0, getMaterialLeftover(materialId));
-};
 
 const setTab = (tab: ViewTab) => {
   if (activeTab.value !== tab) {
@@ -278,9 +256,13 @@ watch(
                 v-for="mat in row.materials"
                 :key="mat.material?.Id"
                 class="resource-item per-student-mat-item"
-                :title="mat.type !== 'xp' ? mat.material?.Name : undefined"
-                @mouseenter="mat.type === 'xp' ? showXpTooltip($event, mat.materialQuantity) : undefined"
-                @mouseleave="mat.type === 'xp' ? hideXpTooltip() : undefined"
+                :title="mat.type !== 'xp' && mat.material?.Id !== 5 ? mat.material?.Name : undefined"
+                @mouseenter="mat.type === 'xp' || mat.material?.Id === 5
+                  ? showChipTooltip($event, mat.materialQuantity, $t('needed'))
+                  : undefined"
+                @mouseleave="mat.type === 'xp' || mat.material?.Id === 5
+                  ? hideChipTooltip()
+                  : undefined"
               >
                 <div class="resource-content">
                   <img
@@ -298,17 +280,17 @@ watch(
           </p>
         </div>
 
-        <!-- Per-student XP tooltip -->
+        <!-- Per-student chip tooltip (XP items + credits) -->
         <div
-          v-if="xpTooltipData"
+          v-if="chipTooltipData"
           class="material-tooltip"
-          :style="{ left: xpTooltipPos.left, top: xpTooltipPos.top, 'pointer-events': 'none' }"
+          :style="{ left: chipTooltipPos.left, top: chipTooltipPos.top, 'pointer-events': 'none' }"
         >
           <div class="credit-info" style="margin-bottom: 0">
             <div class="credit-stats">
               <div class="stat">
-                <span class="label">{{ $t('needed') }}</span>
-                <span class="value">{{ formatLargeNumberAmount(xpTooltipData.quantity) }}</span>
+                <span class="label">{{ chipTooltipData.label }}</span>
+                <span class="value">{{ formatLargeNumberAmount(chipTooltipData.quantity) }}</span>
               </div>
             </div>
           </div>
@@ -445,8 +427,11 @@ watch(
       </div>
       
       <!-- Material Usage Tooltip -->
-      <div 
-        v-if="hoveredItemId !== null && (activeMode === 'leftover' || studentUsageForMaterial.length > 0)"
+      <div
+        v-if="hoveredItemId !== null && (
+          (activeMode === 'leftover' && (hoveredItemId === 5 || isExpReport(hoveredItemId) || isExpBall(hoveredItemId))) ||
+          (activeMode !== 'leftover' && studentUsageForMaterial.length > 0)
+        )"
         class="material-tooltip"
         :style="{
           left: tooltipPosition.left,
@@ -456,16 +441,46 @@ watch(
         @mouseenter="handleTooltipMouseEnter"
         @mouseleave="handleTooltipMouseLeave"
       >
-        <div v-if="activeMode === 'leftover'" class="credit-info">
+        <!-- Leftover mode: Credits -->
+        <div v-if="activeMode === 'leftover' && hoveredItemId === 5" class="credit-info" style="margin-bottom: 0">
           <div class="credit-stats">
             <div class="stat">
+              <span class="label">{{ $t('owned') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(creditOwned) }}</span>
+            </div>
+            <div class="stat">
               <span class="label">{{ $t('leftover') }}</span>
-              <span class="value positive">
-                {{ formatLargeNumberAmount(getLeftoverTooltipValue(hoveredItemId)) }}
-              </span>
+              <span class="value positive">{{ formatLargeNumberAmount(creditRemaining) }}</span>
             </div>
           </div>
-          <div class="separator"></div>
+        </div>
+
+        <!-- Leftover mode: EXP Reports -->
+        <div v-if="activeMode === 'leftover' && hoveredItemId !== null && isExpReport(hoveredItemId)" class="credit-info" style="margin-bottom: 0">
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('owned') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(expInfo.owned) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('leftover') }}</span>
+              <span class="value positive">{{ formatLargeNumberAmount(expInfo.remaining) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leftover mode: EXP Balls -->
+        <div v-if="activeMode === 'leftover' && hoveredItemId !== null && isExpBall(hoveredItemId)" class="credit-info" style="margin-bottom: 0">
+          <div class="credit-stats">
+            <div class="stat">
+              <span class="label">{{ $t('owned') }}</span>
+              <span class="value">{{ formatLargeNumberAmount(expBallInfo.owned) }}</span>
+            </div>
+            <div class="stat">
+              <span class="label">{{ $t('leftover') }}</span>
+              <span class="value positive">{{ formatLargeNumberAmount(expBallInfo.remaining) }}</span>
+            </div>
+          </div>
         </div>
 
         <!-- Credit Information Section -->
@@ -548,7 +563,7 @@ watch(
           <div class="separator"></div>
         </div>
 
-        <div v-if="studentUsageForMaterial.length > 0" class="student-icons-grid">
+        <div v-if="activeMode !== 'leftover' && studentUsageForMaterial.length > 0" class="student-icons-grid">
           <div
             v-for="(usage, i) in studentUsageForMaterial"
             :key="`usage-${i}`"
