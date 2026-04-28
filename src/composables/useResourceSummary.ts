@@ -1,10 +1,17 @@
 import { computed, type Ref } from 'vue';
-import type { MaterialWithRemaining } from '@/types/upgrade';
+import type { MaterialWithRemaining, Material, MaterialType } from '@/types/upgrade';
 import { MATERIAL, EQUIPMENT, type CachedResource } from '@/types/resource';
+import type { StudentProps } from '@/types/student';
 import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
 import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
 import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
-import { getAllItemsFromCache, getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
+import { useStudentData } from '@/consumables/hooks/useStudentData';
+import { getAllItemsFromCache, getAllEquipmentFromCache, getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/consumables/stores/resourceCacheStore';
+import { getAllMaterialsData } from '@/consumables/stores/materialsStore';
+import { getAllGearsData } from '@/consumables/stores/gearsStore';
+import { computeCharacterXpCost } from '@/consumables/utils/upgradeMaterialUtils';
+import { computeEquipmentXpCost } from '@/consumables/utils/gearMaterialUtils';
+import { studentDataStore } from '@/consumables/stores/studentStore';
 import { applyFilters } from '@/consumables/utils/filterUtils';
 import {
   isExpReport,
@@ -12,8 +19,16 @@ import {
   calculateMissingItems,
   calculateLeftoverItems,
   sortMaterials,
+  consolidateAndSortMaterials,
 } from '@/consumables/utils/materialUtils';
+import { isSecondaryStudent } from '@/consumables/constants/linkedStudents';
 import { $t } from '@/locales';
+
+export interface StudentMaterialRow {
+  student: StudentProps;
+  materials: Material[];
+  total: number;
+}
 
 export type ViewTab = 'materials' | 'equipment' | 'gifts';
 export type ViewMode = 'needed' | 'missing' | 'leftover';
@@ -165,6 +180,54 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
 
   const studentsWithGifts = computed(() => getStudentsWithGifts(activeMode.value));
 
+  // --- Per-student rows (combined: materials + gears, all tabs) ---
+
+  const allStudentMaterialRows = computed((): StudentMaterialRow[] => {
+    const { studentData } = useStudentData();
+    const allMatData = getAllMaterialsData();
+    const allGearData = getAllGearsData();
+    const studentIds = new Set([
+      ...Object.keys(allMatData),
+      ...Object.keys(allGearData),
+    ]);
+    const rows: StudentMaterialRow[] = [];
+
+    studentIds.forEach(id => {
+      const studentId = Number(id);
+      if (isSecondaryStudent(studentId)) return;
+      const form = studentDataStore.value[studentId];
+      if (!form || form.isOwned === false) return;
+      const student = studentData.value[id];
+      if (!student) return;
+      const combined: Material[] = [
+        ...(allMatData[studentId] ?? []),
+        ...(allGearData[studentId] ?? []),
+      ];
+
+      const charXp = computeCharacterXpCost(
+        form.characterLevels?.current ?? 1,
+        form.characterLevels?.target ?? 1
+      );
+      if (charXp > 0) {
+        const xpMat = getResourceDataByIdSync(10);
+        if (xpMat) combined.push({ material: xpMat, materialQuantity: charXp, type: 'xp' });
+      }
+
+      const equipXp = computeEquipmentXpCost(form.equipmentLevels ?? {});
+      if (equipXp > 0) {
+        const xpBallMat = getEquipmentDataByIdSync(1);
+        if (xpBallMat) combined.push({ material: xpBallMat, materialQuantity: equipXp, type: 'xp' });
+      }
+
+      const materials = consolidateAndSortMaterials(combined)
+        .filter(m => m.materialQuantity > 0);
+      if (materials.length === 0) return;
+      rows.push({ student, materials, total: materials.reduce((s, m) => s + m.materialQuantity, 0) });
+    });
+
+    return rows.sort((a, b) => b.total - a.total);
+  });
+
   // --- Display selection (tab × mode multiplexer) ---
 
   const displayResources = computed(() => {
@@ -253,5 +316,6 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
     noResourcesText,
     pagedLeftoverResources,
     leftoverByMaterialId,
+    allStudentMaterialRows,
   };
 }

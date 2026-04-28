@@ -552,7 +552,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   padding: 3px 6px;
   border-radius: 4px;
   background: var(--background-secondary);
-  font-size: 0.72em;
+  font-size: 0.82em;
   transition: background 0.15s;
 }
 

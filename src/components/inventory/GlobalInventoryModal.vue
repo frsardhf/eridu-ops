@@ -42,16 +42,18 @@ const summaryMode = ref(false);
 const summaryTab = ref<SummaryTab>('materials');
 const summaryViewMode = ref<SummaryViewMode>('needed');
 const contentDirection = ref<'forward' | 'backward'>('forward');
+const viewType = ref<'aggregate' | 'per-student'>('aggregate');
 
 const contentTransitionName = computed(() =>
   contentDirection.value === 'forward' ? 'inventory-pane-forward' : 'inventory-pane-backward'
 );
 
-const contentTransitionKey = computed(() =>
-  summaryMode.value
+const contentTransitionKey = computed(() => {
+  if (summaryMode.value && viewType.value === 'per-student') return 'summary-per-student';
+  return summaryMode.value
     ? `summary-${summaryTab.value}-${summaryViewMode.value}`
-    : `inventory-${activeTab.value}`
-);
+    : `inventory-${activeTab.value}`;
+});
 
 function setInventoryTab(nextTab: InventoryTab) {
   if (nextTab === activeTab.value) return;
@@ -87,6 +89,8 @@ const toggleSummaryMode = () => {
     } else if (summaryTab.value === 'equipment') {
       summaryTab.value = 'materials';
     }
+  } else {
+    viewType.value = 'aggregate';
   }
 
   const nextIndex = next ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
@@ -102,6 +106,24 @@ const toggleSummaryMode = () => {
       <div class="inventory-header">
         <div class="inventory-title">{{ $t('inventory') }}</div>
         <div class="inventory-header-actions">
+          <button
+            v-if="summaryMode"
+            class="inventory-view-toggle"
+            :class="{ active: viewType === 'per-student' }"
+            @click="viewType = viewType === 'per-student' ? 'aggregate' : 'per-student'"
+            :title="viewType === 'per-student' ? $t('aggregateView') : $t('perStudentView')"
+            :aria-pressed="viewType === 'per-student'"
+          >
+            <!-- Person icon: shown when switching TO per-student -->
+            <svg v-if="viewType === 'aggregate'" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <!-- Grid icon: shown when switching back TO aggregate -->
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/>
+            </svg>
+            <span>{{ viewType === 'per-student' ? $t('aggregateView') : $t('perStudentView') }}</span>
+          </button>
           <button
             class="inventory-summary-toggle"
             :class="{ active: summaryMode }"
@@ -122,68 +144,66 @@ const toggleSummaryMode = () => {
         </div>
       </div>
 
-      <!-- Tab bar -->
-      <div class="inventory-tabs">
-        <template v-if="!summaryMode">
+      <!-- Tab bar: hidden entirely in per-student view -->
+      <div v-if="!summaryMode" class="inventory-tabs">
+        <button
+          :class="['inv-tab-btn', { active: activeTab === 'items' }]"
+          @click="setInventoryTab('items')"
+        >
+          {{ $t('items') }}
+        </button>
+        <button
+          :class="['inv-tab-btn', { active: activeTab === 'equipment' }]"
+          @click="setInventoryTab('equipment')"
+        >
+          {{ $t('equipment') }}
+        </button>
+      </div>
+      <div v-else-if="viewType !== 'per-student'" class="inventory-tabs">
+        <div class="inventory-tab-group">
           <button
-            :class="['inv-tab-btn', { active: activeTab === 'items' }]"
-            @click="setInventoryTab('items')"
+            :class="['inv-tab-btn', { active: summaryTab === 'materials' }]"
+            @click="setSummaryTab('materials')"
           >
             {{ $t('items') }}
           </button>
           <button
-            :class="['inv-tab-btn', { active: activeTab === 'equipment' }]"
-            @click="setInventoryTab('equipment')"
+            :class="['inv-tab-btn', { active: summaryTab === 'equipment' }]"
+            @click="setSummaryTab('equipment')"
           >
             {{ $t('equipment') }}
           </button>
-        </template>
-        <template v-else>
-          <div class="inventory-tab-group">
-            <button
-              :class="['inv-tab-btn', { active: summaryTab === 'materials' }]"
-              @click="setSummaryTab('materials')"
-            >
-              {{ $t('items') }}
-            </button>
-            <button
-              :class="['inv-tab-btn', { active: summaryTab === 'equipment' }]"
-              @click="setSummaryTab('equipment')"
-            >
-              {{ $t('equipment') }}
-            </button>
-            <button
-              :class="['inv-tab-btn', { active: summaryTab === 'gifts' }]"
-              @click="setSummaryTab('gifts')"
-            >
-              {{ $t('gifts') }}
-            </button>
-          </div>
+          <button
+            :class="['inv-tab-btn', { active: summaryTab === 'gifts' }]"
+            @click="setSummaryTab('gifts')"
+          >
+            {{ $t('gifts') }}
+          </button>
+        </div>
 
-          <div class="inventory-mode-segmented" role="tablist" :aria-label="$t('summary')">
-            <button
-              type="button"
-              :class="['inventory-mode-btn', 'inventory-mode-needed', { active: summaryViewMode === 'needed' }]"
-              @click="setSummaryViewMode('needed')"
-            >
-              {{ $t('needed') }}
-            </button>
-            <button
-              type="button"
-              :class="['inventory-mode-btn', 'inventory-mode-missing', { active: summaryViewMode === 'missing' }]"
-              @click="setSummaryViewMode('missing')"
-            >
-              {{ $t('missing') }}
-            </button>
-            <button
-              type="button"
-              :class="['inventory-mode-btn', 'inventory-mode-leftover', { active: summaryViewMode === 'leftover' }]"
-              @click="setSummaryViewMode('leftover')"
-            >
-              {{ $t('leftover') }}
-            </button>
-          </div>
-        </template>
+        <div class="inventory-mode-segmented" role="tablist" :aria-label="$t('summary')">
+          <button
+            type="button"
+            :class="['inventory-mode-btn', 'inventory-mode-needed', { active: summaryViewMode === 'needed' }]"
+            @click="setSummaryViewMode('needed')"
+          >
+            {{ $t('needed') }}
+          </button>
+          <button
+            type="button"
+            :class="['inventory-mode-btn', 'inventory-mode-missing', { active: summaryViewMode === 'missing' }]"
+            @click="setSummaryViewMode('missing')"
+          >
+            {{ $t('missing') }}
+          </button>
+          <button
+            type="button"
+            :class="['inventory-mode-btn', 'inventory-mode-leftover', { active: summaryViewMode === 'leftover' }]"
+            @click="setSummaryViewMode('leftover')"
+          >
+            {{ $t('leftover') }}
+          </button>
+        </div>
       </div>
 
       <!-- Content -->
@@ -208,6 +228,7 @@ const toggleSummaryMode = () => {
               :active-mode-external="summaryViewMode"
               :show-category-tabs="false"
               :show-mode-tabs="false"
+              :view-type="viewType"
             />
           </div>
         </Transition>
@@ -260,7 +281,8 @@ const toggleSummaryMode = () => {
   gap: 8px;
 }
 
-.inventory-summary-toggle {
+.inventory-summary-toggle,
+.inventory-view-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -275,12 +297,14 @@ const toggleSummaryMode = () => {
   font-size: 0.82rem;
 }
 
-.inventory-summary-toggle:hover {
+.inventory-summary-toggle:hover,
+.inventory-view-toggle:hover {
   background: var(--hover-bg);
   color: var(--text-primary);
 }
 
-.inventory-summary-toggle.active {
+.inventory-summary-toggle.active,
+.inventory-view-toggle.active {
   border-color: var(--accent-color);
   color: var(--text-primary);
   background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
@@ -500,11 +524,13 @@ const toggleSummaryMode = () => {
     width: 90%;
   }
 
-  .inventory-summary-toggle span {
+  .inventory-summary-toggle span,
+  .inventory-view-toggle span {
     display: none;
   }
 
-  .inventory-summary-toggle {
+  .inventory-summary-toggle,
+  .inventory-view-toggle {
     padding: 6px;
   }
 

@@ -21,11 +21,13 @@ const props = withDefaults(defineProps<{
   activeModeExternal?: ViewMode | null;
   showCategoryTabs?: boolean;
   showModeTabs?: boolean;
+  viewType?: 'aggregate' | 'per-student';
 }>(), {
   activeTabExternal: null,
   activeModeExternal: null,
   showCategoryTabs: true,
-  showModeTabs: true
+  showModeTabs: true,
+  viewType: 'aggregate',
 });
 
 // UI state
@@ -38,7 +40,7 @@ const currentExpBall = ref(1);  // Start with Novice exp ball (ID: 1)
 
 const {
   studentsWithGifts, pagedLeftoverResources, leftoverByMaterialId,
-  displayResources, hasDisplayResources, noResourcesText,
+  displayResources, hasDisplayResources, noResourcesText, allStudentMaterialRows,
 } = useResourceSummary(activeTab, activeMode);
 
 const {
@@ -77,6 +79,25 @@ onUnmounted(() => {
   if (expReportInterval) clearInterval(expReportInterval);
   if (expBallInterval) clearInterval(expBallInterval);
 });
+
+
+// Per-student XP tooltip
+const xpTooltipData = ref<{ quantity: number } | null>(null);
+const xpTooltipPos = ref({ left: '0px', top: '0px' });
+
+function showXpTooltip(e: MouseEvent, quantity: number) {
+  xpTooltipData.value = { quantity };
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const tipWidth = 140;
+  const left = rect.right + 6 + tipWidth > window.innerWidth
+    ? rect.left - tipWidth - 6
+    : rect.right + 6;
+  xpTooltipPos.value = { left: `${left}px`, top: `${rect.top}px` };
+}
+
+function hideXpTooltip() {
+  xpTooltipData.value = null;
+}
 
 // Helper function to get material icon source and alt text (Materials and Equipment tabs)
 const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
@@ -236,6 +257,66 @@ watch(
     </div>
     
     <div class="resources-content">
+      <!-- Per-student view -->
+      <template v-if="props.viewType === 'per-student'">
+        <div class="per-student-list">
+          <div
+            v-for="row in allStudentMaterialRows"
+            :key="row.student.Id"
+            class="student-row"
+          >
+            <div class="student-info">
+              <img
+                :src="`https://schaledb.com/images/student/icon/${row.student.Id}.webp`"
+                :alt="row.student.Name"
+                class="per-student-icon"
+              />
+              <span class="per-student-name">{{ row.student.Name }}</span>
+            </div>
+            <div class="student-materials">
+              <div
+                v-for="mat in row.materials"
+                :key="mat.material?.Id"
+                class="resource-item per-student-mat-item"
+                :title="mat.type !== 'xp' ? mat.material?.Name : undefined"
+                @mouseenter="mat.type === 'xp' ? showXpTooltip($event, mat.materialQuantity) : undefined"
+                @mouseleave="mat.type === 'xp' ? hideXpTooltip() : undefined"
+              >
+                <div class="resource-content">
+                  <img
+                    :src="getMaterialIconSrc(mat, mat.type === 'equipments', currentExpIcon, currentExpBall)"
+                    class="resource-icon"
+                    :alt="mat.material?.Name"
+                  />
+                  <span v-if="mat.type !== 'xp'" class="resource-quantity">{{ formatLargeNumber(mat.materialQuantity) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p v-if="allStudentMaterialRows.length === 0" class="no-resources-msg">
+            {{ $t('noResourcesNeeded') }}
+          </p>
+        </div>
+
+        <!-- Per-student XP tooltip -->
+        <div
+          v-if="xpTooltipData"
+          class="material-tooltip"
+          :style="{ left: xpTooltipPos.left, top: xpTooltipPos.top, 'pointer-events': 'none' }"
+        >
+          <div class="credit-info" style="margin-bottom: 0">
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('needed') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(xpTooltipData.quantity) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Aggregate view -->
+      <template v-else>
       <div v-if="!hasDisplayResources" class="no-resources">
         <span>{{ noResourcesText }}</span>
       </div>
@@ -513,6 +594,7 @@ watch(
           </div>
         </div>
       </div>
+      </template>
     </div>
   </div>
 </template>
@@ -935,4 +1017,67 @@ watch(
   margin: 12px 0 0;
   opacity: 0.5;
 }
-</style> 
+
+/* Per-student list layout */
+.per-student-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.student-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+.student-row:last-child {
+  border-bottom: none;
+}
+
+.student-info {
+  flex-shrink: 0;
+  width: 65px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 0;
+}
+
+.per-student-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.per-student-name {
+  font-size: 0.62em;
+  text-align: center;
+  color: var(--text-secondary);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.student-materials {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.per-student-mat-item {
+  width: 65px;
+  height: 65px;
+  flex-shrink: 0;
+}
+
+.no-resources-msg {
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  margin: 0;
+}
+</style>

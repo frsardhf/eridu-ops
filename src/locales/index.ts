@@ -154,7 +154,9 @@ export const translations = {
     purchasable: "Purchasable",
     noUpgradeNeeded: "No upgrade needed",
     noLeftoverResources: "No leftover resources",
-    
+    perStudentView: "Per Student",
+    aggregateView: "Aggregate",
+
     // Equipment types and gear component
     equipmentTypes: {
       Hat: "Hat",
@@ -485,7 +487,9 @@ export const translations = {
     purchasable: "購入可能数",
     noUpgradeNeeded: "アップグレード不要",
     noLeftoverResources: "余っている素材はありません",
-    
+    perStudentView: "生徒別",
+    aggregateView: "まとめ表示",
+
     // Equipment types and gear component
     equipmentTypes: {
       Hat: "帽子",
