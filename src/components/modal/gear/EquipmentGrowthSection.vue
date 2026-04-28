@@ -107,6 +107,7 @@ function updateExclusiveGearTarget(value: number) {
           id="max-target-gears"
           name="max-target-gears"
           :checked="props.targetGearsMaxed"
+          :disabled="props.allGearsMaxed"
           @change="(e) => emit('toggle-max-target-gears', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-target-gears">{{ $t('maxTarget') }}</label>

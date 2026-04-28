@@ -91,6 +91,7 @@ const skillPairs = Object.fromEntries(
           id="max-target-skills"
           name="max-target-skills"
           :checked="props.targetSkillsMaxed"
+          :disabled="props.allSkillsMaxed"
           @change="(e) => emit('toggle-max-target', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-target-skills">{{ $t('maxTarget') }}</label>

@@ -80,6 +80,7 @@ const potentialPairs = Object.fromEntries(
           id="max-target-potentials"
           name="max-target-potentials"
           :checked="props.targetPotentialsMaxed"
+          :disabled="props.allPotentialsMaxed"
           @change="(e) => emit('toggle-max-target-potentials', (e.target as HTMLInputElement).checked)"
         />
         <label for="max-target-potentials">{{ $t('maxTarget') }}</label>

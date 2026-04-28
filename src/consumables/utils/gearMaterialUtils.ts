@@ -323,15 +323,19 @@ export function getEquipXpItems(
   }));
 }
 
-export function getMaxTierForTypeSync(type: string): number {
-  const equipments = getAllEquipmentFromCache();
-  const matchingEquipments = Object.values(equipments)
-    .filter(item => item.Category === type)
-    .filter(
-      (item): item is CachedResource & { Tier: number } =>
-        typeof item.Tier === 'number'
-    )
-    .sort((a, b) => b.Id - a.Id);
+const _maxTierByType = new Map<string, number>();
 
-  return matchingEquipments[0]?.Tier ?? 0;
+export function getMaxTierForTypeSync(type: string): number {
+  if (_maxTierByType.has(type)) return _maxTierByType.get(type)!;
+
+  const equipments = getAllEquipmentFromCache();
+  let max = 0;
+  for (const item of Object.values(equipments)) {
+    if (item.Category === type && typeof item.Tier === 'number' && item.Tier > max) {
+      max = item.Tier;
+    }
+  }
+  // Only cache when the equipment cache is populated (max > 0 means data was loaded)
+  if (max > 0) _maxTierByType.set(type, max);
+  return max;
 }
