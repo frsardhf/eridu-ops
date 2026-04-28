@@ -624,14 +624,14 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
 
               <!-- Apply Upgrade -->
               <div v-if="isOwned" class="upgrade-bar">
-                <span class="upgrade-bar-label">Progression</span>
+                <span class="upgrade-bar-label">{{ $t('progression') }}</span>
                 <button
                   class="apply-upgrade-btn"
                   type="button"
                   :disabled="!hasAnyPendingUpgrade"
                   @click="showApplyModal = true"
                 >
-                  Apply Upgrade
+                  {{ $t('applyUpgrade') }}
                 </button>
               </div>
             </div>
