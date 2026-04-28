@@ -334,8 +334,11 @@ export const translations = {
       guideTitle: "Format Guide",
       guideLine1: "One student per line",
       guideLine2: "Names are case-insensitive",
-      guideLine3: "Use prefix.name for variants:",
+      guideLine3: "Use prefix.name for variants — more letters disambiguate:",
       guideLine4: "Unmatched names are flagged for manual pick",
+      guideLineRomaji: "Always use the romaji base name — works in all locales",
+      guideLinePrefixes: "Common prefixes (add letters to disambiguate: bu=Bunny, ba=Battle):",
+      prefixTable: "b=Bunny/Battle (Armed)/Band · c=Cheerleader/Christmas/Camp/Casual/Cycling · d=Dress · g=Guide · i=Idol · m=Maid/Magical · n=New Year · o=Onsen · p=Pajama/Part-Timer · q=Qipao · s=Swimsuit · t=Track/Terror · u=Uniform",
     },
   },
   jp: {
@@ -669,8 +672,11 @@ export const translations = {
       guideTitle: "フォーマットガイド",
       guideLine1: "1行につき1人",
       guideLine2: "名前は大文字・小文字を区別しません",
-      guideLine3: "バリアントはprefix.nameで指定:",
+      guideLine3: "バリアントはprefix.nameで指定 — 文字を追加すると絞り込めます:",
       guideLine4: "マッチしない名前は手動で選択できます",
+      guideLineRomaji: "名前は常にローマ字で入力してください（全言語で使用可能）",
+      guideLinePrefixes: "よく使うプレフィックス（文字を追加すると絞り込めます: bu=バニー, ba=臨戦）:",
+      prefixTable: "b=バニーガール/臨戦/バンド · c=応援団/クリスマス/キャンプ/私服/ライディング · d=ドレス · g=ガイド · i=アイドル · m=メイド/マジカル · n=正月 · o=温泉 · p=パジャマ/アルバイト · q=チーパオ · s=水着 · t=体操服/シロコ＊テラー · u=制服",
     },
   }
 };

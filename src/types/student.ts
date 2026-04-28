@@ -5,6 +5,7 @@ import { ResourceProps } from '@/types/resource';
 export interface StudentProps {
   Id: number;
   Name: string;
+  PathName?: string;
   DefaultOrder: number;
   WeaponImg: string;
   StarGrade: number;

@@ -64,14 +64,34 @@ function parseLine(raw: string): ParsedEntry | null {
   };
 }
 
+// Matches both ASCII (Bunny) and full-width （バニー） bracket styles — used only
+// as a fallback for auto-resolving the base character when PathName is absent.
+const BRACKET_RE = /[\(（]([^)\）]+)[\)）]/;
+
 function resolveEntry(entry: ParsedEntry): ParsedEntry {
   const hits = props.students.filter(s => {
-    const nameLow = s.Name.toLowerCase();
-    if (!nameLow.includes(entry.baseName)) return false;
+    const pathName = s.PathName?.toLowerCase() ?? '';
+    const pathBase = pathName ? pathName.split('_')[0] : '';
+    const pathSuffix = pathName.includes('_') ? pathName.slice(pathName.indexOf('_') + 1) : '';
+
+    // Base name: PathName prefix (language-agnostic EN romaji), fallback to display name
+    const nameMatches = pathBase
+      ? pathBase === entry.baseName
+      : s.Name.toLowerCase().includes(entry.baseName);
+    if (!nameMatches) return false;
     if (!entry.prefix) return true;
-    const bracket = s.Name.match(/\(([^)]+)\)/);
-    return bracket ? bracket[1].toLowerCase().startsWith(entry.prefix) : false;
+
+    // Prefix = first letter of the PathName costume suffix (e.g. 'b' matches 'bunny')
+    return pathSuffix.startsWith(entry.prefix);
   });
+
+  // Auto-resolve to base character (PathName has no variant suffix)
+  if (!entry.prefix && hits.length > 1) {
+    const baseHit =
+      hits.find(s => s.PathName && !s.PathName.includes('_')) ??
+      hits.find(s => !BRACKET_RE.test(s.Name));
+    if (baseHit) return { ...entry, status: 'matched', resolved: baseHit, candidates: hits };
+  }
 
   if (hits.length === 1) return { ...entry, status: 'matched',   resolved: hits[0], candidates: hits };
   if (hits.length  > 1) return { ...entry, status: 'ambiguous',  candidates: hits };
@@ -185,10 +205,14 @@ async function handleApply() {
           <ul class="guide-list">
             <li>{{ $t('bondUpdate.guideLine1') }}: <code>name bond</code></li>
             <li>{{ $t('bondUpdate.guideLine2') }}</li>
+            <li>{{ $t('bondUpdate.guideLineRomaji') }}</li>
             <li>{{ $t('bondUpdate.guideLine3') }}</li>
-            <li class="indent"><code>s.seia 26</code> → Seia (Swimsuit)</li>
-            <li class="indent"><code>ny.kayoko 28</code> → Kayoko (New Year)</li>
-            <li class="indent"><code>b.neru 22</code> → Neru (Bunny)</li>
+            <li class="indent"><code>b.neru 22</code> → Neru (Bunny) / ネル（バニー）</li>
+            <li class="indent"><code>n.kayoko 28</code> → Kayoko (New Year) / カヨコ（正月）</li>
+            <li class="indent"><code>s.seia 26</code> → Seia (Swimsuit) / セイア（水着）</li>
+            <li class="indent"><code>bu.neru</code> / <code>ba.neru</code> → Bunny vs Battle</li>
+            <li>{{ $t('bondUpdate.guideLinePrefixes') }}</li>
+            <li class="indent prefix-table">{{ $t('bondUpdate.prefixTable') }}</li>
             <li>{{ $t('bondUpdate.guideLine4') }}</li>
           </ul>
         </div>
@@ -419,6 +443,15 @@ async function handleApply() {
 
 .guide-list li { list-style: disc; }
 .guide-list .indent { list-style: none; margin-left: 8px; }
+
+.prefix-table {
+  list-style: none;
+  margin-left: 8px;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  line-height: 1.8;
+  word-break: break-word;
+}
 
 .guide-list code {
   background: var(--background-primary);
