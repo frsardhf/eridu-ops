@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, CSSProperties } from 'vue';
+import { ref, computed, watch, CSSProperties } from 'vue';
+import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import { studentDataStore, studentDataVersion } from '@/consumables/stores/studentStore';
 import { useStudentOwnership } from '@/consumables/hooks/useStudentOwnership';
@@ -512,13 +513,7 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
-});
+useDocumentListener('keydown', handleKeyDown);
 
 // Centralized hydration flow: initialize defaults once, then load all hook data together.
 watch([() => props.isVisible, () => props.student], async ([visible, student]) => {

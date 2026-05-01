@@ -15,6 +15,7 @@ import {
   getAllStudentsAsRecord
 } from '../services/dbService';
 import type { ItemsInventoryRecord, EquipmentInventoryRecord } from '../db/database';
+import { toNumericId } from './idCoercion';
 import { getSettings, saveSettings } from './settingsStorage';
 import { db } from '../db/database';
 
@@ -29,7 +30,7 @@ export async function saveFormData(studentId: string | number, data: Record<stri
   if (!studentId) return null;
 
   try {
-    const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+    const numericId = toNumericId(studentId);
     return await dbSaveFormData(numericId, data);
   } catch (error) {
     console.error('Error saving form data to IndexedDB:', error);
@@ -102,7 +103,7 @@ export async function getFormData(studentId: string | number): Promise<Record<st
   if (!studentId) return null;
 
   try {
-    const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+    const numericId = toNumericId(studentId);
     const formData = await dbGetFormData(numericId);
     return formData || null;
   } catch (error) {

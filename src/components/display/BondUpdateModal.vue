@@ -2,8 +2,7 @@
 import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import { applyBondUpdates } from '@/consumables/services/bulkStudentFormService';
-import { batchSetStudentData, studentDataStore } from '@/consumables/stores/studentStore';
+import { useBondBulkUpdate } from '@/consumables/hooks/useBondBulkUpdate';
 import { MAX_BOND_LEVEL } from '@/consumables/constants/gameConstants';
 
 type EntryStatus = 'matched' | 'ambiguous' | 'unmatched' | 'skipped';
@@ -24,6 +23,8 @@ interface ParsedEntry {
 
 const props = defineProps<{ students: StudentProps[] }>();
 const emit = defineEmits<{ close: [] }>();
+
+const { applyBulkBondUpdates, currentBondOf } = useBondBulkUpdate();
 
 const step = ref<'input' | 'review'>('input');
 const rawText = ref('');
@@ -134,10 +135,6 @@ function portraitUrl(student: StudentProps): string {
   return `https://schaledb.com/images/student/collection/${student.Id}.webp`;
 }
 
-function currentBondOf(studentId: number): number {
-  return studentDataStore.value[studentId]?.bondDetailData?.currentBond ?? 1;
-}
-
 // ── Computed views ────────────────────────────────────────────────────────────
 
 const matchedEntries = computed(() => parsedEntries.value.filter(e => e.status === 'matched'));
@@ -154,10 +151,8 @@ async function handleApply() {
   if (!canApply.value) return;
   isApplying.value = true;
   try {
-    const updates = matchedEntries.value
-      .map(e => ({ studentId: e.resolved!.Id, bond: e.bond }));
-    const updated = await applyBondUpdates(updates);
-    batchSetStudentData(updated);
+    const updates = matchedEntries.value.map(e => ({ studentId: e.resolved!.Id, bond: e.bond }));
+    await applyBulkBondUpdates(updates);
     emit('close');
   } finally {
     isApplying.value = false;

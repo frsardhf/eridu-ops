@@ -5,6 +5,7 @@ import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
 import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
+import { toNumericId } from '../utils/idCoercion';
 
 // Student gift usage for Student → Gifts display
 interface StudentGiftUsage {
@@ -45,7 +46,7 @@ function buildGiftNeededMap() {
   });
 
   Object.entries(allGearsData).forEach(([studentId, materials]) => {
-    if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+    if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
     (materials as Material[]).forEach(material => {
       const materialId = material.material?.Id;
       const category = material.material?.Category;
@@ -84,13 +85,13 @@ export function getAllocatedGifts(excludeStudentId?: number): Record<number, num
   const allocated: Record<number, number> = {};
 
   Object.entries(studentDataStore.value).forEach(([studentId, form]) => {
-    if (excludeStudentId && parseInt(studentId) === excludeStudentId) return;
+    if (excludeStudentId && toNumericId(studentId) === excludeStudentId) return;
     if (form?.isOwned === false) return; // skip unowned
 
     // Sum giftFormData (favored gifts)
     const giftFormData = form.giftFormData ?? {};
     Object.entries(giftFormData).forEach(([giftId, qty]) => {
-      const id = parseInt(giftId);
+      const id = toNumericId(giftId);
       const quantity = qty as number;
       if (quantity > 0) {
         allocated[id] = (allocated[id] || 0) + quantity;
@@ -101,7 +102,7 @@ export function getAllocatedGifts(excludeStudentId?: number): Record<number, num
     // NOT boxFormData - that only has aggregated totals (100000, 100009)
     const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
     Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
-      const id = parseInt(giftId);
+      const id = toNumericId(giftId);
       const quantity = qty as number;
       if (quantity > 0) {
         allocated[id] = (allocated[id] || 0) + quantity;
@@ -205,7 +206,7 @@ export function useGiftCalculation() {
     Object.entries(allGearsData).forEach(([studentId, materials]) => {
       const student = studentsCollection[studentId];
       if (!student) return;
-      if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
@@ -265,10 +266,10 @@ export function useGiftCalculation() {
       const quantity = qty as number;
       if (quantity <= 0) return;
 
-      const gift = getResourceDataByIdSync(parseInt(giftId));
+      const gift = getResourceDataByIdSync(toNumericId(giftId));
       if (!gift) return;
 
-      const owned = resources[parseInt(giftId)]?.QuantityOwned ?? 0;
+      const owned = resources[toNumericId(giftId)]?.QuantityOwned ?? 0;
 
       if (viewMode === 'missing') {
         if (owned < quantity) {
@@ -285,10 +286,10 @@ export function useGiftCalculation() {
       const quantity = qty as number;
       if (quantity <= 0) return;
 
-      const gift = getResourceDataByIdSync(parseInt(giftId));
+      const gift = getResourceDataByIdSync(toNumericId(giftId));
       if (!gift) return;
 
-      const owned = resources[parseInt(giftId)]?.QuantityOwned ?? 0;
+      const owned = resources[toNumericId(giftId)]?.QuantityOwned ?? 0;
 
       if (viewMode === 'missing') {
         if (owned < quantity) {

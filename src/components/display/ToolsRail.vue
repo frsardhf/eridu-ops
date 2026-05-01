@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { $t } from '@/locales';
+import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 
 const isExpanded = ref(false);
 const railRef = ref<HTMLElement | null>(null);
@@ -41,15 +42,8 @@ function handleEscape(event: KeyboardEvent) {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('pointerdown', handleDocumentPointerDown);
-  document.addEventListener('keydown', handleEscape);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleDocumentPointerDown);
-  document.removeEventListener('keydown', handleEscape);
-});
+useDocumentListener('pointerdown', handleDocumentPointerDown);
+useDocumentListener('keydown', handleEscape);
 </script>
 
 <template>

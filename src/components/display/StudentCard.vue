@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { StudentProps } from '@/types/student'
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useStudentFormData } from '@/consumables/stores/studentStore'
+import { ref, onUnmounted, computed } from 'vue'
+import { useStudentCard } from '@/consumables/hooks/useStudentCard'
+import { useWindowResize } from '@/composables/dom/useWindowResize'
 import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
 import { ModalOriginRect } from '@/types/modal';
-import {
-  isStudentPinned,
-  togglePinnedStudent
-} from '@/consumables/utils/studentStorage'
-import { currentLanguage } from '@/consumables/stores/localizationStore'
 
 const props = defineProps<{
   student: StudentProps;
@@ -20,13 +16,9 @@ const emit = defineEmits<{
 }>();
 
 const isMobile = ref(false);
-// Use the composable for proper reactivity - no need for empty deep watch workaround
-const studentData = useStudentFormData(computed(() => props.student.Id));
-const forceUpdate = ref(0);
-const isPinned = computed(() => {
-  const _ = forceUpdate.value;
-  return isStudentPinned(props.student.Id);
-});
+const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
+  computed(() => props.student.Id)
+);
 const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 const skillTypeNames: SkillTypeName[] = ['Ex', 'Basic', 'Enhanced', 'Sub'];
 const potentialTypes: PotentialType[] = ['maxhp', 'attack', 'healpower'];
@@ -35,13 +27,9 @@ function checkScreenWidth() {
   isMobile.value = window.innerWidth <= 768;
 }
 
-onMounted(() => {
-  checkScreenWidth();
-  window.addEventListener('resize', checkScreenWidth);
-});
+useWindowResize(checkScreenWidth);
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenWidth);
   if (pinPopTimer) {
     clearTimeout(pinPopTimer);
   }
@@ -190,8 +178,7 @@ const gradeLevel = computed(() => {
 
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
-  const newPinStatus = togglePinnedStudent(props.student.Id);
-  forceUpdate.value++;
+  const newPinStatus = togglePin(props.student.Id);
   if (pinPopTimer) {
     clearTimeout(pinPopTimer);
   }

@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { Material } from '../../types/upgrade';
+import { toNumericId } from '../utils/idCoercion';
 
 /**
  * Materials store - now in-memory only (not persisted)
@@ -13,20 +14,20 @@ const materialsDataStore = ref<Record<number, Material[]>>({});
 
 // Function to update materials data in the store (in-memory only)
 export function updateMaterialsData(studentId: string | number, materials: Material[]) {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   materialsDataStore.value[numericId] = materials;
   // No longer persisted to localStorage/IndexedDB
 }
 
 // Function to get materials data from the store
 export function getMaterialsData(studentId: string | number): Material[] {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   return materialsDataStore.value[numericId] || [];
 }
 
 // Function to clear materials data from the store
 export function clearMaterialsData(studentId: string | number) {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   delete materialsDataStore.value[numericId];
   // No longer persisted to localStorage/IndexedDB
 }

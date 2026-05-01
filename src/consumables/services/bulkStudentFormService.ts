@@ -304,3 +304,33 @@ export async function applyBulkStudentFormPatch(
 
   return updatedMap;
 }
+
+/**
+ * Bulk-set the `isOwned` flag for a list of students in one transaction.
+ * Returns the updated FormRecord map (suitable for `batchSetStudentData`).
+ */
+export async function bulkSetStudentOwnership(
+  ids: number[],
+  owned: boolean,
+  currentForms: Record<number, FormRecord>,
+): Promise<Record<number, FormRecord>> {
+  if (ids.length === 0) return {};
+
+  await db.transaction('rw', db.forms, async () => {
+    for (const studentId of ids) {
+      const existing = await db.forms.get(studentId);
+      if (existing) {
+        await db.forms.update(studentId, { isOwned: owned });
+      } else {
+        await db.forms.put({ studentId, isOwned: owned });
+      }
+    }
+  });
+
+  const updates: Record<number, FormRecord> = {};
+  for (const studentId of ids) {
+    const current = currentForms[studentId] ?? { studentId };
+    updates[studentId] = { ...current, isOwned: owned } as FormRecord;
+  }
+  return updates;
+}

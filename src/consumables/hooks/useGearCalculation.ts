@@ -3,12 +3,13 @@ import { getEquipmentDataByIdSync, getAllEquipmentFromCache } from '../stores/re
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
-import { Material } from '../../types/upgrade';
+import { Material, CREDITS_ID, ELIGMAS_ID } from '../../types/upgrade';
 import { EquipmentType, EquipmentLevels } from '../../types/gear';
 import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/gearsStore';
 import { isExpBall } from '../utils/materialUtils';
 import { computeEquipmentSlotXpCost, getEquipXpItems } from '../utils/gearMaterialUtils';
+import { toNumericId } from '../utils/idCoercion';
 
 // Singleton state
 let _allGearsData: ComputedRef<Record<string, Material[]>>;
@@ -35,7 +36,7 @@ export function useGearCalculation() {
 
     // Calculate XP needed for each student's equipment
     allStudentIds.forEach(studentId => {
-      const form = studentDataStore.value[parseInt(studentId)];
+      const form = studentDataStore.value[toNumericId(studentId)];
       if (!form?.equipmentLevels) return;
       if (form.isOwned === false) return; // skip unowned
 
@@ -96,12 +97,12 @@ export function useGearCalculation() {
     const materialMap = new Map<number, Material>();
 
     Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
-      if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
         // Skip credits (5) and eligma (23) - they go to Items tab
         // Skip exclusive gear materials (type materials) - they go to Items/Gifts tabs
-        if (!materialId || [5, 23].includes(materialId)) return;
+        if (!materialId || materialId === CREDITS_ID || materialId === ELIGMAS_ID) return;
         if (material.type === 'materials') return;
 
         if (materialMap.has(materialId)) {
@@ -267,7 +268,7 @@ export function useGearCalculation() {
       Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
         const student = studentsCollection[studentId];
         if (!student) return;
-        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
         let quantity = 0;
         const equipmentTypes: EquipmentType[] = [];

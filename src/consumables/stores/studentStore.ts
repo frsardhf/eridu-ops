@@ -1,6 +1,7 @@
 import { ref, computed, unref, type Ref, shallowRef } from 'vue';
 import { getFormData, saveFormData } from '../utils/studentStorage';
 import type { FormRecord } from '../db/database';
+import { toNumericId } from '../utils/idCoercion';
 
 // Create a reactive store for student data
 // Using shallowRef to avoid deep reactivity on the entire store object
@@ -12,7 +13,7 @@ export const studentDataVersion = ref(0);
 
 // Function to update student data in the store (async)
 export async function updateStudentData(studentId: string | number) {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   const data = await getFormData(studentId);
   if (data) {
     // Create a new object reference to trigger shallowRef reactivity
@@ -28,7 +29,7 @@ export async function updateStudentData(studentId: string | number) {
 // Function to get student data from the store (sync - reads from cache only)
 // Use updateStudentData() first to ensure data is loaded
 export function getStudentData(studentId: string | number): FormRecord | undefined {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   return studentDataStore.value[numericId];
 }
 
@@ -40,7 +41,7 @@ export async function saveStudentFormData(studentId: string | number, formData: 
 
 // Function to clear student data from the store
 export function clearStudentData(studentId: string | number) {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   const newStore = { ...studentDataStore.value };
   delete newStore[numericId];
   studentDataStore.value = newStore;

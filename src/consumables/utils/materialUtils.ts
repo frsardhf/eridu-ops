@@ -255,7 +255,7 @@ export function isItemIconMaterial(
 
   if (!material?.Id) return false;
   // Credits and Eligma always use item icons
-  if ([5, 23].includes(material.Id)) return true;
+  if (material.Id === CREDITS_ID || material.Id === ELIGMAS_ID) return true;
   // Gifts use item icons
   if (material.Category === 'Favor') return true;
   // Artifact items (exclusive gear materials) use item icons

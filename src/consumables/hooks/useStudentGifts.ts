@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { StudentProps } from '../../types/student';
 import { BondDetailDataProps, DEFAULT_BOND_DETAIL, GiftProps } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
@@ -9,6 +9,7 @@ import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, YELLOW_STON
 import { getAllocatedGifts } from './useGiftCalculation';
 import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
+import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 
 const HISTORY_LIMIT = 10;
 const BOX_ITEM_IDS = new Set([YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, SELECTOR_BOX_ID]);
@@ -23,18 +24,11 @@ export function useStudentGifts(props: {
   student: StudentProps,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
-  // Track pending save to deduplicate concurrent saves
-  let pendingSave: Promise<void> | null = null;
-  // Token to discard stale async loads during rapid student navigation
-  let loadRequestToken = 0;
-
   const giftFormData = ref<Record<string, number>>({});
   const boxFormData = ref<Record<string, number>>({});
   const nonFavorGiftsMap = ref<Record<number, number>>({}); // Track individual non-favor gifts for Gifts tab display
   const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
   const isCalculating = ref(false);
-  // Track loading state to prevent watch from triggering saves during load
-  const isLoading = ref(false);
 
   // Convert modal state
   const showConvertModal = ref(false);
@@ -52,13 +46,6 @@ export function useStudentGifts(props: {
 
   const bondXpTable = bondData.bond_xp;
 
-  function resetFormData() {
-    giftFormData.value = {};
-    boxFormData.value = {};
-    nonFavorGiftsMap.value = {};
-    bondDetailData.value = {...DEFAULT_BOND_DETAIL};
-  }
-
   // Push current state onto undo stack; any new action clears redo history.
   // Spread is sufficient because all three objects are flat (Record<string, number>).
   const savePreviousState = () => {
@@ -71,88 +58,34 @@ export function useStudentGifts(props: {
     redoStack.value = [];
   };
 
-  // Watch for changes to form data and save to IndexedDB
-  watch([giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData], async () => {
-    if (props.isVisible && !isLoading.value) {
-      await saveToIndexedDB();
-      updateStudentData(props.student.Id);
-    }
-  }, { deep: true });
+  const GIFT_DEFAULTS = {
+    giftFormData:    {} as Record<string, number>,
+    boxFormData:     {} as Record<string, number>,
+    nonFavorGiftsMap: {} as Record<number, number>,
+    bondDetailData:  { ...DEFAULT_BOND_DETAIL } as BondDetailDataProps,
+  };
 
-  async function saveToIndexedDB() {
-    const studentId = props.student.Id;
-
-    // Wait for any pending save to complete
-    if (pendingSave) {
-      await pendingSave;
-    }
-
-    // Mark this as the current pending save
-    const currentSave = (async () => {
-      const dataToSave = {
-        giftFormData: giftFormData.value,
-        boxFormData: boxFormData.value,
+  const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
+    useDebouncedFormPersistence({
+      isVisible:    () => props.isVisible,
+      refs:         { giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData },
+      defaults:     GIFT_DEFAULTS,
+      loadFn:       (staged) => loadFormDataToRefs(props.student.Id, staged, GIFT_DEFAULTS),
+      saveFn:       () => saveFormData(props.student.Id, {
+        giftFormData:     giftFormData.value,
+        boxFormData:      boxFormData.value,
         nonFavorGiftsMap: nonFavorGiftsMap.value,
-        bondDetailData: bondDetailData.value
-      };
-
-      const savedData = await saveFormData(studentId, dataToSave);
-      if (savedData) {
-        // Update store immediately with sanitized data for reactive overlay updates
-        setStudentDataDirect(studentId, savedData);
-      }
-    })();
-
-    pendingSave = currentSave;
-    await currentSave;
-    pendingSave = null;
-  }
-
-  async function loadFromIndexedDB() {
-    const requestToken = ++loadRequestToken;
-    const studentId = props.student.Id;
-
-    isLoading.value = true;
-
-    try {
-      // Stage async load into temporary refs first so stale loads cannot mutate active state.
-      const stagedGiftFormData = ref<Record<string, number>>({});
-      const stagedBoxFormData = ref<Record<string, number>>({});
-      const stagedNonFavorGiftsMap = ref<Record<number, number>>({});
-      const stagedBondDetailData = ref<BondDetailDataProps>({ ...DEFAULT_BOND_DETAIL });
-
-      const refs = {
-        giftFormData: stagedGiftFormData,
-        boxFormData: stagedBoxFormData,
-        nonFavorGiftsMap: stagedNonFavorGiftsMap,
-        bondDetailData: stagedBondDetailData
-      };
-
-      const defaultValues = {
-        giftFormData: {},
-        boxFormData: {},
-        nonFavorGiftsMap: {},
-        bondDetailData: DEFAULT_BOND_DETAIL
-      };
-
-      await loadFormDataToRefs(studentId, refs, defaultValues);
-
-      if (requestToken !== loadRequestToken || props.student.Id !== studentId) {
-        return;
-      }
-
-      giftFormData.value = stagedGiftFormData.value;
-      boxFormData.value = stagedBoxFormData.value;
-      nonFavorGiftsMap.value = stagedNonFavorGiftsMap.value;
-      bondDetailData.value = stagedBondDetailData.value;
-
-      // Clear history on load so loaded state isn't undoable
-      undoStack.value = [];
-      redoStack.value = [];
-    } finally {
-      isLoading.value = false;
-    }
-  }
+        bondDetailData:   bondDetailData.value,
+      }),
+      onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
+      afterFlush:   () => updateStudentData(props.student.Id),
+      afterLoad:    () => {
+        // Clear undo/redo history so loaded state isn't undoable
+        undoStack.value  = [];
+        redoStack.value  = [];
+      },
+      watchSources: [giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData],
+    });
 
   // Calculate individual item EXP
   const calculateItemExp = (expValue: number, quantity: number): number => {

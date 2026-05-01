@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type Ref, watch } from 'vue';
 import {
-  applyBulkStudentFormPatch,
-  AvailabilityFilter,
+  useBulkStudentModify,
   classifyStudentAvailability,
   getBulkFilterData,
-  type BulkFormPatch
-} from '@/consumables/services/bulkStudentFormService';
-import type { FormRecord } from '@/consumables/db/database';
-import { db } from '@/consumables/db/database';
-import { batchSetStudentData } from '@/consumables/stores/studentStore';
+  type BulkFormPatch,
+  type AvailabilityFilter,
+} from '@/consumables/hooks/useBulkStudentModify';
+import type { FormRecord } from '@/consumables/hooks/useBulkStudentModify';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 
@@ -46,6 +44,8 @@ type BulkFieldValues = {
   gradeLevel: string;
   potentialLevel: string;
 };
+
+const { bulkSetOwnership: applyOwnershipBulk, submitBulkPatch } = useBulkStudentModify();
 
 const isSubmitting = ref(false);
 const selectedStudentIds = ref<number[]>([]);
@@ -290,28 +290,9 @@ async function bulkSetOwnership(owned: boolean) {
 
   isSubmitting.value = true;
   try {
-    // Write to IndexedDB for all selected students in one transaction
-    await db.transaction('rw', db.forms, async () => {
-      for (const studentId of ids) {
-        const existing = await db.forms.get(studentId);
-        if (existing) {
-          await db.forms.update(studentId, { isOwned: owned });
-        } else {
-          // Create minimal record if none exists (student never opened their modal)
-          await db.forms.put({ studentId, isOwned: owned });
-        }
-      }
-    });
-
-    // Update in-memory store + local allFormData ref so filter updates immediately
-    const storeUpdates: Record<number, FormRecord> = {};
-    for (const studentId of ids) {
-      const current = allFormData.value[studentId] ?? { studentId };
-      const updated = { ...current, isOwned: owned };
-      storeUpdates[studentId] = updated as FormRecord;
-      allFormData.value[studentId] = updated as FormRecord;
-    }
-    batchSetStudentData(storeUpdates);
+    const updates = await applyOwnershipBulk(ids, owned, allFormData.value);
+    // Reflect in local allFormData so ownership filter updates immediately
+    Object.assign(allFormData.value, updates);
   } catch (error) {
     console.error('Failed to bulk-update ownership:', error);
   } finally {
@@ -334,16 +315,7 @@ async function submitBulkModify() {
   isSubmitting.value = true;
 
   try {
-    const updatedRecords = await applyBulkStudentFormPatch(
-      props.students,
-      selectedStudentIds.value,
-      patch
-    );
-
-    if (Object.keys(updatedRecords).length > 0) {
-      batchSetStudentData(updatedRecords);
-    }
-
+    await submitBulkPatch(props.students, selectedStudentIds.value, patch);
     emit('close');
   } catch (error) {
     console.error('Failed to apply bulk student form update:', error);

@@ -19,6 +19,7 @@ import { updateMaterialsData } from '../stores/materialsStore';
 import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
 import { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
 import { MAX_POTENTIAL_LEVEL } from '../utils/upgradeUtils';
+import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 
 // Re-export for external consumers (materialUtils.ts)
 export { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
@@ -27,13 +28,6 @@ export function useStudentUpgrade(props: {
   student: StudentProps,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
-  // Track pending save to deduplicate concurrent saves
-  let pendingSave: Promise<void> | null = null;
-  // Token to discard stale async loads during rapid student navigation
-  let loadRequestToken = 0;
-  // Track loading state to prevent watch from triggering saves during load
-  const isLoading = ref(false);
-
   const characterLevels = ref<CharacterLevels>({...DEFAULT_CHARACTER_LEVELS});
   const skillLevels = ref<SkillLevels>({...DEFAULT_SKILL_LEVELS});
   const potentialLevels = ref<PotentialLevels>({...DEFAULT_POTENTIAL_LEVELS});
@@ -161,29 +155,6 @@ export function useStudentUpgrade(props: {
     }
   };
 
-  function resetFormData() {
-    characterLevels.value = { current: 1, target: 1};
-    skillLevels.value = {
-      Ex: { current: 1, target: 1 },
-      Public: { current: 1, target: 1 },
-      Passive: { current: 1, target: 1 },
-      ExtraPassive: { current: 1, target: 1 }
-    };
-    potentialLevels.value = {
-      attack: { current: 0, target: 0 },
-      maxhp: { current: 0, target: 0 },
-      healpower: { current: 0, target: 0 }
-    };
-  }
-
-  // Watch for changes to form data and save to IndexedDB
-  watch([characterLevels, skillLevels, potentialLevels], async () => {
-    if (props.isVisible && !isLoading.value) {
-      await saveToIndexedDB();
-      updateStudentData(props.student.Id);
-    }
-  }, { deep: true });
-
   watch(skillLevels, () => {
     allSkillsMaxed.value = checkAllSkillsMaxed();
     targetSkillsMaxed.value = checkTargetSkillsMaxed();
@@ -194,80 +165,28 @@ export function useStudentUpgrade(props: {
     targetPotentialsMaxed.value = checkTargetPotentialsMaxed();
   }, { deep: true });
 
-  async function saveToIndexedDB() {
-    // Wait for any pending save to complete
-    if (pendingSave) {
-      await pendingSave;
-    }
+  const UPGRADE_DEFAULTS = {
+    characterLevels: { ...DEFAULT_CHARACTER_LEVELS } as CharacterLevels,
+    skillLevels:     { ...DEFAULT_SKILL_LEVELS }     as SkillLevels,
+    potentialLevels: { ...DEFAULT_POTENTIAL_LEVELS } as PotentialLevels,
+  };
 
-    // Mark this as the current pending save
-    const currentSave = (async () => {
-      const dataToSave = {
+  const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
+    useDebouncedFormPersistence({
+      isVisible:    () => props.isVisible,
+      refs:         { characterLevels, skillLevels, potentialLevels },
+      defaults:     UPGRADE_DEFAULTS,
+      loadFn:       (staged) => loadFormDataToRefs(props.student.Id, staged, UPGRADE_DEFAULTS),
+      saveFn:       () => saveFormData(props.student.Id, {
         characterLevels: characterLevels.value,
-        skillLevels: skillLevels.value,
-        potentialLevels: potentialLevels.value
-      };
-
-      const savedData = await saveFormData(props.student.Id, dataToSave);
-      if (savedData) {
-        // Update store immediately with sanitized data for reactive overlay updates
-        setStudentDataDirect(props.student.Id, savedData);
-      }
-    })();
-
-    pendingSave = currentSave;
-    await currentSave;
-    pendingSave = null;
-  }
-
-  async function loadFromIndexedDB() {
-    const requestToken = ++loadRequestToken;
-    const studentId = props.student.Id;
-
-    isLoading.value = true;
-
-    try {
-      // Stage async load into temporary refs first so stale loads cannot mutate active state.
-      const stagedCharacterLevels = ref<CharacterLevels>({ ...DEFAULT_CHARACTER_LEVELS });
-      const stagedSkillLevels = ref<SkillLevels>({ ...DEFAULT_SKILL_LEVELS });
-      const stagedPotentialLevels = ref<PotentialLevels>({ ...DEFAULT_POTENTIAL_LEVELS });
-
-      const refs = {
-        characterLevels: stagedCharacterLevels,
-        skillLevels: stagedSkillLevels,
-        potentialLevels: stagedPotentialLevels
-      };
-
-      const defaultValues = {
-        characterLevels: { current: 1, target: 1 },
-        skillLevels: {
-          Ex: { current: 1, target: 1 },
-          Public: { current: 1, target: 1 },
-          Passive: { current: 1, target: 1 },
-          ExtraPassive: { current: 1, target: 1 }
-        },
-        potentialLevels: {
-          attack: { current: 0, target: 0 },
-          maxhp: { current: 0, target: 0 },
-          healpower: { current: 0, target: 0 }
-        }
-      };
-
-      await loadFormDataToRefs(studentId, refs, defaultValues);
-
-      if (requestToken !== loadRequestToken || props.student.Id !== studentId) {
-        return;
-      }
-
-      characterLevels.value = stagedCharacterLevels.value;
-      skillLevels.value = stagedSkillLevels.value;
-      potentialLevels.value = stagedPotentialLevels.value;
-    } finally {
-      isLoading.value = false;
-    }
-
-    await updateStudentData(studentId);
-  }
+        skillLevels:     skillLevels.value,
+        potentialLevels: potentialLevels.value,
+      }),
+      onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
+      afterFlush:   () => updateStudentData(props.student.Id),
+      afterLoad:    () => updateStudentData(props.student.Id),
+      watchSources: [characterLevels, skillLevels, potentialLevels],
+    });
 
   const remainingXp = computed(() => {
     const currentXp = characterXpTable[characterLevels.value.current - 1] ?? 0;

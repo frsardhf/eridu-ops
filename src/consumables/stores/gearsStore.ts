@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { Material } from '../../types/upgrade';
+import { toNumericId } from '../utils/idCoercion';
 
 /**
  * Equipment/Gears store - now in-memory only (not persisted)
@@ -13,20 +14,20 @@ const gearsDataStore = ref<Record<number, Material[]>>({});
 
 // Function to update gears data in the store (in-memory only)
 export function updateGearsData(studentId: string | number, gears: Material[]) {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   gearsDataStore.value[numericId] = gears;
   // No longer persisted to localStorage/IndexedDB
 }
 
 // Function to get gears data from the store
 export function getGearsData(studentId: string | number): Material[] {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   return gearsDataStore.value[numericId] || [];
 }
 
 // Function to clear gears data from the store
 export function clearGearsData(studentId: string | number) {
-  const numericId = typeof studentId === 'string' ? parseInt(studentId) : studentId;
+  const numericId = toNumericId(studentId);
   delete gearsDataStore.value[numericId];
   // No longer persisted to localStorage/IndexedDB
 }

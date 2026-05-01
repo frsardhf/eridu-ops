@@ -15,6 +15,7 @@ import { updateStudentData, setStudentDataDirect, studentDataStore } from '../st
 import { updateGearsData } from '../stores/gearsStore';
 import type { ExclusiveGearLevel } from '../../types/gear';
 import { calculateAllGears, getMaxTierForTypeSync, getElephsForGrade } from '../utils/gearMaterialUtils';
+import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 
 // Re-export for external consumers
 export { calculateAllGears, getMaxTierForTypeSync, getElephsForGrade } from '../utils/gearMaterialUtils';
@@ -23,13 +24,6 @@ export function useStudentGear(props: {
   student: StudentProps,
   isVisible?: boolean
 }, emit: (event: 'close') => void) {
-  // Track pending save to deduplicate concurrent saves
-  let pendingSave: Promise<void> | null = null;
-  // Token to discard stale async loads during rapid student navigation
-  let loadRequestToken = 0;
-  // Track loading state to prevent watch from triggering saves during load
-  const isLoading = ref(false);
-
   // Track all equipment levels in one object
   const equipmentLevels = ref<EquipmentLevels>({});
   const gradeLevels = ref<GradeLevels>({});
@@ -115,99 +109,42 @@ export function useStudentGear(props: {
     updateStudentData(props.student.Id);
   };
 
-  // Watch for changes to form data and save to IndexedDB
-  watch([equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel], async () => {
-    if (props.isVisible && !isLoading.value) {
-      await saveToIndexedDB();
-      updateStudentData(props.student.Id);
-    }
-  }, { deep: true });
-
   // Watch for equipment level changes to update maxed flags
   watch(equipmentLevels, () => {
     allGearsMaxed.value = checkAllGearsMaxed();
     targetGearsMaxed.value = checkTargetGearsMaxed();
   }, { deep: true });
 
-  // Save current form data to IndexedDB
-  async function saveToIndexedDB() {
-    // Wait for any pending save to complete
-    if (pendingSave) {
-      await pendingSave;
-    }
+  // Default values depend on the student — built once and shared with loadFn
+  const defaultEquipmentLevels: EquipmentLevels = {};
+  props.student.Equipment.forEach((type) => {
+    defaultEquipmentLevels[type] = { current: 1, target: 1 };
+  });
+  const starGrade = props.student.StarGrade ?? 1;
+  const GEAR_DEFAULTS = {
+    equipmentLevels:    defaultEquipmentLevels,
+    gradeLevels:        { current: starGrade, target: starGrade } as GradeLevels,
+    gradeInfos:         { owned: 0, price: 1, purchasable: 20 } as GradeInfos,
+    exclusiveGearLevel: { current: 0, target: 0 } as ExclusiveGearLevel,
+  };
 
-    // Mark this as the current pending save
-    const currentSave = (async () => {
-      const dataToSave = {
-        equipmentLevels: { ...equipmentLevels.value },
-        gradeLevels: { ...gradeLevels.value },
-        gradeInfos: { ...gradeInfos.value },
-        exclusiveGearLevel: { ...exclusiveGearLevel.value }
-      };
-
-      const savedData = await saveFormData(props.student.Id, dataToSave);
-      if (savedData) {
-        // Update store immediately with sanitized data for reactive overlay updates
-        setStudentDataDirect(props.student.Id, savedData);
-      }
-    })();
-
-    pendingSave = currentSave;
-    await currentSave;
-    pendingSave = null;
-  }
-
-  // Load form data from IndexedDB
-  async function loadFromIndexedDB() {
-    const requestToken = ++loadRequestToken;
-    const studentId = props.student.Id;
-
-    isLoading.value = true;
-
-    try {
-      // Stage async load into temporary refs first so stale loads cannot mutate active state.
-      const stagedEquipmentLevels = ref<EquipmentLevels>({});
-      const stagedGradeLevels = ref<GradeLevels>({});
-      const stagedGradeInfos = ref<GradeInfos>({});
-      const stagedExclusiveGearLevel = ref<ExclusiveGearLevel>({});
-
-      const refs = {
-        equipmentLevels: stagedEquipmentLevels,
-        gradeLevels: stagedGradeLevels,
-        gradeInfos: stagedGradeInfos,
-        exclusiveGearLevel: stagedExclusiveGearLevel
-      };
-
-      const defaultEquipmentLevels: EquipmentLevels = {};
-      props.student.Equipment.forEach((type) => {
-        defaultEquipmentLevels[type] = { current: 1, target: 1 };
-      });
-
-      const starGrade = props.student.StarGrade ?? 1;
-
-      const defaultValues = {
-        equipmentLevels: defaultEquipmentLevels,
-        gradeLevels: { current: starGrade, target: starGrade },
-        gradeInfos: { owned: 0, price: 1, purchasable: 20 },
-        exclusiveGearLevel: { current: 0, target: 0 }
-      };
-
-      await loadFormDataToRefs(studentId, refs, defaultValues);
-
-      if (requestToken !== loadRequestToken || props.student.Id !== studentId) {
-        return;
-      }
-
-      equipmentLevels.value = stagedEquipmentLevels.value;
-      gradeLevels.value = stagedGradeLevels.value;
-      gradeInfos.value = stagedGradeInfos.value;
-      exclusiveGearLevel.value = stagedExclusiveGearLevel.value;
-
-      await updateStudentData(studentId);
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
+    useDebouncedFormPersistence({
+      isVisible:    () => props.isVisible,
+      refs:         { equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel },
+      defaults:     GEAR_DEFAULTS,
+      loadFn:       (staged) => loadFormDataToRefs(props.student.Id, staged, GEAR_DEFAULTS),
+      saveFn:       () => saveFormData(props.student.Id, {
+        equipmentLevels:    { ...equipmentLevels.value },
+        gradeLevels:        { ...gradeLevels.value },
+        gradeInfos:         { ...gradeInfos.value },
+        exclusiveGearLevel: { ...exclusiveGearLevel.value },
+      }),
+      onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
+      afterFlush:   () => updateStudentData(props.student.Id),
+      afterLoad:    () => updateStudentData(props.student.Id),
+      watchSources: [equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel],
+    });
 
   // Create a computed property for all equipment materials needed for this student
   const equipmentMaterialsNeeded = computed<Material[]>(() => {

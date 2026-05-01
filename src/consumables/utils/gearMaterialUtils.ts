@@ -12,6 +12,7 @@ import {
   Material,
 } from '../../types/upgrade';
 import { consolidateAndSortMaterials } from '../utils/materialUtils';
+import { EXCLUSIVE_GEAR_T2_CREDIT_COST } from '../constants/gameConstants';
 import type { ExclusiveGearLevel } from '../../types/gear';
 import { CachedResource } from '../../types/resource';
 
@@ -82,8 +83,7 @@ export function calculateEquipmentMaterials(
 
   const allEquipment = getAllEquipmentFromCache();
 
-  // Pre-build lookup map: "Category:Tier" → equipment item for O(1) access
-  // instead of O(n) Array.find inside the nested loop.
+  // Pre-build lookup map: "Category:Tier" → equipment item for O(1) access.
   // Use first-match semantics (no overwrite) to mirror Array.find() behaviour,
   // since the cache may contain multiple entries per Category+Tier
   // (e.g. blueprint piece alongside assembled item) and only the first has a Recipe.
@@ -96,6 +96,12 @@ export function calculateEquipmentMaterials(
       }
     }
   }
+
+  // Map-keyed dedup: O(1) per recipe ingredient instead of O(n) .find() scan.
+  // Key = materialId only (type is always 'equipments') so identical materials
+  // from different equipment slots are accumulated into one entry here rather
+  // than waiting for consolidateAndSortMaterials at the call site.
+  const byMaterialId = new Map<number, Material>();
 
   Object.entries(equipmentLevels).forEach(([type, levels]) => {
     const { current, target } = levels;
@@ -120,21 +126,16 @@ export function calculateEquipmentMaterials(
         if (!recipeId || !quantity) continue;
 
         const materialId = parseInt(recipeId.toString().substring(2));
-        const materialData = getEquipmentDataByIdSync(materialId);
-        if (!materialData) continue;
+        const existing = byMaterialId.get(materialId);
 
-        const existingMaterial = materialsNeeded.find(m =>
-          m.material?.Id === materialId && m.type === type
-        );
-
-        if (existingMaterial) {
-          existingMaterial.materialQuantity += quantity;
+        if (existing) {
+          existing.materialQuantity += quantity;
         } else {
-          materialsNeeded.push({
-            material: materialData,
-            materialQuantity: quantity,
-            type: 'equipments'
-          });
+          const materialData = getEquipmentDataByIdSync(materialId);
+          if (!materialData) continue;
+          const entry: Material = { material: materialData, materialQuantity: quantity, type: 'equipments' };
+          byMaterialId.set(materialId, entry);
+          materialsNeeded.push(entry);
         }
       }
     }
@@ -262,7 +263,7 @@ export function calculateExclusiveGearMaterials(
     if (creditsData) {
       materialsNeeded.push({
         material: creditsData,
-        materialQuantity: 500000,
+        materialQuantity: EXCLUSIVE_GEAR_T2_CREDIT_COST,
         type: 'credits'
       });
     }
@@ -335,7 +336,6 @@ export function getMaxTierForTypeSync(type: string): number {
       max = item.Tier;
     }
   }
-  // Only cache when the equipment cache is populated (max > 0 means data was loaded)
-  if (max > 0) _maxTierByType.set(type, max);
+  _maxTierByType.set(type, max);
   return max;
 }

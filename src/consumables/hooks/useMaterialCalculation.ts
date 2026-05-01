@@ -8,6 +8,7 @@ import { getAllMaterialsData } from '../stores/materialsStore';
 import { getAllGearsData } from '../stores/gearsStore';
 import { isExpReport } from '../utils/materialUtils';
 import { computeCharacterXpCost, getCharXpItems } from '../utils/upgradeMaterialUtils';
+import { toNumericId } from '../utils/idCoercion';
 
 // Singleton state
 let _totalMaterialsNeeded: ComputedRef<Material[]>;
@@ -55,7 +56,7 @@ export function useMaterialCalculation() {
 
     // Calculate XP needed for each student
     allStudentIds.forEach(studentId => {
-      const form = studentDataStore.value[parseInt(studentId)];
+      const form = studentDataStore.value[toNumericId(studentId)];
       if (!form || !form.characterLevels) return;
       if (form.isOwned === false) return; // skip unowned
 
@@ -116,7 +117,7 @@ export function useMaterialCalculation() {
     let eligmasQuantity = 0;
 
     Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
-      if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
         if (!materialId) return;
@@ -138,7 +139,7 @@ export function useMaterialCalculation() {
     // Combine credits and eligma from gears to materials
     // Also include exclusive gear's normal materials (non-gift items)
     Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
-      if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
       (materials as Material[]).forEach(material => {
         const materialId = material.material?.Id;
         const subcategory = material.material?.SubCategory;
@@ -262,7 +263,7 @@ export function useMaterialCalculation() {
       
       // First pass: collect all needed credits
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
-        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
         const quantity = getStudentCredits(studentId, materials as Material[], allGearsData.value[studentId] || []);
         if (quantity > 0) {
           studentCredits.set(studentId, quantity);
@@ -273,7 +274,7 @@ export function useMaterialCalculation() {
       Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
         // Skip if we already processed this student's credits from materials
         if (studentCredits.has(studentId)) return;
-        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
         const quantity = getStudentCredits(studentId, [], gears as Material[]);
         if (quantity > 0) {
@@ -326,7 +327,7 @@ export function useMaterialCalculation() {
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
         const student = studentsCollection[studentId];
         if (!student) return;
-        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
         let quantity = 0;
         (materials as Material[]).forEach(material => {
@@ -345,7 +346,7 @@ export function useMaterialCalculation() {
         // Collect eligmas needed
         const student = studentsCollection[studentId];
         if (!student) return;
-        if (studentDataStore.value[parseInt(studentId)]?.isOwned === false) return; // skip unowned
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
         let quantity = 0;
         (gears as Material[]).forEach(gear => {

@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref } from 'vue';
 import { HeaderProps, SortOption } from '@/types/header';
-import {
-  downloadLocalStorageData
-} from '@/consumables/utils/studentStorage';
-import { currentLanguage, setLanguage, Language } from '@/consumables/stores/localizationStore';
+import { useNavbarSettings, type Language } from '@/consumables/hooks/useNavbarSettings';
+import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
-import { THEME_OPTIONS } from '@/consumables/utils/themeUtils';
 import ImportModal from './ImportModal.vue';
 import CreditsModal from './CreditsModal.vue';
 import ContactModal from './ContactModal.vue';
 import InventoryScreenshotModal from './InventoryScreenshotModal.vue';
 
 const props = defineProps<HeaderProps>();
+
+const { currentLanguage, setLanguage, THEME_OPTIONS, exportData } = useNavbarSettings();
+
 const dropdownOpen = ref(false);
 const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
@@ -110,8 +110,8 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-async function exportData() {
-  await downloadLocalStorageData();
+async function handleExportData() {
+  await exportData();
   mobileMenuOpen.value = false;
 }
 
@@ -159,13 +159,7 @@ function closeContactModal() {
   showContactModal.value = false;
 }
 
-onMounted(() => {
-  window.addEventListener('click', handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('click', handleClickOutside);
-});
+useClickOutside(handleClickOutside);
 </script>
 
 <template>
@@ -319,7 +313,7 @@ onBeforeUnmount(() => {
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
           <div class="mobile-menu-options">
-            <button class="mobile-menu-option" @click="exportData">
+            <button class="mobile-menu-option" @click="handleExportData">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>

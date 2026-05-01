@@ -22,6 +22,9 @@ export const GEAR_UNLOCK_PASSIVE_SKILL = 7;
 export const DEFAULT_EX_SKILL_LEVELS = 5;
 export const DEFAULT_SKILL_LEVELS = 10;
 
+// Exclusive gear T2 material cost (Credits)
+export const EXCLUSIVE_GEAR_T2_CREDIT_COST = 500_000;
+
 // Eleph / Eligma grade-info inputs
 export const MAX_ELEPH_OWNED = 520;
 export const MIN_ELEPH_PRICE = 1;
