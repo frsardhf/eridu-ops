@@ -294,9 +294,9 @@
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 35px;
-  height: 22px;
-  padding: 0;
+  width: 52px;
+  height: 24px;
+  padding: 0 2px;
   margin: 0;
   font-size: 0.8em;
   text-align: center;
@@ -306,6 +306,9 @@
   opacity: 0;
   z-index: 2;
   transition: opacity 0.2s ease;
+  /* Remove native spin buttons on all browsers */
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
 .resource-input:focus {

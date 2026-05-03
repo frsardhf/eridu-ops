@@ -185,11 +185,7 @@ async function handleApply() {
             @click="showGuide = !showGuide"
           >?</button>
         </div>
-        <button class="icon-btn close-btn" type="button" :aria-label="$t('close')" @click="emit('close')">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
+        <button class="icon-btn close-btn" type="button" :aria-label="$t('close')" @click="emit('close')">×</button>
       </div>
 
       <!-- Input step -->

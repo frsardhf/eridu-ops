@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import { saveItemsInventory, saveEquipmentInventory } from '@/consumables/utils/studentStorage';
 import {
@@ -253,6 +254,34 @@ function closeModal(event: MouseEvent) {
 }
 
 const showGuide = ref(false);
+
+// ── Lightbox ──────────────────────────────────────────────────────────────
+const GUIDE_IMGS = {
+  itemsCorrect: ['/examples/scanner/items-correct-1.png', '/examples/scanner/items-correct-2.png'],
+  itemsClipped: ['/examples/scanner/items-clipped-1.png', '/examples/scanner/items-clipped-2.png'],
+  equipCorrect: ['/examples/scanner/equipment-correct-1.png', '/examples/scanner/equipment-correct-2.png'],
+  equipClipped: ['/examples/scanner/equipment-clipped-1.png', '/examples/scanner/equipment-clipped-2.png'],
+} as const;
+
+const lightboxImages = ref<readonly string[]>([]);
+const lightboxIndex  = ref(0);
+const lightboxOpen   = computed(() => lightboxImages.value.length > 0);
+
+function openLightbox(set: readonly string[], index: number) {
+  lightboxImages.value = set;
+  lightboxIndex.value  = index;
+}
+function closeLightbox()  { lightboxImages.value = []; }
+function lightboxPrev()   { lightboxIndex.value = (lightboxIndex.value - 1 + lightboxImages.value.length) % lightboxImages.value.length; }
+function lightboxNext()   { lightboxIndex.value = (lightboxIndex.value + 1) % lightboxImages.value.length; }
+
+function onKeydown(e: KeyboardEvent) {
+  if (!lightboxOpen.value) return;
+  if (e.key === 'Escape')     { e.stopPropagation(); closeLightbox(); }
+  if (e.key === 'ArrowLeft')  lightboxPrev();
+  if (e.key === 'ArrowRight') lightboxNext();
+}
+useDocumentListener('keydown', onKeydown);
 </script>
 
 <template>
@@ -263,20 +292,14 @@ const showGuide = ref(false);
         <div class="header-left">
           <h2 class="modal-title">{{ $t('inventoryScreenshot') }}</h2>
           <button
-            class="help-btn"
+            class="icon-btn help-btn"
             :class="{ active: showGuide }"
             type="button"
             aria-label="Scanner guide"
             @click="showGuide = !showGuide"
           >?</button>
         </div>
-        <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+        <button class="icon-btn close-btn" type="button" :aria-label="$t('close')" @click="emit('close')">×</button>
       </div>
 
       <!-- Collapsible guide panel -->
@@ -312,6 +335,42 @@ const showGuide = ref(false);
             <li>The icon model may misidentify visually similar items within the same design family (e.g. blu-ray series).</li>
             <li>Items at 0 quantity show lower confidence because the OCR has no digit to read.</li>
           </ul>
+        </div>
+
+        <!-- Screenshot example table -->
+        <div class="guide-section">
+          <p class="guide-section-title">Screenshot examples</p>
+          <div class="eg-grid">
+            <div class="eg-th eg-th--good">✓ Correct</div>
+            <div class="eg-th eg-th--bad">✗ Clipped</div>
+
+            <div class="eg-cell">
+              <div class="eg-thumb-pair">
+                <img class="eg-thumb" src="/examples/scanner/items-correct-1.png" alt="Items correct 1" @click="openLightbox(GUIDE_IMGS.itemsCorrect, 0)" />
+                <img class="eg-thumb" src="/examples/scanner/items-correct-2.png" alt="Items correct 2" @click="openLightbox(GUIDE_IMGS.itemsCorrect, 1)" />
+              </div>
+            </div>
+            <div class="eg-cell eg-cell--bad">
+              <div class="eg-thumb-pair">
+                <img class="eg-thumb" src="/examples/scanner/items-clipped-1.png" alt="Items clipped 1" @click="openLightbox(GUIDE_IMGS.itemsClipped, 0)" />
+                <img class="eg-thumb" src="/examples/scanner/items-clipped-2.png" alt="Items clipped 2" @click="openLightbox(GUIDE_IMGS.itemsClipped, 1)" />
+              </div>
+              <p class="eg-bad-caption">First row partially cut — grey padding must be visible on all sides</p>
+            </div>
+
+            <div class="eg-cell">
+              <div class="eg-thumb-pair">
+                <img class="eg-thumb" src="/examples/scanner/equipment-correct-1.png" alt="Equipment correct 1" @click="openLightbox(GUIDE_IMGS.equipCorrect, 0)" />
+                <img class="eg-thumb" src="/examples/scanner/equipment-correct-2.png" alt="Equipment correct 2" @click="openLightbox(GUIDE_IMGS.equipCorrect, 1)" />
+              </div>
+            </div>
+            <div class="eg-cell eg-cell--bad">
+              <div class="eg-thumb-pair">
+                <img class="eg-thumb" src="/examples/scanner/equipment-clipped-1.png" alt="Equipment clipped 1" @click="openLightbox(GUIDE_IMGS.equipClipped, 0)" />
+                <img class="eg-thumb" src="/examples/scanner/equipment-clipped-2.png" alt="Equipment clipped 2" @click="openLightbox(GUIDE_IMGS.equipClipped, 1)" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -540,6 +599,17 @@ const showGuide = ref(false);
       </div>
     </div>
   </div>
+
+  <!-- Lightbox (teleported to body to avoid z-index / overflow clipping) -->
+  <Teleport to="body">
+    <div v-if="lightboxOpen" class="lightbox-backdrop" @click.self="closeLightbox">
+      <button class="lightbox-close" @click="closeLightbox" aria-label="Close">×</button>
+      <button v-if="lightboxImages.length > 1" class="lightbox-arrow lightbox-prev" @click="lightboxPrev" aria-label="Previous">←</button>
+      <img class="lightbox-img" :src="lightboxImages[lightboxIndex]" alt="" />
+      <button v-if="lightboxImages.length > 1" class="lightbox-arrow lightbox-next" @click="lightboxNext" aria-label="Next">→</button>
+      <div class="lightbox-counter">{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -566,9 +636,9 @@ const showGuide = ref(false);
 }
 
 /* Width adapts to step content */
-.modal-container.step-type   { width: min(340px, 90vw); }
-.modal-container.step-upload { width: min(420px, 90vw); }
-.modal-container.step-review { width: min(560px, 90vw); }
+.modal-container.step-type   { width: min(500px, 90vw); }
+.modal-container.step-upload { width: min(500px, 90vw); }
+.modal-container.step-review { width: min(600px, 90vw); }
 
 @keyframes modal-appear {
   from { opacity: 0; transform: translateY(16px); }
@@ -597,24 +667,24 @@ const showGuide = ref(false);
   color: var(--text-primary);
 }
 
-.help-btn {
+/* Shared icon button — matches BondUpdateModal .icon-btn */
+.icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
   flex-shrink: 0;
 }
-.help-btn:hover {
+.icon-btn:hover {
   border-color: var(--accent-color);
   color: var(--text-primary);
 }
@@ -623,20 +693,7 @@ const showGuide = ref(false);
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   color: var(--accent-color);
 }
-
-.close-button {
-  background: transparent;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: color 0.2s;
-}
-.close-button:hover { color: var(--text-primary); }
+.close-btn { border-color: transparent; }
 
 /* Guide panel */
 .guide-panel {
@@ -1073,4 +1130,124 @@ const showGuide = ref(false);
 }
 .apply-btn:hover:not(:disabled) { opacity: 0.85; }
 .apply-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Screenshot example grid ──────────────────────────────────────────── */
+.eg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.eg-th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 4px 5px;
+  text-align: center;
+}
+.eg-th--good { color: #4ade80; }
+.eg-th--bad  { color: #f87171; }
+
+.eg-cell {
+  padding: 3px 4px;
+}
+.eg-cell--bad {
+  background: color-mix(in srgb, #ef4444 6%, transparent);
+  border-radius: 4px;
+}
+
+.eg-thumb-pair {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.eg-thumb {
+  width: 88px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  cursor: zoom-in;
+  transition: border-color 0.15s, opacity 0.15s;
+  background: var(--background-primary);
+}
+.eg-thumb:hover {
+  border-color: var(--accent-color);
+  opacity: 0.9;
+}
+
+.eg-bad-caption {
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  color: #f87171;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ── Lightbox ─────────────────────────────────────────────────────────── */
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.lightbox-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+.lightbox-close:hover { color: #fff; }
+
+.lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: color 0.15s;
+  user-select: none;
+}
+.lightbox-arrow:hover { color: #fff; }
+.lightbox-prev { left: 8px; }
+.lightbox-next { right: 8px; }
+
+.lightbox-counter {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 10px;
+  border-radius: 20px;
+}
 </style>
