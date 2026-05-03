@@ -28,11 +28,12 @@ export function getExclusiveGearIconUrl(studentId: number | null | undefined): s
 
 /**
  * Builds the icon URL for an inventory item or equipment piece.
- * Equipment items with tier > 0 use the '_piece' suffix.
+ * Equipment crafting pieces (Tier >= 1) use the '_piece' suffix.
+ * Items with Tier === 0 or Tier undefined (e.g. equipment exp items) use the plain icon name.
  */
 export function getItemIconUrl(icon: string, itemType: 'item' | 'equipment', tier?: number): string {
   const isEquipment = itemType === 'equipment';
-  const iconName = isEquipment && tier !== 0 ? `${icon}_piece` : icon;
+  const iconName = isEquipment && !!tier ? `${icon}_piece` : icon;
   return `https://schaledb.com/images/${isEquipment ? 'equipment' : 'item'}/icon/${iconName}.webp`;
 }
 

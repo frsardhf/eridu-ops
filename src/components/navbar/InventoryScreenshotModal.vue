@@ -11,6 +11,8 @@ import {
   getEquipmentDataByIdSync,
 } from '@/consumables/stores/resourceCacheStore';
 import type { CachedResource } from '@/types/resource';
+import { MATERIAL, EQUIPMENT } from '@/types/resource';
+import { applyFilters } from '@/consumables/utils/filterUtils';
 import ResourceCard from '@/components/inventory/ResourceCard.vue';
 import { getItemIconUrl } from '@/consumables/utils/iconUtils';
 
@@ -53,11 +55,17 @@ function posKey(item: ParsedItem): string {
   return `${item.row}-${item.col}`;
 }
 
+// Rows per screenshot: equipment grid is 5 rows, items grid is 4 rows.
+// Used in the template for gridTemplateRows / gridRow calculations.
+const rowsPerGroup = computed(() => inventoryType.value === 'equipment' ? 5 : 4);
+
 // ── Grouped results (one group per screenshot) ────────────────────────────
 const groupedResults = computed(() => {
+  // Read inventoryType directly to avoid computed-chain reactivity edge cases.
+  const rpg = inventoryType.value === 'equipment' ? 5 : 4;
   const groups: ParsedItem[][] = [];
   for (const item of parsedResults.value) {
-    const idx = Math.floor(item.row / 4);
+    const idx = Math.floor(item.row / rpg);
     if (!groups[idx]) groups[idx] = [];
     groups[idx].push(item);
   }
@@ -68,11 +76,15 @@ const groupedResults = computed(() => {
 const searchResults = computed<CachedResource[]>(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return [];
-  const cache = inventoryType.value === 'equipment'
-    ? getAllEquipmentFromCache()
-    : getAllItemsFromCache();
-  return (Object.values(cache) as CachedResource[])
+  const isEquipment = inventoryType.value === 'equipment';
+  const raw = isEquipment ? getAllEquipmentFromCache() : getAllItemsFromCache();
+  // Mirror the same filter used in ItemsGrid / EquipmentGrid so blueprints
+  // and other non-inventory items are excluded (avoids broken icons).
+  const eligible = applyFilters(raw, isEquipment ? EQUIPMENT : MATERIAL);
+  return (Object.values(eligible) as CachedResource[])
     .filter(item => item.Name.toLowerCase().includes(q))
+    // For equipment, skip Tier ≤ 1 (exp items + T1 pieces per user preference).
+    .filter(item => !isEquipment || (item.Tier ?? 0) > 1)
     .slice(0, 8);
 });
 
@@ -156,8 +168,9 @@ async function processFiles(files: File[]) {
           throw new Error((err as any).error || `HTTP ${res.status}`);
         }
         const data = await res.json() as { results: ParsedItem[] };
-        // Offset rows by screenshot index * 4 to keep posKeys unique across screenshots
-        return data.results.map(r => ({ ...r, row: r.row + idx * 4 }));
+        // Offset rows by screenshot index × rpg so posKeys stay unique across screenshots.
+        const rpg = inventoryType.value === 'equipment' ? 5 : 4;
+        return data.results.map(r => ({ ...r, row: r.row + idx * rpg }));
       });
     });
 
@@ -238,6 +251,8 @@ async function applyResults() {
 function closeModal(event: MouseEvent) {
   if (event.target === event.currentTarget) emit('close');
 }
+
+const showGuide = ref(false);
 </script>
 
 <template>
@@ -245,7 +260,16 @@ function closeModal(event: MouseEvent) {
     <div class="modal-container" :class="`step-${step}`">
       <!-- Header -->
       <div class="modal-header">
-        <h2 class="modal-title">{{ $t('inventoryScreenshot') }}</h2>
+        <div class="header-left">
+          <h2 class="modal-title">{{ $t('inventoryScreenshot') }}</h2>
+          <button
+            class="help-btn"
+            :class="{ active: showGuide }"
+            type="button"
+            aria-label="Scanner guide"
+            @click="showGuide = !showGuide"
+          >?</button>
+        </div>
         <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2">
@@ -253,6 +277,42 @@ function closeModal(event: MouseEvent) {
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
+      </div>
+
+      <!-- Collapsible guide panel -->
+      <div v-if="showGuide" class="guide-panel">
+        <div class="guide-section">
+          <p class="guide-section-title">Before scanning</p>
+          <ul class="guide-list">
+            <li>Set inventory sort to <strong>ascending or descending by Item ID</strong> (the game default). Name / usage / owned sort is not supported.</li>
+            <li>Up to <strong>3 screenshots per scan</strong>. Scroll to a new page and add each screenshot separately.</li>
+            <li>Select the correct type: <strong>Items</strong> or <strong>Equipment</strong> — the grids differ.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <p class="guide-section-title">Screenshots</p>
+          <ul class="guide-list">
+            <li>Optimised for <strong>FHD (1920 × 1080)</strong>. Higher resolutions (2K / 4K) work fine — the parser locates the inventory panel by aspect ratio.</li>
+            <li><strong>Items</strong> tab detects: EXP materials, artifacts, CD items, book items, and gifts (4 rows per page).</li>
+            <li><strong>Equipment</strong> tab detects: T2+ equipment pieces (5 rows per page). T1 pieces and EXP equipment are excluded.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <p class="guide-section-title">Reviewing results</p>
+          <ul class="guide-list">
+            <li><span class="swatch swatch--med"></span> Orange = moderate confidence (50–80%); <span class="swatch swatch--low"></span> red = low confidence (&lt;50%). Inspect these first.</li>
+            <li>Hover any card to reveal controls: <strong>✏</strong> change item · edit quantity field · <strong>×</strong> remove.</li>
+            <li>Applying only updates quantities for <strong>detected items</strong> — undetected cells are left unchanged.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <p class="guide-section-title">Known limitations</p>
+          <ul class="guide-list">
+            <li>OCR may confuse similar digits (1 ↔ 7, 3 ↔ 5) on very small quantities.</li>
+            <li>The icon model may misidentify visually similar items within the same design family (e.g. blu-ray series).</li>
+            <li>Items at 0 quantity show lower confidence because the OCR has no digit to read.</li>
+          </ul>
+        </div>
       </div>
 
       <div class="modal-content">
@@ -335,7 +395,6 @@ function closeModal(event: MouseEvent) {
               <label for="screenshot-input" class="browse-button">{{ $t('browseFiles') }}</label>
             </div>
           </div>
-          <p class="sort-disclaimer">⚠️ Before scanning, set inventory sort to <strong>ascending or descending by item ID</strong> (default). Name / usage / owned sort is not supported. Maximum 3 screenshots per scan.</p>
         </template>
 
         <!-- Step 3: Review -->
@@ -370,18 +429,29 @@ function closeModal(event: MouseEvent) {
               :class="`group-${groupIdx % 2}`"
             >
               <div class="group-label">#{{ groupIdx + 1 }}</div>
-              <div class="results-grid">
+              <div class="results-grid" :style="{ gridTemplateRows: `repeat(${rowsPerGroup}, auto)` }">
             <div
               v-for="item in group"
               :key="posKey(item)"
               class="result-card-wrapper"
+              :style="{
+                gridColumn: item.col + 1,
+                gridRow: (item.row % rowsPerGroup) + 1,
+              }"
               :class="{
                 'conf-low': item.confidence < 0.5,
                 'conf-med': item.confidence >= 0.5 && item.confidence < 0.8
               }"
             >
               <!-- Active search: inline overlay replaces the card -->
-              <div v-if="activeSearchPos === posKey(item)" class="item-search-panel">
+              <div
+                v-if="activeSearchPos === posKey(item)"
+                class="item-search-panel"
+                :class="{
+                  'anchor-right': item.col >= 3,
+                  'anchor-top': (item.row % rowsPerGroup) >= rowsPerGroup - 2,
+                }"
+              >
                 <input
                   class="item-search-input"
                   v-model="searchQuery"
@@ -514,11 +584,44 @@ function closeModal(event: MouseEvent) {
   flex-shrink: 0;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .modal-title {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.help-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.help-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+.help-btn.active {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  color: var(--accent-color);
 }
 
 .close-button {
@@ -534,6 +637,51 @@ function closeModal(event: MouseEvent) {
   transition: color 0.2s;
 }
 .close-button:hover { color: var(--text-primary); }
+
+/* Guide panel */
+.guide-panel {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-secondary);
+  padding: 10px 16px 8px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-section { display: flex; flex-direction: column; gap: 3px; }
+
+.guide-section-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.guide-list {
+  margin: 0;
+  padding: 0 0 0 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+.guide-list li { list-style: disc; }
+.guide-list strong { color: var(--text-primary); font-weight: 600; }
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+.swatch--med { background: color-mix(in srgb, #f59e0b 55%, transparent); }
+.swatch--low { background: color-mix(in srgb, #ef4444 55%, transparent); }
 
 .modal-content {
   padding: 16px;
@@ -652,13 +800,6 @@ function closeModal(event: MouseEvent) {
 }
 .browse-button:hover { opacity: 0.85; }
 
-.sort-disclaimer {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  margin-top: 8px;
-  text-align: center;
-  line-height: 1.4;
-}
 
 .loader {
   width: 22px;
@@ -734,7 +875,10 @@ function closeModal(event: MouseEvent) {
   border-bottom: 1px solid var(--border-color);
 }
 
-/* 5-column ResourceCard grid matching the game's inventory layout */
+/* 5-column grid matching the game's inventory layout.
+   grid-template-rows is set dynamically via :style (4 rows for items, 5 for equipment).
+   Items are placed via explicit grid-column/grid-row so that missing cells
+   (low-confidence drops or partial pages) never shift their neighbours. */
 .results-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -815,12 +959,15 @@ function closeModal(event: MouseEvent) {
 }
 .result-card-wrapper:hover .card-edit-btn { opacity: 1; }
 
-/* Item search panel — overlays the cell, expands downward */
+/* Item search panel — overlays the cell, expands downward.
+   Anchors left by default; cols 3-4 use .anchor-right to stay within the modal. */
 .item-search-panel {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  min-width: 200px;
+  width: max-content;
+  max-width: 260px;
   z-index: 20;
   background: var(--background-primary);
   border: 1px solid var(--accent-color);
@@ -830,6 +977,14 @@ function closeModal(event: MouseEvent) {
   overflow: hidden;
   min-height: 120px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.item-search-panel.anchor-right {
+  left: auto;
+  right: 0;
+}
+.item-search-panel.anchor-top {
+  top: auto;
+  bottom: 0;
 }
 
 .item-search-input {
