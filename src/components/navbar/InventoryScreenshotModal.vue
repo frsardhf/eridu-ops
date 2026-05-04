@@ -282,6 +282,17 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowRight') lightboxNext();
 }
 useDocumentListener('keydown', onKeydown);
+
+function onPaste(e: ClipboardEvent) {
+  if (step.value !== 'upload') return;
+  const imageItem = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'));
+  if (!imageItem) return;
+  const file = imageItem.getAsFile();
+  if (!file) return;
+  e.preventDefault();
+  processFiles([file]);
+}
+useDocumentListener('paste', onPaste);
 </script>
 
 <template>
@@ -452,6 +463,7 @@ useDocumentListener('keydown', onKeydown);
               <p class="dropzone-text">{{ $t('dragDropScreenshot') }}</p>
               <p class="dropzone-subtext">{{ $t('or') }}</p>
               <label for="screenshot-input" class="browse-button">{{ $t('browseFiles') }}</label>
+              <p class="dropzone-paste-hint"><kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd> to paste one screenshot</p>
             </div>
           </div>
         </template>
@@ -856,6 +868,21 @@ useDocumentListener('keydown', onKeydown);
   display: inline-block;
 }
 .browse-button:hover { opacity: 0.85; }
+
+.dropzone-paste-hint {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.dropzone-paste-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  background: var(--background-primary);
+}
 
 
 .loader {
