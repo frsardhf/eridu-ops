@@ -35,6 +35,9 @@ export const EQUIPMENT = {
     '75000', '100000', '125000', '150000', '175000']
 };
 
+export const ALL_RARITIES = ['N', 'R', 'SR', 'SSR'] as const;
+export type Rarity = (typeof ALL_RARITIES)[number];
+
 export const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
 
 export const YELLOW_STONE_ID = 82;

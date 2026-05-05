@@ -11,6 +11,7 @@ const emit = defineEmits<{
   'open-deck-builder': [];
   'open-inventory': [];
   'open-bond-update': [];
+  'open-crafting-fodder': [];
 }>();
 
 function handleFocusOut(event: FocusEvent) {
@@ -178,6 +179,34 @@ useDocumentListener('keydown', handleEscape);
             stroke-linecap="round"
             stroke-linejoin="round"
             d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="tools-action-btn"
+        style="--i: 4;"
+        type="button"
+        @click="emit('open-crafting-fodder')"
+        :title="$t('craftingFodder.title')"
+        :aria-label="$t('craftingFodder.title')"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M1 4v6h6M23 20v-6h-6"
+          />
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"
           />
         </svg>
       </button>

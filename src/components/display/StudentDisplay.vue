@@ -7,6 +7,7 @@ import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables
 import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
 import BondUpdateModal from '@/components/display/BondUpdateModal.vue';
+import CraftingFodderModal from '@/components/display/CraftingFodderModal.vue';
 import DeckBuilderModal from '@/components/display/DeckBuilderModal.vue';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
@@ -44,6 +45,7 @@ const isBulkModifyModalVisible = ref(false);
 const isBondUpdateVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
+const isCraftingFodderVisible = ref(false);
 
 const inventoryProps = { get isVisible() { return isInventoryModalVisible.value; } };
 const { itemFormData, handleItemInput, loadItems } = useStudentItems(inventoryProps);
@@ -215,6 +217,7 @@ async function handleReinitializeData() {
       @open-deck-builder="isDeckBuilderVisible = true"
       @open-inventory="isInventoryModalVisible = true; loadItems(); loadEquipments();"
       @open-bond-update="isBondUpdateVisible = true"
+      @open-crafting-fodder="isCraftingFodderVisible = true"
     />
 
     <StudentGrid
@@ -263,6 +266,11 @@ async function handleReinitializeData() {
       v-if="isDeckBuilderVisible"
       :students="allStudentsArray"
       @close="isDeckBuilderVisible = false"
+    />
+
+    <CraftingFodderModal
+      v-if="isCraftingFodderVisible"
+      @close="isCraftingFodderVisible = false"
     />
   </div>
 </template>

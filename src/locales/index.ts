@@ -340,6 +340,19 @@ export const translations = {
       guideLinePrefixes: "Common prefixes (add letters to disambiguate: bu=Bunny, ba=Battle):",
       prefixTable: "b=Bunny/Battle (Armed)/Band · c=Cheerleader/Christmas/Camp/Casual/Cycling · d=Dress · g=Guide · i=Idol · m=Maid/Magical · n=New Year · o=Onsen · p=Pajama/Part-Timer · q=Qipao · s=Swimsuit · t=Track/Terror · u=Uniform",
     },
+
+    // Crafting Fodder tool
+    craftingFodder: {
+      title: "Crafting Fodder",
+      keepAtLeast: "Keep at least",
+      stage1Filter: "Show in Stage 1",
+      stage1: "Stage 1 Fodder",
+      stage2: "Stage 2 Fodder (SR / SSR)",
+      artifact: "Artifact",
+      bookItem: "Book",
+      cdItem: "Music",
+      noFodder: "No excess materials above thresholds",
+    },
   },
   jp: {
     // Navbar
@@ -677,6 +690,19 @@ export const translations = {
       guideLineRomaji: "名前は常にローマ字で入力してください（全言語で使用可能）",
       guideLinePrefixes: "よく使うプレフィックス（文字を追加すると絞り込めます: bu=バニー, ba=臨戦）:",
       prefixTable: "b=バニーガール/臨戦/バンド · c=応援団/クリスマス/キャンプ/私服/ライディング · d=ドレス · g=ガイド · i=アイドル · m=メイド/マジカル · n=正月 · o=温泉 · p=パジャマ/アルバイト · q=チーパオ · s=水着 · t=体操服/シロコ＊テラー · u=制服",
+    },
+
+    // Crafting Fodder tool
+    craftingFodder: {
+      title: "クラフト素材",
+      keepAtLeast: "最低限キープ",
+      stage1Filter: "ステージ1に表示",
+      stage1: "ステージ1素材",
+      stage2: "ステージ2素材 (SR / SSR)",
+      artifact: "アーティファクト",
+      bookItem: "本",
+      cdItem: "音楽",
+      noFodder: "閾値を超える余剰素材はありません",
     },
   }
 };
