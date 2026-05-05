@@ -381,13 +381,21 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       getAllStudentsAsRecord()
     ]);
 
-    // Process each character
+    // Build a set of enabled character IDs so we can skip them in disabled pass
+    const enabledIds = new Set<number>(
+      importData.characters.map((c: any) => parseInt(c.id, 10)).filter(Boolean)
+    );
+
     const formDataArray: any[] = [];
+
+    // Process each owned (enabled) character
     importData.characters.forEach((char: any) => {
       if (!char.id) return;
+      const studentId = parseInt(char.id, 10);
+      if (!studentId) return;
 
-      // Get equipment data from student data
-      const studentData = students[char.id];
+      // Map equipment slots to SchaleDB equipment types for this student
+      const studentData = students[studentId];
       const equipmentTypes = (studentData?.Equipment ?? []) as EquipmentType[];
       const starData = studentData?.StarGrade ?? 1;
       const equipmentLevels: EquipmentLevels = {};
@@ -396,7 +404,6 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
         { current: parseInt(char.current.gear2) || 1, target: parseInt(char.target.gear2) || 1 },
         { current: parseInt(char.current.gear3) || 1, target: parseInt(char.target.gear3) || 1 }
       ];
-
       equipmentTypes.forEach((type, idx) => {
         const imported = importedGearValues[idx];
         if (!imported) return;
@@ -404,7 +411,8 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       });
 
       const formData = {
-        studentId: char.id,
+        studentId,
+        isOwned: char.enabled !== false,
         bondDetailData: {
           currentBond: parseInt(char.current.bond) || 1
         },
@@ -414,52 +422,64 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
           target: parseInt(char.target.level) || 1
         },
         equipmentLevels,
+        // exclusiveGearLevel = bond gear (unlocked at bond 15)
+        exclusiveGearLevel: {
+          current: parseInt(char.current.bond_gear) || 0,
+          target: parseInt(char.target.bond_gear) || 0
+        },
         giftFormData: {},
+        // gradeLevels = star grade + UE additions (e.g. ★5 + UE3 → 8)
         gradeLevels: {
           current: (parseInt(char.current.star) || starData) + (parseInt(char.current.ue) || 0),
-          target: (parseInt(char.target.star) || starData) + (parseInt(char.target.ue) || 0)
+          target:  (parseInt(char.target.star)  || starData) + (parseInt(char.target.ue)  || 0)
         },
+        // book_atk → attack, book_hp → maxhp, book_heal → healpower
         potentialLevels: {
-          attack: { current: 0, target: 0 },
-          maxhp: { current: 0, target: 0 },
-          healpower: { current: 0, target: 0 }
+          attack:    { current: parseInt(char.current.book_atk)  || 0, target: parseInt(char.target.book_atk)  || 0 },
+          maxhp:     { current: parseInt(char.current.book_hp)   || 0, target: parseInt(char.target.book_hp)   || 0 },
+          healpower: { current: parseInt(char.current.book_heal) || 0, target: parseInt(char.target.book_heal) || 0 }
         },
         skillLevels: {
-          Ex: {
-            current: parseInt(char.current.ex) || 0,
-            target: parseInt(char.target.ex) || 0
-          },
-          Public: {
-            current: parseInt(char.current.basic) || 0,
-            target: parseInt(char.target.basic) || 0
-          },
-          Passive: {
-            current: parseInt(char.current.passive) || 0,
-            target: parseInt(char.target.passive) || 0
-          },
-          ExtraPassive: {
-            current: parseInt(char.current.sub) || 0,
-            target: parseInt(char.target.sub) || 0
-          }
+          Ex:          { current: parseInt(char.current.ex)      || 1, target: parseInt(char.target.ex)      || 1 },
+          Public:      { current: parseInt(char.current.basic)   || 1, target: parseInt(char.target.basic)   || 1 },
+          Passive:     { current: parseInt(char.current.passive) || 1, target: parseInt(char.target.passive) || 1 },
+          ExtraPassive:{ current: parseInt(char.current.sub)     || 1, target: parseInt(char.target.sub)     || 1 }
         },
         gradeInfos: {
-          owned: parseInt(char.eleph.owned) || 0,
-          price: parseInt(char.eleph.cost) || 1,
-          purchasable: parseInt(char.eleph.purchasable) || 20
+          owned:       parseInt(char.eleph?.owned)       || 0,
+          price:       parseInt(char.eleph?.cost)        || 1,
+          purchasable: parseInt(char.eleph?.purchasable) || 20
         }
       };
 
-      // Merge with existing data (strip ghost id from existing records)
-      const { id: _id, ...existingClean } = (existingForms[char.id] ?? {}) as any;
-      const merged = {
-        ...existingClean,
-        ...formData
-      };
-      formDataArray.push(merged);
+      // Merge with existing data (strip any ghost numeric 'id' key)
+      const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as any;
+      formDataArray.push({ ...existingClean, ...formData });
     });
 
-    // Save all form data to IndexedDB
+    // Mark disabled / unowned characters so they appear in the Not Recruited section
+    const disabledIds: string[] = importData.disabled_characters ?? [];
+    disabledIds.forEach((rawId: string) => {
+      const studentId = parseInt(rawId, 10);
+      if (!studentId || enabledIds.has(studentId)) return;
+      const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as any;
+      formDataArray.push({ ...existingClean, studentId, isOwned: false });
+    });
+
+    // Persist form records
     await db.forms.bulkPut(formDataArray);
+
+    // Import numeric-ID materials into items_inventory (skip string-keyed entries
+    // like 'T6_Hat', 'Xp', etc. which use justin163's own naming scheme)
+    const ownedMaterials: Record<string, number> = importData.owned_materials ?? {};
+    const itemInventoryRows: ItemsInventoryRecord[] = Object.entries(ownedMaterials)
+      .filter(([key]) => /^\d+$/.test(key))
+      .map(([key, qty]) => ({ Id: parseInt(key, 10), QuantityOwned: Number(qty) || 0 }));
+
+    if (itemInventoryRows.length > 0) {
+      await db.items_inventory.bulkPut(itemInventoryRows);
+    }
+
     return true;
   } catch (error) {
     console.error('Error importing data from other site:', error);
