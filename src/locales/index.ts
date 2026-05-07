@@ -352,6 +352,10 @@ export const translations = {
       bookItem: "Book",
       cdItem: "Music",
       noFodder: "No excess materials above thresholds",
+      legend: "Legend",
+      legendCraft: "Crafts",
+      legendExcess: "Excess",
+      legendQty: "Recyclable",
     },
   },
   jp: {
@@ -703,6 +707,10 @@ export const translations = {
       bookItem: "本",
       cdItem: "音楽",
       noFodder: "閾値を超える余剰素材はありません",
+      legend: "凡例",
+      legendCraft: "クラフト",
+      legendExcess: "余剰",
+      legendQty: "リサイクル可能",
     },
   }
 };

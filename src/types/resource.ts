@@ -4,6 +4,7 @@ export interface ResourceProps {
   Rarity: string;
   Category: string;
   Quality: number;
+  CraftQuality?: number;
   ExpValue?: number;
   Recipe?: number[][];
   QuantityOwned?: number;

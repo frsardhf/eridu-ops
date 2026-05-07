@@ -9,6 +9,7 @@ import type { MaterialWithRemaining } from '../../types/upgrade';
 
 const CRAFTING_SUBCATEGORIES = ['Artifact', 'CDItem', 'BookItem'] as const;
 const STAGE2_RARITIES: readonly string[] = ['SR', 'SSR'];
+const CRAFT_QUALITY_THRESHOLD = 200;
 
 const DEFAULT_THRESHOLDS: Record<string, Record<string, number>> = {
   Artifact: { N: 0, R: 0, SR: 0, SSR: 0 },
@@ -18,6 +19,16 @@ const DEFAULT_THRESHOLDS: Record<string, Record<string, number>> = {
 
 export interface RecyclableMaterial extends MaterialWithRemaining {
   recyclableQty: number;
+  craftCount: number;   // full crafts possible from recyclableQty
+  excessItems: number;  // items left over after full crafts
+}
+
+function computeCraftStats(recyclableQty: number, craftQuality: number): { craftCount: number; excessItems: number } {
+  if (craftQuality <= 0) return { craftCount: 0, excessItems: recyclableQty };
+  const itemsPerCraft = Math.ceil(CRAFT_QUALITY_THRESHOLD / craftQuality);
+  const craftCount = Math.floor(recyclableQty / itemsPerCraft);
+  const excessItems = recyclableQty - craftCount * itemsPerCraft;
+  return { craftCount, excessItems };
 }
 
 export function useCraftingFodder() {
@@ -29,13 +40,21 @@ export function useCraftingFodder() {
   );
   // rarityFilter = the user's current Stage-1 rarity chip selection (persisted).
   const rarityFilter = ref<string[]>(saved?.rarityFilter ?? [...ALL_RARITIES]);
+  const markedIds = ref<number[]>(saved?.markedIds ?? []);
 
-  watch([thresholds, rarityFilter], () => {
+  watch([thresholds, rarityFilter, markedIds], () => {
     updateSetting('craftingFodder', {
       thresholds: thresholds.value,
       rarityFilter: rarityFilter.value,
+      markedIds: markedIds.value,
     });
   }, { deep: true });
+
+  function toggleMark(id: number) {
+    const idx = markedIds.value.indexOf(id);
+    if (idx === -1) markedIds.value.push(id);
+    else markedIds.value.splice(idx, 1);
+  }
 
   // Build a map of needed quantities from the material calculation store.
   const materialNeededById = computed(() => {
@@ -66,28 +85,28 @@ export function useCraftingFodder() {
     )
   );
 
-  // Map surplus to recyclable quantities respecting the threshold.
+  // Map surplus to recyclable quantities respecting the threshold, with craft stats.
   function toRecyclable(items: MaterialWithRemaining[], filter: readonly string[]): RecyclableMaterial[] {
     return items
       .filter(m => filter.includes(m.material.Rarity ?? ''))
       .map(m => {
-        const sub = m.material.SubCategory ?? '';
-        const rar = m.material.Rarity ?? '';
-        const threshold = thresholds.value[sub]?.[rar] ?? 0;
-        return { ...m, recyclableQty: Math.max(0, m.remaining - threshold) };
+        const threshold = thresholds.value[m.material.SubCategory ?? '']?.[m.material.Rarity ?? ''] ?? 0;
+        const recyclableQty = Math.max(0, m.remaining - threshold);
+        const { craftCount, excessItems } = computeCraftStats(recyclableQty, m.material.CraftQuality ?? 0);
+        return { ...m, recyclableQty, craftCount, excessItems };
       })
       .filter(m => m.recyclableQty > 0);
   }
 
-  // Stage 1: filtered by user's rarity chip selection.
   const recyclableStage1 = computed(() =>
     toRecyclable(surplusMaterials.value, rarityFilter.value)
   );
 
-  // Stage 2: always SR + SSR only.
   const recyclableStage2 = computed(() =>
     toRecyclable(surplusMaterials.value, STAGE2_RARITIES)
   );
+
+  const markedIdSet = computed(() => new Set(markedIds.value));
 
   function toggleRarity(rarity: string) {
     const idx = rarityFilter.value.indexOf(rarity);
@@ -98,10 +117,12 @@ export function useCraftingFodder() {
   return {
     thresholds,
     rarityFilter,
+    markedIdSet,
     allRarities: ALL_RARITIES,
     subcategories: CRAFTING_SUBCATEGORIES,
     recyclableStage1,
     recyclableStage2,
     toggleRarity,
+    toggleMark,
   };
 }

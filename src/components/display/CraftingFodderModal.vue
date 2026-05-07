@@ -1,22 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { $t } from '@/locales';
 import { useCraftingFodder } from '@/consumables/hooks/useCraftingFodder';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { getItemIconUrl } from '@/consumables/utils/iconUtils';
 import { formatLargeNumber } from '@/consumables/utils/materialUtils';
-import type { RecyclableMaterial } from '@/consumables/hooks/useCraftingFodder';
 
 const emit = defineEmits<{ close: [] }>();
 
 const {
   thresholds,
   rarityFilter,
+  markedIdSet,
   allRarities,
   subcategories,
   recyclableStage1,
   recyclableStage2,
   toggleRarity,
+  toggleMark,
 } = useCraftingFodder();
+
+const stages = computed(() => [
+  { key: 'stage1', labelKey: 'craftingFodder.stage1' as const, items: recyclableStage1.value },
+  { key: 'stage2', labelKey: 'craftingFodder.stage2' as const, items: recyclableStage2.value },
+]);
 
 const subcatLabel = (sub: string): string => {
   const key = sub === 'CDItem' ? 'craftingFodder.cdItem'
@@ -61,66 +68,59 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
         </div>
       </section>
 
-      <!-- Rarity filter chips -->
       <section class="section">
-        <div class="section-label">{{ $t('craftingFodder.stage1Filter') }}</div>
-        <div class="chip-row">
-          <button
-            v-for="rar in allRarities"
-            :key="rar"
-            class="rarity-chip"
-            :class="{ active: rarityFilter.includes(rar) }"
-            type="button"
-            @click="toggleRarity(rar)"
-          >{{ rar }}</button>
+        <div class="filter-legend-row">
+          <div class="filter-col">
+            <div class="section-label">{{ $t('craftingFodder.stage1Filter') }}</div>
+            <div class="chip-row">
+              <button
+                v-for="rar in allRarities"
+                :key="rar"
+                class="rarity-chip"
+                :class="{ active: rarityFilter.includes(rar) }"
+                type="button"
+                @click="toggleRarity(rar)"
+              >{{ rar }}</button>
+            </div>
+          </div>
+          <div class="legend-col">
+            <div class="section-label">{{ $t('craftingFodder.legend') }}</div>
+            <div class="legend-row">
+              <span class="legend-dot legend-dot--craft"></span><span class="legend-text">{{ $t('craftingFodder.legendCraft') }}</span>
+              <span class="legend-dot legend-dot--excess"></span><span class="legend-text">{{ $t('craftingFodder.legendExcess') }}</span>
+              <span class="legend-dot legend-dot--qty"></span><span class="legend-text">{{ $t('craftingFodder.legendQty') }}</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Stage previews: side by side on ≥500px, stacked below -->
       <div class="previews-row">
-        <!-- Stage 1 preview -->
-        <section class="section preview-section">
-          <div class="section-label">{{ $t('craftingFodder.stage1') }}</div>
-          <div v-if="recyclableStage1.length > 0" class="fodder-grid">
-            <div
-              v-for="m in recyclableStage1"
-              :key="m.material.Id"
-              class="fodder-item"
-              :title="`${m.material.Name}: ${m.recyclableQty}`"
-            >
-              <img
-                :src="getItemIconUrl(m.material.Icon, 'item', m.material.Tier)"
-                :alt="m.material.Name"
-                class="fodder-icon"
-              />
-              <span class="fodder-qty">{{ formatLargeNumber(m.recyclableQty) }}</span>
+        <template v-for="(stage, idx) in stages" :key="stage.key">
+          <div v-if="idx > 0" class="previews-divider" aria-hidden="true"></div>
+          <section class="section preview-section">
+            <div class="section-label">{{ $t(stage.labelKey) }}</div>
+            <div v-if="stage.items.length > 0" class="fodder-grid">
+              <div
+                v-for="m in stage.items"
+                :key="m.material.Id"
+                class="fodder-item"
+                :class="{ 'fodder-item--zero': m.craftCount === 0, 'fodder-item--marked': markedIdSet.has(m.material.Id) }"
+                :title="m.material.Name"
+                @click="toggleMark(m.material.Id)"
+              >
+                <img
+                  :src="getItemIconUrl(m.material.Icon, 'item', m.material.Tier)"
+                  :alt="m.material.Name"
+                  class="fodder-icon"
+                />
+                <span class="fodder-craft">{{ m.craftCount }}</span>
+                <span v-if="m.excessItems > 0" class="fodder-excess">+{{ m.excessItems }}</span>
+                <span class="fodder-qty">{{ formatLargeNumber(m.recyclableQty) }}</span>
+              </div>
             </div>
-          </div>
-          <p v-else class="empty-state">{{ $t('craftingFodder.noFodder') }}</p>
-        </section>
-
-        <div class="previews-divider" aria-hidden="true"></div>
-
-        <!-- Stage 2 preview -->
-        <section class="section preview-section">
-          <div class="section-label">{{ $t('craftingFodder.stage2') }}</div>
-          <div v-if="recyclableStage2.length > 0" class="fodder-grid">
-            <div
-              v-for="m in recyclableStage2"
-              :key="m.material.Id"
-              class="fodder-item"
-              :title="`${m.material.Name}: ${m.recyclableQty}`"
-            >
-              <img
-                :src="getItemIconUrl(m.material.Icon, 'item', m.material.Tier)"
-                :alt="m.material.Name"
-                class="fodder-icon"
-              />
-              <span class="fodder-qty">{{ formatLargeNumber(m.recyclableQty) }}</span>
-            </div>
-          </div>
-          <p v-else class="empty-state">{{ $t('craftingFodder.noFodder') }}</p>
-        </section>
+            <p v-else class="empty-state">{{ $t('craftingFodder.noFodder') }}</p>
+          </section>
+        </template>
       </div>
     </div>
   </div>
@@ -256,6 +256,50 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   border-color: var(--accent-color);
 }
 
+/* ── Filter + legend row ── */
+.filter-legend-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.filter-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot--craft { background: #6668ed; }
+.legend-dot--excess { background: #4ade80; }
+.legend-dot--qty   { background: #000; }
+
+.legend-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-right: 6px;
+}
+
 /* ── Rarity chips ── */
 .chip-row {
   display: flex;
@@ -339,6 +383,52 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   object-fit: cover;
 }
 
+.fodder-item {
+  cursor: pointer;
+}
+
+.fodder-item--zero {
+  opacity: 0.45;
+}
+
+.fodder-item--marked {
+  opacity: 0.4;
+}
+
+.fodder-item--marked::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #6668ed;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+}
+
+.fodder-craft {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #6668ed;
+  line-height: 1;
+}
+
+.fodder-excess {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #4ade80;
+  line-height: 1;
+}
+
 .fodder-qty {
   position: absolute;
   bottom: 1px;
@@ -346,7 +436,6 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   font-size: 0.68rem;
   font-weight: 700;
   color: #000;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.9);
   line-height: 1;
 }
 

@@ -22,6 +22,7 @@ export interface AppSettings {
   craftingFodder?: {
     thresholds: Record<string, Record<string, number>>; // thresholds[subcat][rarity]
     rarityFilter: string[]; // user's chip selection for Stage 1
+    markedIds: number[];    // material IDs the user has marked as "used"
   };
 }
 
