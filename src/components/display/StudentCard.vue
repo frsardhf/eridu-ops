@@ -457,7 +457,6 @@ function handleCardClick(event: MouseEvent) {
   grid-area: bottom;
   align-self: end;
   display: flex;
-  justify-content: space-between;
   width: 100%;
 }
 
@@ -556,7 +555,9 @@ function handleCardClick(event: MouseEvent) {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  justify-content: flex-end;
   gap: 2px;
+  margin-left: auto;
 }
 
 .potential-levels {
