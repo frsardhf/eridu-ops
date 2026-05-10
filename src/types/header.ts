@@ -8,8 +8,7 @@ export type SortOption =
   | 'level'
   | 'grade'
   | 'school'
-  | 'club'
-  | 'pinned';
+  | 'club';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -18,4 +17,5 @@ export interface HeaderProps {
   currentTheme: ThemeId;
   currentSort?: SortOption;
   sortDirection?: SortDirection;
+  isPinnedMode?: boolean;
 }

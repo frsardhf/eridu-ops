@@ -16,6 +16,7 @@ export const translations = {
       grade: "Grade",
       school: "School",
       club: "Club",
+      pinned: "Pinned",
       method: "Sorting Method"
     },
     direction: {
@@ -371,6 +372,7 @@ export const translations = {
       grade: "星級",
       school: "学園",
       club: "部活",
+      pinned: "ピン留め",
       method: "ソート方法"
     },
     direction: {

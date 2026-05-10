@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { StudentProps } from '@/types/student'
 import { ModalOriginRect } from '@/types/modal';
-import { useDragReorder } from '@/composables/useDragReorder';
 import StudentCard from './StudentCard.vue';
 import { $t } from '@/locales';
 
@@ -13,13 +12,9 @@ const props = defineProps<{
 type EmitEvents = {
   'openModal': [payload: { student: StudentProps; originRect: ModalOriginRect | null }];
   'studentPinned': [studentId: string | number, isPinned: boolean];
-  'reorderStudents': [fromId: number, toId: number];
 }
 
 const emit = defineEmits<EmitEvents>();
-
-const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isDropTarget } =
-  useDragReorder<number>((fromId, toId) => emit('reorderStudents', fromId, toId));
 
 function handleOpenModal(payload: { student: StudentProps; originRect: ModalOriginRect | null }) {
   emit('openModal', payload);
@@ -37,16 +32,6 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
         v-for="student in studentsArray"
         :key="student.Id"
         class="student-card-slot"
-        :class="{
-          dragging: isDragging(student.Id),
-          'drop-target': isDropTarget(student.Id)
-        }"
-        draggable="true"
-        @dragstart="onDragStart(student.Id, $event)"
-        @dragover="onDragOver(student.Id, $event)"
-        @dragleave="onDragLeave(student.Id)"
-        @drop="onDrop(student.Id)"
-        @dragend="onDragEnd"
       >
         <StudentCard
           :student="student"
@@ -61,16 +46,6 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
           v-for="student in unownedStudentsArray"
           :key="student.Id"
           class="student-card-slot"
-          :class="{
-            dragging: isDragging(student.Id),
-            'drop-target': isDropTarget(student.Id)
-          }"
-          draggable="true"
-          @dragstart="onDragStart(student.Id, $event)"
-          @dragover="onDragOver(student.Id, $event)"
-          @dragleave="onDragLeave(student.Id)"
-          @drop="onDrop(student.Id)"
-          @dragend="onDragEnd"
         >
           <StudentCard
             :student="student"
@@ -118,32 +93,6 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
   color: var(--text-secondary);
   text-align: center;
   letter-spacing: 0.06em;
-}
-
-.student-card-slot.dragging {
-  opacity: 0.55;
-}
-
-.student-card-slot.drop-target::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 12px;
-  pointer-events: none;
-  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.6),
-              0 0 0 6px rgba(var(--accent-color-rgb), 0.2);
-  animation: drop-pulse 0.9s ease-in-out infinite;
-}
-
-@keyframes drop-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .student-card-slot.drop-target::after {
-    animation: none;
-  }
 }
 
 /* Media Queries */

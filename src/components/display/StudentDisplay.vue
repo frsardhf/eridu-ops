@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useStudentData } from '@/consumables/hooks/useStudentData';
-import { studentDataStore } from '@/consumables/stores/studentStore';
 import { filterSecondaryStudents } from '@/consumables/constants/linkedStudents';
-import { getPinnedStudents, getManualOrder, setManualOrder } from '@/consumables/utils/settingsStorage';
 import ToolsRail from '@/components/display/ToolsRail.vue';
 import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
 import BondUpdateModal from '@/components/display/BondUpdateModal.vue';
@@ -36,7 +34,9 @@ const {
   updateSearchQuery,
   toggleDirection,
   syncPinnedStudents,
-  reinitializeData
+  reinitializeData,
+  isPinnedMode,
+  togglePinnedMode
 } = useStudentData()
 
 const selectedStudent = ref<StudentProps | null>(null)
@@ -51,43 +51,12 @@ const inventoryProps = { get isVisible() { return isInventoryModalVisible.value;
 const { itemFormData, handleItemInput, loadItems } = useStudentItems(inventoryProps);
 const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment(inventoryProps);
 const modalOriginRect = ref<ModalOriginRect | null>(null);
-const savedOrder = getManualOrder();
-const isManualOrderActive = ref(savedOrder.length > 0);
-const manualOrderedIds = ref<number[]>(savedOrder);
 const allStudentsArray = computed<StudentProps[]>(() => {
   return filterSecondaryStudents(
     Object.values(studentData.value)
   ).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
-function applyManualOrder(base: StudentProps[]): StudentProps[] {
-  if (!isManualOrderActive.value || manualOrderedIds.value.length === 0) return base;
-
-  const byId = new Map<number, StudentProps>(base.map(s => [s.Id, s]));
-  const ordered: StudentProps[] = [];
-
-  manualOrderedIds.value.forEach(id => {
-    const s = byId.get(id);
-    if (s) { ordered.push(s); byId.delete(id); }
-  });
-
-  base.forEach(s => { if (byId.has(s.Id)) ordered.push(s); });
-
-  return ordered;
-}
-
-const displayOwnedStudents   = computed<StudentProps[]>(() => applyManualOrder(ownedStudentsArray.value));
-const displayUnownedStudents = computed<StudentProps[]>(() => applyManualOrder(unownedStudentsArray.value));
-
-function resetManualOrder() {
-  isManualOrderActive.value = false;
-  manualOrderedIds.value = [];
-  setManualOrder([]);
-}
-
-function isPinned(studentId: number): boolean {
-  return getPinnedStudents().includes(String(studentId));
-}
 
 // Prepare student for modal
 function prepareStudentForModal(student: StudentProps): StudentProps {
@@ -124,63 +93,15 @@ function handleSearchUpdate(value: string) {
 }
 
 function updateSortOption(option: SortOption) {
-  resetManualOrder();
   setSortOption(option);
 }
 
 function handleToggleDirection() {
-  resetManualOrder();
   toggleDirection();
 }
 
-function handleStudentPinned(studentId: string | number) {
+function handleStudentPinned() {
   syncPinnedStudents();
-
-  if (!isManualOrderActive.value) return;
-
-  // Move student to group boundary in manual order
-  const numericId = Number(studentId);
-  const ids = [...manualOrderedIds.value];
-  const index = ids.indexOf(numericId);
-  if (index < 0) return;
-
-  // Remove from current position
-  ids.splice(index, 1);
-
-  // Find boundary: insert right after last pinned student
-  const pinnedSet = new Set(getPinnedStudents().map(Number));
-  let lastPinnedIndex = -1;
-  for (let i = 0; i < ids.length; i++) {
-    if (pinnedSet.has(ids[i])) lastPinnedIndex = i;
-  }
-  ids.splice(lastPinnedIndex + 1, 0, numericId);
-
-  manualOrderedIds.value = ids;
-  setManualOrder(ids);
-}
-
-function handleStudentsReordered(fromId: number, toId: number) {
-  if (fromId === toId) return;
-  if (isPinned(fromId) !== isPinned(toId)) return;
-
-  // Block dragging across the recruited / not-recruited boundary
-  const isOwnedFn = (id: number) => studentDataStore.value[id]?.isOwned !== false;
-  if (isOwnedFn(fromId) !== isOwnedFn(toId)) return;
-
-  const baseIds = (isManualOrderActive.value
-    ? [...manualOrderedIds.value]
-    : sortedStudentsArray.value.map(student => student.Id));
-
-  const fromIndex = baseIds.indexOf(fromId);
-  const toIndex = baseIds.indexOf(toId);
-  if (fromIndex < 0 || toIndex < 0) return;
-
-  const [moved] = baseIds.splice(fromIndex, 1);
-  baseIds.splice(toIndex, 0, moved);
-
-  manualOrderedIds.value = baseIds;
-  isManualOrderActive.value = true;
-  setManualOrder(baseIds);
 }
 
 function handleDataImported() {
@@ -210,6 +131,8 @@ async function handleReinitializeData() {
       @toggle-direction="handleToggleDirection"
       @data-imported="handleDataImported"
       @reinitialize-data="handleReinitializeData"
+      @toggle-pinned="togglePinnedMode"
+      :is-pinned-mode="isPinnedMode"
     />
 
     <ToolsRail
@@ -221,12 +144,11 @@ async function handleReinitializeData() {
     />
 
     <StudentGrid
-      :students-array="displayOwnedStudents"
-      :unowned-students-array="displayUnownedStudents"
+      :students-array="ownedStudentsArray"
+      :unowned-students-array="unownedStudentsArray"
       :key="`${currentSort}-${sortDirection}-${searchQuery}`"
       @open-modal="openModal"
       @student-pinned="handleStudentPinned"
-      @reorder-students="handleStudentsReordered"
     />
 
     <Transition name="student-modal-shell" appear>

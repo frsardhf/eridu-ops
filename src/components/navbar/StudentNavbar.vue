@@ -29,6 +29,7 @@ const emit = defineEmits<{
   'toggleDirection': [];
   'dataImported': [];
   'reinitializeData': [];
+  'togglePinned': [];
 }>();
 
 const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
@@ -39,7 +40,7 @@ const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
   { value: 'level', labelKey: 'sort.level' },
   { value: 'grade', labelKey: 'sort.grade' },
   { value: 'school', labelKey: 'sort.school' },
-  { value: 'club', labelKey: 'sort.club' }
+  { value: 'club', labelKey: 'sort.club' },
 ];
 
 const currentSortLabel = computed(() => {
@@ -191,6 +192,16 @@ useClickOutside(handleClickOutside);
             />
 
             <div class="sort-container">
+              <button
+                class="pin-chip"
+                :class="{ active: isPinnedMode }"
+                type="button"
+                :title="$t('sort.pinned')"
+                @click.stop="emit('togglePinned')"
+              >
+                <img src="/assets/push-pin.png" class="pin-chip-icon" aria-hidden="true" />
+              </button>
+
               <div class="sort-controls" :class="{ active: dropdownOpen }">
                 <button
                   class="sort-icon-button"
@@ -199,7 +210,7 @@ useClickOutside(handleClickOutside);
                   :title="sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending')"
                 >
                   <span class="sort-direction-label">
-                    {{ sortDirection === 'asc' ? '↑' : '↓' }} 
+                    {{ sortDirection === 'asc' ? '↑' : '↓' }}
                   </span>
                 </button>
 
@@ -485,6 +496,9 @@ useClickOutside(handleClickOutside);
   right: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .sort-controls {
@@ -550,6 +564,42 @@ useClickOutside(handleClickOutside);
 .sort-button:focus-visible,
 .sort-icon-button:focus-visible {
   outline: none;
+}
+
+.pin-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background-color: #a6a6a6;
+  padding: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.1s ease;
+}
+
+.pin-chip:hover {
+  background-color: #edba2d;
+}
+
+.pin-chip.active {
+  background-color: #edba2d;
+}
+
+.pin-chip-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.7;
+  transition: opacity 0.1s ease;
+}
+
+.pin-chip.active .pin-chip-icon,
+.pin-chip:hover .pin-chip-icon {
+  opacity: 1;
 }
 
 .sort-direction-label {

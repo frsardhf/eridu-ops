@@ -14,6 +14,7 @@ interface SortStudentsParams {
   searchQuery: string;
   sortOption: SortOption;
   sortDirection: SortDirection;
+  isPinnedMode: boolean;
   studentStore: Record<number, any>;
   resolveLocalized?: (category: ResolveCategory, key?: string) => string;
 }
@@ -43,8 +44,6 @@ function toComparableValue(
       return resolveLocalized?.('School', student.School) || student.School || '';
     case 'club':
       return resolveLocalized?.('Club', student.Club) || student.Club || '';
-    case 'pinned':
-      return 0;
     case 'id':
     default:
       return Number(student.Id) || 0;
@@ -72,55 +71,46 @@ function compareStudents(
   return direction === 'asc' ? comparison : -comparison;
 }
 
+function byBondDesc(studentStore: Record<number, any>) {
+  return (a: StudentProps, b: StudentProps) =>
+    (studentStore[b.Id]?.bondDetailData?.currentBond ?? 0) -
+    (studentStore[a.Id]?.bondDetailData?.currentBond ?? 0);
+}
+
 export function sortStudentsWithPins({
   students,
   pinnedStudentIds,
   searchQuery,
   sortOption,
   sortDirection,
+  isPinnedMode,
   studentStore,
-  resolveLocalized
+  resolveLocalized,
 }: SortStudentsParams): StudentProps[] {
   const normalizedQuery = normalizeText(searchQuery || '');
 
-  const filteredStudents = normalizedQuery
-    ? students.filter(student =>
-        normalizeText(student.Name || '').includes(normalizedQuery)
-      )
+  const filtered = normalizedQuery
+    ? students.filter(s => normalizeText(s.Name || '').includes(normalizedQuery))
     : students;
 
-  const pinnedSet = new Set(pinnedStudentIds);
-  const pinnedMap = new Map<string, StudentProps>();
-  const unpinnedStudents: StudentProps[] = [];
+  if (isPinnedMode) {
+    // Pinned mode: pinned group first then unpinned, both sorted by bond desc.
+    const pinnedSet = new Set(pinnedStudentIds);
+    const pinned: StudentProps[] = [];
+    const unpinned: StudentProps[] = [];
+    filtered.forEach(s => (pinnedSet.has(String(s.Id)) ? pinned : unpinned).push(s));
+    const cmp = byBondDesc(studentStore);
+    return [...pinned.sort(cmp), ...unpinned.sort(cmp)];
+  }
 
-  filteredStudents.forEach(student => {
-    const id = String(student.Id);
-    if (pinnedSet.has(id)) {
-      pinnedMap.set(id, student);
-      return;
-    }
-    unpinnedStudents.push(student);
-  });
-
-  unpinnedStudents.sort((a, b) =>
-    compareStudents(a, b, sortOption, sortDirection, studentStore, resolveLocalized)
-  );
-
-  const pinnedStudentsOrdered: StudentProps[] = [];
-  pinnedStudentIds.forEach(id => {
-    const student = pinnedMap.get(id);
-    if (student) {
-      pinnedStudentsOrdered.push(student);
-    }
-  });
-
-  return [...pinnedStudentsOrdered, ...unpinnedStudents];
+  // Normal mode: flat list sorted by the selected option — no pinned priority.
+  return filtered
+    .slice()
+    .sort((a, b) => compareStudents(a, b, sortOption, sortDirection, studentStore, resolveLocalized));
 }
 
 /**
- * Splits students into owned/unowned groups then sorts each independently
- * using the same sort parameters. Pinned students sort to the top of their
- * respective group.
+ * Splits students into owned/unowned groups then sorts each independently.
  */
 export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
   const allOwned: StudentProps[] = [];

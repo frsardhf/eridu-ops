@@ -58,6 +58,7 @@ let _currentSort: Ref<SortOption>;
 let _sortDirection: Ref<SortDirection>;
 let _sortedStudentsArray: ComputedRef<StudentProps[]>;
 let _splitStudents: ComputedRef<StudentSplit>;
+let _isPinnedMode: Ref<boolean>;
 let _isLoading: Ref<boolean>;
 let _isReady: Ref<boolean>;
 let _isInitialized = false;
@@ -241,6 +242,7 @@ export function useStudentData() {
     _currentTheme = ref<ThemeId>('dark');
     _currentSort = ref<SortOption>('id');
     _sortDirection = ref<SortDirection>('asc');
+    _isPinnedMode = ref<boolean>(false);
     _isLoading = ref<boolean>(true);
     _isReady = ref<boolean>(false);
 
@@ -254,6 +256,7 @@ export function useStudentData() {
         searchQuery: _searchQuery.value,
         sortOption: _currentSort.value,
         sortDirection: _sortDirection.value,
+        isPinnedMode: _isPinnedMode.value,
         studentStore: studentDataStore.value,
         resolveLocalized,
       });
@@ -309,6 +312,8 @@ export function useStudentData() {
     toggleDirection,
     syncPinnedStudents,
     reinitializeData,
+    isPinnedMode: _isPinnedMode,
+    togglePinnedMode: () => { _isPinnedMode.value = !_isPinnedMode.value; },
     isLoading: _isLoading,
     isReady: _isReady,
   }
