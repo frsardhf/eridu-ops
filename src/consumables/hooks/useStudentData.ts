@@ -30,6 +30,7 @@ import { currentLanguage, initializeLocalizationData } from '../stores/localizat
 import { fetchAllData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
 import { resolveLocalized } from '../utils/localizationUtils';
+import { StudentFilters, EMPTY_FILTERS, isFiltersEmpty } from '../../types/filter';
 import { splitAndSortStudents, StudentSplit } from '../utils/sortUtils';
 import { filterSecondaryStudents, isSecondaryStudent } from '../constants/linkedStudents';
 import { normalizeTheme } from '../utils/themeUtils';
@@ -59,6 +60,8 @@ let _sortDirection: Ref<SortDirection>;
 let _sortedStudentsArray: ComputedRef<StudentProps[]>;
 let _splitStudents: ComputedRef<StudentSplit>;
 let _isPinnedMode: Ref<boolean>;
+let _activeFilters: Ref<StudentFilters>;
+let _availableSchools: ComputedRef<string[]>;
 let _isLoading: Ref<boolean>;
 let _isReady: Ref<boolean>;
 let _isInitialized = false;
@@ -78,6 +81,9 @@ function loadSettings() {
   _currentSort.value = settings.sort.option;
   _sortDirection.value = settings.sort.direction;
   _isPinnedMode.value = settings.isPinnedMode ?? false;
+  if (settings.studentFilters) {
+    _activeFilters.value = { ...EMPTY_FILTERS, ...settings.studentFilters };
+  }
   syncPinnedStudents();
 
   document.documentElement.setAttribute('data-theme', theme);
@@ -244,8 +250,19 @@ export function useStudentData() {
     _currentSort = ref<SortOption>('id');
     _sortDirection = ref<SortDirection>('asc');
     _isPinnedMode = ref<boolean>(false);
+    _activeFilters = ref<StudentFilters>({ ...EMPTY_FILTERS });
     _isLoading = ref<boolean>(true);
     _isReady = ref<boolean>(false);
+
+    _availableSchools = computed(() => {
+      const schools = new Set<string>();
+      for (const s of Object.values(_studentData.value)) {
+        if (s.School) schools.add(s.School);
+      }
+      return [...schools].sort((a, b) =>
+        resolveLocalized('School', a).localeCompare(resolveLocalized('School', b))
+      );
+    });
 
     _splitStudents = computed(() => {
       const _version = studentDataVersion.value;
@@ -260,6 +277,7 @@ export function useStudentData() {
         isPinnedMode: _isPinnedMode.value,
         studentStore: studentDataStore.value,
         resolveLocalized,
+        filters: _activeFilters.value,
       });
     });
 
@@ -318,6 +336,18 @@ export function useStudentData() {
       _isPinnedMode.value = !_isPinnedMode.value;
       updateSetting('isPinnedMode', _isPinnedMode.value);
     },
+    activeFilters: _activeFilters,
+    availableSchools: _availableSchools,
+    setStudentFilters: (key: keyof StudentFilters, value: StudentFilters[keyof StudentFilters]) => {
+      // Replace the whole object so the _splitStudents computed re-runs
+      _activeFilters.value = { ..._activeFilters.value, [key]: value };
+      updateSetting('studentFilters', _activeFilters.value);
+    },
+    clearStudentFilters: () => {
+      _activeFilters.value = { ...EMPTY_FILTERS };
+      updateSetting('studentFilters', { ...EMPTY_FILTERS });
+    },
+    isFiltersEmpty: () => isFiltersEmpty(_activeFilters.value),
     isLoading: _isLoading,
     isReady: _isReady,
   }

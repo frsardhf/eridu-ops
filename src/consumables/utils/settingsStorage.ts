@@ -2,6 +2,7 @@
 
 import type { SortOption, SortDirection } from '../../types/header';
 import type { ThemeId } from '@/types/theme';
+import type { StudentFilters } from '@/types/filter';
 import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
@@ -24,6 +25,7 @@ export interface AppSettings {
     rarityFilter: string[]; // user's chip selection for Stage 1
     markedIds: number[];    // material IDs the user has marked as "used"
   };
+  studentFilters?: StudentFilters;
 }
 
 // Default settings

@@ -358,6 +358,25 @@ export const translations = {
       legendExcess: "Excess",
       legendQty: "Recyclable",
     },
+
+    // Student filter panel
+    filter: {
+      title: "Filter",
+      clearAll: "Clear All",
+      type: "Type",
+      rarity: "Rarity",
+      attackType: "Attack",
+      defenseType: "Defense",
+      academy: "Academy",
+      equipment: "Equipment",
+      availability: "Availability",
+      regular: "Regular",
+      limited: "Limited",
+      unique: "Unique",
+      fest: "Fest",
+      perm3star: "Archived",
+      other: "Other",
+    },
   },
   jp: {
     // Navbar
@@ -713,6 +732,25 @@ export const translations = {
       legendCraft: "クラフト",
       legendExcess: "余剰",
       legendQty: "リサイクル可能",
+    },
+
+    // Student filter panel
+    filter: {
+      title: "フィルター",
+      clearAll: "全クリア",
+      type: "タイプ",
+      rarity: "レアリティ",
+      attackType: "攻撃",
+      defenseType: "防御",
+      academy: "学園",
+      equipment: "装備",
+      availability: "入手方法",
+      regular: "通常",
+      limited: "限定",
+      unique: "ユニーク",
+      fest: "フェス",
+      perm3star: "アーカイブ",
+      other: "その他",
     },
   }
 };

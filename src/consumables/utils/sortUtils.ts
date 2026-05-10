@@ -1,5 +1,6 @@
 import { SortDirection, SortOption } from '@/types/header';
 import { StudentProps } from '@/types/student';
+import { StudentFilters, isFiltersEmpty } from '@/types/filter';
 
 export interface StudentSplit {
   owned: StudentProps[];
@@ -17,6 +18,7 @@ interface SortStudentsParams {
   isPinnedMode: boolean;
   studentStore: Record<number, any>;
   resolveLocalized?: (category: ResolveCategory, key?: string) => string;
+  filters?: StudentFilters;
 }
 
 function normalizeText(value: string): string {
@@ -71,6 +73,35 @@ function compareStudents(
   return direction === 'asc' ? comparison : -comparison;
 }
 
+// Unarmed and SpecialArmor are the same in-game defense category
+const UNARMED_ALIASES = new Set(['Unarmed', 'SpecialArmor']);
+
+function applyStudentFilters(
+  students: StudentProps[],
+  filters: StudentFilters,
+): StudentProps[] {
+  return students.filter(student => {
+    if (filters.squadType.length && !filters.squadType.includes(student.SquadType)) return false;
+    if (filters.starGrade.length && !filters.starGrade.includes(student.StarGrade)) return false;
+    if (filters.bulletType.length && !filters.bulletType.includes(student.BulletType)) return false;
+    if (filters.armorType.length) {
+      // Treat Unarmed and SpecialArmor as the same armor category
+      const studentArmor = student.ArmorType;
+      const filterSet = new Set(filters.armorType);
+      const unarmedSelected = filterSet.has('Unarmed') || filterSet.has('SpecialArmor');
+      const matches = filterSet.has(studentArmor) || (unarmedSelected && UNARMED_ALIASES.has(studentArmor));
+      if (!matches) return false;
+    }
+    if (filters.school.length && !filters.school.includes(student.School)) return false;
+    if (filters.equipment.length && !filters.equipment.every(e => student.Equipment?.includes(e))) return false;
+    if (filters.availability.length) {
+      const avail = student.IsLimited?.[0] ?? 0;
+      if (!filters.availability.includes(avail)) return false;
+    }
+    return true;
+  });
+}
+
 function byBondDesc(studentStore: Record<number, any>) {
   return (a: StudentProps, b: StudentProps) =>
     (studentStore[b.Id]?.bondDetailData?.currentBond ?? 0) -
@@ -113,9 +144,13 @@ export function sortStudentsWithPins({
  * Splits students into owned/unowned groups then sorts each independently.
  */
 export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
+  const students = params.filters && !isFiltersEmpty(params.filters)
+    ? applyStudentFilters(params.students, params.filters)
+    : params.students;
+
   const allOwned: StudentProps[] = [];
   const allUnowned: StudentProps[] = [];
-  for (const s of params.students) {
+  for (const s of students) {
     if (params.studentStore[s.Id]?.isOwned === false) {
       allUnowned.push(s);
     } else {

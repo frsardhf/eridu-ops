@@ -97,7 +97,7 @@ const styleModeLabel = computed(() => {
         <div v-if="bulletTypeName || armorTypeName" class="combat-type-row">
           <div v-if="bulletTypeName" class="type-pill-divided">
             <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
-              {{ $t('atk') }}
+              <img src="https://schaledb.com/images/ui/Type_Attack.png" alt="ATK" class="type-icon" />
             </span>
             <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
               {{ bulletTypeName }}
@@ -106,7 +106,7 @@ const styleModeLabel = computed(() => {
 
           <div v-if="armorTypeName" class="type-pill-divided">
             <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
-              {{ $t('def') }}
+              <img src="https://schaledb.com/images/ui/Type_Defense.png" alt="DEF" class="type-icon" />
             </span>
             <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
               {{ armorTypeName }}
@@ -184,13 +184,15 @@ const styleModeLabel = computed(() => {
 
 .role-chip {
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.82rem;
+  padding: 1px 10px;
+  font-family: 'NEXON Football Gothic', system-ui, sans-serif;
+  font-size: 1rem;
   font-style: italic;
   font-weight: 700;
-  color: white;
-  letter-spacing: 0.2px;
+  font-synthesis: style;
   text-transform: uppercase;
+  color: white;
+  white-space: nowrap;
 }
 
 .meta-row {
@@ -310,9 +312,15 @@ const styleModeLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 9px;
-  color: white;
-  min-width: 36px;
+  padding: 4px 7px;
+}
+
+.type-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  display: block;
 }
 
 .pill-value {

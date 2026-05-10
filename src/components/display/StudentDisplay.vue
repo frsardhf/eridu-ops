@@ -14,6 +14,7 @@ import { useStudentEquipment } from '@/consumables/hooks/useStudentEquipment';
 import StudentGrid from '@/components/display/StudentGrid.vue';
 import StudentModal from '@/components/modal/StudentModal.vue'
 import { SortOption } from '@/types/header';
+import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
 import { ThemeId } from '@/types/theme';
@@ -36,7 +37,11 @@ const {
   syncPinnedStudents,
   reinitializeData,
   isPinnedMode,
-  togglePinnedMode
+  togglePinnedMode,
+  activeFilters,
+  availableSchools,
+  setStudentFilters,
+  clearStudentFilters,
 } = useStudentData()
 
 const selectedStudent = ref<StudentProps | null>(null)
@@ -116,6 +121,14 @@ function handleSetTheme(themeId: ThemeId) {
 async function handleReinitializeData() {
   await reinitializeData();
 }
+
+function handleUpdateFilter(key: keyof StudentFilters, value: StudentFilters[typeof key]) {
+  setStudentFilters(key, value);
+}
+
+function handleClearFilters() {
+  clearStudentFilters();
+}
 </script>
 
 <template>
@@ -125,6 +138,9 @@ async function handleReinitializeData() {
       :current-theme="currentTheme"
       :current-sort="currentSort"
       :sort-direction="sortDirection"
+      :is-pinned-mode="isPinnedMode"
+      :filters="activeFilters"
+      :available-schools="availableSchools"
       @update:search-query="handleSearchUpdate"
       @set-theme="handleSetTheme"
       @update-sort="updateSortOption"
@@ -132,7 +148,8 @@ async function handleReinitializeData() {
       @data-imported="handleDataImported"
       @reinitialize-data="handleReinitializeData"
       @toggle-pinned="togglePinnedMode"
-      :is-pinned-mode="isPinnedMode"
+      @update-filter="handleUpdateFilter"
+      @clear-filters="handleClearFilters"
     />
 
     <ToolsRail

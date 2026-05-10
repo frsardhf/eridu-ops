@@ -1,4 +1,5 @@
 import type { ThemeId } from './theme';
+import type { StudentFilters } from './filter';
 
 export type SortOption =
   | 'id'
@@ -18,4 +19,6 @@ export interface HeaderProps {
   currentSort?: SortOption;
   sortDirection?: SortDirection;
   isPinnedMode?: boolean;
+  filters?: StudentFilters;
+  availableSchools?: string[];
 }

@@ -9,6 +9,8 @@ import ImportModal from './ImportModal.vue';
 import CreditsModal from './CreditsModal.vue';
 import ContactModal from './ContactModal.vue';
 import InventoryScreenshotModal from './InventoryScreenshotModal.vue';
+import FilterPanel from './FilterPanel.vue';
+import { StudentFilters, countActiveFilters } from '@/types/filter';
 
 const props = defineProps<HeaderProps>();
 
@@ -21,6 +23,11 @@ const showCreditsModal = ref(false);
 const showContactModal = ref(false);
 const showScreenshotModal = ref(false);
 const showThemeTray = ref(false);
+const showFilterPanel = ref(false);
+
+const activeFilterCount = computed(() =>
+  props.filters ? countActiveFilters(props.filters) : 0
+);
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
@@ -30,6 +37,8 @@ const emit = defineEmits<{
   'dataImported': [];
   'reinitializeData': [];
   'togglePinned': [];
+  'updateFilter': [key: keyof StudentFilters, value: any[]];
+  'clearFilters': [];
 }>();
 
 const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
@@ -71,6 +80,13 @@ function toggleDirection() {
 function toggleDropdown(event: Event) {
   event.stopPropagation();
   dropdownOpen.value = !dropdownOpen.value;
+  if (dropdownOpen.value) showFilterPanel.value = false;
+}
+
+function toggleFilterPanel(event: Event) {
+  event.stopPropagation();
+  showFilterPanel.value = !showFilterPanel.value;
+  if (showFilterPanel.value) dropdownOpen.value = false;
 }
 
 function toggleMobileMenu() {
@@ -93,19 +109,20 @@ function handleClickOutside(event: MouseEvent) {
   const mobileMenu = document.getElementById('mobile-menu');
   const themeTray = document.getElementById('theme-tray');
   const themeTrayToggle = document.getElementById('theme-tray-toggle');
-  
-  if (dropdown && !dropdown.contains(event.target as Node) && dropdownOpen.value) {
-    dropdownOpen.value = false;
+
+  if (dropdown && !dropdown.contains(event.target as Node)) {
+    if (dropdownOpen.value) dropdownOpen.value = false;
+    if (showFilterPanel.value) showFilterPanel.value = false;
   }
-  
+
   if (themeTray && !themeTray.contains(event.target as Node) &&
       !themeTrayToggle?.contains(event.target as Node) &&
       showThemeTray.value) {
     showThemeTray.value = false;
   }
-  
-  if (mobileMenu && !mobileMenu.contains(event.target as Node) && 
-      !document.getElementById('mobile-menu-toggle')?.contains(event.target as Node) && 
+
+  if (mobileMenu && !mobileMenu.contains(event.target as Node) &&
+      !document.getElementById('mobile-menu-toggle')?.contains(event.target as Node) &&
       mobileMenuOpen.value) {
     mobileMenuOpen.value = false;
   }
@@ -202,6 +219,19 @@ useClickOutside(handleClickOutside);
                 <img src="/assets/push-pin.png" class="pin-chip-icon" aria-hidden="true" />
               </button>
 
+              <button
+                class="filter-btn"
+                :class="{ active: showFilterPanel || activeFilterCount > 0 }"
+                type="button"
+                :title="$t('filter.title')"
+                @click="toggleFilterPanel"
+              >
+                <svg class="filter-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" fill="white"/>
+                </svg>
+                <span v-if="activeFilterCount > 0" class="filter-badge">{{ activeFilterCount }}</span>
+              </button>
+
               <div class="sort-controls" :class="{ active: dropdownOpen }">
                 <button
                   class="sort-icon-button"
@@ -224,6 +254,14 @@ useClickOutside(handleClickOutside);
                 </button>
               </div>
             </div>
+
+            <FilterPanel
+              v-if="showFilterPanel && filters"
+              :filters="filters"
+              :available-schools="availableSchools ?? []"
+              @update-filter="(key, val) => emit('updateFilter', key, val)"
+              @clear-all="emit('clearFilters')"
+            />
 
             <div class="sort-dropdown" v-if="dropdownOpen">
               <div
@@ -600,6 +638,56 @@ useClickOutside(handleClickOutside);
 .pin-chip.active .pin-chip-icon,
 .pin-chip:hover .pin-chip-icon {
   opacity: 1;
+}
+
+.filter-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background-color: #a6a6a6;
+  padding: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.1s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+  background-color: var(--accent-color);
+}
+
+.filter-btn-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
+  transition: opacity 0.1s;
+}
+
+.filter-btn:hover .filter-btn-icon,
+.filter-btn.active .filter-btn-icon {
+  opacity: 1;
+}
+
+.filter-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background-color: var(--background-primary);
+  color: var(--accent-color);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
 }
 
 .sort-direction-label {
