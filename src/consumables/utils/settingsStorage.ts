@@ -18,6 +18,7 @@ export interface AppSettings {
     direction: SortDirection;
   };
   pinnedStudents: string[];
+  isPinnedMode: boolean;
   craftingFodder?: {
     thresholds: Record<string, Record<string, number>>; // thresholds[subcat][rarity]
     rarityFilter: string[]; // user's chip selection for Stage 1
@@ -34,6 +35,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     direction: 'asc'
   },
   pinnedStudents: [],
+  isPinnedMode: false,
 };
 
 /**

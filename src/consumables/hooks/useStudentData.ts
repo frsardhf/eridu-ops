@@ -77,6 +77,7 @@ function loadSettings() {
   _currentTheme.value = theme;
   _currentSort.value = settings.sort.option;
   _sortDirection.value = settings.sort.direction;
+  _isPinnedMode.value = settings.isPinnedMode ?? false;
   syncPinnedStudents();
 
   document.documentElement.setAttribute('data-theme', theme);
@@ -313,7 +314,10 @@ export function useStudentData() {
     syncPinnedStudents,
     reinitializeData,
     isPinnedMode: _isPinnedMode,
-    togglePinnedMode: () => { _isPinnedMode.value = !_isPinnedMode.value; },
+    togglePinnedMode: () => {
+      _isPinnedMode.value = !_isPinnedMode.value;
+      updateSetting('isPinnedMode', _isPinnedMode.value);
+    },
     isLoading: _isLoading,
     isReady: _isReady,
   }
