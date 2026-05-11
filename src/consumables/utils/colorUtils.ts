@@ -35,6 +35,26 @@ export const ARMOR_TYPE_COLORS: Record<string, string> = {
 };
 
 /**
+ * School brand color mapping (approximate, based on in-game visual identity)
+ */
+export const SCHOOL_COLORS: Record<string, string> = {
+  Abydos:      '#c8962e',
+  Trinity:     '#c9a227',
+  Gehenna:     '#cc2233',
+  Millennium:  '#00a0d2',
+  Hyakkiyako:  '#e63c2f',
+  Shanhaijing: '#2d8f6f',
+  Arius:       '#939295',
+  Valkyrie:    '#1a3a6b',
+  Tokiwadai:   '#5599cc',
+  WildHunt:    '#9b2335',
+  Highlander:  '#a0522d',
+  SRT:         '#555e6e',
+  ETC:         '#6b7280',
+  Sakugawa:    '#6b7280',
+};
+
+/**
  * SquadType (role) color mapping
  * Main = STRIKER (red), Support = SPECIAL (blue)
  */
@@ -106,6 +126,28 @@ export function getBulletTypeColor(bulletType: string | undefined | null): strin
 export function getArmorTypeColor(armorType: string | undefined | null): string {
   if (!armorType) return FALLBACK_COLOR;
   return ARMOR_TYPE_COLORS[armorType] ?? FALLBACK_COLOR;
+}
+
+/**
+ * Get brand color for a School
+ */
+export function getSchoolColor(school: string | undefined | null): string {
+  if (!school) return FALLBACK_COLOR;
+  return SCHOOL_COLORS[school] ?? FALLBACK_COLOR;
+}
+
+// Schools that don't have their own icon on SchaleDB — mapped to a fallback icon key
+const SCHOOL_ICON_FALLBACKS: Record<string, string> = {
+  Sakugawa: 'ETC',
+};
+
+/**
+ * Returns the icon key to use in the SchaleDB schoolicon URL.
+ * Falls back to 'ETC' for schools without their own icon file.
+ */
+export function getSchoolIconKey(school: string | undefined | null): string {
+  if (!school) return 'ETC';
+  return SCHOOL_ICON_FALLBACKS[school] ?? school;
 }
 
 /**

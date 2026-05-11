@@ -28,10 +28,11 @@ export function useStudentInfo(student: Ref<StudentProps>) {
   const armorTypeName  = computed(() => resolveLocalized('ArmorType', student.value.ArmorType));
   const schoolName     = computed(() => resolveLocalized('School', student.value.School));
   const clubName       = computed(() => resolveLocalized('Club', student.value.Club));
+  const tacticRoleName = computed(() => resolveLocalized('TacticRole', student.value.TacticRole));
 
   return {
     squadTypeColor, bulletTypeColor, armorTypeColor,
     bulletTypeColorLight, armorTypeColorLight,
-    squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName,
+    squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName, tacticRoleName,
   };
 }

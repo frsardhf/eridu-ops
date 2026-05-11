@@ -25,6 +25,7 @@ export interface StudentProps {
   CollectionBG: string;
   Club: string;
   SquadType: string;
+  TacticRole: string;
   BulletType: string;
   ArmorType: string;
   IsLimited: number[];

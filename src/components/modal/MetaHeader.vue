@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue';
 import { $t } from '@/locales';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
+import { getSchoolColor, getSchoolIconKey } from '@/consumables/utils/colorUtils';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
@@ -21,8 +22,8 @@ const emit = defineEmits<{
 
 const studentRef = toRef(() => props.student);
 
-const { squadTypeName, bulletTypeName, armorTypeName, squadTypeColor, 
-  bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight 
+const { squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName, tacticRoleName,
+  squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight
 } = useStudentInfo(studentRef);
 
 const { showLevelArrow } = useStudentLevels(() => props.characterLevels);
@@ -114,6 +115,28 @@ const styleModeLabel = computed(() => {
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-if="schoolName || clubName || tacticRoleName" class="affiliation-row">
+      <span v-if="tacticRoleName" class="affiliation-pill affiliation-pill--role">
+        <img
+          :src="`https://schaledb.com/images/ui/Role_${student.TacticRole}.png`"
+          :alt="tacticRoleName"
+          class="affiliation-icon"
+        />
+        <span class="affiliation-text">{{ tacticRoleName }}</span>
+      </span>
+      <span class="affiliation-pill" :style="{ backgroundColor: getSchoolColor(student.School) }">
+        <img
+          v-if="schoolName"
+          :src="`https://schaledb.com/images/schoolicon/${getSchoolIconKey(student.School)}.png`"
+          :alt="schoolName"
+          class="affiliation-icon"
+        />
+        <span class="affiliation-text">
+          {{ schoolName }}<template v-if="schoolName && clubName"> / {{ clubName }}</template><template v-else-if="clubName">{{ clubName }}</template>
+        </span>
+      </span>
     </div>
   </section>
 </template>
@@ -328,6 +351,46 @@ const styleModeLabel = computed(() => {
   align-items: center;
   justify-content: center;
   padding: 4px 10px;
+  color: white;
+}
+
+.affiliation-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.affiliation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 14px 4px 8px;
+  border-radius: 999px;
+  border: none;
+  white-space: nowrap;
+}
+
+.affiliation-pill--role {
+  background: var(--text-tertiary);
+  color: white;
+}
+
+.affiliation-pill--role .affiliation-icon {
+  filter: brightness(0) invert(1);
+}
+
+.affiliation-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
+}
+
+.affiliation-text {
+  font-size: 0.88rem;
+  font-weight: 600;
   color: white;
 }
 

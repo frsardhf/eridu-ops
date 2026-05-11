@@ -154,7 +154,7 @@
 .fullscreen-modal {
   --student-modal-gap: 10px;
   --student-modal-hero-width: clamp(280px, 40vw, 430px);
-  --student-modal-hero-height: 85vh;
+  --student-modal-hero-height: 87vh;
 }
 
 .tab-content {
