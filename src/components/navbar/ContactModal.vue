@@ -42,19 +42,6 @@ function closeModal(event: MouseEvent) {
               </div>
             </a>
 
-            <a href="https://x.com/idxyllune" target="_blank" rel="noopener noreferrer" class="contact-link">
-              <div class="contact-item">
-                <div class="contact-icon twitter">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                </div>
-                <div class="contact-info">
-                  <h4>X (Twitter)</h4>
-                  <p>@idxyllune</p>
-                </div>
-              </div>
-            </a>
           </div>
         </div>
       </div>
@@ -179,10 +166,6 @@ function closeModal(event: MouseEvent) {
   background-color: rgba(88, 101, 242, 0.1);
 }
 
-.contact-icon.twitter {
-  color: var(--text-primary);
-  background-color: var(--background-tertiary);
-}
 
 .contact-links {
   display: flex;

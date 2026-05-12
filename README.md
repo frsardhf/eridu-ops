@@ -11,8 +11,10 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) �
 - **Bond** — Track current and target bond levels, calculate XP needed, manage gifts and selector boxes
 - **Upgrade** — Plan skill levels, character levels, and potential/talent upgrades with material cost breakdowns
 - **Gear** — Track equipment tier progression and exclusive weapon (EX Weapon) levels
-- **Inventory** — Manage owned materials, equipment, and gifts across all students
-- **Student grid** — Search, sort, pin, and bulk-edit students
+- **Inventory** — Manage owned materials, equipment, and gifts across all students; bulk-update from a screenshot via OCR scan
+- **Student grid** — Search, sort, pin, filter (school, equipment slot, attack/defense type, rarity, availability), and bulk-edit students
+- **Bulk bond update** — Paste `name bond` pairs to set bond levels in batch
+- **Themes** — 7 built-in colour themes (dark, light, ocean, forest, sunset, rose, violet)
 - **Import / Export** — Back up and share your planner data as JSON
 - **Multi-language** — English and Japanese UI
 
@@ -49,16 +51,16 @@ npm run preview   # preview production build locally
 ```
 src/
   components/
-    display/       # Student grid, card, bulk-modify, ToolsRail
+    display/       # Student grid, card, bulk-modify, BondUpdateModal, ToolsRail
     inventory/     # GlobalInventoryModal, ItemsGrid, EquipmentGrid, ResourceSummary, ResourceCard
-    modal/         # StudentModal and all tab sections
+    modal/         # StudentModal, StudentStrip, ApplyUpgradePanel, ApplyConfirmModal
       bond/        # Bond tracking, gift grid, gift options
       gear/        # Equipment growth, exclusive weapon, eleph/eligma
       info/        # Info tab — skills, weapon, gear display
       upgrade/     # Level, skill, potential sections
       shared/      # MaterialsSection (shared across tabs)
-    navbar/        # Navigation bar, import/export, credits
-  composables/     # Lightweight display composables (useTooltip, useStudentColors, …)
+    navbar/        # Navigation bar, FilterPanel, InventoryScreenshotModal, import/export, credits
+  composables/     # Lightweight display composables (useStudentInfo, useStudentImages, useTooltip, …)
   consumables/
     hooks/         # Form-state composables bridging components ↔ IndexedDB
     services/      # SchaleDB fetch, IndexedDB service, form initialization
