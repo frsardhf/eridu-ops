@@ -41,6 +41,7 @@ import { computeCharacterXpCost, getCharXpItems, calculateLevelMaterials, calcul
 import { computeEquipmentXpCost, getEquipXpItems, calculateEquipmentMaterials, calculateEquipmentCredits, calculateGradeMaterials, calculateGradeCredits, calculateExclusiveGearMaterials } from '@/consumables/utils/gearMaterialUtils';
 import { deductXpItems, simulateXpDeduction } from '@/consumables/utils/upgradeUtils';
 import { sortMaterials } from '@/consumables/utils/materialUtils';
+import { getStudentPortraitUrl, getBackgroundUrl } from '@/consumables/utils/iconUtils';
 import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/consumables/stores/resourceCacheStore';
 import { YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID } from '@/types/resource';
 import '@/styles/studentModal.css'
@@ -172,9 +173,9 @@ const {
 
 // Image preloading for neighbor students
 function preloadStudentImages(s: StudentProps) {
-  new Image().src = `https://schaledb.com/images/student/portrait/${s.Id}.webp`;
+  new Image().src = getStudentPortraitUrl(s.Id);
   if (s.CollectionBG) {
-    new Image().src = `https://schaledb.com/images/background/${s.CollectionBG}.jpg`;
+    new Image().src = getBackgroundUrl(s.CollectionBG);
   }
 }
 

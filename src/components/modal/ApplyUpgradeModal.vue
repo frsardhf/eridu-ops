@@ -490,12 +490,12 @@ function getIconUrl(item: MaterialPreviewItem): string {
 }
 
 .grade-pip.gold {
-  background: rgba(255, 201, 51, 0.2);
-  color: rgb(255, 201, 51);
+  background: color-mix(in srgb, var(--color-grade-gold) 20%, transparent);
+  color: var(--color-grade-gold);
 }
 .grade-pip.blue {
-  background: rgba(51, 200, 255, 0.2);
-  color: hsl(192, 100%, 60%);
+  background: color-mix(in srgb, var(--color-grade-blue) 20%, transparent);
+  color: var(--color-grade-blue);
 }
 
 .grade-arrow {
@@ -578,8 +578,8 @@ function getIconUrl(item: MaterialPreviewItem): string {
   gap: 6px;
   margin: 2px 10px;
   padding: 6px 8px;
-  background: color-mix(in srgb, #f59e0b 12%, var(--background-secondary));
-  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
   border-radius: 5px;
   font-size: 0.8em;
   color: #d97706;

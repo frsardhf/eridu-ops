@@ -1,5 +1,6 @@
 import { computed, MaybeRefOrGetter, onBeforeUnmount, ref, toValue, watch } from 'vue';
 import { StudentProps } from '@/types/student';
+import { getStudentPortraitUrl, getBackgroundUrl } from '@/consumables/utils/iconUtils';
 
 /**
  * Encapsulates ModalHeader's image loading state: shimmer timer, portrait/background
@@ -19,13 +20,13 @@ export function useStudentImages(student: MaybeRefOrGetter<StudentProps>) {
   let shimmerTimer: ReturnType<typeof setTimeout> | null = null;
 
   const portraitSrc = computed(() =>
-    `https://schaledb.com/images/student/portrait/${toValue(student).Id}.webp`
+    getStudentPortraitUrl(toValue(student).Id)
   );
 
   const backgroundSrc = computed(() => {
     const bg = toValue(student).CollectionBG;
     if (!bg || backgroundLoadFailed.value) return '';
-    return `https://schaledb.com/images/background/${bg}.jpg`;
+    return getBackgroundUrl(bg);
   });
 
   watch(() => toValue(student).Id, () => {

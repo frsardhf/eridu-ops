@@ -620,11 +620,11 @@ useClickOutside(handleClickOutside);
 }
 
 .pin-chip:hover {
-  background-color: #edba2d;
+  background-color: var(--color-pin-active);
 }
 
 .pin-chip.active {
-  background-color: #edba2d;
+  background-color: var(--color-pin-active);
 }
 
 .pin-chip-icon {

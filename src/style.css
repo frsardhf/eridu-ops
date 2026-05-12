@@ -49,6 +49,16 @@
   --scrollbar-thumb: #ffffff33;
   --scrollbar-thumb-hover: #ffffff66;
 
+  /* Semantic game UI colours (theme-invariant) */
+  --color-bond: #4e7eff;
+  --color-positive: #43a047;
+  --color-negative: #e53935;
+  --color-pin-active: #edba2d;
+  --color-grade-gold: rgb(255, 201, 51);   /* gold ★ / grade pill */
+  --color-grade-blue: hsl(192, 100%, 60%); /* blue ★ / grade pill */
+  --color-warning: #f59e0b;                /* advisory / OCR low-confidence */
+  --color-convert: #f7ac4a;                /* gift convert-to-credits accent */
+
   /* Shared motion tokens */
   --motion-duration-fast: 180ms;
   --motion-duration-medium: 240ms;
@@ -343,4 +353,26 @@ button:focus-visible {
   .no-scrollbar {
     overflow: -moz-scrollbars-none;
   }
+}
+
+/* ── Game UI font ────────────────────────────────────────────────────────────── */
+.font-nexon {
+  font-family: 'NEXON Football Gothic', system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 700;
+  font-synthesis: style;
+  text-transform: uppercase;
+}
+
+/* ── Icon filter utilities ───────────────────────────────────────────────────── */
+.icon-white  { filter: brightness(0) invert(1); }
+.icon-dimmed { filter: brightness(0) invert(0.4); }
+.icon-locked { filter: grayscale(100%) brightness(50%); }
+
+/* Applies the white-stroke outline used on quantity badges */
+.text-outline-white {
+  text-shadow:
+    -0.8px -0.8px 0 #fff,  0px -0.8px 0 #fff, 0.8px -0.8px 0 #fff,
+    -0.8px  0px   0 #fff,                      0.8px  0px   0 #fff,
+    -0.8px  0.8px 0 #fff,  0px  0.8px 0 #fff, 0.8px  0.8px 0 #fff;
 }

@@ -106,10 +106,10 @@ const {
   gap: 8px;
   min-height: 42px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 201, 51, 0.35);
+  border: 1px solid color-mix(in srgb, var(--color-grade-gold) 35%, transparent);
   background: linear-gradient(
     135deg,
-    rgba(255, 201, 51, 0.24),
+    color-mix(in srgb, var(--color-grade-gold) 24%, transparent),
     rgba(51, 197, 255, 0.22)
   );
   padding: 4px 12px;

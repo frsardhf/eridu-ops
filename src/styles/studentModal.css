@@ -743,11 +743,11 @@
 }
 
 .gold-star {
-  color: rgb(255, 201, 51);
+  color: var(--color-grade-gold);
 }
 
 .blue-star {
-  color: hsl(192, 100%, 60%);
+  color: var(--color-grade-blue);
 }
 
 @media (max-width: 520px) {

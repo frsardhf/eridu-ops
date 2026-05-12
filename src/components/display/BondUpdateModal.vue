@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { useBondBulkUpdate } from '@/consumables/hooks/useBondBulkUpdate';
+import { getStudentCollectionUrl } from '@/consumables/utils/iconUtils';
 import { MAX_BOND_LEVEL } from '@/consumables/constants/gameConstants';
 
 type EntryStatus = 'matched' | 'ambiguous' | 'unmatched' | 'skipped';
@@ -132,7 +133,7 @@ function updateSearch(index: number, query: string) {
 }
 
 function portraitUrl(student: StudentProps): string {
-  return `https://schaledb.com/images/student/collection/${student.Id}.webp`;
+  return getStudentCollectionUrl(student.Id);
 }
 
 // ── Computed views ────────────────────────────────────────────────────────────
@@ -502,7 +503,7 @@ async function handleApply() {
 }
 
 .badge--matched  { background: color-mix(in srgb, #22c55e 14%, var(--background-secondary)); color: #16a34a; }
-.badge--flagged  { background: color-mix(in srgb, #f59e0b 14%, var(--background-secondary)); color: #b45309; }
+.badge--flagged  { background: color-mix(in srgb, var(--color-warning) 14%, var(--background-secondary)); color: #b45309; }
 
 .review-body {
   flex: 1;
@@ -577,7 +578,7 @@ async function handleApply() {
 }
 
 .flagged-entry {
-  border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--border-color));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, var(--border-color));
   border-radius: 7px;
   padding: 7px 8px;
   background: var(--background-secondary);

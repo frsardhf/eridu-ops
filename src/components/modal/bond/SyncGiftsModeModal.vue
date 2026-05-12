@@ -92,8 +92,8 @@ const emit = defineEmits<{
 }
 
 .sync-option-greedy:hover {
-  border-color: var(--primary-color, #4a6cf7);
-  background: rgba(74, 108, 247, 0.08);
+  border-color: var(--accent-color);
+  background: rgba(var(--accent-color-rgb), 0.08);
 }
 
 .sync-option-aware:hover {

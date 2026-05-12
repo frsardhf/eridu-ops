@@ -2,6 +2,7 @@
 import { StudentFilters } from '@/types/filter';
 import { $t } from '@/locales';
 import { computed } from 'vue';
+import { getSchoolIconUrl, getEquipmentSlotIconUrl } from '@/consumables/utils/iconUtils';
 import {
   useFilterLabels,
   SQUAD_TYPE_KEYS,
@@ -75,7 +76,7 @@ function toggleOtherSchools() {
           <button
             v-for="key in SQUAD_TYPE_KEYS"
             :key="key"
-            class="filter-chip filter-chip--squad"
+            class="filter-chip filter-chip--squad font-nexon"
             :class="{ active: isActive('squadType', key) }"
             :style="isActive('squadType', key)
               ? { backgroundColor: getSquadColor(key), borderColor: getSquadColor(key), color: 'white' }
@@ -159,9 +160,9 @@ function toggleOtherSchools() {
             @click="toggle('school', school)"
           >
             <img
-              :src="`https://schaledb.com/images/schoolicon/${school}.png`"
+              :src="getSchoolIconUrl(school)"
               :alt="getSchoolLabel(school)"
-              class="chip-icon"
+              :class="['chip-icon', isActive('school', school) ? 'icon-white' : 'icon-dimmed']"
             />
             {{ getSchoolLabel(school) }}
           </button>
@@ -173,9 +174,9 @@ function toggleOtherSchools() {
             @click="toggleOtherSchools"
           >
             <img
-              src="https://schaledb.com/images/schoolicon/ETC.png"
+              :src="getSchoolIconUrl('ETC')"
               alt="Other"
-              class="chip-icon"
+              :class="['chip-icon', isOtherActive ? 'icon-white' : 'icon-dimmed']"
             />
             {{ $t('filter.other') }}
           </button>
@@ -195,9 +196,9 @@ function toggleOtherSchools() {
             @click="toggle('equipment', eq)"
           >
             <img
-              :src="`https://schaledb.com/images/ui/Icon_Inven_${eq}.png`"
+              :src="getEquipmentSlotIconUrl(eq)"
               :alt="$t(`equipmentTypes.${eq}`)"
-              class="chip-icon"
+              :class="['chip-icon', isActive('equipment', eq) ? 'icon-white' : 'icon-dimmed']"
             />
             {{ $t(`equipmentTypes.${eq}`) }}
           </button>
@@ -307,11 +308,6 @@ function toggleOtherSchools() {
 }
 
 .filter-chip--squad {
-  font-family: 'NEXON Football Gothic', system-ui, sans-serif;
-  font-style: italic;
-  font-weight: 700;
-  font-synthesis: style;
-  text-transform: uppercase;
   background-color: transparent;
   padding: 0;
 }
@@ -341,11 +337,6 @@ function toggleOtherSchools() {
   height: 16px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: brightness(0) invert(0.4);
-}
-
-.filter-chip--icon.active .chip-icon {
-  filter: brightness(0) invert(1);
 }
 
 .filter-chip--typed {

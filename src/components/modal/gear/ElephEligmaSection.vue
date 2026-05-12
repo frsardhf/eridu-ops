@@ -42,7 +42,7 @@ const elephIcon = computed(() => {
 
             <div
               v-if="!isInputFocused && gradeState.owned"
-              class="eleph-owned-quantity"
+              class="eleph-owned-quantity text-outline-white"
             >
               {{ formatItemQuantity(gradeState.owned) }}
             </div>
@@ -158,15 +158,6 @@ const elephIcon = computed(() => {
   font-size: 1em;
   color: var(--text-tertiary);
   font-weight: 600;
-  text-shadow:
-    -0.8px -0.8px 0 #fff,
-    0 -0.8px 0 #fff,
-    0.8px -0.8px 0 #fff,
-    -0.8px 0 0 #fff,
-    0.8px 0 0 #fff,
-    -0.8px 0.8px 0 #fff,
-    0 0.8px 0 #fff,
-    0.8px 0.8px 0 #fff;
   z-index: 1;
 }
 

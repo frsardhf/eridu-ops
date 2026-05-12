@@ -749,7 +749,7 @@ useDocumentListener('paste', onPaste);
   vertical-align: middle;
   margin-right: 2px;
 }
-.swatch--med { background: color-mix(in srgb, #f59e0b 55%, transparent); }
+.swatch--med { background: color-mix(in srgb, var(--color-warning) 55%, transparent); }
 .swatch--low { background: color-mix(in srgb, #ef4444 55%, transparent); }
 
 .modal-content {
@@ -919,8 +919,8 @@ useDocumentListener('paste', onPaste);
   display: flex;
   align-items: center;
   gap: 8px;
-  background: color-mix(in srgb, #f59e0b 14%, var(--background-secondary));
-  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 40%, transparent);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 0.82rem;
@@ -981,7 +981,7 @@ useDocumentListener('paste', onPaste);
 }
 
 /* Low-confidence background tint on the card wrapper */
-.result-card-wrapper.conf-med { background: color-mix(in srgb, #f59e0b 18%, transparent); border-radius: 4px; }
+.result-card-wrapper.conf-med { background: color-mix(in srgb, var(--color-warning) 18%, transparent); border-radius: 4px; }
 .result-card-wrapper.conf-low { background: color-mix(in srgb, #ef4444 18%, transparent); border-radius: 4px; }
 
 

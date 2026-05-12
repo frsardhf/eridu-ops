@@ -23,11 +23,11 @@
 .modal-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .modal-btn-convert {
-  background: var(--convert-color, #f7ac4a);
+  background: var(--color-convert);
   color: white;
-  border-color: var(--convert-color, #f7ac4a);
+  border-color: var(--color-convert);
 }
-.modal-btn-convert:hover:not(:disabled) { background: var(--convert-hover, #e49329); }
+.modal-btn-convert:hover:not(:disabled) { background: color-mix(in srgb, var(--color-convert) 82%, black); }
 .modal-btn-convert:disabled {
   background: var(--disabled-bg, #e0e0e0);
   color: var(--disabled-text, #888);

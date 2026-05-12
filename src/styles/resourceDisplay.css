@@ -75,12 +75,12 @@
 
 /* Negative quantity (for missing resources) */
 .resource-quantity.negative {
-  color: #e53935;
+  color: var(--color-negative);
 }
 
 /* Positive quantity (for leftover resources) */
 .resource-quantity.positive {
-  color: #43a047;
+  color: var(--color-positive);
 }
 
 /* Responsive adjustments */

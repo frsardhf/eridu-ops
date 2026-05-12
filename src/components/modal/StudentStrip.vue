@@ -2,6 +2,7 @@
 import { computed, ref, watch, nextTick } from 'vue';
 import { StudentProps } from '@/types/student';
 import { $t } from '@/locales';
+import { getStudentIconUrl } from '@/consumables/utils/iconUtils';
 
 const props = defineProps<{
   students: StudentProps[],
@@ -93,7 +94,7 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
           :title="student.Name"
         >
           <img
-            :src="`https://schaledb.com/images/student/icon/${student.Id}.webp`"
+            :src="getStudentIconUrl(student.Id)"
             :alt="student.Name"
             loading="lazy"
             class="thumb-img"

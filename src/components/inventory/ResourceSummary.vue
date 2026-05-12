@@ -14,6 +14,7 @@ import { useResourceTooltip } from '@/composables/useResourceTooltip';
 import { useResourceSummary, type ViewTab, type ViewMode } from '@/composables/useResourceSummary';
 import { $t } from '@/locales';
 import { getModeQuantityClass, getResourceQuantityClass } from '@/consumables/utils/colorUtils';
+import { getStudentIconUrl } from '@/consumables/utils/iconUtils';
 import '@/styles/resourceDisplay.css';
 
 const props = withDefaults(defineProps<{
@@ -245,7 +246,7 @@ watch(
           >
             <div class="student-info">
               <img
-                :src="`https://schaledb.com/images/student/icon/${row.student.Id}.webp`"
+                :src="getStudentIconUrl(row.student.Id)"
                 :alt="row.student.Name"
                 class="per-student-icon"
               />
@@ -411,7 +412,7 @@ watch(
           >
             <div class="resource-content">
               <img
-                :src="`https://schaledb.com/images/student/icon/${studentGift.student.Id}.webp`"
+                :src="getStudentIconUrl(studentGift.student.Id)"
                 :alt="studentGift.student.Name"
                 class="resource-icon student-icon-gift"
               />
@@ -570,7 +571,7 @@ watch(
             class="student-usage-item"
           >
             <img
-              :src="`https://schaledb.com/images/student/icon/${usage.student.Id}.webp`"
+              :src="getStudentIconUrl(usage.student.Id)"
               :alt="usage.student.Name"
               class="student-icon"
             />

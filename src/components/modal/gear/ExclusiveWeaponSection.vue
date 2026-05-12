@@ -76,10 +76,10 @@ const {
           <div class="grade-max-pill" v-else>{{ $t('maxGrade') }}</div>
         </div>
 
-        <img 
-          :src="getWeaponIconUrl()" 
-          :alt="$t('exclusiveWeapon')" 
-          class="weapon-icon"
+        <img
+          :src="getWeaponIconUrl()"
+          :alt="$t('exclusiveWeapon')"
+          :class="['weapon-icon', { 'icon-locked': isWeaponLocked }]"
           v-if="props.student?.WeaponImg"
         />
         <div class="weapon-icon placeholder" v-else>?</div>
@@ -128,13 +128,13 @@ const {
 }
 
 .grade-pill.gold-grade {
-  background: rgba(255, 201, 51, 0.2);
-  color: rgb(255, 201, 51);
+  background: color-mix(in srgb, var(--color-grade-gold) 20%, transparent);
+  color: var(--color-grade-gold);
 }
 
 .grade-pill.blue-grade {
-  background: rgba(51, 200, 255, 0.2);
-  color: hsl(192, 100%, 60%);
+  background: color-mix(in srgb, var(--color-grade-blue) 20%, transparent);
+  color: var(--color-grade-blue);
 }
 
 .grade-arrow {
@@ -144,7 +144,7 @@ const {
 }
 
 .grade-max-pill {
-  background: linear-gradient(135deg, rgba(255, 201, 51, 0.32), rgba(51, 200, 255, 0.28));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-grade-gold) 32%, transparent), color-mix(in srgb, var(--color-grade-blue) 28%, transparent));
   padding: 4px 12px;
   border-radius: 10px;
   font-size: 0.8em;
@@ -205,12 +205,6 @@ const {
 
 .current-group {
   margin-right: auto;
-}
-
-/* Styles for locked weapon state */
-.weapon-preview.locked .weapon-icon {
-  filter: grayscale(100%) brightness(50%);
-  opacity: 0.8;
 }
 
 .weapon-icon {

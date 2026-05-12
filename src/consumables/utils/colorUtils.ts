@@ -136,20 +136,6 @@ export function getSchoolColor(school: string | undefined | null): string {
   return SCHOOL_COLORS[school] ?? FALLBACK_COLOR;
 }
 
-// Schools that don't have their own icon on SchaleDB — mapped to a fallback icon key
-const SCHOOL_ICON_FALLBACKS: Record<string, string> = {
-  Sakugawa: 'ETC',
-};
-
-/**
- * Returns the icon key to use in the SchaleDB schoolicon URL.
- * Falls back to 'ETC' for schools without their own icon file.
- */
-export function getSchoolIconKey(school: string | undefined | null): string {
-  if (!school) return 'ETC';
-  return SCHOOL_ICON_FALLBACKS[school] ?? school;
-}
-
 /**
  * Get color for a SquadType (role)
  * @param squadType - The SquadType value ('Main' for STRIKER, 'Support' for SPECIAL)

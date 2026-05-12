@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { $t } from '@/locales';
 import { useBondEditor } from '@/composables/useInputEditor';
+import { getBondIconUrl } from '@/consumables/utils/iconUtils';
 
 const props = defineProps<{
   currentBond: number,
@@ -24,7 +25,7 @@ const {
         <div class="bond-progress-track">
           <div class="bond-icon-container">
             <img
-              src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+              :src="getBondIconUrl()"
               alt="Current Bond"
               class="bond-icon"
             />
@@ -56,7 +57,7 @@ const {
 
             <div class="bond-icon-container">
               <img
-                src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+                :src="getBondIconUrl()"
                 alt="New Bond"
                 class="bond-icon"
               />
@@ -69,7 +70,7 @@ const {
       <div v-else class="bond-max-banner">
         <div class="max-bond-badge">
           <img
-            src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+            :src="getBondIconUrl()"
             alt="Max Bond"
             class="max-bond-icon"
           />

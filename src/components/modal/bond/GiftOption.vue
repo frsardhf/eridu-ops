@@ -136,12 +136,12 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
 }
 
 .button-primary {
-  background-color: var(--primary-color, #4a6cf7);
+  background-color: var(--accent-color);
   color: white;
 }
 
 .button-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover, #3a5ce7);
+  background-color: var(--accent-hover);
 }
 
 .button-secondary {
@@ -155,13 +155,13 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
 }
 
 .button-convert {
-  background-color: var(--convert-color, #f7ac4a);
+  background-color: var(--color-convert);
   color: white;
-  border: 1px solid var(--convert-color, #f7ac4a);
+  border: 1px solid var(--color-convert);
 }
 
 .button-convert:hover:not(:disabled) {
-  background-color: var(--convert-hover, #e49329);
+  background-color: color-mix(in srgb, var(--color-convert) 82%, black);
 }
 
 .button-disabled {

@@ -3,7 +3,8 @@ import { computed, toRef } from 'vue';
 import { $t } from '@/locales';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
-import { getSchoolColor, getSchoolIconKey } from '@/consumables/utils/colorUtils';
+import { getSchoolColor } from '@/consumables/utils/colorUtils';
+import { getBondIconUrl, getTypeIconUrl, getRoleIconUrl, getSchoolIconUrl } from '@/consumables/utils/iconUtils';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
@@ -66,7 +67,7 @@ const styleModeLabel = computed(() => {
         </button>
         <span
           v-if="squadTypeName"
-          class="role-chip"
+          class="role-chip font-nexon"
           :style="{ backgroundColor: squadTypeColor }"
         >
           {{ squadTypeName }}
@@ -79,7 +80,7 @@ const styleModeLabel = computed(() => {
         <div class="level-pill" :class="levelPillClass">
           <div class="bond-inline" :class="{ updating: showBondArrow }">
             <img
-              src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+              :src="getBondIconUrl()"
               alt="Bond"
               class="bond-icon-inline"
             />
@@ -98,7 +99,7 @@ const styleModeLabel = computed(() => {
         <div v-if="bulletTypeName || armorTypeName" class="combat-type-row">
           <div v-if="bulletTypeName" class="type-pill-divided">
             <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
-              <img src="https://schaledb.com/images/ui/Type_Attack.png" alt="ATK" class="type-icon" />
+              <img :src="getTypeIconUrl('Attack')" alt="ATK" class="type-icon icon-white" />
             </span>
             <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
               {{ bulletTypeName }}
@@ -107,7 +108,7 @@ const styleModeLabel = computed(() => {
 
           <div v-if="armorTypeName" class="type-pill-divided">
             <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
-              <img src="https://schaledb.com/images/ui/Type_Defense.png" alt="DEF" class="type-icon" />
+              <img :src="getTypeIconUrl('Defense')" alt="DEF" class="type-icon icon-white" />
             </span>
             <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
               {{ armorTypeName }}
@@ -120,18 +121,18 @@ const styleModeLabel = computed(() => {
     <div v-if="schoolName || clubName || tacticRoleName" class="affiliation-row">
       <span v-if="tacticRoleName" class="affiliation-pill affiliation-pill--role">
         <img
-          :src="`https://schaledb.com/images/ui/Role_${student.TacticRole}.png`"
+          :src="getRoleIconUrl(student.TacticRole)"
           :alt="tacticRoleName"
-          class="affiliation-icon"
+          class="affiliation-icon icon-white"
         />
         <span class="affiliation-text">{{ tacticRoleName }}</span>
       </span>
       <span class="affiliation-pill" :style="{ backgroundColor: getSchoolColor(student.School) }">
         <img
           v-if="schoolName"
-          :src="`https://schaledb.com/images/schoolicon/${getSchoolIconKey(student.School)}.png`"
+          :src="getSchoolIconUrl(student.School)"
           :alt="schoolName"
-          class="affiliation-icon"
+          class="affiliation-icon icon-white"
         />
         <span class="affiliation-text">
           {{ schoolName }}<template v-if="schoolName && clubName"> / {{ clubName }}</template><template v-else-if="clubName">{{ clubName }}</template>
@@ -208,12 +209,7 @@ const styleModeLabel = computed(() => {
 .role-chip {
   border-radius: 999px;
   padding: 1px 10px;
-  font-family: 'NEXON Football Gothic', system-ui, sans-serif;
   font-size: 1rem;
-  font-style: italic;
-  font-weight: 700;
-  font-synthesis: style;
-  text-transform: uppercase;
   color: white;
   white-space: nowrap;
 }
@@ -236,19 +232,19 @@ const styleModeLabel = computed(() => {
   min-width: 170px;
   height: 30px;
   background: var(--background-primary);
-  border: 1px solid #4e7eff;
+  border: 1px solid var(--color-bond);
   border-radius: 999px;
   overflow: visible;
 }
 
 .level-pill.maxed {
   background: var(--background-primary);
-  border: 1px solid #4e7eff;
+  border: 1px solid var(--color-bond);
 }
 
 .level-pill.maxed50 {
   background: linear-gradient(135deg, rgba(248, 203, 39, 0.24), rgba(248, 255, 51, 0.22));
-  border-color: rgba(255, 201, 51, 0.65);
+  border-color: color-mix(in srgb, var(--color-grade-gold) 65%, transparent);
 }
 
 .level-pill.maxed100 {
@@ -342,7 +338,6 @@ const styleModeLabel = computed(() => {
   width: 16px;
   height: 16px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
   display: block;
 }
 
@@ -376,16 +371,11 @@ const styleModeLabel = computed(() => {
   color: white;
 }
 
-.affiliation-pill--role .affiliation-icon {
-  filter: brightness(0) invert(1);
-}
-
 .affiliation-icon {
   width: 22px;
   height: 22px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: brightness(0) invert(1);
 }
 
 .affiliation-text {

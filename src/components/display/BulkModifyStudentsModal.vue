@@ -10,6 +10,7 @@ import {
 import type { FormRecord } from '@/consumables/hooks/useBulkStudentModify';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+import { getStudentIconUrl } from '@/consumables/utils/iconUtils';
 
 type OwnershipFilter = 'all' | 'owned' | 'unowned';
 
@@ -445,7 +446,7 @@ async function submitBulkModify() {
             >
               <img
                 class="student-icon"
-                :src="`https://schaledb.com/images/student/icon/${student.Id}.webp`"
+                :src="getStudentIconUrl(student.Id)"
                 :alt="student.Name"
                 loading="lazy"
               />
@@ -1008,13 +1009,13 @@ async function submitBulkModify() {
 }
 
 .grade-star-badge.gold {
-  color: rgb(255, 201, 51);
-  background: rgba(255, 201, 51, 0.12);
+  color: var(--color-grade-gold);
+  background: color-mix(in srgb, var(--color-grade-gold) 12%, transparent);
 }
 
 .grade-star-badge.blue {
-  color: hsl(192, 100%, 60%);
-  background: hsla(192, 100%, 60%, 0.12);
+  color: var(--color-grade-blue);
+  background: color-mix(in srgb, var(--color-grade-blue) 12%, transparent);
 }
 
 .grade-star-count {

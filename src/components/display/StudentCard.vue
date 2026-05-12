@@ -3,6 +3,7 @@ import { StudentProps } from '@/types/student'
 import { ref, onUnmounted, computed } from 'vue'
 import { useStudentCard } from '@/consumables/hooks/useStudentCard'
 import { useWindowResize } from '@/composables/dom/useWindowResize'
+import { getStudentCollectionUrl, getBondIconUrl } from '@/consumables/utils/iconUtils'
 import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
 import { ModalOriginRect } from '@/types/modal';
@@ -226,7 +227,7 @@ function handleCardClick(event: MouseEvent) {
     <a class="selection-grid-card" @click="handleCardClick">
       <div class="card-img">
         <img
-          :src="`https://schaledb.com/images/student/collection/${student.Id}.webp`"
+          :src="getStudentCollectionUrl(student.Id)"
           :alt="student.Name"
           :class="{ 'img--unowned': !isOwned }"
         >
@@ -236,7 +237,7 @@ function handleCardClick(event: MouseEvent) {
           <div class="bond-container" v-if="bondLevel > 0 && isOwned">
             <div class="bond-icon-container">
               <img 
-                src="https://schaledb.com/images/ui/School_Icon_Schedule_Favor.png"
+                :src="getBondIconUrl()"
                 alt="Bond Level"
                 class="bond-icon"
               />
@@ -510,11 +511,11 @@ function handleCardClick(event: MouseEvent) {
 }
 
 .gold-star {
-  color: rgb(255, 201, 51);
+  color: var(--color-grade-gold);
 }
 
 .blue-star {
-  color: hsl(192, 100%, 60%);
+  color: var(--color-grade-blue);
 }
 
 .level-container {
@@ -692,12 +693,12 @@ function handleCardClick(event: MouseEvent) {
 }
 
 .pin-icon:hover {
-  background-color: #edba2d;
+  background-color: var(--color-pin-active);
   color: black;
 }
 
 .pin-icon.pinned {
-  background-color: #edba2d;
+  background-color: var(--color-pin-active);
 }
 
 .pin-img {

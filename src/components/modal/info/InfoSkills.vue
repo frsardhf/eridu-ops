@@ -189,7 +189,7 @@ img, svg {
 }
 
 .max-text {
-  background: linear-gradient(135deg, rgb(255, 201, 51), hsl(192, 100%, 60%));
+  background: linear-gradient(135deg, var(--color-grade-gold), var(--color-grade-blue));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

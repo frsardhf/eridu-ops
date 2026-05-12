@@ -30,7 +30,7 @@ const {
           v-if="student?.WeaponImg"
           :src="getWeaponIconUrl()"
           :alt="$t('exclusiveWeapon')"
-          class="weapon-icon"
+          :class="['weapon-icon', { 'icon-locked': isWeaponLocked }]"
         />
         <div v-else class="weapon-icon placeholder">?</div>
 
@@ -80,11 +80,6 @@ const {
   align-items: center;
   justify-content: center;
   position: relative;
-}
-
-.weapon-preview.locked .weapon-icon {
-  filter: grayscale(100%) brightness(50%);
-  opacity: 0.8;
 }
 
 .weapon-lock-overlay {
@@ -152,7 +147,7 @@ const {
 }
 
 .star.blue-star {
-  color: hsl(192, 100%, 60%);
+  color: var(--color-grade-blue);
   filter: drop-shadow(0 0 2px rgba(51, 200, 255, 0.5));
 }
 </style>
