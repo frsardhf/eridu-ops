@@ -2,7 +2,7 @@
 import { ref, computed, watch, CSSProperties } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
-import { studentDataStore, studentDataVersion } from '@/lib/stores/studentStore';
+import { studentDataStore } from '@/lib/stores/studentStore';
 import { useStudentOwnership } from '@/lib/hooks/useStudentOwnership';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import { useStudentGear } from '@/lib/hooks/useStudentGear';
@@ -89,8 +89,6 @@ const hasStyleSwitch = computed(() => hasLinkedPartner(props.student?.Id));
 
 // Ownership — undefined / true treated as owned (backward-compat)
 const isOwned = computed(() => {
-  // Access version so this recomputes on any store update
-  void studentDataVersion.value;
   if (!displayedStudent.value) return true;
   return studentDataStore.value[displayedStudent.value.Id]?.isOwned !== false;
 });

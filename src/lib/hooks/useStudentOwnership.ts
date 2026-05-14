@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/database';
-import { studentDataStore, studentDataVersion } from '@/lib/stores/studentStore';
+import { studentDataStore } from '@/lib/stores/studentStore';
 
 /**
  * Hook for reading and updating student ownership (recruited/not recruited) status.
@@ -27,7 +27,6 @@ export function useStudentOwnership() {
         ...studentDataStore.value,
         [studentId]: { ...current, isOwned: owned }
       };
-      studentDataVersion.value++;
     }
   }
 

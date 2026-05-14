@@ -24,7 +24,7 @@ import {
   updateCacheMetadata
 } from '../services/dbService';
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
-import { studentDataStore, studentDataVersion, batchSetStudentData } from '../stores/studentStore';
+import { studentDataStore, batchSetStudentData } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage, initializeLocalizationData } from '../stores/localizationStore';
 import { fetchAllData } from '../services/schaleDbFetchService';
@@ -265,9 +265,6 @@ export function useStudentData() {
     });
 
     _splitStudents = computed(() => {
-      const _version = studentDataVersion.value;
-      void _version;
-
       return splitAndSortStudents({
         students: filterSecondaryStudents(Object.values(_studentData.value)),
         pinnedStudentIds: _pinnedStudentIds.value,

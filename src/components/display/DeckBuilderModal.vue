@@ -6,7 +6,7 @@ import StudentCard from '@/components/display/StudentCard.vue';
 import type { StudentProps } from '@/types/student';
 import { domToPng } from 'modern-screenshot';
 import { $t } from '@/locales';
-import { studentDataStore, studentDataVersion } from '@/lib/stores/studentStore';
+import { studentDataStore } from '@/lib/stores/studentStore';
 
 const props = defineProps<{
   students: StudentProps[];
@@ -67,8 +67,6 @@ function canPick(studentId: number): boolean {
 
 const pickerStudents = computed(() => {
   if (!pickerSlot.value) return [];
-  // Access version to ensure reactivity when ownership changes
-  void studentDataVersion.value;
   const squadType = pickerSlot.value.slotIdx < 4 ? 'Main' : 'Support';
   const filter = pickerFilter.value.toLowerCase();
   return props.students
