@@ -87,30 +87,23 @@ export function useStudentGifts(props: {
       watchSources: [giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData],
     });
 
-  // Calculate individual item EXP
   const calculateItemExp = (expValue: number, quantity: number): number => {
     if (isNaN(quantity) || quantity <= 0) return 0;
     return expValue * quantity;
   };
 
-  // Extract exp value from an item regardless of its structure
+  // Handles both flat `{ exp }` items and nested `{ gift: { exp } }` items.
   const getItemExpValue = (item: any): number => {
     if (!item) return 0;
-
-    // Direct exp property
     if (typeof item.exp === 'number') {
       return item.exp;
     }
-
-    // Nested in gift object
     if (item.gift && typeof item.gift.exp === 'number') {
       return item.gift.exp;
     }
-
     return 0;
   };
 
-  // Calculate EXP for a single item type (gifts or boxes)
   const calculateItemTypeExp = (
     items: GiftProps[] | undefined,
     formData: Record<string, number>,
@@ -121,46 +114,25 @@ export function useStudentGifts(props: {
     const itemMap = Object.fromEntries(items.map(g => [String(g.gift.Id), g]));
 
     let typeTotal = 0;
-
-    // Process each item with quantity in the form data
     Object.entries(formData).forEach(([itemId, quantity]) => {
       if (quantity <= 0) return;
 
-      // Get the item by ID
       const item = itemMap[itemId];
       if (!item) return;
 
-      // Get exp value
       const expValue = getItemExpValue(item);
       if (expValue <= 0) return;
 
-      // Calculate and add exp
-      const itemExp = calculateItemExp(expValue, quantity);
-      typeTotal += itemExp;
+      typeTotal += calculateItemExp(expValue, quantity);
     });
 
     return typeTotal;
   };
 
-  // Compute total cumulative EXP across gifts and boxes
   const calculateCumulativeExp = (): number => {
-    // Calculate exp for gifts
-    const giftsExp = calculateItemTypeExp(
-      props.student.Gifts,
-      giftFormData.value,
-      'Gift'
-    );
-
-    // Calculate exp for boxes
-    const boxesExp = calculateItemTypeExp(
-      props.student.Boxes,
-      boxFormData.value,
-      'Box'
-    );
-
-    const totalExp = giftsExp + boxesExp;
-
-    return totalExp;
+    const giftsExp = calculateItemTypeExp(props.student.Gifts, giftFormData.value, 'Gift');
+    const boxesExp = calculateItemTypeExp(props.student.Boxes, boxFormData.value, 'Box');
+    return giftsExp + boxesExp;
   };
 
   const totalCumulativeExp = computed(calculateCumulativeExp);

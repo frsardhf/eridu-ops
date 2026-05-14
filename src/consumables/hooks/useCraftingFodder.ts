@@ -56,7 +56,6 @@ export function useCraftingFodder() {
     else markedIds.value.splice(idx, 1);
   }
 
-  // Build a map of needed quantities from the material calculation store.
   const materialNeededById = computed(() => {
     const map = new Map<number, number>();
     totalMaterialsNeeded.value.forEach(item => {

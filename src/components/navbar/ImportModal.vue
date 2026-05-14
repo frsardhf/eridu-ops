@@ -44,8 +44,6 @@ async function handleFiles(files: FileList) {
   if (files.length === 0) return;
   
   const file = files[0];
-  
-  // Check if it's a valid file type
   if (!file.name.endsWith('.txt') && !file.name.endsWith('.json')) {
     showImportError($t('importErrorFileType'));
     return;

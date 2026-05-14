@@ -255,12 +255,10 @@ export function calculateAllMaterials(
   skillLevels: SkillLevels,
   potentialLevels: PotentialLevels,
 ): Material[] {
-  // Collect all materials
   const materials: Material[] = [];
   materials.push(...calculateLevelMaterials(student, characterLevels));
   materials.push(...calculateSkillMaterials(student, skillLevels));
   materials.push(...calculatePotentialMaterials(student, potentialLevels));
 
-  // Consolidate and sort materials
   return consolidateAndSortMaterials(materials);
 }

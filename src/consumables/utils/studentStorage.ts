@@ -318,10 +318,7 @@ export async function exportLocalStorageData(): Promise<string> {
       }
     };
 
-    // Create a JSON string of the data
     const exportString = JSON.stringify(exportData, null, 2);
-
-    // Create a blob and return its URL
     const blob = new Blob([exportString], { type: 'application/json' });
     return URL.createObjectURL(blob);
   } catch (error) {
@@ -420,20 +417,18 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       throw new Error('Invalid import data format: missing characters array');
     }
 
-    // Get existing forms data and student data from IndexedDB
     const [existingForms, students] = await Promise.all([
       getAllFormData(),
       getAllStudentsAsRecord()
     ]);
 
-    // Build a set of enabled character IDs so we can skip them in disabled pass
+    // Enabled IDs are excluded from the disabled pass below.
     const enabledIds = new Set<number>(
       importData.characters.map(c => parseInt(String(c.id), 10)).filter(Boolean)
     );
 
     const formDataArray: FormRecord[] = [];
 
-    // Process each owned (enabled) character
     importData.characters.forEach((char) => {
       if (!char.id) return;
       const studentId = parseInt(String(char.id), 10);
@@ -513,7 +508,6 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       formDataArray.push({ ...existingClean, studentId, isOwned: false });
     });
 
-    // Persist form records
     await db.forms.bulkPut(formDataArray);
 
     // Import numeric-ID materials into items_inventory (skip string-keyed entries

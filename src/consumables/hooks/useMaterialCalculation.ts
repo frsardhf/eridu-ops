@@ -49,12 +49,11 @@ export function useMaterialCalculation() {
       name: string
     }[] = [];
 
-    // Create a set of all student IDs from both data sources
+    // Union of student IDs that have either material or gear calc entries.
     const allStudentIds = new Set<string>();
     Object.keys(getAllMaterialsData()).forEach(studentId => allStudentIds.add(studentId));
     Object.keys(getAllGearsData()).forEach(studentId => allStudentIds.add(studentId));
 
-    // Calculate XP needed for each student
     allStudentIds.forEach(studentId => {
       const form = studentDataStore.value[toNumericId(studentId)];
       if (!form || !form.characterLevels) return;
@@ -84,10 +83,9 @@ export function useMaterialCalculation() {
     const resources = getAllItemsFromCache();
     const studentXpDetails = getStudentXpDetails();
 
-    // Calculate total XP needed
     const totalXpNeeded = studentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
 
-    // Calculate owned XP using the shared helper (avoids hardcoded ID sums)
+    // Use the shared helper so changes to XP-item IDs don't require updates here.
     const ownedXp = getCharXpItems(id => resources[id]?.QuantityOwned ?? 0)
       .reduce((s, item) => s + item.owned * item.xpValue, 0);
 
@@ -98,7 +96,7 @@ export function useMaterialCalculation() {
     };
   };
 
-  // Initialize computed properties on first call only
+  // Module-level cache: each computed is created once and reused across callers.
   if (!_allMaterialsData) {
     _allMaterialsData = computed(() => getAllMaterialsData());
     _allGearsData = computed(() => getAllGearsData());
@@ -107,7 +105,6 @@ export function useMaterialCalculation() {
   const allMaterialsData = _allMaterialsData;
   const allGearsData = _allGearsData;
 
-  // Calculate total materials needed across all students
   if (!_totalMaterialsNeeded) {
     _totalMaterialsNeeded = computed(() => {
     const materialMap = new Map<number, Material>();

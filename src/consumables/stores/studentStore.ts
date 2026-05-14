@@ -3,31 +3,27 @@ import { getFormData, saveFormData } from '../utils/studentStorage';
 import type { FormRecord } from '../db/database';
 import { toNumericId } from '../utils/idCoercion';
 
-// Create a reactive store for student data
-// Using shallowRef to avoid deep reactivity on the entire store object
+// shallowRef avoids deep reactivity on the wrapped object; mutations must
+// produce a new reference (see the spread pattern below).
 export const studentDataStore = shallowRef<Record<number, FormRecord>>({});
 
-// Version counter for triggering re-renders without deep watching
-// Increment this when store data changes
+// Manual epoch counter — watchers depend on this because shallowRef doesn't
+// deep-track property writes on the wrapped object.
 export const studentDataVersion = ref(0);
 
-// Function to update student data in the store (async)
 export async function updateStudentData(studentId: string | number) {
   const numericId = toNumericId(studentId);
   const data = await getFormData(studentId);
   if (data) {
-    // Create a new object reference to trigger shallowRef reactivity
     studentDataStore.value = {
       ...studentDataStore.value,
       [numericId]: data as FormRecord
     };
-    // Increment version to notify watchers
     studentDataVersion.value++;
   }
 }
 
-// Function to get student data from the store (sync - reads from cache only)
-// Use updateStudentData() first to ensure data is loaded
+// Sync read — call updateStudentData() first to ensure data is loaded.
 export function getStudentData(studentId: string | number): FormRecord | undefined {
   const numericId = toNumericId(studentId);
   return studentDataStore.value[numericId];

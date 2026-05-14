@@ -313,7 +313,6 @@ function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
     else map.set(id, { ...m });
   }
 
-  // Convert to preview items
   const result: MaterialPreviewItem[] = [];
   for (const m of map.values()) {
     if (m.materialQuantity <= 0) continue;

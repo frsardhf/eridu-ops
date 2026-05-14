@@ -16,7 +16,6 @@ import { EXCLUSIVE_GEAR_T2_CREDIT_COST } from '../constants/gameConstants';
 import type { ExclusiveGearLevel } from '../../types/gear';
 import { CachedResource } from '../../types/resource';
 
-// Get credits required for a specific equipment tier
 function getCreditsForEquipmentTier(current: number, target: number) {
   const equipmentCreditsTable = dataTable.equipment_credits;
 
@@ -28,7 +27,6 @@ function getCreditsForEquipmentTier(current: number, target: number) {
   return Math.max(0, creditsNeeded);
 }
 
-// Get credits required for a specific grade tier
 function getCreditsForGrade(current: number, target: number) {
   const gradeCreditsTable = dataTable.grade_credits;
 
@@ -40,7 +38,6 @@ function getCreditsForGrade(current: number, target: number) {
   return Math.max(0, creditsNeeded);
 }
 
-// Get elephs required for a specific grade tier
 export function getElephsForGrade(current: number, target: number, owned: number) {
   const gradeElephsTable = dataTable.grade_elephs;
 
@@ -52,7 +49,6 @@ export function getElephsForGrade(current: number, target: number, owned: number
   return Math.max(0, elephsNeeded - owned);
 }
 
-// Get eligmas required for a specific grade tier
 function getEligmasForGrade(needed: number, price: number = 1, purchasable: number = 20) {
   let totalEligma = 0
   let remainingElephs = needed
@@ -72,7 +68,6 @@ function getEligmasForGrade(needed: number, price: number = 1, purchasable: numb
   return totalEligma || 0;
 }
 
-// Calculate equipment materials from recipes
 export function calculateEquipmentMaterials(
   student: StudentProps,
   equipmentLevels: EquipmentLevels
@@ -144,7 +139,6 @@ export function calculateEquipmentMaterials(
   return materialsNeeded;
 }
 
-// Calculate credits needed for equipment upgrades
 export function calculateEquipmentCredits(
   equipmentLevels: EquipmentLevels
 ): Material[] {
@@ -170,7 +164,6 @@ export function calculateEquipmentCredits(
   return materialsNeeded;
 }
 
-// Calculate credits for grade upgrades
 export function calculateGradeCredits(
   gradeLevels: GradeLevels
 ): Material[] {
@@ -195,7 +188,6 @@ export function calculateGradeCredits(
   return materialsNeeded;
 }
 
-// Calculate materials for grade upgrades
 export function calculateGradeMaterials(
   gradeLevels: GradeLevels,
   gradeInfos: GradeInfos

@@ -86,39 +86,32 @@ export function consolidateAndSortMaterials(materials: Material[]): Material[] {
  */
 export async function preloadAllStudentsData() {
   try {
-    // Get all students form data from IndexedDB
     const allFormData = await getAllFormData();
 
-    // Get all students data from useStudentData composable
     const { studentData, equipmentData } = useStudentData();
     const allStudentsData = studentData.value;
     const allGearsData = equipmentData.value;
-    
-    // Process each student's form data
+
     Object.entries(allFormData).forEach(([studentId, formData]) => {
       if (!formData) return;
-      
+
       const student = allStudentsData[studentId];
       if (!student) return;
-      
-      // Get all levels from form data
+
       const skillLevels = formData.skillLevels ?? DEFAULT_SKILL_LEVELS;
       const potentialLevels = formData.potentialLevels ?? DEFAULT_POTENTIAL_LEVELS;
       const characterLevels = formData.characterLevels ?? DEFAULT_CHARACTER_LEVELS;
       const equipmentLevels = formData.equipmentLevels ?? {};
       const gradeLevels = formData.gradeLevels ?? {};
       const gradeInfos = formData.gradeInfos ?? {};
-      const exclusiveGearLevel = formData.exclusiveGearLevel ?? {};      
-      
-      // Check if student has any upgrades
+      const exclusiveGearLevel = formData.exclusiveGearLevel ?? {};
+
       const hasAnyUpgrades = hasTargetUpgrades(characterLevels) ||
         hasTargetUpgrades(skillLevels) || hasTargetUpgrades(potentialLevels) ||
         hasTargetUpgrades(equipmentLevels) || hasTargetUpgrades(gradeLevels) ||
         hasTargetUpgrades(exclusiveGearLevel);
 
-      // Process student gears (if ANY upgrade type exists)
       if (hasAnyUpgrades) {
-        // Calculate materials for this student
         const materials = calculateAllMaterials(
           student,
           characterLevels,
@@ -126,12 +119,10 @@ export async function preloadAllStudentsData() {
           potentialLevels
         );
 
-        // Add to store
         if (materials.length > 0) {
           updateMaterialsData(studentId, materials);
         }
 
-        // Calculate gears for this student
         const gears = calculateAllGears(
           student,
           equipmentLevels,
@@ -140,7 +131,6 @@ export async function preloadAllStudentsData() {
           exclusiveGearLevel
         );
 
-        // Add to store
         if (gears.length > 0) {
           updateGearsData(studentId, gears);
         }
