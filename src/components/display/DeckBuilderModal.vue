@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useDeckBuilder } from '@/consumables/hooks/useDeckBuilder';
+import { useDeckBuilder } from '@/lib/hooks/useDeckBuilder';
 import { useDragReorder } from '@/composables/useDragReorder';
 import StudentCard from '@/components/display/StudentCard.vue';
 import type { StudentProps } from '@/types/student';
 import { domToPng } from 'modern-screenshot';
 import { $t } from '@/locales';
-import { studentDataStore, studentDataVersion } from '@/consumables/stores/studentStore';
+import { studentDataStore, studentDataVersion } from '@/lib/stores/studentStore';
 
 const props = defineProps<{
   students: StudentProps[];

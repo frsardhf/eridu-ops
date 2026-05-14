@@ -2,7 +2,7 @@
 import { computed, ref, watch, nextTick } from 'vue';
 import { StudentProps } from '@/types/student';
 import { $t } from '@/locales';
-import { getStudentIconUrl } from '@/consumables/utils/iconUtils';
+import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
   students: StudentProps[],

@@ -61,7 +61,7 @@ src/
       shared/      # MaterialsSection (shared across tabs)
     navbar/        # Navigation bar, FilterPanel, InventoryScreenshotModal, import/export, credits
   composables/     # Lightweight display composables (useStudentInfo, useStudentImages, useTooltip, …)
-  consumables/
+  lib/
     hooks/         # Form-state composables bridging components ↔ IndexedDB
     services/      # SchaleDB fetch, IndexedDB service, form initialization
     stores/        # Reactive stores (studentStore, localizationStore, …)
@@ -80,8 +80,8 @@ Components  →  Composables  →  Hooks  →  Services / Stores / IndexedDB
 ```
 
 - **Composables** (`src/composables/`) — pure display helpers: computed colors, level display state, tooltips
-- **Hooks** (`src/consumables/hooks/`) — heavier form-state managers that read/write IndexedDB and expose reactive data to components
-- **Stores** (`src/consumables/stores/`) — singleton reactive state (student data, localization, cached resources)
+- **Hooks** (`src/lib/hooks/`) — heavier form-state managers that read/write IndexedDB and expose reactive data to components
+- **Stores** (`src/lib/stores/`) — singleton reactive state (student data, localization, cached resources)
 
 ---
 

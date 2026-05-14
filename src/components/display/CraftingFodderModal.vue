@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { $t } from '@/locales';
-import { useCraftingFodder } from '@/consumables/hooks/useCraftingFodder';
+import { useCraftingFodder } from '@/lib/hooks/useCraftingFodder';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
-import { getItemIconUrl } from '@/consumables/utils/iconUtils';
-import { formatLargeNumber } from '@/consumables/utils/materialUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
+import { formatLargeNumber } from '@/lib/utils/materialUtils';
 
 const emit = defineEmits<{ close: [] }>();
 

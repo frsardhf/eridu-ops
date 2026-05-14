@@ -2,9 +2,9 @@
 import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import { useBondBulkUpdate } from '@/consumables/hooks/useBondBulkUpdate';
-import { getStudentCollectionUrl } from '@/consumables/utils/iconUtils';
-import { MAX_BOND_LEVEL } from '@/consumables/constants/gameConstants';
+import { useBondBulkUpdate } from '@/lib/hooks/useBondBulkUpdate';
+import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
+import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 
 type EntryStatus = 'matched' | 'ambiguous' | 'unmatched' | 'skipped';
 

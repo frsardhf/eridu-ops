@@ -5,8 +5,8 @@ import { SkillLevels, PotentialLevels, SectionId, MaterialPreviewItem } from '@/
 import type { EquipmentLevels, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 import { useApplyUpgrade } from '@/composables/useApplyUpgrade';
-import { getItemIconUrl } from '@/consumables/utils/iconUtils';
-import { formatLargeNumber, isExpBall } from '@/consumables/utils/materialUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
+import { formatLargeNumber, isExpBall } from '@/lib/utils/materialUtils';
 import '@/styles/resourceDisplay.css';
 import '@/styles/modalActions.css';
 

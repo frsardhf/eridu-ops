@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
 import { useStudentGearDisplay, getEquipmentTypeName } from '@/composables/useStudentGearDisplay';
-import { getMaxTierForTypeSync } from '@/consumables/utils/gearMaterialUtils';
-import { clampLevelPair } from '@/consumables/utils/upgradeUtils';
-import { MAX_EXCLUSIVE_GEAR_LEVEL } from '@/consumables/constants/gameConstants';
+import { getMaxTierForTypeSync } from '@/lib/utils/gearMaterialUtils';
+import { clampLevelPair } from '@/lib/utils/upgradeUtils';
+import { MAX_EXCLUSIVE_GEAR_LEVEL } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import { EquipmentType } from '@/types/gear';
 import { StudentProps } from '@/types/student';

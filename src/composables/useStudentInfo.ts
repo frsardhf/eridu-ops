@@ -4,8 +4,8 @@ import {
   getArmorTypeColor,
   getSquadTypeColor,
   colorWithOpacity,
-} from '@/consumables/utils/colorUtils';
-import { resolveLocalized } from '@/consumables/utils/localizationUtils';
+} from '@/lib/utils/colorUtils';
+import { resolveLocalized } from '@/lib/utils/localizationUtils';
 import { StudentProps } from '@/types/student';
 
 /**

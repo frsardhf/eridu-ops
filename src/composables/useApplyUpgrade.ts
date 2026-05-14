@@ -8,7 +8,7 @@ import {
 import type { EquipmentLevels, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
 import { getEquipmentTypeName } from '@/composables/useStudentGearDisplay';
 import { StudentProps } from '@/types/student';
-import { WEAPON_STAR_THRESHOLD as GRADE_THRESHOLD } from '@/consumables/constants/gameConstants';
+import { WEAPON_STAR_THRESHOLD as GRADE_THRESHOLD } from '@/lib/constants/gameConstants';
 
 type ApplyUpgradeProps = {
   student: StudentProps;

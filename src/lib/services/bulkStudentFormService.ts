@@ -1,5 +1,5 @@
-import { FormRecord, db } from '@/consumables/db/database';
-import { buildDefaultFormData } from '@/consumables/services/studentFormService';
+import { FormRecord, db } from '@/lib/db/database';
+import { buildDefaultFormData } from '@/lib/services/studentFormService';
 import { StudentProps } from '@/types/student';
 import { DEFAULT_SKILL_LEVELS, DEFAULT_POTENTIAL_LEVELS } from '@/types/upgrade';
 

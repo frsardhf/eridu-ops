@@ -1,15 +1,15 @@
 import { MaybeRefOrGetter, computed, ref, toValue, watch } from 'vue';
-import { formatSkillDescription } from '@/consumables/utils/localizationUtils';
-import { formatSkillCost } from '@/consumables/utils/upgradeUtils';
-import { getSkillIconUrl } from '@/consumables/utils/iconUtils';
-import { getStudentData } from '@/consumables/stores/studentStore';
-import { getPrimaryStudentId } from '@/consumables/constants/linkedStudents';
+import { formatSkillDescription } from '@/lib/utils/localizationUtils';
+import { formatSkillCost } from '@/lib/utils/upgradeUtils';
+import { getSkillIconUrl } from '@/lib/utils/iconUtils';
+import { getStudentData } from '@/lib/stores/studentStore';
+import { getPrimaryStudentId } from '@/lib/constants/linkedStudents';
 import {
   GEAR_UNLOCK_PASSIVE_SKILL,
   GEAR_UNLOCK_PUBLIC_SKILL,
   MAX_EX_SKILL_LEVEL,
   MAX_SKILL_LEVEL,
-} from '@/consumables/constants/gameConstants';
+} from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';
 

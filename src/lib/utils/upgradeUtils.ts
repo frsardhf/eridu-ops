@@ -1,6 +1,6 @@
 // materialUtils.ts
 import { type Ref } from 'vue';
-export { MAX_POTENTIAL_LEVEL } from '@/consumables/constants/gameConstants';
+export { MAX_POTENTIAL_LEVEL } from '@/lib/constants/gameConstants';
 
 /**
  * Determines the state of level displays (max, same, or different)

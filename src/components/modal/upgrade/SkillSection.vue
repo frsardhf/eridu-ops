@@ -3,7 +3,7 @@ import { computed, toRef } from 'vue';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentSkillDisplay } from '@/composables/useStudentSkillDisplay';
 import { useTooltip } from '@/composables/useTooltip';
-import { makeCurrentTargetPair } from '@/consumables/utils/upgradeUtils';
+import { makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType, SKILL_TYPES } from '@/types/upgrade';

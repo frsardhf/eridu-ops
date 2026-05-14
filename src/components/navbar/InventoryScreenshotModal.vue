@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
-import { saveItemsInventory, saveEquipmentInventory } from '@/consumables/utils/studentStorage';
+import { saveItemsInventory, saveEquipmentInventory } from '@/lib/utils/studentStorage';
 import {
   getAllItemsFromCache,
   updateItemInCache,
@@ -10,12 +10,12 @@ import {
   updateEquipmentInCache,
   getResourceDataByIdSync,
   getEquipmentDataByIdSync,
-} from '@/consumables/stores/resourceCacheStore';
+} from '@/lib/stores/resourceCacheStore';
 import type { CachedResource } from '@/types/resource';
 import { MATERIAL, EQUIPMENT } from '@/types/resource';
-import { applyFilters } from '@/consumables/utils/filterUtils';
+import { applyFilters } from '@/lib/utils/filterUtils';
 import ResourceCard from '@/components/inventory/ResourceCard.vue';
-import { getItemIconUrl } from '@/consumables/utils/iconUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
 
 type InventoryType = 'items' | 'equipment';
 type Step = 'type' | 'upload' | 'review';

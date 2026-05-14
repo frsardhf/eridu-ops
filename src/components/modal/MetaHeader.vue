@@ -3,8 +3,8 @@ import { computed, toRef } from 'vue';
 import { $t } from '@/locales';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
-import { getSchoolColor } from '@/consumables/utils/colorUtils';
-import { getBondIconUrl, getTypeIconUrl, getRoleIconUrl, getSchoolIconUrl } from '@/consumables/utils/iconUtils';
+import { getSchoolColor } from '@/lib/utils/colorUtils';
+import { getBondIconUrl, getTypeIconUrl, getRoleIconUrl, getSchoolIconUrl } from '@/lib/utils/iconUtils';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{

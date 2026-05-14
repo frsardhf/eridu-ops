@@ -1,5 +1,5 @@
 import { computed, toValue, MaybeRefOrGetter } from 'vue';
-import { MAX_LEVEL } from '@/consumables/constants/gameConstants';
+import { MAX_LEVEL } from '@/lib/constants/gameConstants';
 
 export { MAX_LEVEL };
 

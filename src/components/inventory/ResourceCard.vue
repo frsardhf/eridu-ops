@@ -2,8 +2,8 @@
 import { ResourceProps } from '@/types/resource';
 import '@/styles/resourceDisplay.css';
 import { useFocusInput } from '@/composables/useInputEditor';
-import { formatLargeNumber } from '@/consumables/utils/materialUtils';
-import { getItemIconUrl } from '@/consumables/utils/iconUtils';
+import { formatLargeNumber } from '@/lib/utils/materialUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
   item: ResourceProps,

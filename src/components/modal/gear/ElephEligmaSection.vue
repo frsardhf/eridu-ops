@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { useFocusInput, useGradeInfoEditor } from '@/composables/useInputEditor';
-import { formatItemQuantity } from '@/consumables/utils/materialUtils';
-import { getItemIconUrl } from '@/consumables/utils/iconUtils';
+import { formatItemQuantity } from '@/lib/utils/materialUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
   student: StudentProps;

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue';
 import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
-import { makeCurrentTargetPair } from '@/consumables/utils/upgradeUtils';
+import { makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
 import {
   MAX_GRADE,
   WEAPON_STAR_THRESHOLD as TRESHOLD
-} from '@/consumables/constants/gameConstants';
+} from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import StarRatingGroup from '@/components/modal/shared/StarRatingGroup.vue';

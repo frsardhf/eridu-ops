@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { importLocalStorageData, importFromOtherSite } from '@/consumables/utils/studentStorage';
+import { importLocalStorageData, importFromOtherSite } from '@/lib/utils/studentStorage';
 import { $t } from '@/locales';
 
 const emit = defineEmits<{

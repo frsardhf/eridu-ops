@@ -8,12 +8,12 @@ import {
   MAX_ELEPH_PRICE,
   MIN_ELEPH_PURCHASABLE,
   MAX_ELEPH_PURCHASABLE,
-} from '@/consumables/constants/gameConstants';
+} from '@/lib/constants/gameConstants';
 import {
   clampLevelPair,
   createEditorKeydownHandler,
   parseEditValue,
-} from '@/consumables/utils/upgradeUtils';
+} from '@/lib/utils/upgradeUtils';
 
 /**
  * Encapsulates the inline level editor state and logic for LevelSection.

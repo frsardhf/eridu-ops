@@ -6,11 +6,11 @@ import {
   getBulkFilterData,
   type BulkFormPatch,
   type AvailabilityFilter,
-} from '@/consumables/hooks/useBulkStudentModify';
-import type { FormRecord } from '@/consumables/hooks/useBulkStudentModify';
+} from '@/lib/hooks/useBulkStudentModify';
+import type { FormRecord } from '@/lib/hooks/useBulkStudentModify';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import { getStudentIconUrl } from '@/consumables/utils/iconUtils';
+import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 
 type OwnershipFilter = 'all' | 'owned' | 'unowned';
 

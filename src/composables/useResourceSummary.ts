@@ -2,17 +2,17 @@ import { computed, type Ref } from 'vue';
 import type { MaterialWithRemaining, Material, MaterialType } from '@/types/upgrade';
 import { MATERIAL, EQUIPMENT, type CachedResource } from '@/types/resource';
 import type { StudentProps } from '@/types/student';
-import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
-import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
-import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
-import { useStudentData } from '@/consumables/hooks/useStudentData';
-import { getAllItemsFromCache, getAllEquipmentFromCache, getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/consumables/stores/resourceCacheStore';
-import { getAllMaterialsData } from '@/consumables/stores/materialsStore';
-import { getAllGearsData } from '@/consumables/stores/gearsStore';
-import { computeCharacterXpCost } from '@/consumables/utils/upgradeMaterialUtils';
-import { computeEquipmentXpCost } from '@/consumables/utils/gearMaterialUtils';
-import { studentDataStore } from '@/consumables/stores/studentStore';
-import { applyFilters } from '@/consumables/utils/filterUtils';
+import { useMaterialCalculation } from '@/lib/hooks/useMaterialCalculation';
+import { useGearCalculation } from '@/lib/hooks/useGearCalculation';
+import { useGiftCalculation } from '@/lib/hooks/useGiftCalculation';
+import { useStudentData } from '@/lib/hooks/useStudentData';
+import { getAllItemsFromCache, getAllEquipmentFromCache, getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/lib/stores/resourceCacheStore';
+import { getAllMaterialsData } from '@/lib/stores/materialsStore';
+import { getAllGearsData } from '@/lib/stores/gearsStore';
+import { computeCharacterXpCost } from '@/lib/utils/upgradeMaterialUtils';
+import { computeEquipmentXpCost } from '@/lib/utils/gearMaterialUtils';
+import { studentDataStore } from '@/lib/stores/studentStore';
+import { applyFilters } from '@/lib/utils/filterUtils';
 import {
   isExpReport,
   isExpBall,
@@ -20,8 +20,8 @@ import {
   calculateLeftoverItems,
   sortMaterials,
   consolidateAndSortMaterials,
-} from '@/consumables/utils/materialUtils';
-import { isSecondaryStudent } from '@/consumables/constants/linkedStudents';
+} from '@/lib/utils/materialUtils';
+import { isSecondaryStudent } from '@/lib/constants/linkedStudents';
 import { $t } from '@/locales';
 
 export interface StudentMaterialRow {

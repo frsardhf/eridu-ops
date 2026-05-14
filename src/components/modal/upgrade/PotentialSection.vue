@@ -2,8 +2,8 @@
 import { computed } from 'vue';
 import { PotentialType } from '@/types/upgrade';
 import { $t } from '@/locales';
-import { MAX_POTENTIAL_LEVEL, makeCurrentTargetPair } from '@/consumables/utils/upgradeUtils';
-import { getItemIconUrl } from '@/consumables/utils/iconUtils';
+import { MAX_POTENTIAL_LEVEL, makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
 import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{

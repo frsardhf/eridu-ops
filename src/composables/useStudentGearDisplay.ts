@@ -3,8 +3,8 @@ import {
   getWeaponIconUrl as iconGetWeaponIconUrl,
   getEquipmentIconUrl as iconGetEquipmentIconUrl,
   getExclusiveGearIconUrl as iconGetExclusiveGearIconUrl,
-} from '@/consumables/utils/iconUtils';
-import { MAX_GRADE, WEAPON_STAR_THRESHOLD } from '@/consumables/constants/gameConstants';
+} from '@/lib/utils/iconUtils';
+import { MAX_GRADE, WEAPON_STAR_THRESHOLD } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 

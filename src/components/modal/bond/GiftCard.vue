@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import { GiftProps } from '@/types/gift';
 import '@/styles/resourceDisplay.css';
 import { useFocusInput } from '@/composables/useInputEditor';
-import { formatItemQuantity } from '@/consumables/utils/materialUtils';
-import { getGiftIconUrl, getGiftGradeIconUrl } from '@/consumables/utils/iconUtils';
+import { formatItemQuantity } from '@/lib/utils/materialUtils';
+import { getGiftIconUrl, getGiftGradeIconUrl } from '@/lib/utils/iconUtils';
 import { SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID } from '@/types/resource';
 import { $t } from '@/locales';
 

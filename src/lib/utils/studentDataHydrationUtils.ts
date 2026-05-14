@@ -1,4 +1,4 @@
-import { CREDITS_ID, creditsEntry, injectSyntheticEntities } from '@/consumables/constants/syntheticEntities';
+import { CREDITS_ID, creditsEntry, injectSyntheticEntities } from '@/lib/constants/syntheticEntities';
 import { ResourceProps } from '@/types/resource';
 import { StudentProps } from '@/types/student';
 import { saveItems } from '../services/dbService';

@@ -1,12 +1,12 @@
 import { ref, computed, nextTick } from 'vue';
 import type { Ref } from 'vue';
 import type { EquipmentType } from '@/types/gear';
-import { useMaterialCalculation } from '@/consumables/hooks/useMaterialCalculation';
-import { useGearCalculation } from '@/consumables/hooks/useGearCalculation';
-import { useGiftCalculation } from '@/consumables/hooks/useGiftCalculation';
-import { getAllItemsFromCache } from '@/consumables/stores/resourceCacheStore';
-import { isExpReport, isExpBall } from '@/consumables/utils/materialUtils';
-import { getTooltipGridColumns } from '@/consumables/utils/tooltipUtils';
+import { useMaterialCalculation } from '@/lib/hooks/useMaterialCalculation';
+import { useGearCalculation } from '@/lib/hooks/useGearCalculation';
+import { useGiftCalculation } from '@/lib/hooks/useGiftCalculation';
+import { getAllItemsFromCache } from '@/lib/stores/resourceCacheStore';
+import { isExpReport, isExpBall } from '@/lib/utils/materialUtils';
+import { getTooltipGridColumns } from '@/lib/utils/tooltipUtils';
 import { positionAtCursor } from '@/composables/useTooltip';
 
 type ViewTab = 'materials' | 'equipment' | 'gifts';

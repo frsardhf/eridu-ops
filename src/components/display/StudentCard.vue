@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { StudentProps } from '@/types/student'
 import { ref, onUnmounted, computed } from 'vue'
-import { useStudentCard } from '@/consumables/hooks/useStudentCard'
+import { useStudentCard } from '@/lib/hooks/useStudentCard'
 import { useWindowResize } from '@/composables/dom/useWindowResize'
-import { getStudentCollectionUrl, getBondIconUrl } from '@/consumables/utils/iconUtils'
+import { getStudentCollectionUrl, getBondIconUrl } from '@/lib/utils/iconUtils'
 import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
 import { ModalOriginRect } from '@/types/modal';

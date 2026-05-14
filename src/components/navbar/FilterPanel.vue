@@ -2,7 +2,7 @@
 import { StudentFilters } from '@/types/filter';
 import { $t } from '@/locales';
 import { computed } from 'vue';
-import { getSchoolIconUrl, getEquipmentSlotIconUrl } from '@/consumables/utils/iconUtils';
+import { getSchoolIconUrl, getEquipmentSlotIconUrl } from '@/lib/utils/iconUtils';
 import {
   useFilterLabels,
   SQUAD_TYPE_KEYS,

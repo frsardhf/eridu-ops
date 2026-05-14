@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { $t } from '@/locales';
 import { useBondEditor } from '@/composables/useInputEditor';
-import { getBondIconUrl } from '@/consumables/utils/iconUtils';
+import { getBondIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
   currentBond: number,

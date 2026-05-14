@@ -1,5 +1,5 @@
-import { resolveLocalized } from '@/consumables/utils/localizationUtils';
-import { getSquadTypeColor, getBulletTypeColor, getArmorTypeColor } from '@/consumables/utils/colorUtils';
+import { resolveLocalized } from '@/lib/utils/localizationUtils';
+import { getSquadTypeColor, getBulletTypeColor, getArmorTypeColor } from '@/lib/utils/colorUtils';
 
 export const SQUAD_TYPE_KEYS = ['Main', 'Support'] as const;
 export const STAR_GRADE_VALUES = [1, 2, 3] as const;

@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue';
-import { db } from '@/consumables/db/database';
-import type { DeckRecord, DeckTeam } from '@/consumables/db/database';
+import { db } from '@/lib/db/database';
+import type { DeckRecord, DeckTeam } from '@/lib/db/database';
 
 const DEFAULT_DECK_NAMES = ['Team I', 'Team II', 'Team III', 'Team IV', 'Team V'];
 

@@ -6,7 +6,7 @@ import {
   getMaterialIconSrc,
   buildMaterialMap,
   sortMaterials
-} from '@/consumables/utils/materialUtils';
+} from '@/lib/utils/materialUtils';
 import { Material } from '@/types/upgrade';
 import '@/styles/resourceDisplay.css';
 

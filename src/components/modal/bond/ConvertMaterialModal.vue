@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { getResourceDataByIdSync } from '@/consumables/stores/resourceCacheStore';
-import { getGiftIconUrl } from '@/consumables/utils/iconUtils';
-import { formatItemQuantity } from '@/consumables/utils/materialUtils';
+import { getResourceDataByIdSync } from '@/lib/stores/resourceCacheStore';
+import { getGiftIconUrl } from '@/lib/utils/iconUtils';
+import { formatItemQuantity } from '@/lib/utils/materialUtils';
 import { $t } from '@/locales';
 import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
 import '@/styles/resourceDisplay.css';

@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { currentLanguage, Language } from '../consumables/stores/localizationStore';
+import { currentLanguage, Language } from '../lib/stores/localizationStore';
 
 // Translation strings for each supported language
 export const translations = {

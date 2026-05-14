@@ -1,5 +1,5 @@
-import { db } from '@/consumables/db/database';
-import { studentDataStore, studentDataVersion } from '@/consumables/stores/studentStore';
+import { db } from '@/lib/db/database';
+import { studentDataStore, studentDataVersion } from '@/lib/stores/studentStore';
 
 /**
  * Hook for reading and updating student ownership (recruited/not recruited) status.

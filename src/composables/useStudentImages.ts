@@ -1,6 +1,6 @@
 import { computed, MaybeRefOrGetter, onBeforeUnmount, ref, toValue, watch } from 'vue';
 import { StudentProps } from '@/types/student';
-import { getStudentPortraitUrl, getBackgroundUrl } from '@/consumables/utils/iconUtils';
+import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
 
 /**
  * Encapsulates ModalHeader's image loading state: shimmer timer, portrait/background

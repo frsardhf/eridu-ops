@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { HeaderProps, SortOption } from '@/types/header';
-import { useNavbarSettings, type Language } from '@/consumables/hooks/useNavbarSettings';
+import { useNavbarSettings, type Language } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';

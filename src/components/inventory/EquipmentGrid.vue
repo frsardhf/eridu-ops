@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ResourceCard from './ResourceCard.vue';
-import { applyFilters } from '@/consumables/utils/filterUtils';
+import { applyFilters } from '@/lib/utils/filterUtils';
 import { EQUIPMENT } from '@/types/resource';
-import { getAllEquipmentFromCache } from '@/consumables/stores/resourceCacheStore';
+import { getAllEquipmentFromCache } from '@/lib/stores/resourceCacheStore';
 import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import '@/styles/resourceDisplay.css';
 

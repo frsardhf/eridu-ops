@@ -7,14 +7,14 @@ import {
   isExpBall,
   getMaterialName,
   getMaterialIconSrc,
-} from '@/consumables/utils/materialUtils';
-import { formatUsageQuantity } from '@/consumables/utils/tooltipUtils';
+} from '@/lib/utils/materialUtils';
+import { formatUsageQuantity } from '@/lib/utils/tooltipUtils';
 import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import { useResourceTooltip } from '@/composables/useResourceTooltip';
 import { useResourceSummary, type ViewTab, type ViewMode } from '@/composables/useResourceSummary';
 import { $t } from '@/locales';
-import { getModeQuantityClass, getResourceQuantityClass } from '@/consumables/utils/colorUtils';
-import { getStudentIconUrl, getItemIconUrl } from '@/consumables/utils/iconUtils';
+import { getModeQuantityClass, getResourceQuantityClass } from '@/lib/utils/colorUtils';
+import { getStudentIconUrl, getItemIconUrl } from '@/lib/utils/iconUtils';
 import '@/styles/resourceDisplay.css';
 
 const props = withDefaults(defineProps<{
