@@ -66,6 +66,7 @@ const emit = defineEmits<(event: 'close' | 'navigate', payload?: any) => void>()
 
 const { setOwned } = useStudentOwnership();
 
+// ── State ────────────────────────────────────────────────────────────────────
 const activeTab = ref<ModalTab>('info');
 const tabDirection = ref<'forward' | 'backward'>('forward');
 const activeTabTransitionName = computed(() =>
@@ -94,6 +95,7 @@ const isOwned = computed(() => {
   return studentDataStore.value[displayedStudent.value.Id]?.isOwned !== false;
 });
 
+// ── Modal origin morph ────────────────────────────────────────────────────────
 const hasOriginMorph = computed(() => {
   const origin = props.originRect;
   return !!origin && origin.width > 0 && origin.height > 0;
@@ -118,6 +120,7 @@ const modalOriginStyle = computed<CSSProperties>(() => {
   } as CSSProperties;
 });
 
+// ── Style switch ──────────────────────────────────────────────────────────────
 const styleStudent = computed<StudentProps | null>(() => {
   if (!displayedStudent.value) return null;
   if (!activeStyleId.value || activeStyleId.value === displayedStudent.value.Id) {
@@ -128,6 +131,7 @@ const styleStudent = computed<StudentProps | null>(() => {
 
 const activeStyleStudent = computed(() => styleStudent.value ?? displayedStudent.value);
 
+// ── Hooks ────────────────────────────────────────────────────────────────────
 const {
   currentBond, newBondLevel, totalCumulativeExp, remainingXp: bondRemainingXp,
   giftFormData, boxFormData, nonFavorGiftsMap, shouldShowGiftGrade,
@@ -171,6 +175,7 @@ const {
   loadFromIndexedDB: loadGearData,
 } = useStudentGear(props, emit);
 
+// ── Navigation & handlers ─────────────────────────────────────────────────────
 // Image preloading for neighbor students
 function preloadStudentImages(s: StudentProps) {
   new Image().src = getStudentPortraitUrl(s.Id);
@@ -450,6 +455,7 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
   showApplyModal.value = false;
 }
 
+// ── Tab & ownership management ────────────────────────────────────────────────
 function setActiveTab(nextTab: ModalTab) {
   if (nextTab === activeTab.value) return;
   tabDirection.value = MODAL_TAB_ORDER[nextTab] >= MODAL_TAB_ORDER[activeTab.value]
@@ -470,7 +476,7 @@ watch(isOwned, (owned) => {
   }
 });
 
-// Keyboard
+// ── Keyboard ──────────────────────────────────────────────────────────────────
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.isVisible) return;
 
@@ -516,6 +522,7 @@ function handleKeyDown(event: KeyboardEvent) {
 
 useDocumentListener('keydown', handleKeyDown);
 
+// ── Hydration ────────────────────────────────────────────────────────────────
 // Centralized hydration flow: initialize defaults once, then load all hook data together.
 watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
   if (!visible || !student) return;

@@ -16,6 +16,7 @@ const emit = defineEmits<{
   (e: 'pin-toggled', studentId: string | number, isPinned: boolean): void;
 }>();
 
+// ── State ────────────────────────────────────────────────────────────────────
 const isMobile = ref(false);
 const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
   computed(() => props.student.Id)
@@ -30,12 +31,14 @@ function checkScreenWidth() {
 
 useWindowResize(checkScreenWidth);
 
+// ── Lifecycle ────────────────────────────────────────────────────────────────
 onUnmounted(() => {
   if (pinPopTimer) {
     clearTimeout(pinPopTimer);
   }
 });
 
+// ── Display helpers ───────────────────────────────────────────────────────────
 function getFontSizeClass(name: string): string {
   // Mobile sizing is the same regardless of language
   if (isMobile.value) {
@@ -88,6 +91,7 @@ function formatPotentialValue(value: number | undefined): string {
   return value?.toString() ?? '0';
 }
 
+// ── Computed ─────────────────────────────────────────────────────────────────
 const hasAnyPotentialData = computed(() => {
   const p = studentData.value?.potentialLevels;
   if (!p) return false;
@@ -177,6 +181,7 @@ const gradeLevel = computed(() => {
   return studentData.value?.gradeLevels?.current || 0;
 });
 
+// ── Event handlers ────────────────────────────────────────────────────────────
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
   const newPinStatus = togglePin(props.student.Id);

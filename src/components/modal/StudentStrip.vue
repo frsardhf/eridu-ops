@@ -137,17 +137,6 @@ watch(() => [props.activeStudentId, isExpanded.value], async () => {
   background: var(--accent-color);
 }
 
-.indicator-text {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.student-strip-container:hover .indicator-text {
-  opacity: 1;
-}
-
 /* Expanded strip */
 .student-strip {
   border-top: 1px solid var(--border-color);

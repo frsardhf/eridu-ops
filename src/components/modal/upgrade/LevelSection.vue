@@ -82,12 +82,6 @@ const {
 </template>
 
 <style scoped>
-.upgrade-level-panel {
-  width: 100%;
-  max-width: none !important;
-  align-self: stretch !important;
-}
-
 .student-level-row {
   display: grid;
   grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
@@ -205,8 +199,5 @@ const {
     grid-template-columns: 1fr;
   }
 
-  .student-level-chip-exp {
-    justify-content: flex-start;
-  }
 }
 </style>

@@ -19,12 +19,14 @@ const emit = defineEmits<{
 const { decks, initDecks, setUnit, moveUnit, swapUnits, addTeam, removeTeam, renameDeck, copyTeamToPreset, reorderTeam } = useDeckBuilder();
 onMounted(() => initDecks());
 
+// ── State ────────────────────────────────────────────────────────────────────
 const activeTab = ref(1);
 const pickerSlot = ref<{ tIdx: number; slotIdx: number } | null>(null);
 const pickerFilter = ref('');
 
 const PRESET_LABELS = ['I', 'II', 'III', 'IV', 'V'];
 
+// ── Computed ─────────────────────────────────────────────────────────────────
 const activeDeck = computed(() => decks.value.find(d => d.id === activeTab.value));
 
 // Track which specific slot is the "assist" (second occurrence of a student across the preset)
@@ -76,6 +78,7 @@ const pickerStudents = computed(() => {
     .filter(s => filter === '' || s.Name.toLowerCase().includes(filter));
 });
 
+// ── Picker ────────────────────────────────────────────────────────────────────
 function openPicker(tIdx: number, slotIdx: number) {
   if (pickerSlot.value?.tIdx === tIdx && pickerSlot.value?.slotIdx === slotIdx) {
     pickerSlot.value = null;
@@ -98,6 +101,7 @@ function clearSlotIn(tIdx: number, slotIdx: number) {
   }
 }
 
+// ── Deck management ───────────────────────────────────────────────────────────
 function switchTab(id: number) {
   activeTab.value = id;
   pickerSlot.value = null;
@@ -131,6 +135,7 @@ function closeIfBackdrop(event: MouseEvent) {
   if (event.target === event.currentTarget) emit('close');
 }
 
+// ── Export ────────────────────────────────────────────────────────────────────
 const teamsAreaRef = ref<HTMLElement | null>(null);
 const isExporting = ref(false);
 
@@ -196,6 +201,7 @@ async function exportDeckImage() {
   }
 }
 
+// ── Drag & drop ───────────────────────────────────────────────────────────────
 // Slot drag-drop — key format: "${tIdx}-${slotIdx}"
 const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isDropTarget, isRejected } =
   useDragReorder<string>(
@@ -254,7 +260,7 @@ function isTeamDropTarget(tIdx: number) {
   return teamDragOver.value === tIdx && teamDragFrom.value !== null && teamDragFrom.value !== tIdx;
 }
 
-// Copy team to another preset
+// ── Copy team ────────────────────────────────────────────────────────────────
 const copyMenuTeam = ref<number | null>(null);
 const copyToastMsg = ref('');
 let copyToastTimer: ReturnType<typeof setTimeout> | null = null;

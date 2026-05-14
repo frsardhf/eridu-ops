@@ -15,6 +15,7 @@ import { updateGearsData } from '../stores/gearsStore';
 import { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
 import { calculateAllGears } from '../utils/gearMaterialUtils';
 import { getEquipmentDataByIdSync, getResourceDataByIdSync } from '../stores/resourceCacheStore';
+import { getItemIconUrl } from './iconUtils';
 import { ResourceProps } from '../../types/resource';
 
 /**
@@ -279,7 +280,7 @@ export function getMaterialIconSrc(
 
   if (isExp && currentExpIcon) {
     const expResource = getResourceDataByIdSync(currentExpIcon);
-    return `https://schaledb.com/images/item/icon/${expResource?.Icon}.webp`;
+    return getItemIconUrl(expResource?.Icon ?? '', 'item');
   }
 
   if (isBall && currentExpBall) {

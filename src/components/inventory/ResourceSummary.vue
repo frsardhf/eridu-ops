@@ -14,7 +14,7 @@ import { useResourceTooltip } from '@/composables/useResourceTooltip';
 import { useResourceSummary, type ViewTab, type ViewMode } from '@/composables/useResourceSummary';
 import { $t } from '@/locales';
 import { getModeQuantityClass, getResourceQuantityClass } from '@/consumables/utils/colorUtils';
-import { getStudentIconUrl } from '@/consumables/utils/iconUtils';
+import { getStudentIconUrl, getItemIconUrl } from '@/consumables/utils/iconUtils';
 import '@/styles/resourceDisplay.css';
 
 const props = withDefaults(defineProps<{
@@ -600,7 +600,7 @@ watch(
             class="gift-usage-item"
           >
             <img
-              :src="`https://schaledb.com/images/item/icon/${giftItem.gift?.Icon}.webp`"
+              :src="getItemIconUrl(giftItem.gift?.Icon ?? '', 'item')"
               :alt="giftItem.gift?.Name || 'Gift'"
               class="gift-icon"
             />

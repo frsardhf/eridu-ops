@@ -4,6 +4,7 @@ import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { useFocusInput, useGradeInfoEditor } from '@/composables/useInputEditor';
 import { formatItemQuantity } from '@/consumables/utils/materialUtils';
+import { getItemIconUrl } from '@/consumables/utils/iconUtils';
 
 const props = defineProps<{
   student: StudentProps;
@@ -24,7 +25,7 @@ const { gradeState, updateValue } = useGradeInfoEditor(
 
 const elephIcon = computed(() => {
   if (!props.student?.ElephIcon) return '';
-  return `https://schaledb.com/images/item/icon/${props.student.ElephIcon}.webp`;
+  return getItemIconUrl(props.student.ElephIcon, 'item');
 });
 </script>
 
