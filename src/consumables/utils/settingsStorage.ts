@@ -52,14 +52,15 @@ export function getSettings(): AppSettings {
   try {
     const data = localStorage.getItem(SETTINGS_KEY);
     if (!data) {
-      _cachedSettings = { ...DEFAULT_SETTINGS };
-      return _cachedSettings;
+      const fresh: AppSettings = { ...DEFAULT_SETTINGS };
+      _cachedSettings = fresh;
+      return fresh;
     }
 
     const parsed = JSON.parse(data);
 
     // Merge with defaults to ensure all properties exist
-    _cachedSettings = {
+    const merged: AppSettings = {
       ...DEFAULT_SETTINGS,
       ...parsed,
       sort: {
@@ -67,7 +68,8 @@ export function getSettings(): AppSettings {
         ...parsed.sort
       }
     };
-    return _cachedSettings;
+    _cachedSettings = merged;
+    return merged;
   } catch (error) {
     console.error('Error reading settings from localStorage:', error);
     return { ...DEFAULT_SETTINGS };

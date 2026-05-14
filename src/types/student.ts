@@ -1,6 +1,7 @@
 import { EquipmentType, StudentGear } from '@/types/gear';
 import { GiftProps } from '@/types/gift';
 import { ResourceProps } from '@/types/resource';
+import { SchaleSkill } from '@/types/schaledb';
 
 export interface StudentProps {
   Id: number;
@@ -29,22 +30,7 @@ export interface StudentProps {
   BulletType: string;
   ArmorType: string;
   IsLimited: number[];
-  Skills: Record<string, {
-    Parameters: number[][];
-    Icon?: string;
-    Name?: string;
-    Desc?: string;
-    Cost?: number[];
-    Effects?: { Type: string; [key: string]: unknown }[];
-    ExtraSkills?: {
-      Icon?: string;
-      Name?: string;
-      Desc?: string;
-      Cost?: number[];
-      Parameters?: number[][];
-      Effects?: { Type: string; [key: string]: unknown }[];
-    }[];
-  }>;
+  Skills: Record<string, SchaleSkill>;
 }
 
 export interface FetchedData {

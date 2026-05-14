@@ -1,27 +1,19 @@
 import { ref } from 'vue';
 import { formatValueWithTarget } from './upgradeUtils';
-
-type Localization = {
-  SquadType: Record<string, string>;
-  BulletType: Record<string, string>;
-  ArmorType: Record<string, string>;
-  School: Record<string, string>;
-  Club: Record<string, string>;
-  BuffName: Record<string, string>;
-};
+import { SchaleLocalization, SchaleSkillBase } from '@/types/schaledb';
 
 // Shared reactive cache for localization data fetched from SchaleDB
-export const localizationData = ref<Localization | null>(null);
+export const localizationData = ref<SchaleLocalization | null>(null);
 
 /**
  * Fetch localization data from SchaleDB and populate the shared store
  * @param lang Language code (e.g. 'en', 'jp')
  * @returns Promise that resolves with the localization data
  */
-export function fetchLocalizationData(lang: string = 'en'): Promise<Record<string, any>> {
+export function fetchLocalizationData(lang: string = 'en'): Promise<SchaleLocalization> {
   return fetch(`https://schaledb.com/data/${lang}/localization.json`)
     .then(response => response.json())
-    .then(data => {
+    .then((data: SchaleLocalization) => {
       localizationData.value = data;
       return data;
     });
@@ -33,7 +25,7 @@ export function fetchLocalizationData(lang: string = 'en'): Promise<Record<strin
  * @param key The raw key from the student data.
  * @returns The localized string if found; otherwise the original key or an empty string.
  */
-export function resolveLocalized (category: keyof Localization, key?: string) {
+export function resolveLocalized (category: keyof SchaleLocalization, key?: string) {
   if (!key) return '';
   const map = localizationData.value?.[category];
   if (!map) return '';
@@ -56,14 +48,18 @@ export function fetchLocalizedBuffName(key: string): string {
 /**
  * Format skill description with parameter replacements and tag processing
  */
-export function formatSkillDescription(skill: any, current: number, target: number) {
+export function formatSkillDescription(
+  skill: SchaleSkillBase | undefined,
+  current: number,
+  target: number,
+): string {
   if (!skill?.Desc || !skill?.Parameters) return '';
 
   let formattedDesc = skill.Desc;
   const parameters = skill.Parameters;
 
   // Replace parameter placeholders with current/target values
-  parameters.forEach((paramGroup: any[], groupIndex: number) => {
+  parameters.forEach((paramGroup: number[], groupIndex: number) => {
     const currentValue = paramGroup[current - 1] ?? paramGroup[0];
     const targetValue = paramGroup[target - 1] ?? paramGroup[0];
     const placeholder = `<?${groupIndex + 1}>`;
@@ -76,10 +72,10 @@ export function formatSkillDescription(skill: any, current: number, target: numb
 
   // Handle knockback tag <kb:value>
   formattedDesc = formattedDesc.replace(/<kb:(\d+)>/g, (match: string, valueIndex: string) => {
-    const indexNum = parseInt(valueIndex);
+    const indexNum = parseInt(valueIndex, 10);
     if (!skill.Effects) return match;
 
-    const knockbackEffect = skill.Effects.find((effect: any) => effect.Type === 'Knockback');
+    const knockbackEffect = skill.Effects.find(effect => effect.Type === 'Knockback');
     if (!knockbackEffect?.Scale) return match;
 
     let knockbackSum = 0;

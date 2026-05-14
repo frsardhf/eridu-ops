@@ -14,10 +14,55 @@ import {
   getAllFormData,
   getAllStudentsAsRecord
 } from '../services/dbService';
-import type { ItemsInventoryRecord, EquipmentInventoryRecord } from '../db/database';
+import type { ItemsInventoryRecord, EquipmentInventoryRecord, FormRecord } from '../db/database';
 import { toNumericId } from './idCoercion';
 import { getSettings, saveSettings } from './settingsStorage';
 import { db } from '../db/database';
+
+/**
+ * Schema for the third-party "other site" (justin163) JSON import format.
+ * Numeric fields are strings in the source JSON; parseInt handles both.
+ */
+interface OtherSiteCharacterState {
+  bond?: string;
+  level?: string;
+  ex?: string;
+  basic?: string;
+  passive?: string;
+  sub?: string;
+  gear1?: string;
+  gear2?: string;
+  gear3?: string;
+  bond_gear?: string;
+  star?: string;
+  ue?: string;
+  book_atk?: string;
+  book_hp?: string;
+  book_heal?: string;
+}
+
+interface OtherSiteCharacter {
+  id: string | number;
+  enabled?: boolean;
+  current: OtherSiteCharacterState;
+  target: OtherSiteCharacterState;
+  eleph?: {
+    owned?: string;
+    cost?: string;
+    purchasable?: string;
+  };
+}
+
+interface OtherSiteImport {
+  characters: OtherSiteCharacter[];
+  disabled_characters?: string[];
+  owned_materials?: Record<string, number>;
+}
+
+/** parseInt with explicit radix and a fallback for missing / non-numeric input. */
+function parseIntOr(value: string | number | undefined, fallback: number): number {
+  return parseInt(String(value ?? ''), 10) || fallback;
+}
 
 /**
  * Saves student-specific form data to IndexedDB
@@ -369,7 +414,7 @@ async function importV3Format(importData: any): Promise<void> {
  */
 export async function importFromOtherSite(importText: string): Promise<boolean> {
   try {
-    const importData = JSON.parse(importText);
+    const importData = JSON.parse(importText) as OtherSiteImport;
 
     if (!importData.characters || !Array.isArray(importData.characters)) {
       throw new Error('Invalid import data format: missing characters array');
@@ -383,15 +428,15 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
 
     // Build a set of enabled character IDs so we can skip them in disabled pass
     const enabledIds = new Set<number>(
-      importData.characters.map((c: any) => parseInt(c.id, 10)).filter(Boolean)
+      importData.characters.map(c => parseInt(String(c.id), 10)).filter(Boolean)
     );
 
-    const formDataArray: any[] = [];
+    const formDataArray: FormRecord[] = [];
 
     // Process each owned (enabled) character
-    importData.characters.forEach((char: any) => {
+    importData.characters.forEach((char) => {
       if (!char.id) return;
-      const studentId = parseInt(char.id, 10);
+      const studentId = parseInt(String(char.id), 10);
       // Reject IDs not present in the SchaleDB cache — prevents phantom form records
       // from a crafted import that would poison every later iteration over `forms`.
       if (!studentId || !students[studentId]) return;
@@ -401,9 +446,9 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       const starData = studentData?.StarGrade ?? 1;
       const equipmentLevels: EquipmentLevels = {};
       const importedGearValues = [
-        { current: parseInt(char.current.gear1) || 1, target: parseInt(char.target.gear1) || 1 },
-        { current: parseInt(char.current.gear2) || 1, target: parseInt(char.target.gear2) || 1 },
-        { current: parseInt(char.current.gear3) || 1, target: parseInt(char.target.gear3) || 1 }
+        { current: parseIntOr(char.current.gear1, 1), target: parseIntOr(char.target.gear1, 1) },
+        { current: parseIntOr(char.current.gear2, 1), target: parseIntOr(char.target.gear2, 1) },
+        { current: parseIntOr(char.current.gear3, 1), target: parseIntOr(char.target.gear3, 1) }
       ];
       equipmentTypes.forEach((type, idx) => {
         const imported = importedGearValues[idx];
@@ -415,41 +460,41 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
         studentId,
         isOwned: char.enabled !== false,
         bondDetailData: {
-          currentBond: parseInt(char.current.bond) || 1
+          currentBond: parseIntOr(char.current.bond, 1)
         },
         boxFormData: {},
         characterLevels: {
-          current: parseInt(char.current.level) || 1,
-          target: parseInt(char.target.level) || 1
+          current: parseIntOr(char.current.level, 1),
+          target: parseIntOr(char.target.level, 1)
         },
         equipmentLevels,
         // exclusiveGearLevel = bond gear (unlocked at bond 15)
         exclusiveGearLevel: {
-          current: parseInt(char.current.bond_gear) || 0,
-          target: parseInt(char.target.bond_gear) || 0
+          current: parseIntOr(char.current.bond_gear, 0),
+          target: parseIntOr(char.target.bond_gear, 0)
         },
         giftFormData: {},
         // gradeLevels = star grade + UE additions (e.g. ★5 + UE3 → 8)
         gradeLevels: {
-          current: (parseInt(char.current.star) || starData) + (parseInt(char.current.ue) || 0),
-          target:  (parseInt(char.target.star)  || starData) + (parseInt(char.target.ue)  || 0)
+          current: parseIntOr(char.current.star, starData) + parseIntOr(char.current.ue, 0),
+          target:  parseIntOr(char.target.star,  starData) + parseIntOr(char.target.ue,  0)
         },
         // book_atk → attack, book_hp → maxhp, book_heal → healpower
         potentialLevels: {
-          attack:    { current: parseInt(char.current.book_atk)  || 0, target: parseInt(char.target.book_atk)  || 0 },
-          maxhp:     { current: parseInt(char.current.book_hp)   || 0, target: parseInt(char.target.book_hp)   || 0 },
-          healpower: { current: parseInt(char.current.book_heal) || 0, target: parseInt(char.target.book_heal) || 0 }
+          attack:    { current: parseIntOr(char.current.book_atk,  0), target: parseIntOr(char.target.book_atk,  0) },
+          maxhp:     { current: parseIntOr(char.current.book_hp,   0), target: parseIntOr(char.target.book_hp,   0) },
+          healpower: { current: parseIntOr(char.current.book_heal, 0), target: parseIntOr(char.target.book_heal, 0) }
         },
         skillLevels: {
-          Ex:          { current: parseInt(char.current.ex)      || 1, target: parseInt(char.target.ex)      || 1 },
-          Public:      { current: parseInt(char.current.basic)   || 1, target: parseInt(char.target.basic)   || 1 },
-          Passive:     { current: parseInt(char.current.passive) || 1, target: parseInt(char.target.passive) || 1 },
-          ExtraPassive:{ current: parseInt(char.current.sub)     || 1, target: parseInt(char.target.sub)     || 1 }
+          Ex:           { current: parseIntOr(char.current.ex,      1), target: parseIntOr(char.target.ex,      1) },
+          Public:       { current: parseIntOr(char.current.basic,   1), target: parseIntOr(char.target.basic,   1) },
+          Passive:      { current: parseIntOr(char.current.passive, 1), target: parseIntOr(char.target.passive, 1) },
+          ExtraPassive: { current: parseIntOr(char.current.sub,     1), target: parseIntOr(char.target.sub,     1) }
         },
         gradeInfos: {
-          owned:       parseInt(char.eleph?.owned)       || 0,
-          price:       parseInt(char.eleph?.cost)        || 1,
-          purchasable: parseInt(char.eleph?.purchasable) || 20
+          owned:       parseIntOr(char.eleph?.owned,       0),
+          price:       parseIntOr(char.eleph?.cost,        1),
+          purchasable: parseIntOr(char.eleph?.purchasable, 20)
         }
       };
 

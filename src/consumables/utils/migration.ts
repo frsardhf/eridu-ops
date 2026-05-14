@@ -244,7 +244,6 @@ function consolidateSettings(): void {
     const sortDirection = localStorage.getItem('sort-direction') || 'asc';
     const pinnedStudentsJson = localStorage.getItem('pinned-students');
     const pinnedStudents = pinnedStudentsJson ? JSON.parse(pinnedStudentsJson) : [];
-    const manualOrder = [];
 
     const consolidatedSettings: AppSettings = {
       theme,
@@ -254,7 +253,7 @@ function consolidateSettings(): void {
         direction: sortDirection as any
       },
       pinnedStudents,
-      manualOrder
+      isPinnedMode: false,
     };
 
     saveSettings(consolidatedSettings);
