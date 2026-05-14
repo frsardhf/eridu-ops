@@ -3,10 +3,10 @@
  *
  * In Blue Archive, some units (e.g., Hoshino Armed) have multiple "styles" that share
  * progression data (levels, bond, equipment, grades, gifts). SchaleDB stores them as
- * separate student entities linked via LinkedCharacterId.
- *
- * This module centralizes the definition and management of linked student pairs
- * to ensure consistent handling across the codebase.
+ * separate student entities, but the cross-entity relationship is NOT exposed in its
+ * public schema (FavorAlts links a base student to her alt VERSIONS — different cards
+ * with separate progression — which is a different relationship). We therefore
+ * maintain the style-pair mapping manually here.
  */
 
 export interface LinkedStudentPair {

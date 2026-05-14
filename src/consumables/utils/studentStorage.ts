@@ -392,9 +392,10 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
     importData.characters.forEach((char: any) => {
       if (!char.id) return;
       const studentId = parseInt(char.id, 10);
-      if (!studentId) return;
+      // Reject IDs not present in the SchaleDB cache — prevents phantom form records
+      // from a crafted import that would poison every later iteration over `forms`.
+      if (!studentId || !students[studentId]) return;
 
-      // Map equipment slots to SchaleDB equipment types for this student
       const studentData = students[studentId];
       const equipmentTypes = (studentData?.Equipment ?? []) as EquipmentType[];
       const starData = studentData?.StarGrade ?? 1;
@@ -461,7 +462,8 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
     const disabledIds: string[] = importData.disabled_characters ?? [];
     disabledIds.forEach((rawId: string) => {
       const studentId = parseInt(rawId, 10);
-      if (!studentId || enabledIds.has(studentId)) return;
+      // Same phantom-ID guard as the enabled pass — only persist IDs SchaleDB knows.
+      if (!studentId || !students[studentId] || enabledIds.has(studentId)) return;
       const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as any;
       formDataArray.push({ ...existingClean, studentId, isOwned: false });
     });

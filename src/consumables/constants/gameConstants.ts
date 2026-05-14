@@ -18,9 +18,10 @@ export const GEAR_UNLOCK_PUBLIC_SKILL = 2;
 /** Weapon grade ≥ 7 unlocks the WeaponPassive (Passive) skill enhancement */
 export const GEAR_UNLOCK_PASSIVE_SKILL = 7;
 
-// Skill level defaults — SchaleDB provides the real values per student; these are fallbacks
-export const DEFAULT_EX_SKILL_LEVELS = 5;
-export const DEFAULT_SKILL_LEVELS = 10;
+// Skill level maxes — SchaleDB provides the real per-student max via Parameters[0].length;
+// these are fallbacks for when that field is missing.
+export const MAX_EX_SKILL_LEVEL = 5;
+export const MAX_SKILL_LEVEL = 10;
 
 // Exclusive gear T2 material cost (Credits)
 export const EXCLUSIVE_GEAR_T2_CREDIT_COST = 500_000;

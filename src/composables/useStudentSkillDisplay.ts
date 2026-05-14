@@ -7,8 +7,8 @@ import { getPrimaryStudentId } from '@/consumables/constants/linkedStudents';
 import {
   GEAR_UNLOCK_PASSIVE_SKILL,
   GEAR_UNLOCK_PUBLIC_SKILL,
-  DEFAULT_EX_SKILL_LEVELS,
-  DEFAULT_SKILL_LEVELS,
+  MAX_EX_SKILL_LEVEL,
+  MAX_SKILL_LEVEL,
 } from '@/consumables/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';
@@ -88,9 +88,9 @@ export function useStudentSkillDisplay(
     if (skillType === 'Ex') {
       return s?.Skills?.Ex?.Parameters?.[0]?.length
         || s?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length
-        || DEFAULT_EX_SKILL_LEVELS;
+        || MAX_EX_SKILL_LEVEL;
     }
-    return s?.Skills?.[skillType]?.Parameters?.[0]?.length || DEFAULT_SKILL_LEVELS;
+    return s?.Skills?.[skillType]?.Parameters?.[0]?.length || MAX_SKILL_LEVEL;
   }
 
   function getLevelDisplay(skillType: SkillType): {
