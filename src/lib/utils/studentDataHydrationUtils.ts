@@ -1,7 +1,6 @@
-import { CREDITS_ID, creditsEntry, injectSyntheticEntities } from '@/lib/constants/syntheticEntities';
 import { ResourceProps } from '@/types/resource';
 import { StudentProps } from '@/types/student';
-import { saveItems } from '../services/dbService';
+import { saveItems, getAllItemsAsRecord } from '../services/dbService';
 import {
   getItems,
   getEquipment,
@@ -35,36 +34,6 @@ export function attachElephIcons(
   return patched;
 }
 
-export function toNumericResourceRecord(
-  resources: Record<string, ResourceProps>
-): Record<number, ResourceProps> {
-  const numericRecord: Record<number, ResourceProps> = {};
-  Object.entries(resources).forEach(([id, resource]) => {
-    numericRecord[Number(id)] = resource;
-  });
-  return numericRecord;
-}
-
-export function createResourceRecordWithSynthetic(
-  items: Record<string, ResourceProps>
-): Record<number, ResourceProps> {
-  const numericRecord = toNumericResourceRecord(items);
-  injectSyntheticEntities(numericRecord as Record<number, any>);
-  return numericRecord;
-}
-
-export function ensureSyntheticResourceEntries(
-  resources: Record<number, ResourceProps>
-): { resources: Record<number, ResourceProps>; addedSynthetic: boolean } {
-  if (resources[CREDITS_ID]) {
-    return { resources, addedSynthetic: false };
-  }
-
-  const patched = { ...resources };
-  injectSyntheticEntities(patched as Record<number, any>);
-  return { resources: patched, addedSynthetic: true };
-}
-
 export function mergeEquipmentWithExisting(
   equipment: Record<string, ResourceProps>,
   existingEquipments: Record<string, ResourceProps>
@@ -86,33 +55,22 @@ export function mergeEquipmentWithExisting(
 }
 
 /**
- * Hydrates items data by loading existing inventory from IndexedDB,
- * initializing with synthetic entities if empty, or ensuring they exist.
+ * Hydrates items data: on first run, persists SchaleDB items + initializes inventory.
+ * Synthetic entities (Credits, etc.) are NOT persisted to the items master table —
+ * they're unioned in at read time by `getItems`. First-run detection therefore
+ * uses the raw items table (which won't include synthetics).
  */
 export async function hydrateItemsData(
   items: Record<string, ResourceProps>
 ): Promise<Record<number, ResourceProps> | Record<string, ResourceProps>> {
-  const existingItems = await getItems();
+  const rawItemsTable = await getAllItemsAsRecord();
 
-  if (!existingItems || Object.keys(existingItems).length === 0) {
-    const allItems = createResourceRecordWithSynthetic(items);
-    await saveItems(Object.values(allItems));
-    await saveItemsInventory(allItems);
-    return allItems;
+  if (Object.keys(rawItemsTable).length === 0) {
+    await saveItems(Object.values(items));
+    await saveItemsInventory(items);
   }
 
-  const resourcesAsNumbers = toNumericResourceRecord(existingItems);
-  const {
-    resources: normalizedItems,
-    addedSynthetic
-  } = ensureSyntheticResourceEntries(resourcesAsNumbers);
-
-  if (addedSynthetic) {
-    await saveItems([creditsEntry]);
-    await saveItemsInventory(normalizedItems);
-  }
-
-  return normalizedItems;
+  return (await getItems()) ?? items;
 }
 
 /**

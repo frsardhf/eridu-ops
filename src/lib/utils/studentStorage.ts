@@ -18,6 +18,7 @@ import type { ItemsInventoryRecord, EquipmentInventoryRecord, FormRecord } from 
 import { toNumericId } from './idCoercion';
 import { getSettings, saveSettings } from './settingsStorage';
 import { db } from '../db/database';
+import { SYNTHETIC_ENTITIES } from '../constants/syntheticEntities';
 
 /**
  * Schema for the third-party "other site" (justin163) JSON import format.
@@ -104,8 +105,9 @@ function mergeWithInventory<T extends Record<string, any>>(
 }
 
 /**
- * Retrieves items data with inventory from IndexedDB
- * @returns Promise<Record> The items data with QuantityOwned
+ * Retrieves items data with inventory from IndexedDB.
+ * Synthetic entities (e.g. Credits) are unioned in at read time — they don't
+ * live in SchaleDB so we keep their metadata out of the items master table.
  */
 export async function getItems(): Promise<Record<string, any> | null> {
   try {
@@ -114,7 +116,19 @@ export async function getItems(): Promise<Record<string, any> | null> {
       getAllItemsInventories()
     ]);
 
-    return mergeWithInventory(items, inventories);
+    const merged = mergeWithInventory(items, inventories) as Record<string, any>;
+
+    for (const entity of Object.values(SYNTHETIC_ENTITIES)) {
+      const idStr = String(entity.Id);
+      if (!merged[idStr]) {
+        merged[idStr] = {
+          ...entity,
+          QuantityOwned: inventories[entity.Id] ?? 0,
+        };
+      }
+    }
+
+    return merged;
   } catch (error) {
     console.error('Error retrieving items from IndexedDB:', error);
     return null;

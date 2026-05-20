@@ -52,5 +52,4 @@ export const GIFT_BOX_EXP_VALUES = { 'SR': 20, 'SSR': 120 } as const;
 
 export type GiftRarity = keyof typeof GIFT_BOX_EXP_VALUES;
 
-// Re-export credits from centralized synthetic entities module for backward compatibility
-export { creditsEntry, CREDITS_ID } from '../lib/constants/syntheticEntities';
+export { CREDITS_ID } from '../lib/constants/syntheticEntities';
