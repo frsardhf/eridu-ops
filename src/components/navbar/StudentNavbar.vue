@@ -1,28 +1,25 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { HeaderProps, SortOption } from '@/types/header';
-import { useNavbarSettings, type Language } from '@/lib/hooks/useNavbarSettings';
+import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
 import ImportModal from './ImportModal.vue';
-import CreditsModal from './CreditsModal.vue';
-import ContactModal from './ContactModal.vue';
 import InventoryScreenshotModal from './InventoryScreenshotModal.vue';
 import FilterPanel from './FilterPanel.vue';
+import GlobalControls from './GlobalControls.vue';
 import { StudentFilters, countActiveFilters } from '@/types/filter';
+import '@/styles/navbar.css';
 
 const props = defineProps<HeaderProps>();
 
-const { currentLanguage, setLanguage, THEME_OPTIONS, exportData } = useNavbarSettings();
+const { exportData } = useNavbarSettings();
 
 const dropdownOpen = ref(false);
 const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
-const showCreditsModal = ref(false);
-const showContactModal = ref(false);
 const showScreenshotModal = ref(false);
-const showThemeTray = ref(false);
 const showFilterPanel = ref(false);
 
 const activeFilterCount = computed(() =>
@@ -64,7 +61,6 @@ function updateSearch(event: Event) {
 
 function onSelectTheme(themeId: ThemeId) {
   emit('setTheme', themeId);
-  showThemeTray.value = false;
 }
 
 function updateSortOption(option: SortOption) {
@@ -93,32 +89,13 @@ function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 }
 
-function toggleThemeTray(event: Event) {
-  event.stopPropagation();
-  showThemeTray.value = !showThemeTray.value;
-}
-
-function changeLanguage(language: Language) {
-  setLanguage(language);
-  mobileMenuOpen.value = false;
-  emit('reinitializeData'); // Trigger data reinitialization with new language
-}
-
 function handleClickOutside(event: MouseEvent) {
   const dropdown = document.getElementById('sort-dropdown');
   const mobileMenu = document.getElementById('mobile-menu');
-  const themeTray = document.getElementById('theme-tray');
-  const themeTrayToggle = document.getElementById('theme-tray-toggle');
 
   if (dropdown && !dropdown.contains(event.target as Node)) {
     if (dropdownOpen.value) dropdownOpen.value = false;
     if (showFilterPanel.value) showFilterPanel.value = false;
-  }
-
-  if (themeTray && !themeTray.contains(event.target as Node) &&
-      !themeTrayToggle?.contains(event.target as Node) &&
-      showThemeTray.value) {
-    showThemeTray.value = false;
   }
 
   if (mobileMenu && !mobileMenu.contains(event.target as Node) &&
@@ -142,15 +119,6 @@ function closeImportModal() {
   showImportModal.value = false;
 }
 
-function openCreditsModal() {
-  showCreditsModal.value = true;
-  mobileMenuOpen.value = false;
-}
-
-function closeCreditsModal() {
-  showCreditsModal.value = false;
-}
-
 function handleImportSuccess() {
   emit('dataImported');
 }
@@ -168,27 +136,27 @@ function handleInventoryUpdated() {
   emit('reinitializeData');
 }
 
-function openContactModal() {
-  showContactModal.value = true;
-  mobileMenuOpen.value = false;
-}
-
-function closeContactModal() {
-  showContactModal.value = false;
-}
-
 useClickOutside(handleClickOutside);
 </script>
 
 <template>
-  <header class="page-header">
-    <div class="header-content">
+  <header class="app-navbar">
+    <div class="app-navbar-content header-content">
       <div class="header-main">
         <div class="header-title-section mobile-hidden">
-          <h1 class="header-title">{{ $t('students') }}</h1>
-          <div class="header-divider"></div>
+          <RouterLink to="/" class="app-navbar-brand" aria-label="EriduOps home">
+            <span class="app-navbar-brand-eridu">Eridu</span><span class="app-navbar-brand-ops">Ops</span>
+          </RouterLink>
+          <nav class="header-page-nav">
+            <RouterLink to="/students" class="app-navbar-link" active-class="active">
+              {{ $t('students') }}
+            </RouterLink>
+            <RouterLink to="/bonds" class="app-navbar-link" active-class="active">
+              {{ $t('bonds') }}
+            </RouterLink>
+          </nav>
         </div>
-        
+
         <div class="search-section">
           <div class="search-container" id="sort-dropdown">
             <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
@@ -278,45 +246,9 @@ useClickOutside(handleClickOutside);
         </div>
 
         <div class="right-controls">
-          <div class="theme-tray-wrapper">
-            <button
-              id="theme-tray-toggle"
-              class="theme-tray-toggle"
-              type="button"
-              aria-label="Theme colors"
-              @click="toggleThemeTray"
-            >
-              <span class="theme-tray-toggle-dot"></span>
-            </button>
+          <GlobalControls :current-theme="currentTheme" @set-theme="onSelectTheme" />
 
-            <div
-              id="theme-tray"
-              class="theme-tray"
-              :class="{ open: showThemeTray }"
-            >
-              <div class="theme-swatch-row" role="radiogroup" aria-label="Theme">
-                <button
-                  v-for="theme in THEME_OPTIONS"
-                  :key="theme.id"
-                  class="theme-swatch"
-                  :class="{ active: currentTheme === theme.id }"
-                  type="button"
-                  :title="theme.label"
-                  :aria-label="`Theme ${theme.label}`"
-                  :aria-checked="currentTheme === theme.id"
-                  role="radio"
-                  @click="onSelectTheme(theme.id)"
-                >
-                  <span
-                    class="theme-swatch-inner"
-                    :style="{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }"
-                  ></span>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <button 
+          <button
             id="mobile-menu-toggle"
             class="hamburger-button"
             @click="toggleMobileMenu"
@@ -338,27 +270,6 @@ useClickOutside(handleClickOutside);
       class="mobile-menu open"
     >
       <div class="mobile-menu-container">
-        <!-- Language section for mobile -->
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">Language / 言語</h3>
-          <div class="mobile-menu-options">
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentLanguage === 'en' }"
-              @click="changeLanguage('en')"
-            >
-              English
-            </button>
-            <button 
-              class="mobile-menu-option" 
-              :class="{ 'active': currentLanguage === 'jp' }"
-              @click="changeLanguage('jp')"
-            >
-              日本語
-            </button>
-          </div>
-        </div>
-        
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
           <div class="mobile-menu-options">
@@ -388,49 +299,15 @@ useClickOutside(handleClickOutside);
             </button>
           </div>
         </div>
-        
-        <div class="mobile-menu-section">
-          <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
-          <div class="mobile-menu-options">
-            <button class="mobile-menu-option" @click="openContactModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-              </svg>
-              {{ $t('contact') }}
-            </button>
-            <button class="mobile-menu-option" @click="openCreditsModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"></path>
-                <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
-              </svg>
-              {{ $t('credits') }}
-            </button>
-          </div>
-        </div>
       </div>
     </div>
     
-    <!-- Import Modal -->
-    <ImportModal 
+    <ImportModal
       v-if="showImportModal"
       @close="closeImportModal"
       @import-success="handleImportSuccess"
     />
-    
-    <!-- Credits Modal -->
-    <CreditsModal
-      v-if="showCreditsModal"
-      @close="closeCreditsModal"
-    />
 
-    <!-- Contact Modal -->
-    <ContactModal
-      v-if="showContactModal"
-      @close="closeContactModal"
-    />
-
-    <!-- Inventory Screenshot Modal -->
     <InventoryScreenshotModal
       v-if="showScreenshotModal"
       @close="closeScreenshotModal"
@@ -440,58 +317,30 @@ useClickOutside(handleClickOutside);
 </template>
 
 <style scoped>
-.page-header {
-  padding: 1.5rem 2rem;
-  background: linear-gradient(
-    to right,
-    var(--header-gradient-start),
-    var(--header-gradient-end)
-  );
-  border-bottom: 1px solid var(--border-color);
-  position: relative;
-}
-
-.header-content {
-  max-width: 1600px;
-  margin: 0 auto;
-  width: 100%;
-}
-
 .header-main {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 520px) 1fr;
   align-items: center;
+  gap: 12px;
 }
 
 .header-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-page-nav {
+  display: flex;
+  gap: 4px;
   flex-shrink: 0;
-}
-
-.header-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  padding: 0;
-  letter-spacing: -0.025em;
-}
-
-.header-divider {
-  height: 3px;
-  width: 60px;
-  background: var(--accent-color);
-  margin-top: 0.5rem;
-  border-radius: 2px;
 }
 
 .search-section {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-grow: 1;
+  min-width: 0;
   justify-content: center;
-  max-width: 600px;
-  margin: 0 1rem;
 }
 
 .search-container {
@@ -746,6 +595,7 @@ useClickOutside(handleClickOutside);
 .right-controls {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 15px;
 }
 
@@ -769,99 +619,6 @@ useClickOutside(handleClickOutside);
 
 .data-button:hover {
   background-color: var(--background-tertiary);
-}
-
-.theme-swatch-row {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding: 7px 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--accent-color-rgb), 0.28);
-  background: var(--background-primary);
-  background: color-mix(in srgb, var(--background-primary) 80%, white 20%);
-  box-shadow: 0 8px 20px rgba(var(--background-hover-rgb), 0.22);
-}
-
-.theme-tray-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.theme-tray-toggle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(var(--accent-color-rgb), 0.4);
-  background: var(--background-secondary);
-  background: color-mix(in srgb, var(--background-secondary) 78%, white 22%);
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.theme-tray-toggle-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  background: linear-gradient(135deg, #4f46e5, #7c3aed 40%, #e61b72 70%, #ff6a00);
-}
-
-.theme-tray {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: -2px;
-  opacity: 0;
-  transform: translateY(-6px) scale(0.96);
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 1200;
-}
-
-.theme-tray::before {
-  content: '';
-  position: absolute;
-  top: -7px;
-  right: 12px;
-  width: 12px;
-  height: 12px;
-  background: var(--background-primary);
-  border-left: 1px solid rgba(var(--accent-color-rgb), 0.28);
-  border-top: 1px solid rgba(var(--accent-color-rgb), 0.28);
-  transform: rotate(45deg);
-}
-
-.theme-tray.open {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
-
-.theme-swatch {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid transparent;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-}
-
-.theme-swatch-inner {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.theme-swatch.active {
-  border-color: var(--accent-color);
-  transform: scale(1.05);
 }
 
 .hamburger-button {
@@ -990,33 +747,20 @@ useClickOutside(handleClickOutside);
   flex-shrink: 0;
 }
 
-.mobile-hidden {
-  display: block;
-}
-
 @media screen and (max-width: 768px) {
-  .page-header {
-    padding: 1rem;
-  }
-  
   .header-main {
+    display: flex;
     align-items: center;
+    gap: 12px;
   }
-  
+
   .mobile-hidden {
     display: none;
   }
-  
-  .header-title {
-    font-size: 1.5rem;
-  }
-  
-  .header-divider {
-    width: 40px;
-  }
-  
+
   .search-section {
-    max-width: none;
+    flex-grow: 1;
+    min-width: 0;
     gap: 5px;
   }
   
@@ -1043,35 +787,6 @@ useClickOutside(handleClickOutside);
 
   .right-controls {
     gap: 8px;
-  }
-
-  .theme-swatch-row {
-    gap: 2px;
-    padding: 5px 7px;
-  }
-
-  .theme-tray-toggle {
-    width: 28px;
-    height: 28px;
-  }
-
-  .theme-tray-toggle-dot {
-    width: 13px;
-    height: 13px;
-  }
-
-  .theme-swatch {
-    width: 18px;
-    height: 18px;
-  }
-
-  .theme-swatch-inner {
-    width: 13px;
-    height: 13px;
-  }
-
-  .theme-tray {
-    right: -4px;
   }
 }
 

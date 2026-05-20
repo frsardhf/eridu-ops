@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import { $t } from '@/locales';
 </script>
 
 <template>
   <div class="bonds-page">
-    <div class="bonds-stub">
-      <h1>{{ $t('bonds') }}</h1>
-      <p class="muted">Coming soon.</p>
-      <RouterLink to="/" class="back-link">← Home</RouterLink>
-    </div>
+    <GlobalNavbar />
+
+    <main class="bonds-body">
+      <div class="bonds-stub">
+        <h1>{{ $t('bonds') }}</h1>
+        <p class="muted">Coming soon.</p>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -18,6 +22,14 @@ import { $t } from '@/locales';
   inset: 0;
   background-color: var(--background-primary);
   color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bonds-body {
+  flex: 1;
+  overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,16 +50,5 @@ import { $t } from '@/locales';
 
 .muted {
   color: var(--text-secondary);
-}
-
-.back-link {
-  color: var(--accent-color);
-  text-decoration: none;
-  font-weight: 500;
-  margin-top: 8px;
-}
-
-.back-link:hover {
-  text-decoration: underline;
 }
 </style>

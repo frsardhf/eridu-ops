@@ -4,6 +4,11 @@ import { currentLanguage, Language } from '../lib/stores/localizationStore';
 // Translation strings for each supported language
 export const translations = {
   en: {
+    // Landing
+    landingSubtitle: "Blue Archive Student Progression Planner",
+    studentsDesc: "Track bond levels, skill upgrades, gear progression, and material costs.",
+    bondsDesc: "Dedicated bond tracking and gift planning. Coming soon.",
+
     // Navbar
     students: "Students",
     bonds: "Bonds",
@@ -380,6 +385,11 @@ export const translations = {
     },
   },
   jp: {
+    // Landing
+    landingSubtitle: "ブルーアーカイブ 生徒育成プランナー",
+    studentsDesc: "絆レベル、スキル強化、装備の進捗、素材コストを追跡。",
+    bondsDesc: "絆追跡とギフトプランニング。近日公開。",
+
     // Navbar
     students: "生徒",
     bonds: "絆",
