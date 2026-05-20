@@ -1,5 +1,4 @@
 import { ref, computed, unref, type Ref } from 'vue';
-import { getFormData, saveFormData } from '../utils/studentStorage';
 import type { FormRecord } from '../db/database';
 import { toNumericId } from '../utils/idCoercion';
 
@@ -7,26 +6,10 @@ import { toNumericId } from '../utils/idCoercion';
 // writes use the spread pattern below for clarity (also reassigns the top-level ref).
 export const studentDataStore = ref<Record<number, FormRecord>>({});
 
-export async function updateStudentData(studentId: string | number) {
-  const numericId = toNumericId(studentId);
-  const data = await getFormData(studentId);
-  if (data) {
-    studentDataStore.value = {
-      ...studentDataStore.value,
-      [numericId]: data as FormRecord
-    };
-  }
-}
-
-// Sync read — call updateStudentData() first to ensure data is loaded.
+// Sync read — populate the store first via setStudentDataDirect / batchSetStudentData.
 export function getStudentData(studentId: string | number): FormRecord | undefined {
   const numericId = toNumericId(studentId);
   return studentDataStore.value[numericId];
-}
-
-export async function saveStudentFormData(studentId: string | number, formData: Partial<FormRecord>) {
-  await saveFormData(studentId, formData);
-  await updateStudentData(studentId);
 }
 
 export function clearStudentData(studentId: string | number) {
@@ -47,7 +30,7 @@ export function useStudentFormData(studentId: Ref<number> | number) {
 }
 
 /**
- * Synchronous direct write — bypasses the IndexedDB load step in updateStudentData.
+ * Synchronous direct write — caller provides the new record (no IndexedDB read).
  */
 export function setStudentDataDirect(studentId: number, data: FormRecord) {
   studentDataStore.value = {

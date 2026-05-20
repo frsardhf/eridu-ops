@@ -16,7 +16,7 @@ import {
 } from '../utils/studentStorage';
 import dataTable from '../../data/data.json';
 import { updateMaterialsData } from '../stores/materialsStore';
-import { updateStudentData, setStudentDataDirect } from '../stores/studentStore';
+import { setStudentDataDirect } from '../stores/studentStore';
 import { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
 import { MAX_POTENTIAL_LEVEL } from '../utils/upgradeUtils';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
@@ -85,9 +85,6 @@ export function useStudentUpgrade(props: {
     targetSkillsMaxed.value = checked;
 
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
   };
 
   const toggleMaxTargetSkills = (checked: boolean) => {
@@ -110,9 +107,6 @@ export function useStudentUpgrade(props: {
     allSkillsMaxed.value = checkAllSkillsMaxed();
 
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
   };
 
   const toggleMaxAllPotentials = (checked: boolean) => {
@@ -131,9 +125,6 @@ export function useStudentUpgrade(props: {
     targetPotentialsMaxed.value = checked;
 
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
   };
 
   const toggleMaxTargetPotentials = (checked: boolean) => {
@@ -150,9 +141,6 @@ export function useStudentUpgrade(props: {
     allPotentialsMaxed.value = checkAllPotentialsMaxed();
 
     saveToIndexedDB();
-    if (props.student) {
-      updateStudentData(props.student.Id);
-    }
   };
 
   watch(skillLevels, () => {
@@ -183,8 +171,6 @@ export function useStudentUpgrade(props: {
         potentialLevels: potentialLevels.value,
       }),
       onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
-      afterFlush:   () => updateStudentData(props.student.Id),
-      afterLoad:    () => updateStudentData(props.student.Id),
       watchSources: [characterLevels, skillLevels, potentialLevels],
     });
 
@@ -212,41 +198,24 @@ export function useStudentUpgrade(props: {
   const handleLevelUpdate = (current: number, target: number) => {
     characterLevels.value.current = current;
     characterLevels.value.target = target;
-
-    if (props.student && props.isVisible) {
-      updateStudentData(props.student.Id);
-    }
   };
 
   const handleSkillUpdate = (type: SkillType, current: number, target: number) => {
-    if (current >= 1 && target >= current) {
-      if (skillLevels.value[type]) {
-        skillLevels.value[type].current = current;
-        skillLevels.value[type].target = target;
-
-    if (props.student && props.isVisible) {
-      updateStudentData(props.student.Id);
-        }
-      }
+    if (current >= 1 && target >= current && skillLevels.value[type]) {
+      skillLevels.value[type].current = current;
+      skillLevels.value[type].target = target;
     }
   };
 
   const handlePotentialUpdate = (type: PotentialType, current: number, target: number) => {
-    if (current >= 0 && target >= current) {
-      if (potentialLevels.value[type]) {
-        potentialLevels.value[type].current = current;
-        potentialLevels.value[type].target = target;
-
-    if (props.student && props.isVisible) {
-      updateStudentData(props.student.Id);
-        }
-      }
+    if (current >= 0 && target >= current && potentialLevels.value[type]) {
+      potentialLevels.value[type].current = current;
+      potentialLevels.value[type].target = target;
     }
   };
 
   function closeModal() {
     saveToIndexedDB();
-    updateStudentData(props.student.Id);
     emit('close');
   }
 

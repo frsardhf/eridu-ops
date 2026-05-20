@@ -11,7 +11,7 @@ import {
   GradeLevels
 } from '../../types/gear';
 import { Material } from '../../types/upgrade';
-import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
+import { setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { updateGearsData } from '../stores/gearsStore';
 import type { ExclusiveGearLevel } from '../../types/gear';
 import { calculateAllGears, getMaxTierForTypeSync, getElephsForGrade } from '../utils/gearMaterialUtils';
@@ -86,7 +86,6 @@ export function useStudentGear(props: {
     targetGearsMaxed.value = checked;
 
     saveToIndexedDB();
-    updateStudentData(props.student.Id);
   };
 
   const toggleMaxTargetGears = (checked: boolean) => {
@@ -106,7 +105,6 @@ export function useStudentGear(props: {
     allGearsMaxed.value = checkAllGearsMaxed();
 
     saveToIndexedDB();
-    updateStudentData(props.student.Id);
   };
 
   // Watch for equipment level changes to update maxed flags
@@ -141,8 +139,6 @@ export function useStudentGear(props: {
         exclusiveGearLevel: { ...exclusiveGearLevel.value },
       }),
       onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
-      afterFlush:   () => updateStudentData(props.student.Id),
-      afterLoad:    () => updateStudentData(props.student.Id),
       watchSources: [equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel],
     });
 
@@ -170,44 +166,27 @@ export function useStudentGear(props: {
       if (equipmentLevels.value[type]) {
         equipmentLevels.value[type].current = current;
         equipmentLevels.value[type].target = target;
-
-        if (props.isVisible) {
-          updateStudentData(props.student.Id);
-        }
       } else {
         console.error('Equipment type not found in levels:', type);
       }
     }
   };
 
-  // Function to handle updates for grade levels
   const handleGradeUpdate = (current: number, target: number) => {
-    if (current >= 1 && current <= 9 && target >= current && target <= 9) {
-      if (gradeLevels.value) {
-        gradeLevels.value.current = current;
-        gradeLevels.value.target = target;
-
-        if (props.isVisible) {
-          updateStudentData(props.student.Id);
-        }
-      }
+    if (current >= 1 && current <= 9 && target >= current && target <= 9 && gradeLevels.value) {
+      gradeLevels.value.current = current;
+      gradeLevels.value.target = target;
     }
   };
 
-  // Function to handle updates for grade info
   const handleGradeInfoUpdate = (owned: number, price: number, purchasable: number) => {
     if (gradeInfos.value) {
       gradeInfos.value.owned = owned;
       gradeInfos.value.price = price;
       gradeInfos.value.purchasable = purchasable;
-
-      if (props.isVisible) {
-        updateStudentData(props.student.Id);
-      }
     }
   };
 
-  // Function to handle updates for exclusive gear level
   const handleExclusiveGearUpdate = (current: number, target: number) => {
     const maxTier = maxUnlockableGearTier.value;
 
@@ -220,7 +199,6 @@ export function useStudentGear(props: {
 
     if (props.isVisible) {
       saveToIndexedDB();
-      updateStudentData(props.student.Id);
     }
   };
 

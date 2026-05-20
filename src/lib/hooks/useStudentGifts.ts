@@ -4,7 +4,7 @@ import { BondDetailDataProps, DEFAULT_BOND_DETAIL, GiftProps } from '../../types
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
-import { updateStudentData, setStudentDataDirect, studentDataStore } from '../stores/studentStore';
+import { setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
 import { getAllocatedGifts } from './useGiftCalculation';
 import { getAllGearsData } from '../stores/gearsStore';
@@ -78,7 +78,6 @@ export function useStudentGifts(props: {
         bondDetailData:   bondDetailData.value,
       }),
       onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
-      afterFlush:   () => updateStudentData(props.student.Id),
       afterLoad:    () => {
         // Clear undo/redo history so loaded state isn't undoable
         undoStack.value  = [];
