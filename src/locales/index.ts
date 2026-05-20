@@ -6,6 +6,7 @@ export const translations = {
   en: {
     // Navbar
     students: "Students",
+    bonds: "Bonds",
     searchStudents: "Search students...",
     sort: {
       id: "ID",
@@ -381,6 +382,7 @@ export const translations = {
   jp: {
     // Navbar
     students: "生徒",
+    bonds: "絆",
     searchStudents: "生徒を検索...",
     sort: {
       id: "ID",

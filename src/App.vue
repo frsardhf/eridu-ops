@@ -1,6 +1,5 @@
 <script setup>
 import { watch } from 'vue';
-import StudentDisplay from '@/components/display/StudentDisplay.vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { preloadAllStudentsData } from '@/lib/utils/materialUtils';
 
@@ -20,5 +19,5 @@ watch(
 </script>
 
 <template>
-  <StudentDisplay />
+  <RouterView />
 </template>
