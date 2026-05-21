@@ -88,6 +88,8 @@ export const translations = {
     // Bond component
     currentBond: "Current Bond",
     editBondLevel: "Click to edit bond level",
+    openInBondsPage: "Open in Bonds page",
+    returnToStudent: "Return to student",
     expToNextLevel: "XP to next level",
     totalExp: "Total EXP",
     
@@ -493,6 +495,8 @@ export const translations = {
     // Bond component
     currentBond: "現在の絆",
     editBondLevel: "クリックして絆レベルを編集",
+    openInBondsPage: "絆ページで開く",
+    returnToStudent: "生徒に戻る",
     expToNextLevel: "次のレベルまで",
     totalExp: "総経験値",
     

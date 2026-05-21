@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
 import ToolsRail from '@/components/display/ToolsRail.vue';
@@ -43,6 +44,7 @@ const {
   availableSchools,
   setStudentFilters,
   clearStudentFilters,
+  isReady,
 } = useStudentData()
 
 const selectedStudent = ref<StudentProps | null>(null)
@@ -84,6 +86,39 @@ function closeModal() {
 function handleNavigate(student: StudentProps) {
   selectedStudent.value = prepareStudentForModal(student);
 }
+
+// ── Reverse deep-link from /bonds?focus=<id> back to /students ──────────────
+const route = useRoute();
+const router = useRouter();
+
+async function openModalFromQuery() {
+  const focusParam = route.query.focus;
+  const focusId = typeof focusParam === 'string' ? parseInt(focusParam, 10) : NaN;
+  if (!Number.isFinite(focusId)) return;
+
+  const student = studentData.value[focusId];
+  if (!student) {
+    router.replace({ path: '/students', query: {} });
+    return;
+  }
+
+  await nextTick();
+  openModal({ student, originRect: null });
+  router.replace({ path: '/students', query: {} });
+}
+
+onMounted(() => {
+  if (isReady.value) {
+    openModalFromQuery();
+  } else {
+    const stop = watch(isReady, (v) => {
+      if (v) {
+        stop();
+        openModalFromQuery();
+      }
+    });
+  }
+});
 
 function handleSearchUpdate(value: string) {
   updateSearchQuery(value);

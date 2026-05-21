@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, toRef } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStudentGifts } from '@/lib/hooks/useStudentGifts';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked, getStudentFavorMaterialNeeds } from '@/lib/hooks/useBondsTracked';
@@ -93,10 +94,20 @@ function onEnableGiftGrid() {
 function onHideGiftGrid() {
   disableGiftPlanning(props.student.Id);
 }
+
+// Reverse deep-link: jump back to /students with this student's modal opened.
+const router = useRouter();
+function returnToStudentPage() {
+  router.push(`/students?focus=${props.student.Id}`);
+}
 </script>
 
 <template>
   <div class="bonds-editor">
+    <button type="button" class="be-return-link" @click="returnToStudentPage">
+      ← {{ $t('returnToStudent') }}
+    </button>
+
     <div class="be-header">
       <div class="be-icon-wrap">
         <img :src="getStudentCollectionUrl(student.Id)" :alt="student.Name" class="be-icon" />
@@ -219,6 +230,7 @@ function onHideGiftGrid() {
 
 .be-icon-wrap {
   flex-shrink: 0;
+  width: 200px;
   border-radius: 12px;
   overflow: hidden;
   background: var(--background-primary);
@@ -337,6 +349,21 @@ function onHideGiftGrid() {
   color: var(--accent-color);
 }
 
+.be-return-link {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.be-return-link:hover {
+  color: var(--accent-color);
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .be-header {
@@ -347,7 +374,7 @@ function onHideGiftGrid() {
   .be-icon-wrap {
     align-self: flex-start;
     width: 96px;
-    height: auto;
+    height: 108px;  /* matches collection portrait's ~200/226 aspect at 96px wide */
   }
 }
 </style>

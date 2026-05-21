@@ -13,7 +13,7 @@ const props = defineProps<{
   /** Required in level-pill mode (the default). Ignored when bondProgress is true. */
   characterLevels?: { current: number; target: number };
   currentBond: number;
-  newBondLevel: number;
+  newBondLevel?: number;
   hasStyleSwitch?: boolean;
   activeStyleId?: number;
   primaryStudentId?: number;
@@ -27,12 +27,21 @@ const props = defineProps<{
   totalExp?: number;
   /** Suppresses the wrapping card chrome (BondsPage embeds inline). */
   flat?: boolean;
+  /**
+   * Modal mode: clicking the bond icon emits `navigate-bond` instead of
+   * starting an inline edit. Caller handles the route push to /bonds.
+   * Mutually exclusive with `bondProgress`.
+   */
+  enableBondNavigate?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'toggle-style'): void;
   (e: 'update-bond', value: number): void;
+  (e: 'navigate-bond'): void;
 }>();
+
+const effectiveNewBondLevel = computed(() => props.newBondLevel ?? props.currentBond);
 
 const studentRef = toRef(() => props.student);
 
@@ -44,7 +53,7 @@ const { showLevelArrow } = useStudentLevels(
   () => props.characterLevels ?? { current: 0, target: 0 }
 );
 
-const showBondArrow = computed(() => props.currentBond !== props.newBondLevel);
+const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel.value);
 
 // Inline bond editor — only used when bondProgress is true. Modal Bond tab
 // keeps its own editor in BondSection so this stays inert in level mode.
@@ -69,6 +78,19 @@ const styleModeLabel = computed(() => {
 
   return props.activeStyleId === 2 ? 'II' : 'I';
 });
+
+const isBondInteractive = computed(() => !!props.bondProgress || !!props.enableBondNavigate);
+
+const bondInlineTooltip = computed(() => {
+  if (props.bondProgress) return $t('editBondLevel');
+  if (props.enableBondNavigate) return $t('openInBondsPage');
+  return undefined;
+});
+
+function onBondInlineClick() {
+  if (props.bondProgress) startEdit();
+  else if (props.enableBondNavigate) emit('navigate-bond');
+}
 </script>
 
 <template>
@@ -124,14 +146,14 @@ const styleModeLabel = computed(() => {
         <div class="level-pill" :class="levelPillClass">
           <div
             class="bond-inline"
-            :class="{ updating: showBondArrow, 'bond-inline--editable': bondProgress }"
-            :role="bondProgress ? 'button' : undefined"
-            :tabindex="bondProgress ? 0 : undefined"
-            :title="bondProgress ? $t('editBondLevel') : undefined"
-            :aria-label="bondProgress ? $t('editBondLevel') : undefined"
-            @click="bondProgress && startEdit()"
-            @keydown.enter.prevent="bondProgress && startEdit()"
-            @keydown.space.prevent="bondProgress && startEdit()"
+            :class="{ updating: showBondArrow, 'bond-inline--editable': isBondInteractive }"
+            :role="isBondInteractive ? 'button' : undefined"
+            :tabindex="isBondInteractive ? 0 : undefined"
+            :title="bondInlineTooltip"
+            :aria-label="bondInlineTooltip"
+            @click="onBondInlineClick"
+            @keydown.enter.prevent="onBondInlineClick"
+            @keydown.space.prevent="onBondInlineClick"
           >
             <img
               :src="getBondIconUrl()"
@@ -164,7 +186,7 @@ const styleModeLabel = computed(() => {
               />
               <template v-if="showBondArrow">
                 <span class="level-arrow">→</span>
-                <span class="level-number target">{{ newBondLevel }}</span>
+                <span class="level-number target">{{ effectiveNewBondLevel }}</span>
               </template>
             </template>
             <template v-else-if="characterLevels">

@@ -1,24 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRef, CSSProperties } from 'vue';
+import { ref, computed, watch, CSSProperties } from 'vue';
+import { useRouter } from 'vue-router';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import { studentDataStore } from '@/lib/stores/studentStore';
 import { useStudentOwnership } from '@/lib/hooks/useStudentOwnership';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import { useStudentGear } from '@/lib/hooks/useStudentGear';
-import { useStudentGifts } from '@/lib/hooks/useStudentGifts';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentUpgrade } from '@/lib/hooks/useStudentUpgrade';
 import { useStudentData } from '@/lib/hooks/useStudentData';
+import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
 import { initializeStudentFormData } from '@/lib/services/studentFormService';
 import { setStudentDataDirect } from '@/lib/stores/studentStore';
 import { hasLinkedPartner, getLinkedPartnerId } from '@/lib/constants/linkedStudents';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
-import BondSection from '@/components/modal/bond/BondSection.vue';
-import GiftOption from '@/components/modal/bond/GiftOption.vue';
-import GiftGrid from '@/components/modal/bond/GiftGrid.vue';
-import ConvertMaterialModal from '@/components/modal/bond/ConvertMaterialModal.vue';
-import SyncGiftsModeModal from '@/components/modal/bond/SyncGiftsModeModal.vue';
 import EquipmentGrowthSection from '@/components/modal/gear/EquipmentGrowthSection.vue';
 import ElephEligmaSection from '@/components/modal/gear/ElephEligmaSection.vue';
 import ExclusiveWeaponSection from '@/components/modal/gear/ExclusiveWeaponSection.vue';
@@ -43,16 +39,14 @@ import { deductXpItems, simulateXpDeduction } from '@/lib/utils/upgradeUtils';
 import { sortMaterials } from '@/lib/utils/materialUtils';
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
 import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/lib/stores/resourceCacheStore';
-import { YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID } from '@/types/resource';
 import '@/styles/studentModal.css'
 
-type ModalTab = 'info' | 'bond' | 'upgrade' | 'gear';
+type ModalTab = 'info' | 'upgrade' | 'gear';
 
 const MODAL_TAB_ORDER: Record<ModalTab, number> = {
   info: 0,
-  bond: 1,
-  upgrade: 2,
-  gear: 3
+  upgrade: 1,
+  gear: 2
 };
 
 const props = defineProps<{
@@ -130,22 +124,14 @@ const styleStudent = computed<StudentProps | null>(() => {
 const activeStyleStudent = computed(() => styleStudent.value ?? displayedStudent.value);
 
 // ── Hooks ────────────────────────────────────────────────────────────────────
-const {
-  currentBond, newBondLevel, totalCumulativeExp, remainingXp: bondRemainingXp,
-  giftFormData, boxFormData, nonFavorGiftsMap, shouldShowGiftGrade,
-  closeModal, convertBoxes, handleBondInput, handleGiftInput, handleBoxInput,
-  showConvertModal, convertModalNeeded, confirmConversion, cancelConversion,
-  showSyncGiftsModal, syncGifts,
-  canUndo, canRedo, undoChanges, redoChanges, resetGifts,
-  loadFromIndexedDB: loadGiftData,
-} = useStudentGifts(toRef(props, 'student'), {
-  isVisible: () => !!props.isVisible,
-  onClose: () => emit('close'),
+const currentBond = computed(() => {
+  const id = displayedStudent.value?.Id;
+  if (!id) return 1;
+  return studentDataStore.value[id]?.bondDetailData?.currentBond ?? 1;
 });
 
-const canConvert = computed(() =>
-  (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 && (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2
-);
+const router = useRouter();
+const { addStudent: addBondsTracked } = useBondsTracked();
 
 const {
   characterLevels, skillLevels, potentialLevels, allMaterialsNeeded,
@@ -203,7 +189,17 @@ function navigateToNext() {
 async function handleClose() {
   (document.activeElement as HTMLElement)?.blur();
   await saveUpgradeBeforeClose();
-  closeModal();
+  emit('close');
+}
+
+// Bond chip → /bonds deep-link. Ensure the student is in the tracked list
+// so the focus query param actually lands on their card, then route.
+function handleNavigateToBonds() {
+  const id = displayedStudent.value?.Id;
+  if (!id) return;
+  addBondsTracked(id);
+  emit('close');
+  router.push(`/bonds?focus=${id}`);
 }
 
 function handleStyleToggle() {
@@ -537,7 +533,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
     setStudentDataDirect(student.Id, formData);
 
     await Promise.all([
-      loadGiftData(),
       loadUpgradeData(),
       loadGearData(),
       loadItems(),
@@ -598,19 +593,17 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
             <ModalHeader class="student-hero-card" :student="activeStyleStudent!" />
           </div>
 
-          <div
-            class="right-column right-column--scrollable"
-            :class="{ 'right-column--bond': activeTab === 'bond' }"
-          >
+          <div class="right-column right-column--scrollable">
             <MetaHeader
               :student="activeStyleStudent!"
               :character-levels="characterLevels"
               :current-bond="currentBond"
-              :new-bond-level="newBondLevel"
               :has-style-switch="hasStyleSwitch"
               :active-style-id="activeStyleId ?? displayedStudent?.Id"
               :primary-student-id="displayedStudent?.Id"
+              enable-bond-navigate
               @toggle-style="handleStyleToggle"
+              @navigate-bond="handleNavigateToBonds"
             />
 
             <!-- Status bars row: Recruitment | Apply Upgrade -->
@@ -645,13 +638,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                 @click="setActiveTab('info')"
               >
                 {{ $t('info') }}
-              </button>
-              <button
-                :class="['tab-button', { active: activeTab === 'bond', 'tab-button--disabled': !isOwned }]"
-                :disabled="!isOwned"
-                @click="isOwned ? setActiveTab('bond') : undefined"
-              >
-                {{ $t('bond') }}
               </button>
               <button
                 :class="['tab-button', { active: activeTab === 'upgrade', 'tab-button--disabled': !isOwned }]"
@@ -692,47 +678,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                       :exclusive-gear-level="exclusiveGearLevel"
                       :has-exclusive-gear="hasExclusiveGear"
                     />
-                  </div>
-                </template>
-
-                <template v-else-if="activeTab === 'bond'">
-                  <div class="bond-layout" :class="{ 'bond-layout-max': currentBond === 100 }">
-                    <div class="bond-top-row">
-                      <BondSection
-                        class="bond-panel"
-                        :class="{ 'bond-panel-full': currentBond === 100 }"
-                        :current-bond="currentBond"
-                        :new-bond-level="newBondLevel"
-                        :remaining-xp="bondRemainingXp"
-                        :total-exp="totalCumulativeExp"
-                        @update-bond="handleBondInput"
-                      />
-
-                      <GiftOption
-                        v-if="currentBond < 100"
-                        class="bond-options-panel"
-                        :can-convert="canConvert"
-                        :can-undo="canUndo"
-                        :can-redo="canRedo"
-                        @toggle-convert="convertBoxes"
-                        @sync-gifts="showSyncGiftsModal = true"
-                        @reset-gifts="resetGifts"
-                        @undo-changes="undoChanges"
-                        @redo-changes="redoChanges"
-                      />
-                    </div>
-
-                    <div v-if="currentBond < 100" class="bond-gift-scroll">
-                      <GiftGrid
-                        class="bond-gift-grid"
-                        :student="displayedStudent!"
-                        :gift-form-data="giftFormData"
-                        :box-form-data="boxFormData"
-                        :should-show-gift-grade="shouldShowGiftGrade"
-                        @update-gift="handleGiftInput"
-                        @update-box="handleBoxInput"
-                      />
-                    </div>
                   </div>
                 </template>
 
@@ -852,21 +797,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       @close="showApplyModal = false"
     />
 
-    <!-- Sync Gifts mode selection dialog -->
-    <SyncGiftsModeModal
-      v-if="showSyncGiftsModal"
-      @confirm="(mode) => { showSyncGiftsModal = false; syncGifts(mode); }"
-      @cancel="showSyncGiftsModal = false"
-    />
-
-    <!-- Convert material selection dialog -->
-    <ConvertMaterialModal
-      v-if="showConvertModal"
-      :non-favor-gifts-map="nonFavorGiftsMap"
-      :needed-count="convertModalNeeded"
-      @confirm="confirmConversion"
-      @cancel="cancelConversion"
-    />
   </div>
 </template>
 

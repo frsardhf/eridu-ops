@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
@@ -112,9 +112,17 @@ onMounted(async () => {
   if (Number.isFinite(focusId) && trackedIds.value.includes(focusId)) {
     activeStudentId.value = focusId;
     if (layout.value === 'cards') {
-      requestAnimationFrame(() => {
-        document.getElementById(`bonds-card-${focusId}`)?.scrollIntoView({ behavior: 'smooth' });
-      });
+      // Wait for Vue to render the card slot, then give the browser a beat to
+      // settle async reflows (NEXON font swap inside MetaHeader, lazy gift
+      // icons inside the cards row). A smooth-scroll animation locks in to
+      // the position at the moment it starts; if cards above the target
+      // grow mid-animation, the viewport lands above the actual target
+      // (looks like "scrolled to the previous student"). Instant scroll
+      // after the settle delay sidesteps that race entirely.
+      await nextTick();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const el = document.getElementById(`bonds-card-${focusId}`);
+      if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
   } else if (trackedStudents.value.length) {
     activeStudentId.value = trackedStudents.value[0].Id;
