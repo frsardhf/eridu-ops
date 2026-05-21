@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import GiftCard from '@/components/modal/bond/GiftCard.vue';
+import GiftCard from '@/components/bonds/gift/GiftCard.vue';
 import { StudentProps } from '@/types/student';
 import { GiftProps } from '@/types/gift';
 import { $t } from '@/locales';

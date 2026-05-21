@@ -7,7 +7,7 @@ import { makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType, SKILL_TYPES } from '@/types/upgrade';
-import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
+import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
   student: StudentProps,

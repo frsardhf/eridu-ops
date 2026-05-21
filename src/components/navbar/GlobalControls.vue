@@ -4,8 +4,8 @@ import { useNavbarSettings, type Language } from '@/lib/hooks/useNavbarSettings'
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
-import CreditsModal from './CreditsModal.vue';
-import ContactModal from './ContactModal.vue';
+import CreditsModal from './modals/CreditsModal.vue';
+import ContactModal from './modals/ContactModal.vue';
 
 // ── Props / emits ─────────────────────────────────────────────────────────────
 defineProps<{

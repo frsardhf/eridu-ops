@@ -3,17 +3,17 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
-import ToolsRail from '@/components/display/ToolsRail.vue';
-import BulkModifyStudentsModal from '@/components/display/BulkModifyStudentsModal.vue';
-import BondUpdateModal from '@/components/display/BondUpdateModal.vue';
-import CraftingFodderModal from '@/components/display/CraftingFodderModal.vue';
-import DeckBuilderModal from '@/components/display/DeckBuilderModal.vue';
+import ToolsRail from '@/components/students/ToolsRail.vue';
+import BulkModifyStudentsModal from '@/components/students/tools/BulkModifyStudentsModal.vue';
+import BondUpdateModal from '@/components/students/tools/BondUpdateModal.vue';
+import CraftingFodderModal from '@/components/students/tools/CraftingFodderModal.vue';
+import DeckBuilderModal from '@/components/students/tools/DeckBuilderModal.vue';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
-import StudentGrid from '@/components/display/StudentGrid.vue';
-import StudentModal from '@/components/modal/StudentModal.vue'
+import StudentGrid from '@/components/students/StudentGrid.vue';
+import StudentModal from '@/components/students/modal/StudentModal.vue'
 import { SortOption } from '@/types/header';
 import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';

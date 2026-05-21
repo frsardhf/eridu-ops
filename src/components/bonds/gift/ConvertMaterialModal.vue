@@ -4,7 +4,7 @@ import { getResourceDataByIdSync } from '@/lib/stores/resourceCacheStore';
 import { getGiftIconUrl } from '@/lib/utils/iconUtils';
 import { formatItemQuantity } from '@/lib/utils/materialUtils';
 import { $t } from '@/locales';
-import NumberStepper from '@/components/modal/shared/NumberStepper.vue';
+import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
 import '@/styles/resourceDisplay.css';
 import '@/styles/modalActions.css';
 

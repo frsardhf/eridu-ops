@@ -8,7 +8,7 @@ import {
 } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import StarRatingGroup from '@/components/modal/shared/StarRatingGroup.vue';
+import StarRatingGroup from '@/components/students/modal/shared/StarRatingGroup.vue';
 
 const props = defineProps<{
   student: StudentProps;
