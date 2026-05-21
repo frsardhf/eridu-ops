@@ -1,5 +1,6 @@
 import { ResourceProps } from '@/types/resource';
 import { StudentProps } from '@/types/student';
+import { GiftProps } from '@/types/gift';
 import { saveItems, getAllItemsAsRecord } from '../services/dbService';
 import {
   getItems,
@@ -90,4 +91,28 @@ export async function hydrateEquipmentData(
   const mergedEquipments = mergeEquipmentWithExisting(equipment, existingEquipments);
   await saveEquipmentInventory(mergedEquipments);
   return mergedEquipments;
+}
+
+/**
+ * Attaches the student's favored Gifts and Boxes (from the per-student maps
+ * built by buildGiftsByStudent) onto a StudentProps clone. Used wherever a
+ * student object is handed off to a downstream consumer that reads
+ * `student.Gifts` / `student.Boxes` directly (StudentModal, BondsStudentEditor).
+ *
+ * The Array.isArray fallback handles the case where the source map has
+ * accidentally been serialized as an object — defensive for legacy data.
+ */
+export function enrichStudentWithGifts(
+  student: StudentProps,
+  favoredGiftByStudent: Record<string, GiftProps[]>,
+  giftBoxByStudent: Record<string, GiftProps[]>,
+): StudentProps {
+  const gifts = favoredGiftByStudent[student.Id] ?? [];
+  const boxes = giftBoxByStudent[student.Id] ?? [];
+  return {
+    ...student,
+    Gifts: Array.isArray(gifts) ? gifts : Object.values(gifts),
+    Boxes: Array.isArray(boxes) ? boxes : Object.values(boxes),
+    ElephIcon: student.ElephIcon || '',
+  };
 }

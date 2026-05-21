@@ -9,6 +9,29 @@ export const translations = {
     studentsDesc: "Track bond levels, skill upgrades, gear progression, and material costs.",
     bondsDesc: "Dedicated bond tracking and gift planning. Coming soon.",
 
+    // BondsPage
+    otherGifts: "Other gifts",
+    favoredGifts: "Favored gifts",
+    totalSr: "Total SR",
+    totalSsr: "Total SSR",
+    addStudent: "Add student",
+    noTrackedStudents: "No tracked students yet. Add a student to start planning bonds and gifts.",
+    layoutTabs: "Tabs",
+    layoutCards: "Cards",
+    suggestedStudents: "Suggested",
+    alreadyTracked: "Tracking",
+    bondMaxed: "Bond maxed",
+    allOwnedStudents: "All owned",
+    untrack: "Untrack",
+    untrackTooltip: "Your gift allocations are preserved. Re-add anytime from the picker.",
+    hideEditor: "Hide",
+    showEditor: "Show",
+    planGifts: "Plan gifts for this student",
+    hideGiftGrid: "Hide gift grid",
+    yellowStones: "Yellow stones",
+    conversion: "Conversion",
+    consumed: "Consumed",
+
     // Navbar
     students: "Students",
     bonds: "Bonds",
@@ -64,6 +87,7 @@ export const translations = {
     
     // Bond component
     currentBond: "Current Bond",
+    editBondLevel: "Click to edit bond level",
     expToNextLevel: "XP to next level",
     totalExp: "Total EXP",
     
@@ -390,6 +414,29 @@ export const translations = {
     studentsDesc: "絆レベル、スキル強化、装備の進捗、素材コストを追跡。",
     bondsDesc: "絆追跡とギフトプランニング。近日公開。",
 
+    // BondsPage
+    otherGifts: "その他のギフト",
+    favoredGifts: "好みのギフト",
+    totalSr: "SR合計",
+    totalSsr: "SSR合計",
+    addStudent: "生徒を追加",
+    noTrackedStudents: "追跡中の生徒はいません。生徒を追加して絆とギフトの計画を始めましょう。",
+    layoutTabs: "タブ",
+    layoutCards: "カード",
+    suggestedStudents: "おすすめ",
+    alreadyTracked: "追跡中",
+    bondMaxed: "絆MAX",
+    allOwnedStudents: "所持生徒",
+    untrack: "解除",
+    untrackTooltip: "ギフトの設定は保持されます。ピッカーからいつでも再追加できます。",
+    hideEditor: "非表示",
+    showEditor: "表示",
+    planGifts: "この生徒にギフトを計画する",
+    hideGiftGrid: "ギフトグリッドを隠す",
+    yellowStones: "黄色の石",
+    conversion: "変換",
+    consumed: "消費",
+
     // Navbar
     students: "生徒",
     bonds: "絆",
@@ -445,6 +492,7 @@ export const translations = {
 
     // Bond component
     currentBond: "現在の絆",
+    editBondLevel: "クリックして絆レベルを編集",
     expToNextLevel: "次のレベルまで",
     totalExp: "総経験値",
     

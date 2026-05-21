@@ -13,7 +13,11 @@ const props = defineProps<{
   value?: number | string,
   convertBox?: boolean,
   showGiftGrade?: boolean,
-  isBox?: boolean
+  isBox?: boolean,
+  /** Hides the input and always shows the quantity badge (BondsPage banners). */
+  readonly?: boolean,
+  /** Suppresses the grade icon overlay entirely (materials banner). */
+  hideGrade?: boolean,
 }>();
 
 const emit = defineEmits<{'update:value': [event: Event];}>();
@@ -40,7 +44,7 @@ const manualStepperTitle = computed(() => {
           class="gift-icon"
         />
         <img
-          v-if="(!isBox || showGiftGrade)"
+          v-if="!hideGrade && (!isBox || showGiftGrade)"
           :src="getGiftGradeIconUrl(item.grade)"
           :alt="item.grade.toString()"
           class="grade-icon"
@@ -49,13 +53,13 @@ const manualStepperTitle = computed(() => {
         <!-- Quantity display (similar to resource-quantity) -->
         <div
           class="resource-quantity"
-          v-if="!isInputFocused && value"
+          v-if="readonly || (!isInputFocused && value)"
         >
           {{ formatItemQuantity(value) }}
         </div>
-        
+
         <!-- Input for editing quantity -->
-        <div class="input-container">
+        <div v-if="!readonly" class="input-container">
           <input
             ref="inputEl"
             type="number"

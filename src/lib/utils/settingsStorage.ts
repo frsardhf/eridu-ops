@@ -26,6 +26,9 @@ export interface AppSettings {
     markedIds: number[];    // material IDs the user has marked as "used"
   };
   studentFilters?: StudentFilters;
+  bondsTrackedStudents?: number[];
+  bondsLayout: 'cards' | 'tabs';
+  bondsGiftPlanningEnabled?: number[];
 }
 
 // Default settings
@@ -38,6 +41,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   pinnedStudents: [],
   isPinnedMode: false,
+  bondsLayout: 'tabs',
 };
 
 /**

@@ -1,18 +1,19 @@
-import { ref, computed } from 'vue';
+import { ref, computed, type Ref } from 'vue';
 import { StudentProps } from '../../types/student';
-import { BondDetailDataProps, DEFAULT_BOND_DETAIL, GiftProps } from '../../types/gift';
+import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
 import { setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, YELLOW_STONE_ID } from '../../types/resource';
+import { BOX_ITEM_IDS } from '../constants/giftConstants';
 import { getAllocatedGifts } from './useGiftCalculation';
 import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
+import { computeStudentBondExpTotal } from '../utils/bondExpUtils';
 
 const HISTORY_LIMIT = 10;
-const BOX_ITEM_IDS = new Set([YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, SELECTOR_BOX_ID]);
 
 interface GiftSnapshot {
   giftFormData: Record<string, number>;
@@ -20,10 +21,16 @@ interface GiftSnapshot {
   nonFavorGiftsMap: Record<number, number>;
 }
 
-export function useStudentGifts(props: {
-  student: StudentProps,
-  isVisible?: boolean
-}, emit: (event: 'close') => void) {
+export interface UseStudentGiftsOptions {
+  isVisible?: () => boolean;
+  onClose?: () => void;
+}
+
+export function useStudentGifts(
+  studentRef: Ref<StudentProps>,
+  opts: UseStudentGiftsOptions = {}
+) {
+  const student = () => studentRef.value;
   const giftFormData = ref<Record<string, number>>({});
   const boxFormData = ref<Record<string, number>>({});
   const nonFavorGiftsMap = ref<Record<number, number>>({}); // Track individual non-favor gifts for Gifts tab display
@@ -67,17 +74,17 @@ export function useStudentGifts(props: {
 
   const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
     useDebouncedFormPersistence({
-      isVisible:    () => props.isVisible,
+      isVisible:    opts.isVisible ?? (() => true),
       refs:         { giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData },
       defaults:     GIFT_DEFAULTS,
-      loadFn:       (staged) => loadFormDataToRefs(props.student.Id, staged, GIFT_DEFAULTS),
-      saveFn:       () => saveFormData(props.student.Id, {
+      loadFn:       (staged) => loadFormDataToRefs(student().Id, staged, GIFT_DEFAULTS),
+      saveFn:       () => saveFormData(student().Id, {
         giftFormData:     giftFormData.value,
         boxFormData:      boxFormData.value,
         nonFavorGiftsMap: nonFavorGiftsMap.value,
         bondDetailData:   bondDetailData.value,
       }),
-      onSaved:      (saved) => setStudentDataDirect(props.student.Id, saved),
+      onSaved:      (saved) => setStudentDataDirect(student().Id, saved),
       afterLoad:    () => {
         // Clear undo/redo history so loaded state isn't undoable
         undoStack.value  = [];
@@ -86,53 +93,13 @@ export function useStudentGifts(props: {
       watchSources: [giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData],
     });
 
-  const calculateItemExp = (expValue: number, quantity: number): number => {
-    if (isNaN(quantity) || quantity <= 0) return 0;
-    return expValue * quantity;
-  };
-
-  // Handles both flat `{ exp }` items and nested `{ gift: { exp } }` items.
-  const getItemExpValue = (item: any): number => {
-    if (!item) return 0;
-    if (typeof item.exp === 'number') {
-      return item.exp;
-    }
-    if (item.gift && typeof item.gift.exp === 'number') {
-      return item.gift.exp;
-    }
-    return 0;
-  };
-
-  const calculateItemTypeExp = (
-    items: GiftProps[] | undefined,
-    formData: Record<string, number>,
-    itemType: string // For logging
-  ): number => {
-    if (!items || !formData) return 0;
-
-    const itemMap = Object.fromEntries(items.map(g => [String(g.gift.Id), g]));
-
-    let typeTotal = 0;
-    Object.entries(formData).forEach(([itemId, quantity]) => {
-      if (quantity <= 0) return;
-
-      const item = itemMap[itemId];
-      if (!item) return;
-
-      const expValue = getItemExpValue(item);
-      if (expValue <= 0) return;
-
-      typeTotal += calculateItemExp(expValue, quantity);
+  const calculateCumulativeExp = (): number =>
+    computeStudentBondExpTotal({
+      favoredGifts: student().Gifts,
+      giftBoxes: student().Boxes,
+      giftFormData: giftFormData.value,
+      boxFormData: boxFormData.value,
     });
-
-    return typeTotal;
-  };
-
-  const calculateCumulativeExp = (): number => {
-    const giftsExp = calculateItemTypeExp(props.student.Gifts, giftFormData.value, 'Gift');
-    const boxesExp = calculateItemTypeExp(props.student.Boxes, boxFormData.value, 'Box');
-    return giftsExp + boxesExp;
-  };
 
   const totalCumulativeExp = computed(calculateCumulativeExp);
 
@@ -207,6 +174,35 @@ export function useStudentGifts(props: {
     if (boxId === SSR_GIFT_MATERIAL_ID) clearNonFavorIfOvercount('SSR', newValue);
   };
 
+  // Recompute SR/SSR aggregate counts in boxFormData by summing the
+  // per-rarity entries currently in nonFavorGiftsMap. Bond EXP reads from the
+  // aggregate, so this keeps the calc in sync when individual non-favored
+  // gifts are edited via the BondsPage "Other gifts" section.
+  function recomputeNonFavorAggregates() {
+    let sr = 0;
+    let ssr = 0;
+    Object.entries(nonFavorGiftsMap.value).forEach(([id, qty]) => {
+      const rarity = getResourceDataByIdSync(Number(id))?.Rarity;
+      if (rarity === 'SR') sr += qty;
+      if (rarity === 'SSR') ssr += qty;
+    });
+    boxFormData.value[SR_GIFT_MATERIAL_ID] = sr;
+    boxFormData.value[SSR_GIFT_MATERIAL_ID] = ssr;
+  }
+
+  const handleNonFavorGiftInput = (giftId: number, event: Event) => {
+    savePreviousState();
+    removeLeadingZeros(event);
+    const input = event.target as HTMLInputElement;
+    const newValue = parseInt(input.value) || 0;
+    if (newValue <= 0) {
+      delete nonFavorGiftsMap.value[giftId];
+    } else {
+      nonFavorGiftsMap.value[giftId] = newValue;
+    }
+    recomputeNonFavorAggregates();
+  };
+
   // When the aggregate SR/SSR stepper is lowered below the tracked per-gift sum,
   // we can't know which specific gifts were removed, so clear that rarity's entries
   // from both nonFavorGiftsMap and any converted gift IDs stored in boxFormData.
@@ -230,7 +226,7 @@ export function useStudentGifts(props: {
   };
 
   const convertBoxes = () => {
-    if (!props.student?.Boxes?.length) return;
+    if (!student()?.Boxes?.length) return;
 
     const srCount = boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0;
     const stoneCount = boxFormData.value[YELLOW_STONE_ID] ?? 0;
@@ -316,15 +312,9 @@ export function useStudentGifts(props: {
     }
   };
 
-  const shouldShowGiftGrade = computed(() => {
-    return (id: number): boolean => {
-      return (
-        // Only show grades for non-keystones to avoid missing grade favor icon
-        // because keystone doesn't have exp value
-        id !== YELLOW_STONE_ID
-      );
-    };
-  });
+  // Yellow stones are excluded because the keystone item has no exp value,
+  // so its grade icon would be missing. Pure predicate — no reactive deps.
+  const shouldShowGiftGrade = (id: number): boolean => id !== YELLOW_STONE_ID;
 
   // Reset all gifts to zero
   const resetGifts = () => {
@@ -383,8 +373,8 @@ export function useStudentGifts(props: {
     savePreviousState();
 
     const resources = getAllItemsFromCache();
-    const allocatedByOthers = getAllocatedGifts(props.student?.Id);
-    const gearNeeds = mode === 'aware' ? getGearGiftNeedsExcluding(props.student.Id) : {};
+    const allocatedByOthers = getAllocatedGifts(student()?.Id);
+    const gearNeeds = mode === 'aware' ? getGearGiftNeedsExcluding(student().Id) : {};
 
     // Filter out gifts from the resources
     const gifts = Object.values(resources ?? {}).filter(resource =>
@@ -403,7 +393,7 @@ export function useStudentGifts(props: {
     const blackListIds = [5996, 5997, 5998, 5999];
 
     // Check if student has gifts
-    if (props.student?.Gifts) {
+    if (student()?.Gifts) {
       // Loop through all gifts from resources
       gifts.forEach(gift => {
         if (gift.Id) {
@@ -412,7 +402,7 @@ export function useStudentGifts(props: {
           const alreadyAllocated = allocatedByOthers[gift.Id] ?? 0;
           const available = Math.max(0, owned - alreadyAllocated - (gearNeeds[gift.Id] ?? 0));
 
-          const isStudentGift = (props.student?.Gifts ?? []).some(
+          const isStudentGift = (student()?.Gifts ?? []).some(
             g => g.gift.Id === gift.Id
           );
 
@@ -441,10 +431,10 @@ export function useStudentGifts(props: {
     boxFormData.value[SSR_GIFT_MATERIAL_ID] = nonFavorGiftsSsr;
   };
 
-function closeModal() {
+  function closeModal() {
     // Save the current state (including conversion state) before closing
     saveToIndexedDB();
-    emit('close');
+    opts.onClose?.();
   }
 
   // Create computed properties to expose the nested properties for compatibility
@@ -485,6 +475,7 @@ function closeModal() {
     loadFromIndexedDB,
     handleGiftInput,
     handleBoxInput,
+    handleNonFavorGiftInput,
     handleBondInput,
     convertBoxes,
     resetGifts,

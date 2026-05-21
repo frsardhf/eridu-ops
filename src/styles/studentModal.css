@@ -356,6 +356,15 @@
   border: 1px solid var(--border-color);
 }
 
+/* Flat variant — strip the card chrome when the section is embedded inside
+   another card (e.g., BondsStudentEditor places GiftOption inline). */
+.modal-section-card--flat {
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
 /* ==========================================================================
    Shared Grid Item
    ========================================================================== */

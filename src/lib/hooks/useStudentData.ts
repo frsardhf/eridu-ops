@@ -51,6 +51,7 @@ let _equipmentData: Ref<Record<string, ResourceProps>>;
 let _giftData: Ref<Record<string, ResourceProps>>;
 let _boxData: Ref<Record<string, ResourceProps>>;
 let _favoredGift: Ref<Record<string, GiftProps[]>>;
+let _allGifts: Ref<Record<string, GiftProps[]>>;
 let _giftBoxData: Ref<Record<string, GiftProps[]>>;
 let _searchQuery: Ref<string>;
 let _pinnedStudentIds: Ref<string[]>;
@@ -169,6 +170,9 @@ async function processAndPopulateData(
   _boxData.value = filterByProperty(items, 'id', GIFT_BOX_IDS);
 
   _favoredGift.value = buildGiftsByStudent(_studentData.value, _giftData.value);
+  _allGifts.value = buildGiftsByStudent(_studentData.value, _giftData.value, {
+    includeAll: true,
+  });
   _giftBoxData.value = buildGiftsByStudent(_studentData.value, _boxData.value, {
     isGiftBox: true,
     favoredGiftByStudent: _favoredGift.value
@@ -243,6 +247,7 @@ export function useStudentData() {
     _giftData = ref<Record<string, ResourceProps>>({});
     _boxData = ref<Record<string, ResourceProps>>({});
     _favoredGift = ref<Record<string, GiftProps[]>>({});
+    _allGifts = ref<Record<string, GiftProps[]>>({});
     _giftBoxData = ref<Record<string, GiftProps[]>>({});
     _searchQuery = ref<string>('');
     _pinnedStudentIds = ref<string[]>([]);
@@ -314,6 +319,7 @@ export function useStudentData() {
     itemsData: _itemsData,
     equipmentData: _equipmentData,
     favoredGift: _favoredGift,
+    allGifts: _allGifts,
     giftBoxData: _giftBoxData,
     searchQuery: _searchQuery,
     currentTheme: _currentTheme,

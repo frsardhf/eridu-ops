@@ -254,6 +254,7 @@ function consolidateSettings(): void {
       },
       pinnedStudents,
       isPinnedMode: false,
+      bondsLayout: 'tabs',
     };
 
     saveSettings(consolidatedSettings);

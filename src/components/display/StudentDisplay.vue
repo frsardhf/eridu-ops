@@ -18,6 +18,7 @@ import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
 import { ThemeId } from '@/types/theme';
+import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 
 const {
   studentData,
@@ -62,18 +63,9 @@ const allStudentsArray = computed<StudentProps[]>(() => {
   ).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
-
-// Prepare student for modal
+// Prepare student for modal — attach favored Gifts/Boxes from the per-student maps.
 function prepareStudentForModal(student: StudentProps): StudentProps {
-  const studentGifts = favoredGift.value[student.Id] || [];
-  const studentBoxes = giftBoxData.value[student.Id] || [];
-
-  return {
-    ...student,
-    Gifts: Array.isArray(studentGifts) ? studentGifts : Object.values(studentGifts),
-    Boxes: Array.isArray(studentBoxes) ? studentBoxes : Object.values(studentBoxes),
-    ElephIcon: student.ElephIcon || ''
-  };
+  return enrichStudentWithGifts(student, favoredGift.value, giftBoxData.value);
 }
 
 // Event handlers

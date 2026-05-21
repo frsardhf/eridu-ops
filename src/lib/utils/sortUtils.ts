@@ -25,6 +25,12 @@ function normalizeText(value: string): string {
   return value.trim().toLowerCase();
 }
 
+export function studentMatchesQuery(student: StudentProps, query: string): boolean {
+  const q = normalizeText(query);
+  if (!q) return true;
+  return normalizeText(student.Name || '').includes(q);
+}
+
 function toComparableValue(
   student: StudentProps,
   option: SortOption,

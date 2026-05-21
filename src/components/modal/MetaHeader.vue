@@ -3,22 +3,35 @@ import { computed, toRef } from 'vue';
 import { $t } from '@/locales';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
+import { useBondEditor } from '@/composables/useInputEditor';
 import { getSchoolColor } from '@/lib/utils/colorUtils';
 import { getBondIconUrl, getTypeIconUrl, getRoleIconUrl, getSchoolIconUrl } from '@/lib/utils/iconUtils';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
   student: StudentProps;
-  characterLevels: { current: number; target: number };
+  /** Required in level-pill mode (the default). Ignored when bondProgress is true. */
+  characterLevels?: { current: number; target: number };
   currentBond: number;
   newBondLevel: number;
   hasStyleSwitch?: boolean;
   activeStyleId?: number;
   primaryStudentId?: number;
+  /**
+   * BondsPage mode: the level pill shows BOND progression (currentBond →
+   * newBondLevel) instead of character level. When set, `characterLevels`
+   * is ignored and `remainingXp` / `totalExp` are rendered as stat chips.
+   */
+  bondProgress?: boolean;
+  remainingXp?: number;
+  totalExp?: number;
+  /** Suppresses the wrapping card chrome (BondsPage embeds inline). */
+  flat?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'toggle-style'): void;
+  (e: 'update-bond', value: number): void;
 }>();
 
 const studentRef = toRef(() => props.student);
@@ -27,9 +40,18 @@ const { squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName, tact
   squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight
 } = useStudentInfo(studentRef);
 
-const { showLevelArrow } = useStudentLevels(() => props.characterLevels);
+const { showLevelArrow } = useStudentLevels(
+  () => props.characterLevels ?? { current: 0, target: 0 }
+);
 
 const showBondArrow = computed(() => props.currentBond !== props.newBondLevel);
+
+// Inline bond editor — only used when bondProgress is true. Modal Bond tab
+// keeps its own editor in BondSection so this stays inert in level mode.
+const {
+  bondState, bondEditorRef, isEditing, editValue,
+  startEdit, commitEdit, handleEditorKeydown,
+} = useBondEditor(() => props.currentBond, (value) => emit('update-bond', value));
 
 const levelPillClass = computed(() => ({
   maxed50: props.currentBond >= 50 && props.currentBond < 100,
@@ -50,7 +72,10 @@ const styleModeLabel = computed(() => {
 </script>
 
 <template>
-  <section class="student-meta-header" aria-label="Student Summary">
+  <section
+    :class="['student-meta-header', { 'student-meta-header--flat': flat }]"
+    aria-label="Student Summary"
+  >
     <div class="identity-row">
       <h2 class="student-name">{{ student.Name }}</h2>
       <div class="identity-actions">
@@ -65,6 +90,25 @@ const styleModeLabel = computed(() => {
         >
           <span class="style-mode-label">{{ styleModeLabel }}</span>
         </button>
+
+        <div v-if="bulletTypeName" class="type-pill-divided">
+          <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
+            <img :src="getTypeIconUrl('Attack')" alt="ATK" class="type-icon icon-white" />
+          </span>
+          <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
+            {{ bulletTypeName }}
+          </span>
+        </div>
+
+        <div v-if="armorTypeName" class="type-pill-divided">
+          <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
+            <img :src="getTypeIconUrl('Defense')" alt="DEF" class="type-icon icon-white" />
+          </span>
+          <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
+            {{ armorTypeName }}
+          </span>
+        </div>
+
         <span
           v-if="squadTypeName"
           class="role-chip font-nexon"
@@ -78,7 +122,17 @@ const styleModeLabel = computed(() => {
     <div class="meta-row">
       <div class="meta-chips">
         <div class="level-pill" :class="levelPillClass">
-          <div class="bond-inline" :class="{ updating: showBondArrow }">
+          <div
+            class="bond-inline"
+            :class="{ updating: showBondArrow, 'bond-inline--editable': bondProgress }"
+            :role="bondProgress ? 'button' : undefined"
+            :tabindex="bondProgress ? 0 : undefined"
+            :title="bondProgress ? $t('editBondLevel') : undefined"
+            :aria-label="bondProgress ? $t('editBondLevel') : undefined"
+            @click="bondProgress && startEdit()"
+            @keydown.enter.prevent="bondProgress && startEdit()"
+            @keydown.space.prevent="bondProgress && startEdit()"
+          >
             <img
               :src="getBondIconUrl()"
               alt="Bond"
@@ -87,34 +141,51 @@ const styleModeLabel = computed(() => {
             <span class="bond-number-inline">{{ currentBond }}</span>
           </div>
           <div class="level-content">
-            <span class="level-label">LEVEL</span>
-            <span class="level-number">{{ characterLevels.current }}</span>
-            <template v-if="showLevelArrow">
-              <span class="level-arrow">→</span>
-              <span class="level-number target">{{ characterLevels.target }}</span>
+            <template v-if="bondProgress">
+              <span class="level-label">BOND</span>
+              <button
+                v-if="!isEditing"
+                type="button"
+                class="level-number level-number-button"
+                :title="$t('editBondLevel')"
+                :aria-label="$t('editBondLevel')"
+                @click="startEdit"
+              >{{ bondState }}</button>
+              <input
+                v-else
+                ref="bondEditorRef"
+                v-model="editValue"
+                type="number"
+                class="level-number level-number-input"
+                min="1"
+                max="100"
+                @blur="commitEdit"
+                @keydown="handleEditorKeydown"
+              />
+              <template v-if="showBondArrow">
+                <span class="level-arrow">→</span>
+                <span class="level-number target">{{ newBondLevel }}</span>
+              </template>
+            </template>
+            <template v-else-if="characterLevels">
+              <span class="level-label">LEVEL</span>
+              <span class="level-number">{{ characterLevels.current }}</span>
+              <template v-if="showLevelArrow">
+                <span class="level-arrow">→</span>
+                <span class="level-number target">{{ characterLevels.target }}</span>
+              </template>
             </template>
           </div>
         </div>
 
-        <div v-if="bulletTypeName || armorTypeName" class="combat-type-row">
-          <div v-if="bulletTypeName" class="type-pill-divided">
-            <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
-              <img :src="getTypeIconUrl('Attack')" alt="ATK" class="type-icon icon-white" />
-            </span>
-            <span class="pill-value" :style="{ backgroundColor: bulletTypeColor }">
-              {{ bulletTypeName }}
-            </span>
-          </div>
-
-          <div v-if="armorTypeName" class="type-pill-divided">
-            <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
-              <img :src="getTypeIconUrl('Defense')" alt="DEF" class="type-icon icon-white" />
-            </span>
-            <span class="pill-value" :style="{ backgroundColor: armorTypeColor }">
-              {{ armorTypeName }}
-            </span>
-          </div>
-        </div>
+        <template v-if="bondProgress">
+          <span v-if="showBondArrow && (remainingXp ?? 0) > 0" class="bond-stat-chip">
+            {{ remainingXp }} {{ $t('expToNextLevel') }}
+          </span>
+          <span v-if="bondProgress && (totalExp ?? 0) > 0" class="bond-stat-chip strong">
+            {{ $t('totalExp') }}: {{ (totalExp ?? 0).toLocaleString() }}
+          </span>
+        </template>
       </div>
     </div>
 
@@ -153,6 +224,14 @@ const styleModeLabel = computed(() => {
   gap: 10px;
 }
 
+/* Flat variant — strip the card chrome when the header is embedded inside
+   another card (e.g., BondsStudentEditor places it inline beside the icon). */
+.student-meta-header--flat {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
 .identity-row {
   display: flex;
   align-items: center;
@@ -172,7 +251,9 @@ const styleModeLabel = computed(() => {
 .identity-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .style-toggle-btn {
@@ -208,7 +289,7 @@ const styleModeLabel = computed(() => {
 
 .role-chip {
   border-radius: 999px;
-  padding: 1px 10px;
+  padding: 1.835px 10px;
   font-size: 1rem;
   color: white;
   white-space: nowrap;
@@ -258,6 +339,26 @@ const styleModeLabel = computed(() => {
   height: 34px;
   margin-left: 2px;
   flex-shrink: 0;
+}
+
+/* Editable variant (BondsPage). Hover tint + cursor pointer signal that the
+   heart icon is a secondary edit target alongside the dotted-underlined
+   number. Tabindex makes it keyboard-focusable via the role="button"
+   markup. */
+.bond-inline--editable {
+  cursor: pointer;
+  border-radius: 999px;
+  transition: background-color 0.15s, transform 0.15s;
+}
+
+.bond-inline--editable:hover {
+  background-color: color-mix(in srgb, var(--accent-color) 18%, transparent);
+  transform: scale(1.05);
+}
+
+.bond-inline--editable:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .bond-icon-inline {
@@ -310,6 +411,41 @@ const styleModeLabel = computed(() => {
   color: var(--accent-color);
 }
 
+.level-number-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.level-number-button:hover {
+  color: var(--accent-color);
+}
+
+.level-number-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.level-number-input {
+  width: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-secondary);
+  padding: 0 2px;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.level-number-input::-webkit-outer-spin-button,
+.level-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .type-pill-divided {
   display: flex;
   align-items: stretch;
@@ -325,6 +461,20 @@ const styleModeLabel = computed(() => {
   align-items: center;
   gap: 8px;
   flex-wrap: nowrap;
+}
+
+.bond-stat-chip {
+  font-size: 0.82rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--background-primary);
+  color: var(--text-secondary);
+}
+
+.bond-stat-chip.strong {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .pill-label {
@@ -393,11 +543,6 @@ const styleModeLabel = computed(() => {
 @media (max-width: 768px) {
   .meta-row {
     display: block;
-  }
-
-  .combat-type-row {
-    width: fit-content;
-    max-width: 100%;
   }
 }
 </style>

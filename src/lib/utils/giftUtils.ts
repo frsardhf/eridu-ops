@@ -93,7 +93,8 @@ function getStudentGiftBoxInfo(
 
 function processRegularGiftItems(
   items: Record<string, ResourceProps>,
-  allTagsSet: Set<string>
+  allTagsSet: Set<string>,
+  includeAll: boolean = false
 ): GiftProps[] {
   const studentGifts: GiftProps[] = [];
 
@@ -101,7 +102,7 @@ function processRegularGiftItems(
     const item = items[itemId];
     const giftDetails = evaluateRegularGift(item, allTagsSet);
 
-    if (giftDetails.shouldGift) {
+    if (giftDetails.shouldGift || includeAll) {
       studentGifts.push({
         gift: item,
         exp: giftDetails.expValue,
@@ -150,6 +151,13 @@ function processGiftBoxItems(
 interface BuildGiftsByStudentOptions {
   isGiftBox?: boolean;
   favoredGiftByStudent?: Record<string, GiftProps[]>;
+  /**
+   * When true (only meaningful for the non-gift-box path), include all
+   * `Category === 'Favor'` items regardless of the `shouldGift` filter.
+   * Non-favored items will surface with `grade: 1` and their base ExpValue,
+   * which is the data BondsPage uses to render its "Other" section.
+   */
+  includeAll?: boolean;
 }
 
 export function buildGiftsByStudent(
@@ -166,7 +174,7 @@ export function buildGiftsByStudent(
     const allTagsSet = getAllStudentTags(student);
     result[studentId] = isGiftBox
       ? processGiftBoxItems(studentId, items, allTagsSet, favoredGiftByStudent)
-      : processRegularGiftItems(items, allTagsSet);
+      : processRegularGiftItems(items, allTagsSet, options.includeAll);
   }
 
   return result;

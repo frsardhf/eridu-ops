@@ -141,9 +141,8 @@ useClickOutside(handleClickOutside);
 
 <template>
   <header class="app-navbar">
-    <div class="app-navbar-content header-content">
-      <div class="header-main">
-        <div class="header-title-section mobile-hidden">
+    <div class="app-navbar-content header-main">
+      <div class="header-title-section mobile-hidden">
           <RouterLink to="/" class="app-navbar-brand" aria-label="EriduOps home">
             <span class="app-navbar-brand-eridu">Eridu</span><span class="app-navbar-brand-ops">Ops</span>
           </RouterLink>
@@ -262,8 +261,8 @@ useClickOutside(handleClickOutside);
           </button>
         </div>
       </div>
-    </div>
-    
+    </header>
+
     <div
       v-if="mobileMenuOpen"
       id="mobile-menu"
@@ -313,7 +312,6 @@ useClickOutside(handleClickOutside);
       @close="closeScreenshotModal"
       @inventory-updated="handleInventoryUpdated"
     />
-  </header>
 </template>
 
 <style scoped>

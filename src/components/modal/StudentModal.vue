@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, CSSProperties } from 'vue';
+import { ref, computed, watch, toRef, CSSProperties } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import { studentDataStore } from '@/lib/stores/studentStore';
@@ -138,7 +138,10 @@ const {
   showSyncGiftsModal, syncGifts,
   canUndo, canRedo, undoChanges, redoChanges, resetGifts,
   loadFromIndexedDB: loadGiftData,
-} = useStudentGifts(props, emit);
+} = useStudentGifts(toRef(props, 'student'), {
+  isVisible: () => !!props.isVisible,
+  onClose: () => emit('close'),
+});
 
 const canConvert = computed(() =>
   (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 && (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2

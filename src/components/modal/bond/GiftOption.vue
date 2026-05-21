@@ -6,6 +6,8 @@ const props = defineProps<{
   canConvert: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  /** Suppresses the wrapping `.modal-section-card` card chrome (BondsPage embeds inline). */
+  flat?: boolean;
 }>();
 
 const emit = defineEmits(['toggle-convert', 'sync-gifts', 'reset-gifts', 'undo-changes', 'redo-changes']);
@@ -15,7 +17,7 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
 </script>
 
 <template>
-  <div class="modal-section-card">
+  <div :class="['modal-section-card', { 'modal-section-card--flat': flat }]">
     <div class="options-container">
       <div class="button-group">
         <button
