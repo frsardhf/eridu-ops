@@ -354,7 +354,7 @@ function returnToStudentPage() {
   background: transparent;
   border: none;
   padding: 0;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;

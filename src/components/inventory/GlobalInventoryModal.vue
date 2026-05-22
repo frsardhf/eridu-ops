@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { $t } from '@/locales';
+import { useStudentItems } from '@/lib/hooks/useStudentItems';
+import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import ItemsGrid from './ItemsGrid.vue';
 import EquipmentGrid from './EquipmentGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
 
-const props = defineProps<{
-  resourceFormData: Record<string, number>,
-  equipmentFormData: Record<string, number>
-}>();
-
 const emit = defineEmits<{
   (e: 'close'): void,
-  (e: 'update-resource', id: string, event: Event): void,
-  (e: 'update-equipment', id: string, event: Event): void
 }>();
+
+// Modal mounts only when visible (v-if), so isVisible is always true here.
+const { itemFormData, handleItemInput, loadItems } = useStudentItems({ isVisible: () => true });
+const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment({ isVisible: () => true });
+
+onMounted(async () => {
+  await Promise.all([loadItems(), loadEquipments()]);
+});
 
 type InventoryTab = 'items' | 'equipment';
 type SummaryTab = 'materials' | 'equipment' | 'gifts';
@@ -212,14 +215,14 @@ const toggleSummaryMode = () => {
           <div :key="contentTransitionKey" class="inventory-tab-content inventory-pane-state">
             <ItemsGrid
               v-if="!summaryMode && activeTab === 'items'"
-              :resource-form-data="resourceFormData"
-              @update-resource="(id, e) => emit('update-resource', id, e)"
+              :resource-form-data="itemFormData"
+              @update-resource="handleItemInput"
             />
 
             <EquipmentGrid
               v-else-if="!summaryMode && activeTab === 'equipment'"
               :equipment-form-data="equipmentFormData"
-              @update-equipment="(id, e) => emit('update-equipment', id, e)"
+              @update-equipment="handleEquipmentInput"
             />
 
             <ResourceSummary

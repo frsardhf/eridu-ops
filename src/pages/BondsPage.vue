@@ -9,6 +9,7 @@ import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import StudentStrip from '@/components/shared/StudentStrip.vue';
 import BondsStudentEditor from '@/components/bonds/BondsStudentEditor.vue';
 import BondsStudentPicker from '@/components/bonds/BondsStudentPicker.vue';
+import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import { computeStudentBondExpTotal } from '@/lib/utils/bondExpUtils';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 import { $t } from '@/locales';
@@ -25,6 +26,9 @@ watch(layout, (v) => updateSetting('bondsLayout', v));
 
 // ── Picker modal ────────────────────────────────────────────────────────────
 const showPicker = ref(false);
+
+// ── Inventory modal ──────────────────────────────────────────────────────────
+const showInventory = ref(false);
 
 // ── Per-student "collapsed" state (not persisted; session-only) ─────────────
 // Independent of `bondsTrackedStudents` — hides the editor body but leaves
@@ -153,6 +157,13 @@ function onRemoveStudent(id: number) {
           + {{ $t('addStudent') }}
         </button>
 
+        <button type="button" class="bonds-btn inventory-btn" @click="showInventory = true">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+          </svg>
+          {{ $t('inventory') }}
+        </button>
+
         <div class="bonds-layout-toggle" role="tablist" aria-label="Layout">
           <button
             type="button"
@@ -251,6 +262,7 @@ function onRemoveStudent(id: number) {
     </main>
 
     <BondsStudentPicker v-if="showPicker" @close="showPicker = false" />
+    <GlobalInventoryModal v-if="showInventory" @close="showInventory = false" />
   </div>
 </template>
 
@@ -284,7 +296,7 @@ function onRemoveStudent(id: number) {
 }
 
 .bonds-btn {
-  padding: 8px 14px;
+  padding: 5px 12px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--background-primary);
@@ -298,6 +310,12 @@ function onRemoveStudent(id: number) {
 .bonds-btn.primary {
   border-color: var(--accent-color);
   color: var(--accent-color);
+}
+
+.bonds-btn.inventory-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .bonds-btn.primary:hover {

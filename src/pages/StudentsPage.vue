@@ -10,8 +10,6 @@ import CraftingFodderModal from '@/components/students/tools/CraftingFodderModal
 import DeckBuilderModal from '@/components/students/tools/DeckBuilderModal.vue';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
-import { useStudentItems } from '@/lib/hooks/useStudentItems';
-import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import StudentGrid from '@/components/students/StudentGrid.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
 import { SortOption } from '@/types/header';
@@ -51,9 +49,6 @@ const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
 const isCraftingFodderVisible = ref(false);
 
-const inventoryProps = { get isVisible() { return isInventoryModalVisible.value; } };
-const { itemFormData, handleItemInput, loadItems } = useStudentItems(inventoryProps);
-const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment(inventoryProps);
 const modalOriginRect = ref<ModalOriginRect | null>(null);
 const allStudentsArray = computed<StudentProps[]>(() => {
   return filterSecondaryStudents(
@@ -161,7 +156,7 @@ function handleClearFilters() {
     <ToolsRail
       @open-bulk-modify="isBulkModifyModalVisible = true"
       @open-deck-builder="isDeckBuilderVisible = true"
-      @open-inventory="isInventoryModalVisible = true; loadItems(); loadEquipments();"
+      @open-inventory="isInventoryModalVisible = true"
       @open-bond-update="isBondUpdateVisible = true"
       @open-crafting-fodder="isCraftingFodderVisible = true"
     />
@@ -188,11 +183,7 @@ function handleClearFilters() {
 
     <GlobalInventoryModal
       v-if="isInventoryModalVisible"
-      :resource-form-data="itemFormData"
-      :equipment-form-data="equipmentFormData"
       @close="isInventoryModalVisible = false"
-      @update-resource="handleItemInput"
-      @update-equipment="handleEquipmentInput"
     />
 
     <BulkModifyStudentsModal
