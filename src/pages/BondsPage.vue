@@ -42,7 +42,7 @@ function toggleCollapsed(id: number): void {
   collapsedIds.value = next;
 }
 
-// Sort: total bond EXP descending (most planned first), tie-break by Name asc.
+// Sort: total bond EXP descending (most planned first), tie-break by current bond desc.
 // EXP comes from `computeStudentBondExpTotal` so new EXP contributors only need
 // to be added in that utility — sort updates automatically.
 const trackedStudents = computed<StudentProps[]>(() => {
@@ -60,11 +60,12 @@ const trackedStudents = computed<StudentProps[]>(() => {
         giftFormData: form?.giftFormData,
         boxFormData: form?.boxFormData,
       });
-      return { student: s, exp };
+      const bond = form?.bondDetailData?.currentBond ?? 1;
+      return { student: s, exp, bond };
     })
     .sort((a, b) => {
       if (a.exp !== b.exp) return b.exp - a.exp;
-      return (a.student.Name ?? '').localeCompare(b.student.Name ?? '');
+      return b.bond - a.bond;
     })
     .map(x => x.student);
 });

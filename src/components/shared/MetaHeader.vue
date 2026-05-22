@@ -79,17 +79,19 @@ const styleModeLabel = computed(() => {
   return props.activeStyleId === 2 ? 'II' : 'I';
 });
 
-const isBondInteractive = computed(() => !!props.bondProgress || !!props.enableBondNavigate);
+const isBondMaxed = computed(() => props.currentBond >= 100);
+const isBondInteractive = computed(() => !!props.bondProgress || (!!props.enableBondNavigate && !isBondMaxed.value));
 
 const bondInlineTooltip = computed(() => {
   if (props.bondProgress) return $t('editBondLevel');
+  if (isBondMaxed.value) return $t('bondMaxed');
   if (props.enableBondNavigate) return $t('openInBondsPage');
   return undefined;
 });
 
 function onBondInlineClick() {
   if (props.bondProgress) startEdit();
-  else if (props.enableBondNavigate) emit('navigate-bond');
+  else if (props.enableBondNavigate && !isBondMaxed.value) emit('navigate-bond');
 }
 </script>
 
@@ -146,7 +148,12 @@ function onBondInlineClick() {
         <div class="level-pill" :class="levelPillClass">
           <div
             class="bond-inline"
-            :class="{ updating: showBondArrow, 'bond-inline--editable': isBondInteractive }"
+            :class="{
+              updating: showBondArrow,
+              'bond-inline--editable': props.bondProgress,
+              'bond-inline--navigate': props.enableBondNavigate && !isBondMaxed,
+              'bond-inline--maxed': isBondMaxed,
+            }"
             :role="isBondInteractive ? 'button' : undefined"
             :tabindex="isBondInteractive ? 0 : undefined"
             :title="bondInlineTooltip"
@@ -373,14 +380,125 @@ function onBondInlineClick() {
   transition: background-color 0.15s, transform 0.15s;
 }
 
+/* Bond maxed badge — no pointer when standalone (modal); editable keeps
+   cursor: pointer since it's still an edit target on /bonds. */
+.bond-inline--maxed {
+  border-radius: 999px;
+}
+
+.bond-inline--maxed:not(.bond-inline--editable) {
+  cursor: default;
+}
+
+/* Navigate variant (modal bond chip, non-maxed). */
+.bond-inline--navigate {
+  cursor: pointer;
+  border-radius: 999px;
+  transition: transform 0.15s;
+}
+
+/* Scale + keyboard focus shared by both interactive variants. */
+.bond-inline--navigate:hover,
 .bond-inline--editable:hover {
-  background-color: color-mix(in srgb, var(--accent-color) 18%, transparent);
   transform: scale(1.05);
 }
 
+.bond-inline--navigate:focus-visible,
 .bond-inline--editable:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
+}
+
+/* ── Sparkle diamonds ──────────────────────────────────────────────────────
+   2×2 rotated square = ♦. Six pseudo-elements share the same base setup;
+   only color (pink vs accent) and run count (infinite vs once) differ. */
+
+.bond-inline--maxed::before,
+.bond-inline--maxed::after,
+.bond-inline--navigate::before,
+.bond-inline--navigate::after,
+.bond-inline--editable:not(.bond-inline--maxed)::before,
+.bond-inline--editable:not(.bond-inline--maxed)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 2px;
+  margin: -1px 0 0 -1px;
+  transform: rotate(45deg) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Bond-100: pink/fuchsia */
+.bond-inline--maxed::before {
+  background: rgba(255, 105, 180, 0.95);
+  box-shadow:
+    -9px  -11px 0 0.5px rgba(255, 105, 180, 0.95),
+     7px  -13px 0 0.5px rgba(235,  51, 255, 0.85),
+    14px    2px 0 0.5px rgba(255, 160, 210, 0.9),
+   -12px    8px 0 0.5px rgba(255, 105, 180, 0.85),
+     1px  -17px 0 0.5px rgba(255, 210, 230, 0.9),
+    16px   -7px 0 0.5px rgba(235,  51, 255, 0.75);
+}
+
+.bond-inline--maxed::after {
+  background: rgba(235, 51, 255, 0.85);
+  box-shadow:
+    -5px  -15px 0 0.5px rgba(255, 180, 220, 0.9),
+    13px   -9px 0 0.5px rgba(255, 105, 180, 0.8),
+    10px   12px 0 0.5px rgba(235,  51, 255, 0.75),
+   -15px    2px 0 0.5px rgba(255, 210, 230, 0.85),
+     6px   16px 0 0.5px rgba(255, 130, 190, 0.8),
+   -10px  -18px 0 0.5px rgba(235,  51, 255, 0.7);
+}
+
+/* Non-maxed (navigate + editable): accent color — identical, so grouped. */
+.bond-inline--navigate::before,
+.bond-inline--editable:not(.bond-inline--maxed)::before {
+  background: var(--accent-color);
+  box-shadow:
+    -9px  -11px 0 1px color-mix(in srgb, var(--accent-color) 95%, transparent),
+     7px  -13px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
+    14px    2px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
+   -12px    8px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
+     1px  -17px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
+    16px   -7px 0 1px color-mix(in srgb, var(--accent-color) 75%, transparent);
+}
+
+.bond-inline--navigate::after,
+.bond-inline--editable:not(.bond-inline--maxed)::after {
+  background: color-mix(in srgb, var(--accent-color) 85%, transparent);
+  box-shadow:
+    -5px  -15px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
+    13px   -9px 0 1px color-mix(in srgb, var(--accent-color) 80%, transparent),
+    10px   12px 0 1px color-mix(in srgb, var(--accent-color) 75%, transparent),
+   -15px    2px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
+     6px   16px 0 1px color-mix(in srgb, var(--accent-color) 80%, transparent),
+   -10px  -18px 0 1px color-mix(in srgb, var(--accent-color) 70%, transparent);
+}
+
+/* Hover: bond-100 loops forever; non-maxed plays once. */
+.bond-inline--maxed:hover::before { animation: bond-drift 2.4s ease-in-out infinite; }
+.bond-inline--maxed:hover::after  { animation: bond-drift 2.4s ease-in-out infinite; animation-delay: -1.2s; }
+
+.bond-inline--navigate:hover::before,
+.bond-inline--editable:not(.bond-inline--maxed):hover::before {
+  animation: bond-drift 2.4s ease-in-out forwards;
+}
+
+.bond-inline--navigate:hover::after,
+.bond-inline--editable:not(.bond-inline--maxed):hover::after {
+  animation: bond-drift 2.4s ease-in-out forwards;
+  animation-delay: -1.2s;
+}
+
+@keyframes bond-drift {
+  0%   { opacity: 0;   transform: rotate(45deg) scale(0.55); }
+  15%  { opacity: 1;   transform: rotate(45deg) scale(0.65); }
+  85%  { opacity: 0.9; transform: rotate(45deg) scale(0.9); }
+  100% { opacity: 0;   transform: rotate(45deg) scale(1.0); }
 }
 
 .bond-icon-inline {

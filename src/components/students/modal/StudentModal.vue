@@ -14,6 +14,7 @@ import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
 import { initializeStudentFormData } from '@/lib/services/studentFormService';
 import { setStudentDataDirect } from '@/lib/stores/studentStore';
 import { hasLinkedPartner, getLinkedPartnerId } from '@/lib/constants/linkedStudents';
+import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import EquipmentGrowthSection from '@/components/students/modal/gear/EquipmentGrowthSection.vue';
 import ElephEligmaSection from '@/components/students/modal/gear/ElephEligmaSection.vue';
@@ -194,10 +195,11 @@ async function handleClose() {
 
 // Bond chip → /bonds deep-link. Ensure the student is in the tracked list
 // so the focus query param actually lands on their card, then route.
+// Skip adding if bond is already maxed (mirrors BondsStudentPicker disabled state).
 function handleNavigateToBonds() {
   const id = displayedStudent.value?.Id;
   if (!id) return;
-  addBondsTracked(id);
+  if (currentBond.value < MAX_BOND_LEVEL) addBondsTracked(id);
   emit('close');
   router.push(`/bonds?focus=${id}`);
 }
