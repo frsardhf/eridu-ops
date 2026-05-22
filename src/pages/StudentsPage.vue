@@ -9,7 +9,7 @@ import BondUpdateModal from '@/components/students/tools/BondUpdateModal.vue';
 import CraftingFodderModal from '@/components/students/tools/CraftingFodderModal.vue';
 import DeckBuilderModal from '@/components/students/tools/DeckBuilderModal.vue';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
-import StudentNavbar from '@/components/navbar/StudentNavbar.vue';
+import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import StudentGrid from '@/components/students/StudentGrid.vue';
@@ -18,26 +18,22 @@ import { SortOption } from '@/types/header';
 import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
-import { ThemeId } from '@/types/theme';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 
 const {
   studentData,
   favoredGift,
   giftBoxData,
-  currentTheme,
   searchQuery,
   sortedStudentsArray,
   ownedStudentsArray,
   unownedStudentsArray,
-  setTheme,
   setSortOption,
   currentSort,
   sortDirection,
   updateSearchQuery,
   toggleDirection,
   syncPinnedStudents,
-  reinitializeData,
   isPinnedMode,
   togglePinnedMode,
   activeFilters,
@@ -136,19 +132,6 @@ function handleStudentPinned() {
   syncPinnedStudents();
 }
 
-function handleDataImported() {
-  console.log('Data imported successfully, page will reload to apply changes');
-  // The actual reload is handled in the StudentNavbar component
-}
-
-function handleSetTheme(themeId: ThemeId) {
-  setTheme(themeId);
-}
-
-async function handleReinitializeData() {
-  await reinitializeData();
-}
-
 function handleUpdateFilter(key: keyof StudentFilters, value: StudentFilters[typeof key]) {
   setStudentFilters(key, value);
 }
@@ -160,20 +143,16 @@ function handleClearFilters() {
 
 <template>
   <div class="student-list-container">
-    <StudentNavbar
+    <SearchNavbar
       :search-query="searchQuery"
-      :current-theme="currentTheme"
       :current-sort="currentSort"
       :sort-direction="sortDirection"
       :is-pinned-mode="isPinnedMode"
       :filters="activeFilters"
       :available-schools="availableSchools"
       @update:search-query="handleSearchUpdate"
-      @set-theme="handleSetTheme"
       @update-sort="updateSortOption"
       @toggle-direction="handleToggleDirection"
-      @data-imported="handleDataImported"
-      @reinitialize-data="handleReinitializeData"
       @toggle-pinned="togglePinnedMode"
       @update-filter="handleUpdateFilter"
       @clear-filters="handleClearFilters"

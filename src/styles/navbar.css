@@ -25,6 +25,58 @@
   height: 100%;
 }
 
+/* ── Home icon button ────────────────────────────────────────────────────── */
+.app-navbar-home-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.app-navbar-home-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* ── Icon button (toggle-capable) ─────────────────────────────────────────── */
+.app-navbar-icon-btn {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.app-navbar-icon-btn:hover {
+  color: var(--accent-color);
+  background-color: var(--background-secondary);
+}
+
+.app-navbar-icon-btn.active {
+  color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color) 14%, transparent);
+}
+
+.app-navbar-icon-btn.active:hover {
+  background-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
 /* ── Brand mark ──────────────────────────────────────────────────────────── */
 .app-navbar-brand {
   display: inline-flex;

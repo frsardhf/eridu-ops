@@ -5,8 +5,8 @@ import { downloadLocalStorageData } from '../utils/studentStorage';
 export type { Language } from '../stores/localizationStore';
 
 /**
- * Hook facade for StudentNavbar — aggregates localization, theme, and export
- * utilities so the component stays within the components → hooks boundary.
+ * Hook facade for navbar components — aggregates localization, theme, and
+ * export utilities so components stay within the components → hooks boundary.
  */
 export function useNavbarSettings() {
   async function exportData(): Promise<void> {

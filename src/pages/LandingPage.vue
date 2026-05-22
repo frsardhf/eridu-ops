@@ -4,6 +4,7 @@ import { useStudentData } from '@/lib/hooks/useStudentData';
 import { getBondIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { $t } from '@/locales';
 import GlobalControls from '@/components/navbar/GlobalControls.vue';
+import '@/styles/navbar.css';
 
 const { currentTheme, setTheme, sortedStudentsArray } = useStudentData();
 
@@ -22,9 +23,11 @@ watch(sortedStudentsArray, (students) => {
 
 <template>
   <div class="landing">
-    <div class="landing-topbar">
-      <GlobalControls :current-theme="currentTheme" @set-theme="setTheme" />
-    </div>
+    <header class="app-navbar">
+      <div class="app-navbar-content lp-bar">
+        <GlobalControls :current-theme="currentTheme" @set-theme="setTheme" />
+      </div>
+    </header>
 
     <div class="landing-content">
       <div class="landing-brand">
@@ -98,12 +101,10 @@ watch(sortedStudentsArray, (students) => {
   overflow: auto;
 }
 
-.landing-topbar {
+.lp-bar {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 14px 20px;
-  flex-shrink: 0;
 }
 
 .landing-content {

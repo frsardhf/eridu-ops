@@ -40,7 +40,8 @@ function toggleLanguage() {
   setLanguage(currentLanguage.value === 'en' ? 'jp' : 'en');
 }
 
-const langLabel = computed(() => currentLanguage.value === 'en' ? '日本語' : 'English');
+const langLabel = computed(() => currentLanguage.value === 'en' ? 'English' : '日本語');
+const langSwitchTarget = computed(() => currentLanguage.value === 'en' ? '日本語' : 'English');
 
 function handleClickOutside(event: MouseEvent) {
   if (!showThemeTray.value) return;
@@ -62,7 +63,7 @@ useClickOutside(handleClickOutside);
     <button
       type="button"
       class="gc-lang-toggle"
-      :aria-label="`Switch to ${langLabel}`"
+      :aria-label="`Switch to ${langSwitchTarget}`"
       @click="toggleLanguage"
     >
       {{ langLabel }}
