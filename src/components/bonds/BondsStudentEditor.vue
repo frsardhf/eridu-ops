@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, toRef } from 'vue';
+import { computed, onMounted, ref, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStudentGifts } from '@/lib/hooks/useStudentGifts';
 import { useStudentData } from '@/lib/hooks/useStudentData';
@@ -9,10 +9,12 @@ import GiftOption from '@/components/bonds/gift/GiftOption.vue';
 import GiftGrid from '@/components/bonds/gift/GiftGrid.vue';
 import ConvertMaterialModal from '@/components/bonds/gift/ConvertMaterialModal.vue';
 import SyncGiftsModeModal from '@/components/bonds/gift/SyncGiftsModeModal.vue';
+import OtherExpPanel from '@/components/bonds/OtherExpPanel.vue';
 import MetaHeader from '@/components/shared/MetaHeader.vue';
 import type { GiftProps } from '@/types/gift';
 import { YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID } from '@/types/resource';
 import { HIDDEN_BOX_IDS } from '@/lib/constants/giftConstants';
+import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { getResourceDataByIdSync } from '@/lib/stores/resourceCacheStore';
 import { $t } from '@/locales';
@@ -28,16 +30,27 @@ const { isGiftPlanningEnabled, enableGiftPlanning, disableGiftPlanning } = useBo
 
 const {
   currentBond, newBondLevel, totalCumulativeExp, remainingXp,
-  giftFormData, boxFormData, nonFavorGiftsMap, shouldShowGiftGrade,
+  giftsExp, boxesExp, cafeExp, bonusExp,
+  giftFormData, boxFormData, nonFavorGiftsMap, otherExpData, shouldShowGiftGrade,
   convertBoxes, handleBondInput, handleGiftInput, handleBoxInput, handleNonFavorGiftInput,
+  updateOtherExp, resetOtherExp,
   showConvertModal, convertModalNeeded, confirmConversion, cancelConversion,
   showSyncGiftsModal, syncGifts,
   canUndo, canRedo, undoChanges, redoChanges, resetGifts,
   loadFromIndexedDB,
 } = useStudentGifts(toRef(props, 'student'));
 
-// Load persisted form data once the component is mounted. 
+// Other-EXP panel visibility (modal)
+const showOtherExpPanel = ref(false);
+
+// Load persisted form data once the component is mounted.
 onMounted(() => loadFromIndexedDB());
+
+// ── Projection card visibility + bond cap ────────────────────────────────────
+// Show the breakdown card only when there's non-gift EXP to break down; the
+// gifts-only path is already covered by the MetaHeader's current → new arrow.
+const hasNonGiftExp = computed(() => cafeExp.value > 0 || bonusExp.value > 0);
+const reachesMax = computed(() => newBondLevel.value >= MAX_BOND_LEVEL);
 
 const filteredBoxes = computed(() =>
   (props.student.Boxes ?? []).filter(b => !HIDDEN_BOX_IDS.has(b.gift.Id))
@@ -135,6 +148,7 @@ function returnToStudentPage() {
           @reset-gifts="resetGifts"
           @undo-changes="undoChanges"
           @redo-changes="redoChanges"
+          @open-other-exp="showOtherExpPanel = true"
         />
       </div>
     </div>
@@ -164,6 +178,33 @@ function returnToStudentPage() {
               readonly
               hide-grade
             />
+          </div>
+        </section>
+
+        <section v-if="hasNonGiftExp" class="be-card-group be-card-group--projection">
+          <div class="be-projection-header">
+            <h3 class="be-card-label">{{ $t('projection') }}</h3>
+            <span class="be-projection-reaches">
+              {{ reachesMax ? $t('reachesBondMax') : $t('reachesBondN', { n: newBondLevel }) }}
+            </span>
+          </div>
+          <div class="be-projection">
+            <div class="be-projection-row">
+              <span>{{ $t('gifts') }}</span>
+              <span>+{{ (giftsExp + boxesExp).toLocaleString() }}</span>
+            </div>
+            <div v-if="cafeExp > 0" class="be-projection-row">
+              <span>{{ $t('cafeTaps') }}</span>
+              <span>+{{ cafeExp.toLocaleString() }}</span>
+            </div>
+            <div v-if="bonusExp > 0" class="be-projection-row">
+              <span>{{ $t('bonusExp') }}</span>
+              <span>+{{ bonusExp.toLocaleString() }}</span>
+            </div>
+            <div class="be-projection-row be-projection-total">
+              <span>{{ $t('total') }}</span>
+              <span>{{ totalCumulativeExp.toLocaleString() }} {{ $t('exp') }}</span>
+            </div>
           </div>
         </section>
       </div>
@@ -205,6 +246,14 @@ function returnToStudentPage() {
       v-if="showSyncGiftsModal"
       @confirm="(mode) => { showSyncGiftsModal = false; syncGifts(mode); }"
       @cancel="showSyncGiftsModal = false"
+    />
+
+    <OtherExpPanel
+      v-if="showOtherExpPanel"
+      :data="otherExpData"
+      @update="updateOtherExp"
+      @reset="resetOtherExp"
+      @close="showOtherExpPanel = false"
     />
   </div>
 </template>
@@ -292,6 +341,64 @@ function returnToStudentPage() {
 .be-card-group--consumed {
   border-color: color-mix(in srgb, var(--accent-color) 40%, var(--border-color));
   background: color-mix(in srgb, var(--accent-color) 6%, transparent);
+}
+
+/* Projection card — solid border (vs dashed) to mark it as a derived summary
+   rather than an interactive group; same accent tint as CONSUMED. */
+.be-card-group--projection {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent-color) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-color) 4%, transparent);
+  min-width: 220px;
+}
+
+.be-projection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.be-projection-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.be-projection-row > span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.be-projection-total {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-color);
+  font-weight: 700;
+}
+
+.be-projection-total > span:last-child {
+  color: var(--accent-color);
+}
+
+/* Card-label aside: the bond-level conclusion sits beside PROJECTION in the
+   header so it doesn't add a row at the bottom of the card. */
+.be-projection-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.be-projection-reaches {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-color);
+  white-space: nowrap;
 }
 
 .be-card-label {

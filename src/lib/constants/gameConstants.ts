@@ -6,6 +6,11 @@ export const MAX_POTENTIAL_LEVEL = 25;
 export const MIN_BOND_LEVEL = 1;
 export const MAX_BOND_LEVEL = 100;
 
+// Cafe tap bond EXP (fixed per-tap, capped at 8 invites/day)
+export const CAFE_TAP_EXP = 15;
+export const MAX_CAFE_TAPS_PER_DAY = 8;
+export const DEFAULT_CAFE_TAPS_PER_DAY = 3;
+
 // Exclusive weapon grades (1–9)
 export const MAX_GRADE = 9;
 /** Grades 1–5 are gold stars; grades 6–9 are blue stars. Also the threshold below which the weapon is locked. */

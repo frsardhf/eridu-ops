@@ -12,6 +12,8 @@ export const translations = {
     // BondsPage
     otherGifts: "Other gifts",
     favoredGifts: "Favored gifts",
+    exp: "EXP",
+    total: "Total",
     totalSr: "Total SR",
     totalSsr: "Total SSR",
     addStudent: "Add student",
@@ -31,6 +33,31 @@ export const translations = {
     yellowStones: "Yellow stones",
     conversion: "Conversion",
     consumed: "Consumed",
+
+    // BondsPage — Other EXP sources panel
+    otherExpSources: "Other EXP",
+    otherExpTooltip: "Plan cafe taps and add bonus EXP from lessons",
+    cafeTaps: "Cafe taps",
+    tapsPerDay: "Taps / day",
+    targetDate: "Target date",
+    day: "day",
+    days: "days",
+    inclusiveAbbr: "incl",
+    exclusiveAbbr: "excl",
+    includeTodayTooltip: "Toggle whether the target date counts as a day",
+    bonusExp: "Bonus EXP",
+    bonusExpTooltip: "EXP from lessons",
+    manualExp: "Amount",
+    lessonRates: "Lesson rates",
+    areaRank: "Area rank",
+    expPerLesson: "EXP",
+    bonusChance: "2× EXP chance",
+    clear: "Clear",
+    clearAll: "Clear all",
+    done: "Done",
+    projection: "Projection",
+    reachesBondN: "→ Bond {n}",
+    reachesBondMax: "→ Bond 100",
 
     // Navbar
     students: "Students",
@@ -419,6 +446,8 @@ export const translations = {
     // BondsPage
     otherGifts: "その他のギフト",
     favoredGifts: "好みのギフト",
+    exp: "EXP",
+    total: "合計",
     totalSr: "SR合計",
     totalSsr: "SSR合計",
     addStudent: "生徒を追加",
@@ -438,6 +467,31 @@ export const translations = {
     yellowStones: "黄色の石",
     conversion: "変換",
     consumed: "消費",
+
+    // BondsPage — Other EXP sources panel
+    otherExpSources: "その他EXP",
+    otherExpTooltip: "カフェタップとレッスンEXPを計画",
+    cafeTaps: "カフェタップ",
+    tapsPerDay: "タップ/日",
+    targetDate: "目標日",
+    day: "日",
+    days: "日",
+    inclusiveAbbr: "含む",
+    exclusiveAbbr: "除く",
+    includeTodayTooltip: "目標日を1日としてカウントするか切り替え",
+    bonusExp: "ボーナスEXP",
+    bonusExpTooltip: "レッスンからのEXP",
+    manualExp: "数値",
+    lessonRates: "レッスン獲得量",
+    areaRank: "エリアランク",
+    expPerLesson: "EXP",
+    bonusChance: "2倍EXP確率",
+    clear: "クリア",
+    clearAll: "全てクリア",
+    done: "完了",
+    projection: "予測",
+    reachesBondN: "→ 絆 {n}",
+    reachesBondMax: "→ 絆 100",
 
     // Navbar
     students: "生徒",
@@ -860,7 +914,11 @@ export function useTranslation(path: string, language?: Language): string {
   return result;
 }
 
-// Helper function to access nested translations
-export function $t(path: string): string {
-  return useTranslation(path);
+// Helper function to access nested translations.
+// Optional `params` substitutes `{key}` placeholders in the resolved string.
+//   $t('reachesBond', { n: 87 })  →  EN: "→ Reaches Bond 87"
+export function $t(path: string, params?: Record<string, string | number>): string {
+  const raw = useTranslation(path);
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`));
 }

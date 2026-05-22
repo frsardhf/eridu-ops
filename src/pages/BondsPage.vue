@@ -63,6 +63,7 @@ const trackedStudents = computed<StudentProps[]>(() => {
         giftBoxes: s.Boxes,
         giftFormData: form?.giftFormData,
         boxFormData: form?.boxFormData,
+        otherExp: form?.otherExpData,
       });
       const bond = form?.bondDetailData?.currentBond ?? 1;
       return { student: s, exp, bond };
@@ -188,7 +189,7 @@ function onRemoveStudent(id: number) {
         </div>
       </div>
 
-      <div v-if="!trackedStudents.length" class="bonds-empty">
+      <div v-if="isReady && !trackedStudents.length" class="bonds-empty">
         <p>{{ $t('noTrackedStudents') }}</p>
         <button type="button" class="bonds-btn primary" @click="showPicker = true">
           + {{ $t('addStudent') }}

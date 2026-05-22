@@ -10,10 +10,10 @@ const props = defineProps<{
   flat?: boolean;
 }>();
 
-const emit = defineEmits(['toggle-convert', 'sync-gifts', 'reset-gifts', 'undo-changes', 'redo-changes']);
+const emit = defineEmits(['toggle-convert', 'sync-gifts', 'reset-gifts', 'undo-changes', 'redo-changes', 'open-other-exp']);
 
 const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
-  useTooltip<'convert' | 'sync' | 'reset' | 'undo' | 'redo'>();
+  useTooltip<'convert' | 'sync' | 'reset' | 'undo' | 'redo' | 'otherExp'>();
 </script>
 
 <template>
@@ -80,6 +80,17 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
         >
           <span class="button-text">{{ $t('redoChanges') }}</span>
         </button>
+
+        <button
+          class="button button-other-exp"
+          @click="emit('open-other-exp')"
+          @mouseenter="showTooltip($event, 'otherExp')"
+          @mouseleave="hideTooltip()"
+          :aria-label="$t('otherExpSources')"
+          :title="$t('otherExpSources')"
+        >
+          <span class="button-text">{{ $t('otherExpSources') }}</span>
+        </button>
       </div>
 
       <!-- Tooltip for all buttons -->
@@ -103,6 +114,9 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
         </template>
         <template v-else-if="activeTooltip === 'redo'">
           {{ $t('redoChangesTooltip') }}
+        </template>
+        <template v-else-if="activeTooltip === 'otherExp'">
+          {{ $t('otherExpTooltip') }}
         </template>
       </div>
     </div>
@@ -164,6 +178,16 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
 
 .button-convert:hover:not(:disabled) {
   background-color: color-mix(in srgb, var(--color-convert) 82%, black);
+}
+
+.button-other-exp {
+  background-color: var(--color-positive);
+  color: white;
+  border: 1px solid var(--color-positive);
+}
+
+.button-other-exp:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-positive) 82%, black);
 }
 
 .button-disabled {

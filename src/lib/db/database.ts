@@ -55,6 +55,12 @@ export interface FormRecord {
   giftFormData?: Record<string, number>;
   boxFormData?: Record<string, number>;
   nonFavorGiftsMap?: Record<string, number>;
+  otherExpData?: {
+    cafeTapsPerDay: number;
+    cafeTargetDateIso: string;
+    cafeDateInclusive: boolean;
+    bonusExp: number;
+  };
   exclusiveGearLevel?: {
     current: number;
     target: number;

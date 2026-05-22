@@ -12,8 +12,8 @@ const emit = defineEmits<{
 }>();
 
 // Modal mounts only when visible (v-if), so isVisible is always true here.
-const { itemFormData, handleItemInput, loadItems } = useStudentItems({ isVisible: () => true });
-const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment({ isVisible: () => true });
+const { itemFormData, handleItemInput, loadItems } = useStudentItems({ isVisible: true });
+const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment({ isVisible: true });
 
 onMounted(async () => {
   await Promise.all([loadItems(), loadEquipments()]);
