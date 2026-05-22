@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import GiftCard from '@/components/bonds/gift/GiftCard.vue';
+import GiftBreakdownTable, {
+  type BreakdownRow,
+} from '@/components/bonds/gift/GiftBreakdownTable.vue';
 import { StudentProps } from '@/types/student';
 import { GiftProps } from '@/types/gift';
 import { $t } from '@/locales';
@@ -50,13 +53,66 @@ const nonFavorTotals = computed(() => {
   return { sr, ssr };
 });
 
+function buildBreakdown(
+  items: GiftProps[] | undefined,
+  values: Record<string | number, number> | undefined,
+): BreakdownRow[] {
+  if (!items?.length || !values) return [];
+  const rows: BreakdownRow[] = [];
+  for (const item of items) {
+    const qty = values[item.gift.Id] ?? 0;
+    if (qty <= 0) continue;
+    const exp = item.exp ?? 0;
+    if (exp <= 0) continue;
+    rows.push({ id: item.gift.Id, name: item.gift.Name, exp, qty, total: qty * exp });
+  }
+  return rows;
+}
+
+// Per-section breakdown rows — only gifts the user has allocated. Renders
+// nothing when no allocations, so the section stays compact at empty state.
+const favoredBreakdown = computed<BreakdownRow[]>(() => [
+  ...buildBreakdown(props.student.Gifts, props.giftFormData),
+  ...buildBreakdown(props.student.Boxes, props.boxFormData),
+]);
+
+const otherBreakdown = computed<BreakdownRow[]>(() =>
+  buildBreakdown(props.nonFavorGifts, props.nonFavorValues),
+);
+
+const favoredTotalExp = computed(() =>
+  favoredBreakdown.value.reduce((s, r) => s + r.total, 0),
+);
+
+const otherTotalExp = computed(() =>
+  otherBreakdown.value.reduce((s, r) => s + r.total, 0),
+);
+
+// Breakdown collapse state — default closed so the editor stays compact;
+// users click the total chip to expand the per-gift contributions.
+const showFavoredBreakdown = ref(false);
+const showOtherBreakdown = ref(false);
+
 const convertBox = computed(() => !!props.convertBox);
 </script>
 
 <template>
   <div class="gifts-grid-wrapper">
-    <div v-if="showFavoredLabel && (hasGifts || hasBoxes)" class="gifts-section-label">
-      {{ $t('favoredGifts') }}
+    <div
+      v-if="showFavoredLabel && (hasGifts || hasBoxes)"
+      class="gifts-section-label gifts-section-label--row"
+    >
+      <span>{{ $t('favoredGifts') }}</span>
+      <button
+        v-if="favoredTotalExp > 0"
+        type="button"
+        class="gifts-breakdown-toggle"
+        :aria-expanded="showFavoredBreakdown"
+        @click="showFavoredBreakdown = !showFavoredBreakdown"
+      >
+        <span class="gifts-breakdown-arrow" :class="{ 'is-open': showFavoredBreakdown }">▸</span>
+        {{ favoredTotalExp.toLocaleString() }} {{ $t('exp') }}
+      </button>
     </div>
     <!-- Favored gifts section -->
     <div v-if="hasGifts || hasBoxes" class="gifts-grid">
@@ -87,6 +143,11 @@ const convertBox = computed(() => !!props.convertBox);
       </template>
     </div>
 
+    <GiftBreakdownTable
+      v-if="showFavoredBreakdown && favoredBreakdown.length"
+      :rows="favoredBreakdown"
+    />
+
     <!-- Non-favored gifts section (BondsPage only) -->
     <template v-if="hasNonFavor">
       <div class="gifts-section-label gifts-section-label--row">
@@ -94,6 +155,16 @@ const convertBox = computed(() => !!props.convertBox);
         <span class="gifts-section-totals">
           <span>{{ $t('totalSr') }}: <strong>{{ nonFavorTotals.sr }}</strong></span>
           <span>{{ $t('totalSsr') }}: <strong>{{ nonFavorTotals.ssr }}</strong></span>
+          <button
+            v-if="otherTotalExp > 0"
+            type="button"
+            class="gifts-breakdown-toggle"
+            :aria-expanded="showOtherBreakdown"
+            @click="showOtherBreakdown = !showOtherBreakdown"
+          >
+            <span class="gifts-breakdown-arrow" :class="{ 'is-open': showOtherBreakdown }">▸</span>
+            {{ otherTotalExp.toLocaleString() }} {{ $t('exp') }}
+          </button>
         </span>
       </div>
       <div class="gifts-grid">
@@ -107,6 +178,11 @@ const convertBox = computed(() => !!props.convertBox);
           @update:value="(e) => emit('update-nonfavor', item.gift.Id, e)"
         />
       </div>
+
+      <GiftBreakdownTable
+        v-if="showOtherBreakdown && otherBreakdown.length"
+        :rows="otherBreakdown"
+      />
     </template>
   </div>
 </template>
@@ -156,4 +232,35 @@ const convertBox = computed(() => !!props.convertBox);
   color: var(--text-primary);
   font-weight: 700;
 }
+
+.gifts-breakdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gifts-breakdown-toggle:hover {
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+}
+
+.gifts-breakdown-arrow {
+  display: inline-block;
+  font-size: 0.65rem;
+  transition: transform 0.15s ease;
+}
+
+.gifts-breakdown-arrow.is-open {
+  transform: rotate(90deg);
+}
+
 </style>
