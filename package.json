@@ -14,7 +14,7 @@
     "autoprefixer": "^10.4.21",
     "dexie": "^4.2.1",
     "lodash-es": "^4.17.21",
-    "modern-screenshot": "^4.6.8",
+    "modern-screenshot": "^4.7.0",
     "postcss": "^8.5.3",
     "postcss-load-config": "^6.0.1",
     "vite": "^6.1.0",
