@@ -7,7 +7,7 @@ export const translations = {
     // Landing
     landingSubtitle: "Blue Archive Student Progression Planner",
     studentsDesc: "Track bond levels, skill upgrades, gear progression, and material costs.",
-    bondsDesc: "Dedicated bond tracking and gift planning. Coming soon.",
+    bondsDesc: "Gift planning and bond progress tracker for your students.",
 
     // BondsPage
     otherGifts: "Other gifts",
@@ -414,7 +414,7 @@ export const translations = {
     // Landing
     landingSubtitle: "ブルーアーカイブ 生徒育成プランナー",
     studentsDesc: "絆レベル、スキル強化、装備の進捗、素材コストを追跡。",
-    bondsDesc: "絆追跡とギフトプランニング。近日公開。",
+    bondsDesc: "ギフト計画と絆進捗の追跡。",
 
     // BondsPage
     otherGifts: "その他のギフト",
