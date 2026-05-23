@@ -132,13 +132,13 @@ function handleDrop(event: DragEvent) {
   event.preventDefault();
   isDragging.value = false;
   const files = event.dataTransfer?.files;
-  if (files?.length) processFiles(Array.from(files).slice(0, 3));
+  if (files?.length) processFiles([Array.from(files)[0]]);
 }
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
   if (input.files?.length) {
-    processFiles(Array.from(input.files).slice(0, 3));
+    processFiles([Array.from(input.files)[0]]);
     input.value = '';
   }
 }
@@ -319,7 +319,7 @@ useDocumentListener('paste', onPaste);
           <p class="guide-section-title">Before scanning</p>
           <ul class="guide-list">
             <li>Set inventory sort to <strong>ascending or descending by Item ID</strong> (the game default). Name / usage / owned sort is not supported.</li>
-            <li>Up to <strong>3 screenshots per scan</strong>. Scroll to a new page and add each screenshot separately.</li>
+            <li>One screenshot per scan. Re-upload to process additional pages.</li>
             <li>Select the correct type: <strong>Items</strong> or <strong>Equipment</strong> — the grids differ.</li>
           </ul>
         </div>
@@ -428,7 +428,6 @@ useDocumentListener('paste', onPaste);
               id="screenshot-input"
               class="file-input"
               accept="image/png,image/jpeg,image/webp"
-              multiple
               @change="handleFileSelect"
             />
 
@@ -499,7 +498,7 @@ useDocumentListener('paste', onPaste);
               class="screenshot-group"
               :class="`group-${groupIdx % 2}`"
             >
-              <div class="group-label">#{{ groupIdx + 1 }}</div>
+              <div v-if="groupedResults.length > 1" class="group-label">#{{ groupIdx + 1 }}</div>
               <div class="results-grid" :style="{ gridTemplateRows: `repeat(${rowsPerGroup}, auto)` }">
             <div
               v-for="item in group"
