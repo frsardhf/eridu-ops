@@ -34,10 +34,21 @@ const todayDate = (() => {
   return d;
 })();
 
-const cafeDate = computed<Date | null>({
+// Start date — empty stored value displays as today (and `computeCafeDays`
+// treats it as today too) so users don't have to set it unless they're
+// planning a future-start campaign.
+const cafeStartDate = computed<Date | null>({
+  get: () => isoToDate(props.data.cafeStartDateIso) ?? todayDate,
+  set: (v) => emit('update', { cafeStartDateIso: dateToIso(v) }),
+});
+
+const cafeEndDate = computed<Date | null>({
   get: () => isoToDate(props.data.cafeTargetDateIso),
   set: (v) => emit('update', { cafeTargetDateIso: dateToIso(v) }),
 });
+
+// End date can't precede start; falls back to today when start is empty.
+const endMinDate = computed(() => isoToDate(props.data.cafeStartDateIso) ?? todayDate);
 
 /**
  * Format the picked date for display inside the picker input. We use a
@@ -51,7 +62,11 @@ const dpFormats = {
 };
 
 const cafeDays = computed(() =>
-  computeCafeDays(props.data.cafeTargetDateIso, props.data.cafeDateInclusive),
+  computeCafeDays(
+    props.data.cafeStartDateIso,
+    props.data.cafeTargetDateIso,
+    props.data.cafeDateInclusive,
+  ),
 );
 
 const cafeExp = computed(() => computeCafeExp(props.data.cafeTapsPerDay, cafeDays.value));
@@ -116,32 +131,31 @@ const lessonRates = [
               />
             </label>
 
-            <label class="oe-field oe-field--grow">
-              <span class="oe-label">{{ $t('targetDate') }}</span>
-              <div class="oe-date-inline">
-                <VueDatePicker
-                  v-model="cafeDate"
-                  :min-date="todayDate"
-                  :enable-time-picker="false"
-                  auto-apply
-                  :formats="dpFormats"
-                  :placeholder="$t('targetDate')"
-                  :clearable="true"
-                  class="oe-datepicker"
-                />
-                <span class="oe-derived-days">
-                  {{ cafeDays }} {{ cafeDays === 1 ? $t('day') : $t('days') }}
-                </span>
-                <button
-                  type="button"
-                  class="oe-chip"
-                  :class="{ 'oe-chip--active': data.cafeDateInclusive }"
-                  :title="$t('includeTodayTooltip')"
-                  @click="toggleInclusive"
-                >
-                  {{ data.cafeDateInclusive ? $t('inclusiveAbbr') : $t('exclusiveAbbr') }}
-                </button>
-              </div>
+            <label class="oe-field oe-field--half">
+              <span class="oe-label">{{ $t('startDate') }}</span>
+              <VueDatePicker
+                v-model="cafeStartDate"
+                :enable-time-picker="false"
+                auto-apply
+                :formats="dpFormats"
+                :placeholder="$t('startDate')"
+                :clearable="true"
+                class="oe-datepicker"
+              />
+            </label>
+
+            <label class="oe-field oe-field--half">
+              <span class="oe-label">{{ $t('endDate') }}</span>
+              <VueDatePicker
+                v-model="cafeEndDate"
+                :min-date="endMinDate"
+                :enable-time-picker="false"
+                auto-apply
+                :formats="dpFormats"
+                :placeholder="$t('endDate')"
+                :clearable="true"
+                class="oe-datepicker"
+              />
             </label>
           </div>
 
@@ -152,6 +166,20 @@ const lessonRates = [
             </span>
             <span class="oe-cafe-total-formula">
               · {{ data.cafeTapsPerDay }} × {{ cafeDays }} × {{ CAFE_TAP_EXP }}
+            </span>
+            <span class="oe-cafe-total-meta">
+              <span class="oe-derived-days">
+                {{ cafeDays }} {{ cafeDays === 1 ? $t('day') : $t('days') }}
+              </span>
+              <button
+                type="button"
+                class="oe-chip"
+                :class="{ 'oe-chip--active': data.cafeDateInclusive }"
+                :title="$t('includeTodayTooltip')"
+                @click="toggleInclusive"
+              >
+                {{ data.cafeDateInclusive ? $t('inclusiveAbbr') : $t('exclusiveAbbr') }}
+              </button>
             </span>
           </div>
         </section>
@@ -395,6 +423,14 @@ const lessonRates = [
   flex: 1;
 }
 
+/* Two date fields share the row, each taking half the remaining space
+   after tapsPerDay's fixed column. min-width: 0 lets them shrink when
+   the picker's intrinsic width would otherwise force a wrap. */
+.oe-field--half {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .oe-label {
   font-size: 0.75rem;
   color: var(--text-secondary);
@@ -411,7 +447,7 @@ const lessonRates = [
 }
 
 .oe-input--num {
-  width: 72px;
+  width: 64px;
 }
 
 /* Vue Datepicker — map their CSS vars to our theme so the calendar popup
@@ -462,33 +498,27 @@ const lessonRates = [
   color: var(--color-negative);
 }
 
-/* Datepicker row: picker on the left (grows), derived days + chip dock to
-   the right. Wraps below the picker on narrow widths via flex-wrap. */
-.oe-date-inline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.oe-date-inline .oe-datepicker {
-  flex: 1 1 180px;
-  min-width: 0;
-}
-
 .oe-derived-days {
   font-size: 0.85rem;
   color: var(--text-primary);
   font-weight: 600;
 }
 
-/* Cafe sub-total + formula on one compact line. */
+/* Cafe sub-total: label + value + formula on the left, days + chip
+   pushed to the right via the meta group's margin-left: auto. */
 .oe-cafe-total {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
   font-size: 0.85rem;
+}
+
+.oe-cafe-total-meta {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .oe-cafe-total-label {

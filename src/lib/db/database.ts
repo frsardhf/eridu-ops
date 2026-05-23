@@ -57,6 +57,7 @@ export interface FormRecord {
   nonFavorGiftsMap?: Record<string, number>;
   otherExpData?: {
     cafeTapsPerDay: number;
+    cafeStartDateIso: string;
     cafeTargetDateIso: string;
     cafeDateInclusive: boolean;
     bonusExp: number;
