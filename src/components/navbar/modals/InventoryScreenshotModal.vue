@@ -40,10 +40,32 @@ const step = ref<Step>('type');
 const inventoryType = ref<InventoryType>('items');
 const isDragging = ref(false);
 const isLoading = ref(false);
-const loadingProgress = ref({ current: 0, total: 1 });
 const errorMessage = ref('');
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
+
+// Florence-2 on the CPU VPS takes ~4 min per screenshot. The bar fills against
+// this expectation and caps at 95% so it doesn't sit at 100% while the user
+// is still waiting — actual completion just hides the loading section.
+const EXPECTED_PARSE_SECONDS = 240;
+const elapsedSeconds = ref(0);
+let elapsedTimer: ReturnType<typeof setInterval> | null = null;
+
+const progressPercent = computed(() => {
+  const ratio = elapsedSeconds.value / EXPECTED_PARSE_SECONDS;
+  return Math.min(95, Math.round(ratio * 100));
+});
+
+function formatTime(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+const elapsedFormatted   = computed(() => formatTime(elapsedSeconds.value));
+const remainingFormatted = computed(() =>
+  formatTime(Math.max(0, EXPECTED_PARSE_SECONDS - elapsedSeconds.value)),
+);
 
 // Keyed by `${row}-${col}` (position-stable even when item is changed)
 const editedQuantities = ref<Record<string, number>>({});
@@ -131,57 +153,54 @@ function handleDragLeave() {
 function handleDrop(event: DragEvent) {
   event.preventDefault();
   isDragging.value = false;
-  const files = event.dataTransfer?.files;
-  if (files?.length) processFiles([Array.from(files)[0]]);
+  const file = event.dataTransfer?.files?.[0];
+  if (file) processFile(file);
 }
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  if (input.files?.length) {
-    processFiles([Array.from(input.files)[0]]);
+  const file = input.files?.[0];
+  if (file) {
+    processFile(file);
     input.value = '';
   }
 }
 
-async function processFiles(files: File[]) {
-  const imageFiles = files.filter(f => f.type.startsWith('image/'));
-  if (!imageFiles.length) {
-    errorMessage.value = 'Please select image files (PNG, JPG, or WebP).';
+async function processFile(file: File) {
+  if (!file.type.startsWith('image/')) {
+    errorMessage.value = 'Please select an image file (PNG, JPG, or WebP).';
     return;
   }
 
   isLoading.value = true;
   errorMessage.value = '';
-  loadingProgress.value = { current: 0, total: imageFiles.length };
+
+  elapsedSeconds.value = 0;
+  const startedAt = Date.now();
+  elapsedTimer = setInterval(() => {
+    elapsedSeconds.value = Math.floor((Date.now() - startedAt) / 1000);
+  }, 1000);
 
   try {
-    const requests = imageFiles.map((file, idx) => {
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('inventoryType', inventoryType.value);
-      return fetch(`${PARSER_BASE}/inventory/parse`, {
-        method: 'POST',
-        body: formData,
-      }).then(async res => {
-        loadingProgress.value.current++;
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as any).error || `HTTP ${res.status}`);
-        }
-        const data = await res.json() as { results: ParsedItem[] };
-        // Offset rows by screenshot index × rpg so posKeys stay unique across screenshots.
-        const rpg = inventoryType.value === 'equipment' ? 5 : 4;
-        return data.results.map(r => ({ ...r, row: r.row + idx * rpg }));
-      });
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('inventoryType', inventoryType.value);
+    const res = await fetch(`${PARSER_BASE}/inventory/parse`, {
+      method: 'POST',
+      body: formData,
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as any).error || `HTTP ${res.status}`);
+    }
+    const data = await res.json() as { results: ParsedItem[] };
 
-    const allResults = (await Promise.all(requests)).flat();
-    parsedResults.value = allResults;
-    hasLowConfidence.value = allResults.some(r => r.confidence < 0.8);
+    parsedResults.value = data.results;
+    hasLowConfidence.value = data.results.some(r => r.confidence < 0.8);
 
     editedQuantities.value = {};
     editedItemIds.value = {};
-    allResults.forEach(r => {
+    data.results.forEach(r => {
       editedQuantities.value[`${r.row}-${r.col}`] = r.quantity;
     });
 
@@ -189,6 +208,10 @@ async function processFiles(files: File[]) {
   } catch (e: any) {
     errorMessage.value = $t('parseFailed') + (e?.message ? ` (${e.message})` : '');
   } finally {
+    if (elapsedTimer) {
+      clearInterval(elapsedTimer);
+      elapsedTimer = null;
+    }
     isLoading.value = false;
   }
 }
@@ -290,7 +313,7 @@ function onPaste(e: ClipboardEvent) {
   const file = imageItem.getAsFile();
   if (!file) return;
   e.preventDefault();
-  processFiles([file]);
+  processFile(file);
 }
 useDocumentListener('paste', onPaste);
 </script>
@@ -431,13 +454,17 @@ useDocumentListener('paste', onPaste);
               @change="handleFileSelect"
             />
 
-            <div v-if="isLoading" class="status-message">
+            <div v-if="isLoading" class="status-message loading-message">
               <span class="loader"></span>
-              <p>
-                {{ $t('parsingScreenshot') }}
-                <span v-if="loadingProgress.total > 1">
-                  ({{ loadingProgress.current }}/{{ loadingProgress.total }})
-                </span>
+              <p class="loading-title">{{ $t('parsingScreenshot') }}</p>
+              <div class="progress-track" role="progressbar" :aria-valuenow="progressPercent" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+              </div>
+              <p class="progress-meta">
+                {{ elapsedFormatted }} elapsed · ~{{ remainingFormatted }} remaining
+              </p>
+              <p class="progress-tip">
+                OCR runs on a small CPU server — expect about 4 min per screenshot. Feel free to leave this tab open.
               </p>
             </div>
 
@@ -895,6 +922,48 @@ useDocumentListener('paste', onPaste);
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Loading state — explicit progress bar so users don't think a 4-min wait is a hang */
+.loading-message {
+  width: 100%;
+  max-width: 320px;
+  gap: 6px;
+}
+.loading-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: var(--background-primary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 3px;
+  transition: width 0.8s linear;
+}
+
+.progress-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-tip {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  text-align: center;
+  max-width: 280px;
 }
 
 /* Step 3 */
