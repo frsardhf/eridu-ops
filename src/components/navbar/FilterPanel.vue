@@ -216,12 +216,20 @@ function toggleOtherSchools() {
   left: 0;
   right: 0;
   min-width: 280px;
+  width: 280px;
   background-color: var(--background-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   z-index: 150;
   overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .filter-panel {
+    width: 420px;
+    left: auto;
+  }
 }
 
 .filter-panel-header {
@@ -258,7 +266,7 @@ function toggleOtherSchools() {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 55vh;
+  max-height: 65vh;
   overflow-y: auto;
 }
 

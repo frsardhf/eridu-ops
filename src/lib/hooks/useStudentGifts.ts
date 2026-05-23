@@ -1,6 +1,9 @@
 import { ref, computed, type Ref } from 'vue';
 import { StudentProps } from '../../types/student';
-import { BondDetailDataProps, DEFAULT_BOND_DETAIL } from '../../types/gift';
+import {
+  BondDetailDataProps, DEFAULT_BOND_DETAIL,
+  OtherExpDataProps, DEFAULT_OTHER_EXP,
+} from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
 import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import bondData from '../../data/data.json';
@@ -11,7 +14,7 @@ import { getAllocatedGifts } from './useGiftCalculation';
 import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
-import { computeStudentBondExpTotal } from '../utils/bondExpUtils';
+import { calculateGiftStackExp, computeCafeDays, computeCafeExp } from '../utils/bondExpUtils';
 
 const HISTORY_LIMIT = 10;
 
@@ -35,6 +38,7 @@ export function useStudentGifts(
   const boxFormData = ref<Record<string, number>>({});
   const nonFavorGiftsMap = ref<Record<number, number>>({}); // Track individual non-favor gifts for Gifts tab display
   const bondDetailData = ref<BondDetailDataProps>({...DEFAULT_BOND_DETAIL});
+  const otherExpData = ref<OtherExpDataProps>({...DEFAULT_OTHER_EXP});
   const isCalculating = ref(false);
 
   // Convert modal state
@@ -70,12 +74,13 @@ export function useStudentGifts(
     boxFormData:     {} as Record<string, number>,
     nonFavorGiftsMap: {} as Record<number, number>,
     bondDetailData:  { ...DEFAULT_BOND_DETAIL } as BondDetailDataProps,
+    otherExpData:    { ...DEFAULT_OTHER_EXP } as OtherExpDataProps,
   };
 
   const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
     useDebouncedFormPersistence({
       isVisible:    opts.isVisible ?? (() => true),
-      refs:         { giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData },
+      refs:         { giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData, otherExpData },
       defaults:     GIFT_DEFAULTS,
       loadFn:       (staged) => loadFormDataToRefs(student().Id, staged, GIFT_DEFAULTS),
       saveFn:       () => saveFormData(student().Id, {
@@ -83,6 +88,7 @@ export function useStudentGifts(
         boxFormData:      boxFormData.value,
         nonFavorGiftsMap: nonFavorGiftsMap.value,
         bondDetailData:   bondDetailData.value,
+        otherExpData:     otherExpData.value,
       }),
       onSaved:      (saved) => setStudentDataDirect(student().Id, saved),
       afterLoad:    () => {
@@ -90,18 +96,22 @@ export function useStudentGifts(
         undoStack.value  = [];
         redoStack.value  = [];
       },
-      watchSources: [giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData],
+      watchSources: [giftFormData, boxFormData, nonFavorGiftsMap, bondDetailData, otherExpData],
     });
 
-  const calculateCumulativeExp = (): number =>
-    computeStudentBondExpTotal({
-      favoredGifts: student().Gifts,
-      giftBoxes: student().Boxes,
-      giftFormData: giftFormData.value,
-      boxFormData: boxFormData.value,
-    });
+  // Per-source EXP breakdowns. Exposed so the editor's projection card can
+  // show "Gifts +X / Cafe +Y / Bonus +Z" without recomputing in the component.
+  const giftsExp = computed(() => calculateGiftStackExp(student().Gifts, giftFormData.value));
+  const boxesExp = computed(() => calculateGiftStackExp(student().Boxes, boxFormData.value));
+  const cafeDays = computed(() =>
+    computeCafeDays(otherExpData.value.cafeTargetDateIso, otherExpData.value.cafeDateInclusive)
+  );
+  const cafeExp = computed(() => computeCafeExp(otherExpData.value.cafeTapsPerDay, cafeDays.value));
+  const bonusExp = computed(() => Math.max(0, otherExpData.value.bonusExp || 0));
 
-  const totalCumulativeExp = computed(calculateCumulativeExp);
+  const totalCumulativeExp = computed(() =>
+    giftsExp.value + boxesExp.value + cafeExp.value + bonusExp.value
+  );
 
   // Compute new bond level based on current bond and cumulative EXP
   const newBondLevel = computed(() => {
@@ -223,6 +233,16 @@ export function useStudentGifts(
 
   const handleBondInput = (value: number) => {
     bondDetailData.value.currentBond = value;
+  };
+
+  /** Patch one or more fields of otherExpData (cafe taps, target date, bonus EXP). */
+  const updateOtherExp = (patch: Partial<OtherExpDataProps>) => {
+    otherExpData.value = { ...otherExpData.value, ...patch };
+  };
+
+  /** Reset all otherExpData back to defaults. Used by the panel's clear-all. */
+  const resetOtherExp = () => {
+    otherExpData.value = { ...DEFAULT_OTHER_EXP };
   };
 
   const convertBoxes = () => {
@@ -448,6 +468,7 @@ export function useStudentGifts(
     giftFormData,
     boxFormData,
     nonFavorGiftsMap,
+    otherExpData,
     currentBond,
 
     // Convert modal
@@ -466,6 +487,11 @@ export function useStudentGifts(
 
     // Computed
     totalCumulativeExp,
+    giftsExp,
+    boxesExp,
+    cafeDays,
+    cafeExp,
+    bonusExp,
     newBondLevel,
     remainingXp,
     shouldShowGiftGrade,
@@ -477,6 +503,8 @@ export function useStudentGifts(
     handleBoxInput,
     handleNonFavorGiftInput,
     handleBondInput,
+    updateOtherExp,
+    resetOtherExp,
     convertBoxes,
     resetGifts,
     undoChanges,
