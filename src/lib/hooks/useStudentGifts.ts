@@ -104,7 +104,11 @@ export function useStudentGifts(
   const giftsExp = computed(() => calculateGiftStackExp(student().Gifts, giftFormData.value));
   const boxesExp = computed(() => calculateGiftStackExp(student().Boxes, boxFormData.value));
   const cafeDays = computed(() =>
-    computeCafeDays(otherExpData.value.cafeTargetDateIso, otherExpData.value.cafeDateInclusive)
+    computeCafeDays(
+      otherExpData.value.cafeStartDateIso,
+      otherExpData.value.cafeTargetDateIso,
+      otherExpData.value.cafeDateInclusive,
+    )
   );
   const cafeExp = computed(() => computeCafeExp(otherExpData.value.cafeTapsPerDay, cafeDays.value));
   const bonusExp = computed(() => Math.max(0, otherExpData.value.bonusExp || 0));

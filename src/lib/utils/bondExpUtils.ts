@@ -76,17 +76,23 @@ export function dateToIso(d: Date | null): string {
 }
 
 /**
- * Days from local midnight today until `targetDateIso` (YYYY-MM-DD).
- * Past or invalid dates → 0. If `inclusive`, the target date counts as
- * one of the days (so today→today inclusive = 1, today→today exclusive = 0).
+ * Day delta from `startDateIso` to `endDateIso` (both YYYY-MM-DD).
+ * Empty start ⇒ today. Past/invalid end ⇒ 0. If `inclusive`, the end
+ * date counts as one of the days (so start=end inclusive = 1, exclusive = 0).
  */
-export function computeCafeDays(targetDateIso: string, inclusive: boolean): number {
-  if (!targetDateIso) return 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(`${targetDateIso}T00:00:00`);
-  if (Number.isNaN(target.getTime())) return 0;
-  const diffMs = target.getTime() - today.getTime();
+export function computeCafeDays(
+  startDateIso: string,
+  endDateIso: string,
+  inclusive: boolean,
+): number {
+  if (!endDateIso) return 0;
+  const start = startDateIso
+    ? new Date(`${startDateIso}T00:00:00`)
+    : (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
+  if (Number.isNaN(start.getTime())) return 0;
+  const end = new Date(`${endDateIso}T00:00:00`);
+  if (Number.isNaN(end.getTime())) return 0;
+  const diffMs = end.getTime() - start.getTime();
   const days = Math.floor(diffMs / 86400000);
   if (days < 0) return 0;
   return inclusive ? days + 1 : days;
@@ -102,7 +108,11 @@ export function computeCafeExp(tapsPerDay: number, days: number): number {
 /** Combined cafe + manual bonus EXP. Pure — no clock read. */
 export function computeOtherExpTotal(other: OtherExpDataProps | undefined): number {
   if (!other) return 0;
-  const days = computeCafeDays(other.cafeTargetDateIso, other.cafeDateInclusive);
+  const days = computeCafeDays(
+    other.cafeStartDateIso,
+    other.cafeTargetDateIso,
+    other.cafeDateInclusive,
+  );
   return computeCafeExp(other.cafeTapsPerDay, days) + Math.max(0, other.bonusExp || 0);
 }
 
