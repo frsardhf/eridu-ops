@@ -44,16 +44,25 @@ const errorMessage = ref('');
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
 
-// Florence-2 on the CPU VPS takes ~4 min per screenshot. The bar fills against
-// this expectation and caps at 95% so it doesn't sit at 100% while the user
-// is still waiting — actual completion just hides the loading section.
-const EXPECTED_PARSE_SECONDS = 240;
+// Two-phase progress bar:
+//   Fast path (Gemini): typically ~20s — bar fills 0→85% in 30s.
+//   Slow path (Florence-2 CPU fallback): ~4 min — bar crawls 85→95% over 210s.
+// The switch happens automatically at 30s if the response hasn't arrived yet.
+const FAST_SECONDS = 30;   // Gemini expected ceiling
+const SLOW_SECONDS = 240;  // Florence-2 CPU fallback ceiling
 const elapsedSeconds = ref(0);
 let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
+const isSlowPath = computed(() => elapsedSeconds.value >= FAST_SECONDS);
+
 const progressPercent = computed(() => {
-  const ratio = elapsedSeconds.value / EXPECTED_PARSE_SECONDS;
-  return Math.min(95, Math.round(ratio * 100));
+  if (!isSlowPath.value) {
+    // Fast phase: 0 → 85% in the first 30s
+    return Math.min(85, Math.round((elapsedSeconds.value / FAST_SECONDS) * 85));
+  }
+  // Slow phase: 85% → 95% over the remaining ~210s
+  const slowElapsed = elapsedSeconds.value - FAST_SECONDS;
+  return Math.min(95, 85 + Math.round((slowElapsed / (SLOW_SECONDS - FAST_SECONDS)) * 10));
 });
 
 function formatTime(secs: number): string {
@@ -64,7 +73,7 @@ function formatTime(secs: number): string {
 
 const elapsedFormatted   = computed(() => formatTime(elapsedSeconds.value));
 const remainingFormatted = computed(() =>
-  formatTime(Math.max(0, EXPECTED_PARSE_SECONDS - elapsedSeconds.value)),
+  formatTime(Math.max(0, SLOW_SECONDS - elapsedSeconds.value)),
 );
 
 // Keyed by `${row}-${col}` (position-stable even when item is changed)
@@ -461,10 +470,11 @@ useDocumentListener('paste', onPaste);
                 <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
               </div>
               <p class="progress-meta">
-                {{ elapsedFormatted }} elapsed · ~{{ remainingFormatted }} remaining
+                {{ elapsedFormatted }} elapsed<template v-if="isSlowPath"> · ~{{ remainingFormatted }} remaining</template>
               </p>
               <p class="progress-tip">
-                OCR runs on a small CPU server — expect about 4 min per screenshot. Feel free to leave this tab open.
+                <template v-if="!isSlowPath">Reading quantities with AI vision…</template>
+                <template v-else>Taking longer than expected — running local OCR (~4 min total). Feel free to leave this tab open.</template>
               </p>
             </div>
 
