@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import { saveItemsInventory, saveEquipmentInventory } from '@/lib/utils/studentStorage';
@@ -22,6 +22,21 @@ type Step = 'type' | 'upload' | 'review';
 
 const PARSER_BASE = (import.meta.env.VITE_PARSER_URL as string | undefined) ?? '/api';
 
+// Upload validation thresholds.
+// - MIME allowlist matches the <input accept> attr so drag-drop / paste paths
+//   can't sneak in HEIC, GIF, BMP, etc. that would either be rejected by the
+//   backend or waste a Gemini call on an unparseable image.
+// - Dimensions are gated to FHD landscape (1920×1080) and above in the 16:9
+//   family. Below FHD the icon CLIP matching degrades because cells fall under
+//   ~100px and CLIP's 224×224 input requires aggressive upsampling. The 1900
+//   floor leaves ~20px of slop for Snipping Tool / DPI rounding (e.g. 1919×1079).
+// - Aspect ratio band 1.70–1.85 covers 16:9 with pixel tolerance while rejecting
+//   16:10 (1.60), 21:9 ultrawide (2.37), and portrait phone screenshots.
+const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp'];
+const MIN_WIDTH = 1900;
+const MIN_ASPECT = 1.70;
+const MAX_ASPECT = 1.85;
+
 interface ParsedItem {
   row: number;
   col: number;
@@ -43,6 +58,12 @@ const isLoading = ref(false);
 const errorMessage = ref('');
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
+
+// Transient success banner shown on the upload step after Apply lands.
+// The modal stays open after applying so the user can scan more screenshots
+// without re-opening it from the navbar each time.
+const lastAppliedCount = ref(0);
+let appliedTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Two-phase progress bar:
 //   Fast path (Gemini): typically ~20s — bar fills 0→85% in 30s.
@@ -175,9 +196,51 @@ function handleFileSelect(event: Event) {
   }
 }
 
+function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('decode failed'));
+    };
+    img.src = url;
+  });
+}
+
 async function processFile(file: File) {
-  if (!file.type.startsWith('image/')) {
-    errorMessage.value = 'Please select an image file (PNG, JPG, or WebP).';
+  // 1. MIME allowlist — stricter than the dropzone's <input accept> so that
+  //    drag-drop and paste paths can't bypass it with HEIC/GIF/BMP.
+  if (!ALLOWED_MIME.includes(file.type)) {
+    errorMessage.value = $t('scanModal.errInvalidMime');
+    return;
+  }
+
+  // 2. Dimension check — must be FHD-ish 16:9 landscape.
+  let dims: { width: number; height: number };
+  try {
+    dims = await readImageDimensions(file);
+  } catch {
+    errorMessage.value = $t('scanModal.errDecodeFailed');
+    return;
+  }
+  const { width, height } = dims;
+
+  if (width < height) {
+    errorMessage.value = $t('scanModal.errNotLandscape', { width, height });
+    return;
+  }
+  if (width < MIN_WIDTH) {
+    errorMessage.value = $t('scanModal.errTooSmall', { minWidth: MIN_WIDTH, width, height });
+    return;
+  }
+  const ratio = width / height;
+  if (ratio < MIN_ASPECT || ratio > MAX_ASPECT) {
+    errorMessage.value = $t('scanModal.errBadAspect', { width, height });
     return;
   }
 
@@ -259,6 +322,8 @@ async function applyResults() {
     quantityMap[effectiveId] = editedQuantities.value[pk] ?? r.quantity;
   });
 
+  const appliedCount = Object.keys(quantityMap).length;
+
   if (inventoryType.value === 'items') {
     await saveItemsInventory(quantityMap);
     const cache = getAllItemsFromCache();
@@ -278,8 +343,30 @@ async function applyResults() {
   }
 
   emit('inventory-updated');
-  emit('close');
+
+  // Reset to upload step instead of closing — user can scan more screenshots.
+  // Inventory type is preserved so a 10-page items scan doesn't re-prompt the
+  // type selector on every page.
+  parsedResults.value = [];
+  editedQuantities.value = {};
+  editedItemIds.value = {};
+  activeSearchPos.value = null;
+  errorMessage.value = '';
+  hasLowConfidence.value = false;
+  step.value = 'upload';
+
+  lastAppliedCount.value = appliedCount;
+  if (appliedTimer) clearTimeout(appliedTimer);
+  appliedTimer = setTimeout(() => {
+    lastAppliedCount.value = 0;
+    appliedTimer = null;
+  }, 4000);
 }
+
+onBeforeUnmount(() => {
+  if (appliedTimer) clearTimeout(appliedTimer);
+  if (elapsedTimer) clearInterval(elapsedTimer);
+});
 
 function closeModal(event: MouseEvent) {
   if (event.target === event.currentTarget) emit('close');
@@ -348,44 +435,42 @@ useDocumentListener('paste', onPaste);
       <!-- Collapsible guide panel -->
       <div v-if="showGuide" class="guide-panel">
         <div class="guide-section">
-          <p class="guide-section-title">Before scanning</p>
+          <p class="guide-section-title">{{ $t('scanGuide.beforeScanning.title') }}</p>
           <ul class="guide-list">
-            <li>Set inventory sort to <strong>ascending or descending by Item ID</strong> (the game default). Name / usage / owned sort is not supported.</li>
-            <li>One screenshot per scan. Re-upload to process additional pages.</li>
-            <li>Select the correct type: <strong>Items</strong> or <strong>Equipment</strong> — the grids differ.</li>
+            <li v-html="$t('scanGuide.beforeScanning.sortOrder')"></li>
+            <li v-html="$t('scanGuide.beforeScanning.onePerScan')"></li>
+            <li v-html="$t('scanGuide.beforeScanning.selectType')"></li>
           </ul>
         </div>
         <div class="guide-section">
-          <p class="guide-section-title">Screenshots</p>
+          <p class="guide-section-title">{{ $t('scanGuide.screenshots.title') }}</p>
           <ul class="guide-list">
-            <li>Optimised for <strong>FHD (1920 × 1080)</strong>. Higher resolutions (2K / 4K) work fine — the parser locates the inventory panel by aspect ratio.</li>
-            <li><strong>Items</strong> tab detects: EXP materials, artifacts, CD items, book items, and gifts (4 rows per page).</li>
-            <li><strong>Equipment</strong> tab detects: T2+ equipment pieces (5 rows per page). T1 pieces and EXP equipment are excluded.</li>
+            <li v-html="$t('scanGuide.screenshots.resolution')"></li>
+            <li v-html="$t('scanGuide.screenshots.itemsTab')"></li>
+            <li v-html="$t('scanGuide.screenshots.equipmentTab')"></li>
           </ul>
         </div>
         <div class="guide-section">
-          <p class="guide-section-title">Reviewing results</p>
+          <p class="guide-section-title">{{ $t('scanGuide.reviewing.title') }}</p>
           <ul class="guide-list">
-            <li><span class="swatch swatch--med"></span> Orange = moderate confidence (50–80%); <span class="swatch swatch--low"></span> red = low confidence (&lt;50%). Inspect these first.</li>
-            <li>Hover any card to reveal controls: <strong>✏</strong> change item · edit quantity field · <strong>×</strong> remove.</li>
-            <li>Applying only updates quantities for <strong>detected items</strong> — undetected cells are left unchanged.</li>
+            <li><span class="swatch swatch--med"></span> <span v-html="$t('scanGuide.reviewing.confidence')"></span></li>
+            <li v-html="$t('scanGuide.reviewing.hoverControls')"></li>
+            <li v-html="$t('scanGuide.reviewing.appliesDetected')"></li>
           </ul>
         </div>
         <div class="guide-section">
-          <p class="guide-section-title">Known limitations</p>
+          <p class="guide-section-title">{{ $t('scanGuide.limitations.title') }}</p>
           <ul class="guide-list">
-            <li>OCR may confuse similar digits (1 ↔ 7, 3 ↔ 5) on very small quantities.</li>
-            <li>The icon model may misidentify visually similar items within the same design family (e.g. blu-ray series).</li>
-            <li>Items at 0 quantity show lower confidence because the OCR has no digit to read.</li>
+            <li v-html="$t('scanGuide.limitations.iconSimilarity')"></li>
           </ul>
         </div>
 
         <!-- Screenshot example table -->
         <div class="guide-section">
-          <p class="guide-section-title">Screenshot examples</p>
+          <p class="guide-section-title">{{ $t('scanGuide.examples.title') }}</p>
           <div class="eg-grid">
-            <div class="eg-th eg-th--good">✓ Correct</div>
-            <div class="eg-th eg-th--bad">✗ Clipped</div>
+            <div class="eg-th eg-th--good">{{ $t('scanGuide.examples.correct') }}</div>
+            <div class="eg-th eg-th--bad">{{ $t('scanGuide.examples.clipped') }}</div>
 
             <div class="eg-cell">
               <div class="eg-thumb-pair">
@@ -398,7 +483,7 @@ useDocumentListener('paste', onPaste);
                 <img class="eg-thumb" src="/examples/scanner/items-clipped-1.png" alt="Items clipped 1" @click="openLightbox(GUIDE_IMGS.itemsClipped, 0)" />
                 <img class="eg-thumb" src="/examples/scanner/items-clipped-2.png" alt="Items clipped 2" @click="openLightbox(GUIDE_IMGS.itemsClipped, 1)" />
               </div>
-              <p class="eg-bad-caption">First row partially cut — grey padding must be visible on all sides</p>
+              <p class="eg-bad-caption">{{ $t('scanGuide.examples.clippedCaption') }}</p>
             </div>
 
             <div class="eg-cell">
@@ -448,6 +533,27 @@ useDocumentListener('paste', onPaste);
             <button class="back-btn" @click="step = 'type'">← {{ $t('items') === $t(inventoryType) ? $t('items') : $t('equipment') }}</button>
           </div>
 
+          <div v-if="lastAppliedCount > 0" class="apply-success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            {{ lastAppliedCount === 1 ? $t('scanModal.appliedOne') : $t('scanModal.appliedMany', { count: lastAppliedCount }) }}
+          </div>
+
+          <!-- Pre-upload preparation hint — type-specific, surfaces in-game prep
+               rules right at the action point so users don't have to expand the
+               guide panel. -->
+          <div class="prep-hint">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="prep-hint-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span v-html="inventoryType === 'equipment' ? $t('scanModal.prepHintEquipment') : $t('scanModal.prepHintItems')"></span>
+          </div>
+
           <div
             class="dropzone"
             :class="{ dragging: isDragging, 'has-status': isLoading || !!errorMessage }"
@@ -473,8 +579,7 @@ useDocumentListener('paste', onPaste);
                 {{ elapsedFormatted }} elapsed<template v-if="isSlowPath"> · ~{{ remainingFormatted }} remaining</template>
               </p>
               <p class="progress-tip">
-                <template v-if="!isSlowPath">Reading quantities with AI vision…</template>
-                <template v-else>Taking longer than expected — running local OCR (~4 min total). Feel free to leave this tab open.</template>
+                {{ isSlowPath ? $t('scanModal.tipSlow') : $t('scanModal.tipFast') }}
               </p>
             </div>
 
@@ -1004,6 +1109,53 @@ useDocumentListener('paste', onPaste);
   font-size: 0.82rem;
   color: #d97706;
   margin-bottom: 10px;
+}
+
+/* Persistent pre-upload hint — type-specific in-game prep rules.
+   Quieter than .warning-banner / .apply-success so repeat users can skim past it,
+   but always visible on the upload step. */
+.prep-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.prep-hint :deep(strong) {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.prep-hint-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-color);
+}
+
+/* Transient banner shown above the dropzone after Apply.
+   Fades out after 4s (driven by lastAppliedCount being reset to 0). */
+.apply-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, #10b981 14%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, #10b981 40%, transparent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  color: #059669;
+  margin-bottom: 10px;
+  animation: apply-success-in 0.18s ease-out;
+}
+@keyframes apply-success-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .empty-results {

@@ -343,6 +343,53 @@ export const translations = {
     lowConfidenceWarning: "Low-confidence items may be incorrect — check before applying.",
     noItemsDetected: "No items detected. Check that the parser service is running and the screenshot is correct.",
 
+    // Inventory screenshot scanner — guide panel
+    scanGuide: {
+      beforeScanning: {
+        title: "Before scanning",
+        sortOrder: "Set inventory sort to <strong>ascending or descending by Item ID</strong> (the game default). Name / usage / owned sort is not supported.",
+        onePerScan: "One screenshot per scan. Re-upload to process additional pages.",
+        selectType: "Select the correct type: <strong>Items</strong> or <strong>Equipment</strong> — the grids differ.",
+      },
+      screenshots: {
+        title: "Screenshots",
+        resolution: "Optimised for <strong>FHD (1920 × 1080)</strong>. Higher resolutions (2K / 4K) work fine — the parser locates the inventory panel by aspect ratio.",
+        itemsTab: "<strong>Items</strong> tab detects: EXP materials, Artifacts, Blu-ray, Tech Notes, and Gifts (4 rows per page).",
+        equipmentTab: "<strong>Equipment</strong> tab detects: T2+ equipment pieces (5 rows per page). T1 pieces and EXP equipment are excluded.",
+      },
+      reviewing: {
+        title: "Reviewing results",
+        confidence: "Orange-highlighted cards indicate moderate confidence (50–80%). Inspect these first.",
+        hoverControls: "Hover any card to reveal controls: <strong>✏</strong> change item · edit quantity field · <strong>×</strong> remove.",
+        appliesDetected: "Applying only updates quantities for <strong>detected items</strong> — undetected cells are left unchanged.",
+      },
+      limitations: {
+        title: "Known limitations",
+        iconSimilarity: "The icon model may misidentify visually similar items within the same design family (e.g. blu-ray series).",
+      },
+      examples: {
+        title: "Screenshot examples",
+        correct: "✓ Correct",
+        clipped: "✗ Clipped",
+        clippedCaption: "First row partially cut — grey padding must be visible on all sides",
+      },
+    },
+
+    // Inventory screenshot scanner — modal UX strings (validation errors, loading tips, banners)
+    scanModal: {
+      errInvalidMime: "Please select a PNG, JPG, or WebP image.",
+      errDecodeFailed: "Could not read image dimensions. Try a different file.",
+      errNotLandscape: "Screenshot must be landscape (16:9). Yours looks like a phone capture ({width}×{height}).",
+      errTooSmall: "Screenshot must be at least {minWidth}px wide (FHD or higher). Yours is {width}×{height}.",
+      errBadAspect: "Screenshot must be 16:9 (e.g. 1920×1080). Yours is {width}×{height} — not a supported aspect ratio.",
+      tipFast: "Reading quantities with AI vision…",
+      tipSlow: "Taking longer than expected — running local OCR (~4 min total). Feel free to leave this tab open.",
+      appliedOne: "Applied 1 item — upload another screenshot or close.",
+      appliedMany: "Applied {count} items — upload another screenshot or close.",
+      prepHintItems: "<strong>Before screenshotting:</strong> apply in-game filters so only EXP materials, Artifacts, Blu-ray, Tech Notes, and Gifts are visible. Other categories won't be detected.",
+      prepHintEquipment: "<strong>Before screenshotting:</strong> scroll so the first row contains T2+ equipment. T1 pieces and EXP equipment are excluded.",
+    },
+
     // Bulk Modify Students modal
     bulkModify: {
       title: "Bulk Modify Students",
@@ -778,6 +825,53 @@ export const translations = {
     confidence: "信頼度",
     lowConfidenceWarning: "信頼度の低いアイテムは誤認識の可能性があります。適用前にご確認ください。",
     noItemsDetected: "アイテムが検出されませんでした。パーサーサービスとスクリーンショットを確認してください。",
+
+    // Inventory screenshot scanner — guide panel
+    scanGuide: {
+      beforeScanning: {
+        title: "スキャン前の準備",
+        sortOrder: "インベントリの並び順を<strong>アイテムIDの昇順または降順</strong>（ゲーム標準）に設定してください。名前・使用回数・所持数による並び替えには対応していません。",
+        onePerScan: "1回のスキャンにつき1枚のスクリーンショット。追加のページは再アップロードで処理してください。",
+        selectType: "正しい種類を選択してください：<strong>アイテム</strong>または<strong>装備</strong> — グリッドの構造が異なります。",
+      },
+      screenshots: {
+        title: "スクリーンショット",
+        resolution: "<strong>FHD（1920 × 1080）</strong>に最適化されています。アスペクト比でインベントリパネルを検出するため、2K / 4K などの高解像度でも問題ありません。",
+        itemsTab: "<strong>アイテム</strong>タブで検出されるもの：経験値素材、秘伝記、戦術教育BD、技術ノート、贈り物（1ページ4行）。",
+        equipmentTab: "<strong>装備</strong>タブで検出されるもの：T2以上の装備（1ページ5行）。T1装備および装備経験値アイテムは対象外です。",
+      },
+      reviewing: {
+        title: "結果の確認",
+        confidence: "オレンジ色のカードは中程度の信頼度（50〜80%）を示します。優先的に確認してください。",
+        hoverControls: "カードにカーソルを合わせると操作ボタンが表示されます：<strong>✏</strong> アイテム変更 · 個数を編集 · <strong>×</strong> 削除。",
+        appliesDetected: "適用は<strong>検出されたアイテム</strong>の個数のみを更新します。未検出のセルはそのまま残ります。",
+      },
+      limitations: {
+        title: "既知の制限事項",
+        iconSimilarity: "同じデザインシリーズ内で見た目の似たアイテム（戦術教育BDシリーズなど）を誤認識する場合があります。",
+      },
+      examples: {
+        title: "スクリーンショットの例",
+        correct: "✓ 正しい",
+        clipped: "✗ 見切れ",
+        clippedCaption: "1行目が途切れています — 全ての辺にグレーの余白が必要です",
+      },
+    },
+
+    // Inventory screenshot scanner — modal UX strings (validation errors, loading tips, banners)
+    scanModal: {
+      errInvalidMime: "PNG、JPG、WebP のいずれかの画像を選択してください。",
+      errDecodeFailed: "画像のサイズを読み取れませんでした。別のファイルをお試しください。",
+      errNotLandscape: "スクリーンショットは横向き（16:9）にしてください。これはスマートフォンの縦画面のようです（{width}×{height}）。",
+      errTooSmall: "スクリーンショットは{minWidth}px以上の幅が必要です（FHD以上）。現在は{width}×{height}です。",
+      errBadAspect: "スクリーンショットは 16:9（例：1920×1080）にしてください。現在の{width}×{height}は対応していないアスペクト比です。",
+      tipFast: "AIビジョンで個数を読み取り中…",
+      tipSlow: "想定より時間がかかっています — ローカルOCRを実行中（合計約4分）。タブを開いたままで構いません。",
+      appliedOne: "1個のアイテムを適用しました — 次のスクリーンショットをアップロード、または閉じてください。",
+      appliedMany: "{count}個のアイテムを適用しました — 次のスクリーンショットをアップロード、または閉じてください。",
+      prepHintItems: "<strong>スクリーンショットを撮る前に：</strong>ゲーム内フィルターで経験値素材、秘伝記、戦術教育BD、技術ノート、贈り物のみを表示してください。それ以外のカテゴリは検出されません。",
+      prepHintEquipment: "<strong>スクリーンショットを撮る前に：</strong>1行目にT2以上の装備が表示されるようにスクロールしてください。T1装備および装備経験値アイテムは対象外です。",
+    },
 
     // Bulk Modify Students modal
     bulkModify: {
