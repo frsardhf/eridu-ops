@@ -283,26 +283,32 @@ function sanitizeFormData(data: any): any {
 }
 
 /**
- * Save form data for a student
- * Returns the merged sanitized data on success for immediate store updates
+ * Save form data for a student.
+ *
+ * Wrapped in an `rw` transaction so concurrent get-merge-put calls serialize
+ * on the row. The original motivation was a real race between the per-domain
+ * hooks (useStudentUpgrade / useStudentGear / useStudentGifts) that all wrote
+ * to `forms[studentId]`; those are now consolidated into `useStudentForm`
+ * (one persistence cycle, one writer). The transaction stays as a defensive
+ * guard for any future caller that touches this row from a separate context.
+ *
+ * Returns the merged sanitized data on success for immediate store updates.
  */
 export async function saveFormData(studentId: number, formData: Partial<FormRecord>): Promise<FormRecord | null> {
   try {
-    // Get existing data
-    const existing = await db.forms.get(studentId);
-
-    // Sanitize the incoming form data to remove Vue reactivity
+    // Sanitize outside the transaction — pure CPU work, no DB I/O needed.
     const sanitizedFormData = sanitizeFormData(formData);
 
-    // Merge with existing data
-    const merged: FormRecord = {
-      studentId,
-      ...(existing ?? {}),
-      ...sanitizedFormData
-    };
-
-    await db.forms.put(merged);
-    return merged;
+    return await db.transaction('rw', db.forms, async () => {
+      const existing = await db.forms.get(studentId);
+      const merged: FormRecord = {
+        studentId,
+        ...(existing ?? {}),
+        ...sanitizedFormData,
+      };
+      await db.forms.put(merged);
+      return merged;
+    });
   } catch (error) {
     console.error(`Error saving form data for student ${studentId}:`, error);
     return null;

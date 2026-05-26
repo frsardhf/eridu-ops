@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRef } from 'vue';
 import { useRouter } from 'vue-router';
-import { useStudentGifts } from '@/lib/hooks/useStudentGifts';
+import { useStudentForm } from '@/lib/hooks/useStudentForm';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked, getStudentFavorMaterialNeeds } from '@/lib/hooks/useBondsTracked';
 import GiftCard from '@/components/bonds/gift/GiftCard.vue';
@@ -38,7 +38,7 @@ const {
   showSyncGiftsModal, syncGifts,
   canUndo, canRedo, undoChanges, redoChanges, resetGifts,
   loadFromIndexedDB,
-} = useStudentGifts(toRef(props, 'student'));
+} = useStudentForm(toRef(props, 'student'));
 
 // Other-EXP panel visibility (modal)
 const showOtherExpPanel = ref(false);

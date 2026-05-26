@@ -30,17 +30,18 @@ export function buildDefaultFormData(student: StudentProps): FormRecord {
 
   const starGrade = student.StarGrade ?? 1;
 
+  // Defaults grouped by slice (mirrors useStudentForm's internal structure).
   return {
     studentId: student.Id,
-    // From useStudentGifts
+    // Bond / gifts slice
     bondDetailData: { ...DEFAULT_BOND_DETAIL },
     giftFormData: {},
     boxFormData: {},
-    // From useStudentUpgrade
+    // Upgrade slice
     characterLevels: { ...DEFAULT_CHARACTER_LEVELS },
     skillLevels: { ...DEFAULT_SKILL_LEVELS },
     potentialLevels: { ...DEFAULT_POTENTIAL_LEVELS },
-    // From useStudentGear
+    // Gear slice
     equipmentLevels,
     gradeLevels: { current: starGrade, target: starGrade },
     gradeInfos: { owned: 0, price: 1, purchasable: 20 }

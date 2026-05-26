@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, CSSProperties } from 'vue';
+import { ref, computed, watch, toRef, CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import { studentDataStore } from '@/lib/stores/studentStore';
 import { useStudentOwnership } from '@/lib/hooks/useStudentOwnership';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
-import { useStudentGear } from '@/lib/hooks/useStudentGear';
+import { useStudentForm } from '@/lib/hooks/useStudentForm';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
-import { useStudentUpgrade } from '@/lib/hooks/useStudentUpgrade';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
 import { initializeStudentFormData } from '@/lib/services/studentFormService';
@@ -35,7 +34,7 @@ import { StudentProps } from '@/types/student';
 import { SkillType, PotentialType, Material, MaterialPreviewItem, type SectionId } from '@/types/upgrade';
 import type { EquipmentType } from '@/types/gear';
 import { computeCharacterXpCost, getCharXpItems, calculateLevelMaterials, calculateSkillMaterials, calculatePotentialMaterials } from '@/lib/utils/upgradeMaterialUtils';
-import { computeEquipmentXpCost, getEquipXpItems, calculateEquipmentMaterials, calculateEquipmentCredits, calculateGradeMaterials, calculateGradeCredits, calculateExclusiveGearMaterials } from '@/lib/utils/gearMaterialUtils';
+import { computeEquipmentXpCost, getEquipXpItems, calculateEquipmentMaterials, calculateEquipmentCredits, calculateGradeMaterials, calculateGradeCredits, calculateExclusiveGearMaterials, getElephsForGrade } from '@/lib/utils/gearMaterialUtils';
 import { deductXpItems, simulateXpDeduction } from '@/lib/utils/upgradeUtils';
 import { sortMaterials } from '@/lib/utils/materialUtils';
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
@@ -134,14 +133,27 @@ const currentBond = computed(() => {
 const router = useRouter();
 const { addStudent: addBondsTracked } = useBondsTracked();
 
+// Consolidated per-student form — replaces useStudentUpgrade + useStudentGear
+// (and useStudentGifts on /bonds). One persistence cycle prevents the
+// concurrent-save race that previously clobbered upgrade keys when Apply
+// Upgrade mutated both upgrade and gear refs in the same tick.
 const {
+  // Upgrade slice
   characterLevels, skillLevels, potentialLevels, allMaterialsNeeded,
   allSkillsMaxed, targetSkillsMaxed, allPotentialsMaxed, targetPotentialsMaxed,
-  remainingXp: characterRemainingXp,
+  characterRemainingXp,
   handleLevelUpdate, handleSkillUpdate, handlePotentialUpdate,
   toggleMaxAllSkills, toggleMaxTargetSkills, toggleMaxAllPotentials, toggleMaxTargetPotentials,
-  saveBeforeClose: saveUpgradeBeforeClose, loadFromIndexedDB: loadUpgradeData,
-} = useStudentUpgrade(props, emit);
+  // Gear slice
+  equipmentLevels, gradeLevels, gradeInfos, equipmentMaterialsNeeded, exclusiveGearLevel,
+  allGearsMaxed, targetGearsMaxed, hasExclusiveGear, maxUnlockableGearTier,
+  handleEquipmentUpdate, handleGradeUpdate, handleGradeInfoUpdate,
+  toggleMaxAllGears, toggleMaxTargetGears, handleExclusiveGearUpdate,
+  // Lifecycle
+  saveBeforeClose, loadFromIndexedDB: loadFormData,
+} = useStudentForm(toRef(props, 'student'), {
+  isVisible: () => !!props.isVisible,
+});
 
 const {
   itemFormData,
@@ -154,14 +166,6 @@ const {
   handleEquipmentInput,
   loadEquipments
 } = useStudentEquipment(props);
-
-const {
-  equipmentLevels, gradeLevels, gradeInfos, equipmentMaterialsNeeded, exclusiveGearLevel,
-  allGearsMaxed, targetGearsMaxed, hasExclusiveGear, maxUnlockableGearTier,
-  handleEquipmentUpdate, handleGradeUpdate, handleGradeInfoUpdate, getElephsForGrade,
-  toggleMaxAllGears, toggleMaxTargetGears, handleExclusiveGearUpdate,
-  loadFromIndexedDB: loadGearData,
-} = useStudentGear(props, emit);
 
 // ── Navigation & handlers ─────────────────────────────────────────────────────
 // Image preloading for neighbor students
@@ -189,7 +193,7 @@ function navigateToNext() {
 
 async function handleClose() {
   (document.activeElement as HTMLElement)?.blur();
-  await saveUpgradeBeforeClose();
+  await saveBeforeClose();
   emit('close');
 }
 
@@ -535,10 +539,9 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
     setStudentDataDirect(student.Id, formData);
 
     await Promise.all([
-      loadUpgradeData(),
-      loadGearData(),
+      loadFormData(),
       loadItems(),
-      loadEquipments()
+      loadEquipments(),
     ]);
 
     if (requestToken !== hydrateRequestToken) return;
