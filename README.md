@@ -8,17 +8,16 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) �
 
 ## Features
 
-- **Bond** — Track current and target bond levels, calculate XP needed, manage gifts and selector boxes
-- **Upgrade** — Plan skill levels, character levels, and potential/talent upgrades with material cost breakdowns
-- **Gear** — Track equipment tier progression and exclusive weapon (EX Weapon) levels
-- **Inventory** — Manage owned materials, equipment, and gifts across all students; bulk-update from a screenshot via OCR scan
-- **Student grid** — Search, sort, pin, filter (school, equipment slot, attack/defense type, rarity, availability), and bulk-edit students
-- **Bulk bond update** — Paste `name bond` pairs to set bond levels in batch
+- **Student grid** (`/students`) — Search, sort, pin, filter (school, equipment slot, attack/defense type, rarity, availability), and bulk-edit students
+- **Student planner** — Per-student modal for skill levels, character levels, potentials, equipment tiers, and exclusive weapon (EX Weapon) levels with material cost breakdowns
+- **Bond planner** (`/bonds`) — Tracked-students view with gift allocation, cafe-tap projection (start/end dates), bonus EXP from lessons, and per-gift EXP breakdowns
+- **Inventory** — Manage owned materials, equipment, and gifts across all students; bulk-update from a single screenshot via OCR scan
+- **Tools** (ToolsRail on `/students`) — Bulk bond update (paste `name bond` pairs), bulk modify students, crafting fodder picker, deck builder
 - **Themes** — 7 built-in colour themes (dark, light, ocean, forest, sunset, rose, violet)
 - **Import / Export** — Back up and share your planner data as JSON
 - **Multi-language** — English and Japanese UI
 
-All data is stored locally in IndexedDB — no account, no server, no tracking.
+Planner data is stored locally in IndexedDB — no account and no tracking. The optional Inventory Scanner sends uploaded screenshots to the EriduOps parser API and receives detected inventory quantities as JSON.
 
 ---
 
@@ -44,50 +43,74 @@ npm run build     # production build → dist/
 npm run preview   # preview production build locally
 ```
 
+## Inventory Scanner API
+
+The screenshot scanner calls an external parser API. Configure it with:
+
+```bash
+VITE_PARSER_URL=/api
+```
+
+In production, `/api` routes to the hosted parser service. In local development, Vite proxies `/api/inventory/*` to the local parser service.
+
 ---
 
 ## Project Structure
 
+Folders under `components/` map to a **route surface** (`students/`, `bonds/`) or a **cross-page domain** (`inventory/`, `navbar/`, `shared/`).
+
 ```
 src/
+  pages/                # Route components — LandingPage, StudentsPage, BondsPage
+  router/               # vue-router config
   components/
-    display/       # Student grid, card, bulk-modify, BondUpdateModal, ToolsRail
-    inventory/     # GlobalInventoryModal, ItemsGrid, EquipmentGrid, ResourceSummary, ResourceCard
-    modal/         # StudentModal, StudentStrip, ApplyUpgradePanel, ApplyConfirmModal
-      bond/        # Bond tracking, gift grid, gift options
-      gear/        # Equipment growth, exclusive weapon, eleph/eligma
-      info/        # Info tab — skills, weapon, gear display
-      upgrade/     # Level, skill, potential sections
-      shared/      # MaterialsSection (shared across tabs)
-    navbar/        # Navigation bar, FilterPanel, InventoryScreenshotModal, import/export, credits
-  composables/     # Lightweight display composables (useStudentInfo, useStudentImages, useTooltip, …)
+    students/           # /students surface
+      modal/            #   StudentModal + Info / Upgrade / Gear / Shared subtrees
+      tools/            #   ToolsRail-triggered modals (BondUpdate, BulkModify, CraftingFodder, DeckBuilder)
+    bonds/              # /bonds surface — BondsStudentEditor, BondsStudentPicker, OtherExpPanel
+      gift/             #   Gift allocation building blocks (GiftCard, GiftGrid, GiftOption, …)
+    inventory/          # GlobalInventoryModal, ItemsGrid, EquipmentGrid, ResourceCard, ResourceSummary
+    navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel
+      modals/           #   Navbar-triggered modals (Contact, Credits, Import, InventoryScreenshot)
+    shared/             # Cross-page components (MetaHeader, StudentStrip)
+  composables/          # Stateless display helpers (useStudentInfo, useResourceTooltip, useTooltip, …)
   lib/
-    hooks/         # Form-state composables bridging components ↔ IndexedDB
-    services/      # SchaleDB fetch, IndexedDB service, form initialization
-    stores/        # Reactive stores (studentStore, localizationStore, …)
-    utils/         # Pure utility functions (sort, filter, material calc, …)
-  types/           # TypeScript interfaces (StudentProps, GiftProps, gear, upgrade, …)
-  locales/         # i18n translations (en, jp)
-  styles/          # Global CSS, modal CSS, resource display CSS
+    constants/          # Game limits, gift box IDs, linked-student pairs, synthetic entities
+    db/                 # database.ts — Dexie schema (v3)
+    hooks/              # Domain hooks bridging components ↔ IndexedDB
+    services/           # External I/O (SchaleDB fetch, IndexedDB form init, bulk ops)
+    stores/             # Singleton reactive caches (studentStore, resourceCacheStore, …)
+    utils/              # Pure helpers (sort, filter, material/gear/bondExp calcs, hydration, migration)
+  types/                # TypeScript interfaces
+  locales/              # i18n (en, jp) + $t helper
+  styles/               # Global + shared CSS
+public/
+  image-cache-sw.js     # Service worker — cache-first for schaledb.com images
 ```
 
 ### Architecture
 
 ```
-Components  →  Composables  →  Hooks  →  Services / Stores / IndexedDB
-(UI layer)     (display)       (form      (persistence layer)
-                                state)
+Components  →  Composables / Hooks  →  Services  →  IndexedDB (source of truth)
+                       ↓
+                    Stores (in-memory reactive caches)
 ```
 
-- **Composables** (`src/composables/`) — pure display helpers: computed colors, level display state, tooltips
-- **Hooks** (`src/lib/hooks/`) — heavier form-state managers that read/write IndexedDB and expose reactive data to components
-- **Stores** (`src/lib/stores/`) — singleton reactive state (student data, localization, cached resources)
+- **Components** consume data via hooks/composables; never import directly from `lib/`
+- **Composables** (`src/composables/`) — pure display helpers (colors, level state, tooltips)
+- **Hooks** (`src/lib/hooks/`) — domain-scoped form-state managers (gifts, gear, upgrades, …)
+- **Services** (`src/lib/services/`) — external I/O (SchaleDB fetch, bulk ops)
+- **Stores** (`src/lib/stores/`) — singleton reactive state
+- **IndexedDB** (Dexie) — single source of truth for persisted user data
+- **Settings** (localStorage) — UI preferences (theme, sort, filters, tracked bonds)
+
+See `CLAUDE.md` for a deeper architecture reference (data loading pipeline, store layer, hook domains, persistence pattern).
 
 ---
 
 ## Data
 
-Student, item, and equipment data is fetched from [SchaleDB](https://schaledb.com) and cached in IndexedDB. No data is sent to any server — everything runs in the browser.
+Student, item, and equipment data is fetched from [SchaleDB](https://schaledb.com) and cached in IndexedDB. User planner data stays in the browser. Inventory screenshots are only sent when using the optional scanner feature, which posts the image to the configured parser API and applies the returned JSON after user review.
 
 ---
 
