@@ -208,10 +208,14 @@ function onBondInlineClick() {
         </div>
 
         <template v-if="bondProgress">
-          <span v-if="showBondArrow && (remainingXp ?? 0) > 0" class="bond-stat-chip">
+          <!-- Remaining-XP chip is intentionally not gated on showBondArrow so
+               users see "X EXP to next level" the moment they set a bond, even
+               before allocating gifts — otherwise an unprojected BOND pill is
+               visually indistinguishable from the modal's LEVEL pill. -->
+          <span v-if="(remainingXp ?? 0) > 0" class="bond-stat-chip">
             {{ remainingXp }} {{ $t('expToNextLevel') }}
           </span>
-          <span v-if="bondProgress && (totalExp ?? 0) > 0" class="bond-stat-chip strong">
+          <span v-if="(totalExp ?? 0) > 0" class="bond-stat-chip strong">
             {{ $t('totalExp') }}: {{ (totalExp ?? 0).toLocaleString() }}
           </span>
         </template>
