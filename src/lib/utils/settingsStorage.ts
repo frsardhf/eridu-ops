@@ -29,6 +29,8 @@ export interface AppSettings {
   bondsTrackedStudents?: number[];
   bondsLayout: 'cards' | 'tabs';
   bondsGiftPlanningEnabled?: number[];
+  /** ID of the most recent CHANGELOG entry the user has seen / dismissed. */
+  lastSeenChangelogId?: string;
 }
 
 // Default settings
@@ -242,4 +244,14 @@ export function getSortSettings(): { option: SortOption; direction: SortDirectio
  */
 export function resetSettings(): boolean {
   return saveSettings({ ...DEFAULT_SETTINGS });
+}
+
+/** Read the last changelog entry id the user dismissed (undefined ⇒ unseen). */
+export function getLastSeenChangelogId(): string | undefined {
+  return getSettings().lastSeenChangelogId;
+}
+
+/** Persist the id of the latest changelog entry the user has acknowledged. */
+export function setLastSeenChangelogId(id: string): boolean {
+  return updateSetting('lastSeenChangelogId', id);
 }

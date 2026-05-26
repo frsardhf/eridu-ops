@@ -87,7 +87,11 @@ export const translations = {
     app: "App",
     contact: "Contact",
     credits: "Credits",
-    
+    whatsNew: "What's New",
+    whatsNewLatest: "Latest update",
+    previousUpdates: "Previous updates",
+    noPreviousUpdates: "No previous updates yet.",
+
     // Import modal
     importErrorFileType: "Please select a .txt file",
     importingData: "Importing data...",
@@ -570,7 +574,11 @@ export const translations = {
     app: "アプリ",
     contact: "お問い合わせ",
     credits: "クレジット",
-    
+    whatsNew: "新着情報",
+    whatsNewLatest: "最新のアップデート",
+    previousUpdates: "過去のアップデート",
+    noPreviousUpdates: "過去のアップデートはまだありません。",
+
     // Import modal
     importErrorFileType: ".txtファイルを選択してください",
     importingData: "データをインポート中...",

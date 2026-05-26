@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
+import { CHANGELOG } from '@/lib/constants/changelog';
+import {
+  getLastSeenChangelogId,
+  setLastSeenChangelogId,
+} from '@/lib/utils/settingsStorage';
 import GlobalControls from './GlobalControls.vue';
 import ImportModal from './modals/ImportModal.vue';
 import InventoryScreenshotModal from './modals/InventoryScreenshotModal.vue';
+import WhatsNewModal from './modals/WhatsNewModal.vue';
 import '@/styles/navbar.css';
 
 defineProps<{
@@ -19,8 +25,32 @@ const { exportData } = useNavbarSettings();
 const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showScreenshotModal = ref(false);
+const showWhatsNewModal = ref(false);
 const menuToggleEl = ref<HTMLButtonElement | null>(null);
 const menuEl = ref<HTMLElement | null>(null);
+
+// Auto-open the What's New modal once when the latest entry's id doesn't
+// match the user's lastSeen marker. Brand-new visitors hit this too (undefined
+// !== latest.id) — by product decision they see the latest entry on first load.
+onMounted(() => {
+  const latest = CHANGELOG[0];
+  if (latest && getLastSeenChangelogId() !== latest.id) {
+    showWhatsNewModal.value = true;
+  }
+});
+
+function openWhatsNewModal() {
+  showWhatsNewModal.value = true;
+  mobileMenuOpen.value = false;
+}
+
+function closeWhatsNewModal() {
+  showWhatsNewModal.value = false;
+  // Mark the latest entry as seen on every close — covers both auto-open and
+  // manual reopen so a user who explicitly opened it doesn't get re-prompted.
+  const latest = CHANGELOG[0];
+  if (latest) setLastSeenChangelogId(latest.id);
+}
 
 function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
@@ -132,6 +162,20 @@ useClickOutside(handleClickOutside);
             </button>
           </div>
         </div>
+
+        <div class="mobile-menu-section">
+          <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
+          <div class="mobile-menu-options">
+            <button class="mobile-menu-option" type="button" @click="openWhatsNewModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              {{ $t('whatsNew') }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -145,6 +189,10 @@ useClickOutside(handleClickOutside);
     v-if="showScreenshotModal"
     @close="showScreenshotModal = false"
     @inventory-updated="reinitializeData"
+  />
+  <WhatsNewModal
+    v-if="showWhatsNewModal"
+    @close="closeWhatsNewModal"
   />
 </template>
 
