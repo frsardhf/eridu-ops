@@ -272,6 +272,7 @@ export const translations = {
     // Buttons and actions
     reset: "Reset",
     save: "Save",
+    loading: "Loading",
     close: "Close",
     update: "Update",
     confirm: "Confirm",
@@ -337,7 +338,7 @@ export const translations = {
     inventoryScreenshot: "Inventory Screenshot",
     selectInventoryType: "What are you scanning?",
     uploadScreenshot: "Upload Screenshot",
-    dragDropScreenshot: "Drag & drop an inventory screenshot",
+    dragDropScreenshot: "Select or drop up to 3 screenshots",
     parsingScreenshot: "Parsing screenshot…",
     parseFailed: "Parse failed. Is the parser service running?",
     parseResults: "Review Results",
@@ -352,7 +353,7 @@ export const translations = {
       beforeScanning: {
         title: "Before scanning",
         sortOrder: "Set inventory sort to <strong>ascending or descending by Item ID</strong> (the game default). Name / usage / owned sort is not supported.",
-        onePerScan: "One screenshot per scan. Re-upload to process additional pages.",
+        onePerScan: "Up to 3 screenshots per scan — select or drop them together. Re-upload for more pages.",
         selectType: "Select the correct type: <strong>Items</strong> or <strong>Equipment</strong> — the grids differ.",
       },
       screenshots: {
@@ -386,6 +387,7 @@ export const translations = {
       errNotLandscape: "Screenshot must be landscape (16:9). Yours looks like a phone capture ({width}×{height}).",
       errTooSmall: "Screenshot must be at least {minWidth}px wide (FHD or higher). Yours is {width}×{height}.",
       errBadAspect: "Screenshot must be 16:9 (e.g. 1920×1080). Yours is {width}×{height} — not a supported aspect ratio.",
+      errTooMany: "Up to {max} screenshots per scan. Please select fewer.",
       tipFast: "Reading quantities with AI vision…",
       tipSlow: "Taking longer than expected — running local OCR (~4 min total). Feel free to leave this tab open.",
       appliedOne: "Applied 1 item — upload another screenshot or close.",
@@ -759,6 +761,7 @@ export const translations = {
     // Buttons and actions
     reset: "リセット",
     save: "保存",
+    loading: "読み込み中",
     close: "閉じる",
     update: "更新",
     confirm: "確認",
@@ -824,7 +827,7 @@ export const translations = {
     inventoryScreenshot: "インベントリスクリーンショット",
     selectInventoryType: "何をスキャンしますか？",
     uploadScreenshot: "スクリーンショットをアップロード",
-    dragDropScreenshot: "インベントリのスクリーンショットをドロップ",
+    dragDropScreenshot: "最大3枚のスクリーンショットを選択またはドロップ",
     parsingScreenshot: "スクリーンショットを解析中…",
     parseFailed: "解析に失敗しました。パーサーサービスが起動しているか確認してください。",
     parseResults: "結果を確認",
@@ -839,7 +842,7 @@ export const translations = {
       beforeScanning: {
         title: "スキャン前の準備",
         sortOrder: "インベントリの並び順を<strong>アイテムIDの昇順または降順</strong>（ゲーム標準）に設定してください。名前・使用回数・所持数による並び替えには対応していません。",
-        onePerScan: "1回のスキャンにつき1枚のスクリーンショット。追加のページは再アップロードで処理してください。",
+        onePerScan: "1回のスキャンにつき最大3枚 — まとめて選択またはドロップしてください。追加ページは再アップロードで。",
         selectType: "正しい種類を選択してください：<strong>アイテム</strong>または<strong>装備</strong> — グリッドの構造が異なります。",
       },
       screenshots: {
@@ -873,6 +876,7 @@ export const translations = {
       errNotLandscape: "スクリーンショットは横向き（16:9）にしてください。これはスマートフォンの縦画面のようです（{width}×{height}）。",
       errTooSmall: "スクリーンショットは{minWidth}px以上の幅が必要です（FHD以上）。現在は{width}×{height}です。",
       errBadAspect: "スクリーンショットは 16:9（例：1920×1080）にしてください。現在の{width}×{height}は対応していないアスペクト比です。",
+      errTooMany: "1回のスキャンにつき最大{max}枚です。枚数を減らしてください。",
       tipFast: "AIビジョンで個数を読み取り中…",
       tipSlow: "想定より時間がかかっています — ローカルOCRを実行中（合計約4分）。タブを開いたままで構いません。",
       appliedOne: "1個のアイテムを適用しました — 次のスクリーンショットをアップロード、または閉じてください。",

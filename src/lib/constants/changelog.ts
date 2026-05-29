@@ -51,6 +51,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-05-scanner-batch',
+    date: '2026-05-29',
+    title: {
+      en: 'Faster scanner & multi-screenshot',
+      jp: 'スキャナー高速化と複数スクリーンショット対応',
+    },
+    summary: {
+      en: 'Faster quantity scanning, plus support for up to 3 screenshots in one scan.',
+      jp: '数量スキャンを高速化し、1回で最大3枚のスクリーンショットに対応。',
+    },
+    highlights: [
+      {
+        en: 'Quantity scanning now runs entirely on fast cloud vision models, dropping the slow fallback that could take a few minutes.',
+        jp: '数量スキャンを高速なクラウドビジョンモデルのみに変更し、数分かかることがあった低速フォールバックを廃止。',
+      },
+      {
+        en: 'Scan up to 3 screenshots in a single upload instead of one at a time.',
+        jp: '1枚ずつではなく、1回のアップロードで最大3枚のスクリーンショットをスキャン。',
+      },
+      {
+        en: 'Items are still detected when the daily scan limit is reached, leaving only the quantities blank to fill in.',
+        jp: '1日のスキャン上限に達してもアイテムは検出され、数量のみ空欄になり手動で入力できます。',
+      },
+    ],
+    fromCommit: '75518b5',
+  },
+  {
     id: '2026-05-release',
     date: '2026-05-26',
     title: {
@@ -155,8 +182,8 @@ export const CHANGELOG: ChangelogEntry[] = [
         jp: 'クラフト素材モーダル：余剰素材をマークし、レアリティしきい値を設定可能。',
       },
       {
-        en: 'Persistent layout — your filter and pin settings stay between visits.',
-        jp: '永続的なレイアウト — フィルターとピン設定が訪問間で保持されます。',
+        en: 'Your filter and pin settings now stay between visits.',
+        jp: 'フィルターとピン設定が訪問間で保持されるようになりました。',
       },
     ],
     toCommit: '2c5904f',
@@ -201,8 +228,8 @@ export const CHANGELOG: ChangelogEntry[] = [
         jp: '6人編成チーム用のドラッグ＆ドロップ式デッキビルダー、デッキごとのメモ付き。',
       },
       {
-        en: 'Toggle ownership per student — the grid splits into Recruited / Not Recruited sections.',
-        jp: '生徒ごとに所持状況を切り替え — グリッドが入手済み／未入手セクションに分かれます。',
+        en: 'Toggle ownership per student, and the grid splits into Recruited / Not Recruited sections.',
+        jp: '生徒ごとに所持状況を切り替えると、グリッドが入手済み／未入手セクションに分かれます。',
       },
     ],
     toCommit: '0366bcf',
@@ -220,8 +247,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     },
     highlights: [
       {
-        en: 'Faster reactivity — changing a level instantly updates material totals.',
-        jp: 'より高速なリアクティブ性 — レベル変更が即座に素材合計に反映。',
+        en: 'Changing a level instantly updates material totals.',
+        jp: 'レベルを変更すると素材合計が即座に反映されます。',
       },
       {
         en: 'Inline editors for levels, skills, potentials, and grade infos.',
@@ -243,8 +270,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     },
     highlights: [
       {
-        en: 'No more localStorage size limits — track every student you want.',
-        jp: 'localStorageのサイズ制限なし — 好きなだけ生徒を追跡可能。',
+        en: 'No more localStorage size limits, so you can track every student you want.',
+        jp: 'localStorageのサイズ制限がなくなり、好きなだけ生徒を追跡できます。',
       },
       {
         en: 'Automatic one-time migration from the old format on first load.',

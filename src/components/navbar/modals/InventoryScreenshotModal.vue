@@ -37,6 +37,13 @@ const MIN_WIDTH = 1900;
 const MIN_ASPECT = 1.70;
 const MAX_ASPECT = 1.85;
 
+// Up to 3 screenshots per request — matches the backend's batched-Gemini cap
+// (multi-grid OCR is reliable up to 3 grids). Each is downscaled to FHD width
+// before upload so 3 shots stay well under the 10 MB request limit and the
+// parser stays at its tuned resolution.
+const MAX_SCREENSHOTS = 3;
+const FHD_WIDTH = 1920;
+
 interface ParsedItem {
   row: number;
   col: number;
@@ -183,15 +190,15 @@ function handleDragLeave() {
 function handleDrop(event: DragEvent) {
   event.preventDefault();
   isDragging.value = false;
-  const file = event.dataTransfer?.files?.[0];
-  if (file) processFile(file);
+  const files = Array.from(event.dataTransfer?.files ?? []).filter(f => f.type.startsWith('image/'));
+  if (files.length) processFiles(files);
 }
 
 function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (file) {
-    processFile(file);
+  const files = Array.from(input.files ?? []);
+  if (files.length) {
+    processFiles(files);
     input.value = '';
   }
 }
@@ -212,36 +219,73 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
   });
 }
 
-async function processFile(file: File) {
-  // 1. MIME allowlist — stricter than the dropzone's <input accept> so that
-  //    drag-drop and paste paths can't bypass it with HEIC/GIF/BMP.
-  if (!ALLOWED_MIME.includes(file.type)) {
-    errorMessage.value = $t('scanModal.errInvalidMime');
-    return;
-  }
-
-  // 2. Dimension check — must be FHD-ish 16:9 landscape.
+// Returns an error message string if the file is invalid, else null.
+async function validateImageFile(file: File): Promise<string | null> {
+  // MIME allowlist — stricter than <input accept> so drag/paste can't slip in HEIC/GIF/BMP.
+  if (!ALLOWED_MIME.includes(file.type)) return $t('scanModal.errInvalidMime');
   let dims: { width: number; height: number };
   try {
     dims = await readImageDimensions(file);
   } catch {
-    errorMessage.value = $t('scanModal.errDecodeFailed');
-    return;
+    return $t('scanModal.errDecodeFailed');
   }
   const { width, height } = dims;
-
-  if (width < height) {
-    errorMessage.value = $t('scanModal.errNotLandscape', { width, height });
-    return;
-  }
-  if (width < MIN_WIDTH) {
-    errorMessage.value = $t('scanModal.errTooSmall', { minWidth: MIN_WIDTH, width, height });
-    return;
-  }
+  if (width < height) return $t('scanModal.errNotLandscape', { width, height });
+  if (width < MIN_WIDTH) return $t('scanModal.errTooSmall', { minWidth: MIN_WIDTH, width, height });
   const ratio = width / height;
-  if (ratio < MIN_ASPECT || ratio > MAX_ASPECT) {
-    errorMessage.value = $t('scanModal.errBadAspect', { width, height });
+  if (ratio < MIN_ASPECT || ratio > MAX_ASPECT) return $t('scanModal.errBadAspect', { width, height });
+  return null;
+}
+
+// Downscale to FHD width (preserving aspect) so payload stays small and the
+// parser sees its tuned resolution. Already-FHD-or-smaller files pass through.
+async function downscaleToFHD(file: File): Promise<Blob> {
+  let dims: { width: number; height: number };
+  try {
+    dims = await readImageDimensions(file);
+  } catch {
+    return file;
+  }
+  if (dims.width <= FHD_WIDTH) return file;
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error('decode failed'));
+      im.src = url;
+    });
+    const scale = FHD_WIDTH / dims.width;
+    const canvas = document.createElement('canvas');
+    canvas.width = FHD_WIDTH;
+    canvas.height = Math.round(dims.height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+    return blob ?? file;
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function processFiles(fileList: File[]) {
+  if (fileList.length === 0) return;
+  if (fileList.length > MAX_SCREENSHOTS) {
+    errorMessage.value = $t('scanModal.errTooMany', { max: MAX_SCREENSHOTS });
     return;
+  }
+
+  // Validate every file up front so the user learns about a bad one before upload.
+  for (const f of fileList) {
+    const err = await validateImageFile(f);
+    if (err) {
+      errorMessage.value = err;
+      return;
+    }
   }
 
   isLoading.value = true;
@@ -254,8 +298,9 @@ async function processFile(file: File) {
   }, 1000);
 
   try {
+    const blobs = await Promise.all(fileList.map(downscaleToFHD));
     const formData = new FormData();
-    formData.append('image', file);
+    blobs.forEach((b, i) => formData.append('images', b, `screenshot-${i}.png`));
     formData.append('inventoryType', inventoryType.value);
     const res = await fetch(`${PARSER_BASE}/inventory/parse`, {
       method: 'POST',
@@ -409,7 +454,7 @@ function onPaste(e: ClipboardEvent) {
   const file = imageItem.getAsFile();
   if (!file) return;
   e.preventDefault();
-  processFile(file);
+  processFiles([file]);
 }
 useDocumentListener('paste', onPaste);
 </script>
@@ -566,6 +611,7 @@ useDocumentListener('paste', onPaste);
               id="screenshot-input"
               class="file-input"
               accept="image/png,image/jpeg,image/webp"
+              multiple
               @change="handleFileSelect"
             />
 
@@ -604,7 +650,7 @@ useDocumentListener('paste', onPaste);
               <p class="dropzone-text">{{ $t('dragDropScreenshot') }}</p>
               <p class="dropzone-subtext">{{ $t('or') }}</p>
               <label for="screenshot-input" class="browse-button">{{ $t('browseFiles') }}</label>
-              <p class="dropzone-paste-hint"><kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd> to paste one screenshot</p>
+              <p class="dropzone-paste-hint">or <kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd> to paste</p>
             </div>
           </div>
         </template>
