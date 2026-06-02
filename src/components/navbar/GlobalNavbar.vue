@@ -103,6 +103,9 @@ useClickOutside(handleClickOutside);
           <RouterLink to="/bonds" class="app-navbar-link" active-class="active">
             {{ $t('bonds') }}
           </RouterLink>
+          <RouterLink to="/hall" class="app-navbar-link" active-class="active">
+            {{ $t('bond100.nav') }}
+          </RouterLink>
         </nav>
       </div>
 

@@ -20,6 +20,10 @@ export default defineConfig({
       '/api/inventory': {
         target: 'http://localhost:5001',
         rewrite: (path: string) => path.replace(/^\/api/, '')
+      },
+      '/api/bond100': {
+        target: 'http://localhost:5002',
+        rewrite: (path: string) => path.replace(/^\/api/, '')
       }
     }
   },

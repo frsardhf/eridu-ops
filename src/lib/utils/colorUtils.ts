@@ -63,6 +63,18 @@ export const SQUAD_TYPE_COLORS: Record<string, string> = {
   Support: 'rgba(0, 107, 255, 1)',
 };
 
+/**
+ * Bond 100 server region color mapping.
+ * One distinct hue per region — used for server pills in the Hall entries modal.
+ */
+export const BOND100_SERVER_COLORS: Record<string, string> = {
+  global_na:   'rgb(59, 130, 246)',   // blue
+  global_eu:   'rgb(245, 158, 11)',   // amber  (was cyan — too close to TW/HK)
+  global_asia: 'rgb(139, 92, 246)',   // violet
+  global_tw:   'rgb(16, 185, 129)',   // emerald
+  global_kr:   'rgb(236, 72, 153)',   // rose
+};
+
 const FALLBACK_COLOR = 'var(--text-secondary)';
 
 /**
@@ -144,4 +156,13 @@ export function getSchoolColor(school: string | undefined | null): string {
 export function getSquadTypeColor(squadType: string | undefined | null): string {
   if (!squadType) return FALLBACK_COLOR;
   return SQUAD_TYPE_COLORS[squadType] ?? FALLBACK_COLOR;
+}
+
+/**
+ * Get color for a Bond 100 server region code.
+ * Falls back to neutral for 'unknown' / unmapped codes.
+ */
+export function getBond100ServerColor(server: string | undefined | null): string {
+  if (!server) return FALLBACK_COLOR;
+  return BOND100_SERVER_COLORS[server] ?? FALLBACK_COLOR;
 }
