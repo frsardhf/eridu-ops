@@ -783,36 +783,7 @@ watch(
   display: flex;
   justify-content: center;
 }
-
-.page-indicator {
-  display: flex;
-  gap: 8px;
-}
-
-.page-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: none;
-  background-color: var(--border-color);
-  transition: all 0.2s ease;
-  cursor: pointer;
-  padding: 0;
-}
-
-.page-dot.active {
-  background-color: var(--accent-color);
-  transform: scale(1.2);
-}
-
-.page-dot:hover {
-  transform: scale(1.2);
-}
-
-.page-dot:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
-}
+/* .page-indicator / .page-dot live in styles/resourceDisplay.css (shared) */
 
 .resources-grid-wrap :deep(.resources-grid) {
   grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));

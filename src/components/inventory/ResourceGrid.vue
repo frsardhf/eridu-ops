@@ -2,29 +2,63 @@
 import { computed } from 'vue';
 import ResourceCard from './ResourceCard.vue';
 import { applyFilters } from '@/lib/utils/filterUtils';
-import { EQUIPMENT } from '@/types/resource';
-import { getAllEquipmentFromCache } from '@/lib/stores/resourceCacheStore';
+import { MATERIAL, EQUIPMENT } from '@/types/resource';
+import { getAllItemsFromCache, getAllEquipmentFromCache } from '@/lib/stores/resourceCacheStore';
 import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import '@/styles/resourceDisplay.css';
 
-const ITEMS_PER_PAGE = 98;
-
+/**
+ * Paginated inventory grid for either items or equipment — the consolidation of
+ * the former ItemsGrid + EquipmentGrid (identical apart from the cache source,
+ * filter category, card item-type, and page plan).
+ */
 const props = defineProps<{
-  equipmentFormData: Record<string, number>,
+  variant: 'items' | 'equipment',
+  formData: Record<string, number>,
 }>();
 
 const emit = defineEmits<{
-  (e: 'update-equipment', id: string, event: Event): void;
+  (e: 'update', id: string, event: Event): void;
 }>();
 
-const pagedResources = computed(() => {
-  const allEquipments = getAllEquipmentFromCache();
-  const all = Object.values(applyFilters(allEquipments, EQUIPMENT));
-  if (!allEquipments || all.length === 0) return [] as typeof all[];
-  const pages: typeof all[] = [];
-  for (let i = 0; i < all.length; i += ITEMS_PER_PAGE) {
-    pages.push(all.slice(i, i + ITEMS_PER_PAGE));
+// Items paginate as two explicit pages (89 + 88) then group the long tail into
+// one final page; equipment paginates uniformly. Behaviour preserved verbatim
+// from the original two components.
+const ITEMS_PAGE_PLAN = [89, 88];
+const EQUIPMENT_PER_PAGE = 98;
+
+const itemType = computed(() => (props.variant === 'equipment' ? 'equipment' : 'resource'));
+
+const resources = computed(() => {
+  if (props.variant === 'equipment') {
+    const cache = getAllEquipmentFromCache();
+    if (!cache) return [];
+    return Object.values(applyFilters(cache, EQUIPMENT));
   }
+  const cache = getAllItemsFromCache();
+  if (!cache || Object.keys(cache).length === 0) return [];
+  return Object.values(applyFilters(cache, MATERIAL));
+});
+
+const pagedResources = computed(() => {
+  const all = resources.value;
+  if (all.length === 0) return [] as typeof all[];
+  const pages: typeof all[] = [];
+
+  if (props.variant === 'equipment') {
+    for (let i = 0; i < all.length; i += EQUIPMENT_PER_PAGE) {
+      pages.push(all.slice(i, i + EQUIPMENT_PER_PAGE));
+    }
+    return pages;
+  }
+
+  let start = 0;
+  for (const size of ITEMS_PAGE_PLAN) {
+    if (start >= all.length) break;
+    pages.push(all.slice(start, start + size));
+    start += size;
+  }
+  if (start < all.length) pages.push(all.slice(start));
   return pages;
 });
 
@@ -41,7 +75,7 @@ const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBounda
       >
         <div
           v-for="(pageItems, pageIndex) in pagedResources"
-          :key="pageIndex"
+          :key="`page-${pageIndex}`"
           :ref="(el) => setPageRef(el, pageIndex)"
           class="resources-page"
           :aria-hidden="currentPage !== pageIndex"
@@ -49,12 +83,12 @@ const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBounda
           <div class="resources-grid">
             <ResourceCard
               v-for="(item, itemIndex) in pageItems"
-              :key="`equipment-${item.Id}`"
+              :key="`cell-${item.Id}`"
               :item="item"
-              :value="equipmentFormData[item.Id]"
-              :item-type="'equipment'"
+              :value="formData[item.Id]"
+              :item-type="itemType"
               :input-tab-index="currentPage === pageIndex ? 0 : -1"
-              @update:value="(e) => emit('update-equipment', item.Id.toString(), e)"
+              @update:value="(e) => emit('update', item.Id.toString(), e)"
               @keydown:input="(e) => handleBoundaryTab(e, pageIndex, itemIndex, pageItems.length)"
             />
           </div>
@@ -109,38 +143,9 @@ const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBounda
 }
 
 .resources-pagination {
-  padding-top: 20px;
+  padding-top: 16px;
   display: flex;
   justify-content: center;
 }
-
-.page-indicator {
-  display: flex;
-  gap: 8px;
-}
-
-.page-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: none;
-  background-color: var(--border-color);
-  transition: all 0.2s ease;
-  cursor: pointer;
-  padding: 0;
-}
-
-.page-dot.active {
-  background-color: var(--accent-color);
-  transform: scale(1.2);
-}
-
-.page-dot:hover {
-  transform: scale(1.2);
-}
-
-.page-dot:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
-}
+/* .page-indicator / .page-dot live in styles/resourceDisplay.css (shared) */
 </style>

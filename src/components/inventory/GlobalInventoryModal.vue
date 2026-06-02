@@ -3,8 +3,7 @@ import { computed, ref, onMounted } from 'vue';
 import { $t } from '@/locales';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
-import ItemsGrid from './ItemsGrid.vue';
-import EquipmentGrid from './EquipmentGrid.vue';
+import ResourceGrid from './ResourceGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
 
 const emit = defineEmits<{
@@ -213,16 +212,18 @@ const toggleSummaryMode = () => {
       <div class="inventory-content">
         <Transition :name="contentTransitionName" mode="out-in">
           <div :key="contentTransitionKey" class="inventory-tab-content inventory-pane-state">
-            <ItemsGrid
+            <ResourceGrid
               v-if="!summaryMode && activeTab === 'items'"
-              :resource-form-data="itemFormData"
-              @update-resource="handleItemInput"
+              variant="items"
+              :form-data="itemFormData"
+              @update="handleItemInput"
             />
 
-            <EquipmentGrid
+            <ResourceGrid
               v-else-if="!summaryMode && activeTab === 'equipment'"
-              :equipment-form-data="equipmentFormData"
-              @update-equipment="handleEquipmentInput"
+              variant="equipment"
+              :form-data="equipmentFormData"
+              @update="handleEquipmentInput"
             />
 
             <ResourceSummary

@@ -7,7 +7,7 @@ import { getItemIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
   item: ResourceProps,
-  value?: any,
+  value?: number | string,
   itemType?: 'resource' | 'equipment',
   inputTabIndex?: number
 }>();

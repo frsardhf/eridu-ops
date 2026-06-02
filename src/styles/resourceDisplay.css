@@ -1,8 +1,8 @@
 /*
  * Shared styles for resource display components:
- * - StudentResourceCard.vue
- * - StudentItemsGrid.vue
- * - StudentResourceSummary.vue
+ * - ResourceCard.vue
+ * - ResourceGrid.vue
+ * - ResourceSummary.vue
  * - MaterialsSection.vue
  */
 
@@ -89,4 +89,35 @@
     grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
     gap: 2px;
   }
-} 
+}
+
+/* Pagination dots — shared by ResourceGrid + ResourceSummary */
+.page-indicator {
+  display: flex;
+  gap: 8px;
+}
+
+.page-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--border-color);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.page-dot.active {
+  background-color: var(--accent-color);
+  transform: scale(1.2);
+}
+
+.page-dot:hover {
+  transform: scale(1.2);
+}
+
+.page-dot:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
