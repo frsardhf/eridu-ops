@@ -19,6 +19,7 @@ import { updateGearsData, getAllGearsData } from '../stores/gearsStore';
 import { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
 import { calculateAllGears, getMaxTierForTypeSync } from '../utils/gearMaterialUtils';
 import { MAX_POTENTIAL_LEVEL } from '../utils/upgradeUtils';
+import { MAX_GRADE, MAX_EXCLUSIVE_GEAR_LEVEL } from '../constants/gameConstants';
 import { calculateGiftStackExp, computeCafeDays, computeCafeExp } from '../utils/bondExpUtils';
 import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import {
@@ -420,7 +421,7 @@ export function useStudentForm(
   }
 
   function handleGradeUpdate(current: number, target: number) {
-    if (current < 1 || current > 9 || target < current || target > 9) return;
+    if (current < 1 || current > MAX_GRADE || target < current || target > MAX_GRADE) return;
     if (!gradeLevels.value) return;
     gradeLevels.value.current = current;
     gradeLevels.value.target  = target;
@@ -436,7 +437,7 @@ export function useStudentForm(
   function handleExclusiveGearUpdate(current: number, target: number) {
     const max = maxUnlockableGearTier.value;
     current = Math.min(Math.max(0, current), max);
-    target  = Math.min(Math.max(current, target), 2);
+    target  = Math.min(Math.max(current, target), MAX_EXCLUSIVE_GEAR_LEVEL);
     exclusiveGearLevel.value = { current, target };
     if (opts.isVisible?.() ?? true) saveToIndexedDB();
   }

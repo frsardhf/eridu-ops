@@ -7,6 +7,10 @@ import { getStudentCollectionUrl, getBondIconUrl } from '@/lib/utils/iconUtils'
 import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
 import { ModalOriginRect } from '@/types/modal';
+import StarIcon from '@/components/shared/StarIcon.vue'
+import {
+  WEAPON_STAR_THRESHOLD, MAX_EX_SKILL_LEVEL, MAX_SKILL_LEVEL, MAX_POTENTIAL_LEVEL,
+} from '@/lib/constants/gameConstants'
 
 const props = defineProps<{
   student: StudentProps;
@@ -81,13 +85,13 @@ function formatSkillValue(
   value: number | undefined, isEx: boolean
 ): string {
   if (!value) return '1';
-  if (isEx && value === 5) return 'M';
-  if (!isEx && value === 10) return 'M';
+  if (isEx && value === MAX_EX_SKILL_LEVEL) return 'M';
+  if (!isEx && value === MAX_SKILL_LEVEL) return 'M';
   return value.toString();
 }
 
 function formatPotentialValue(value: number | undefined): string {
-  if (value === 25) return 'M';
+  if (value === MAX_POTENTIAL_LEVEL) return 'M';
   return value?.toString() ?? '0';
 }
 
@@ -222,8 +226,8 @@ function handleCardClick(event: MouseEvent) {
     <!-- Pin icon -->
     <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle"
       :key="`pin-${student.Id}-${isPinned}`">
-      <img 
-        src="/assets/push-pin.png" 
+      <img
+        :src="isPinned ? '/assets/thumbtacks-active.png' : '/assets/thumbtacks.png'"
         :class="['pin-img', { 'pinned': isPinned, 'pin-pop': pinPop }]"
         alt="Pin icon"
       />
@@ -253,43 +257,13 @@ function handleCardClick(event: MouseEvent) {
           <!-- Grade Level -->
           <div class="grade-container" v-if="gradeLevel > 0 && isOwned">
             <div class="grade-stars-row">
-              <!-- Gold stars only for grades 1-5 -->
-              <template v-if="gradeLevel <= 5">
-                <template v-for="i in gradeLevel" :key="`gold-star-${i}`">
-                  <svg class="small-star gold-star"
-                      aria-hidden="true"
-                      focusable="false"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 576 512">
-                    <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 
-                      0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 
-                      21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 
-                      31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 
-                      33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 
-                      11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z">
-                    </path>
-                  </svg>
-                </template>
-              </template>
-              
-              <!-- Blue stars only for grades 6-9 -->
-              <template v-else>
-                <template v-for="i in gradeLevel - 5" :key="`blue-star-${i}`">
-                  <svg class="small-star blue-star"
-                      aria-hidden="true"
-                      focusable="false"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 576 512">
-                      <path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 
-                        0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 
-                        21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 
-                        31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 
-                        33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 
-                        11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z">
-                      </path>
-                  </svg>
-                </template>
-              </template>
+              <!-- Gold stars for grades 1–5, blue for 6–9 (subtract threshold) -->
+              <StarIcon
+                v-for="i in (gradeLevel <= WEAPON_STAR_THRESHOLD ? gradeLevel : gradeLevel - WEAPON_STAR_THRESHOLD)"
+                :key="`star-${i}`"
+                class="small-star"
+                :class="gradeLevel <= WEAPON_STAR_THRESHOLD ? 'gold-star' : 'blue-star'"
+              />
             </div>
           </div>
           
@@ -692,7 +666,7 @@ function handleCardClick(event: MouseEvent) {
   align-items: center;
   background-color: #a6a6a6;
   border-radius: 50%;
-  padding: 7px;
+  padding: 5px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: background-color 0.1s ease;
 }
@@ -799,14 +773,6 @@ function handleCardClick(event: MouseEvent) {
     font-size: 10px;
     min-width: 12px;
     width: 10px;
-  }
-
-  .pin-icon {
-    width: 24px;
-    height: 24px;
-    top: -8px;
-    left: -8px;
-    padding: 5px;
   }
 }
 

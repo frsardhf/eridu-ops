@@ -5,6 +5,10 @@ import { StudentProps } from '@/types/student';
 import { useFocusInput, useGradeInfoEditor } from '@/composables/useInputEditor';
 import { formatItemQuantity } from '@/lib/utils/materialUtils';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
+import {
+  MAX_ELEPH_OWNED, MIN_ELEPH_PRICE, MAX_ELEPH_PRICE,
+  MIN_ELEPH_PURCHASABLE, MAX_ELEPH_PURCHASABLE,
+} from '@/lib/constants/gameConstants';
 
 const props = defineProps<{
   student: StudentProps;
@@ -56,7 +60,7 @@ const elephIcon = computed(() => {
                 :value="gradeState.owned"
                 class="resource-input"
                 min="0"
-                max="520"
+                :max="MAX_ELEPH_OWNED"
                 @input="(e) => updateValue(e, 'owned')"
                 @focus="handleFocus"
                 @blur="handleBlur"
@@ -76,8 +80,8 @@ const elephIcon = computed(() => {
               :value="gradeState.price"
               @input="(e) => updateValue(e, 'price')"
               class="resource-input-container"
-              min="1"
-              max="5"
+              :min="MIN_ELEPH_PRICE"
+              :max="MAX_ELEPH_PRICE"
             />
           </label>
 
@@ -89,8 +93,8 @@ const elephIcon = computed(() => {
               :value="gradeState.purchasable"
               @input="(e) => updateValue(e, 'purchasable')"
               class="resource-input-container"
-              min="1"
-              max="20"
+              :min="MIN_ELEPH_PURCHASABLE"
+              :max="MAX_ELEPH_PURCHASABLE"
             />
           </label>
         </div>

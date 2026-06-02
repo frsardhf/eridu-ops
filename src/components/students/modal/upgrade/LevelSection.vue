@@ -2,6 +2,7 @@
 import { $t } from '@/locales';
 import { useStudentLevels } from '@/composables/useStudentLevels';
 import { useLevelEditor } from '@/composables/useInputEditor';
+import { MAX_LEVEL } from '@/lib/constants/gameConstants';
 
 const props = defineProps<{
   characterLevels: { current: number; target: number };
@@ -43,7 +44,7 @@ const {
           type="number"
           class="student-level-editor-input"
           min="1"
-          max="90"
+          :max="MAX_LEVEL"
           @blur="commitEdit"
           @keydown="handleEditorKeydown"
         />
@@ -67,7 +68,7 @@ const {
             type="number"
             class="student-level-editor-input target"
             :min="levelState.current"
-            max="90"
+            :max="MAX_LEVEL"
             @blur="commitEdit"
             @keydown="handleEditorKeydown"
           />

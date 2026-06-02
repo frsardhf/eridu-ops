@@ -6,6 +6,7 @@ import { useStudentLevels } from '@/composables/useStudentLevels';
 import { useBondEditor } from '@/composables/useInputEditor';
 import { getSchoolColor } from '@/lib/utils/colorUtils';
 import { getBondIconUrl, getTypeIconUrl, getRoleIconUrl, getSchoolIconUrl } from '@/lib/utils/iconUtils';
+import { MIN_BOND_LEVEL, MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
@@ -55,8 +56,8 @@ const { showLevelArrow } = useStudentLevels(
 
 const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel.value);
 
-// Inline bond editor — only used when bondProgress is true. Modal Bond tab
-// keeps its own editor in BondSection so this stays inert in level mode.
+// Inline bond editor — only used when bondProgress is true (BondsPage).
+// Inert in the modal's level / navigate modes.
 const {
   bondState, bondEditorRef, isEditing, editValue,
   startEdit, commitEdit, handleEditorKeydown,
@@ -186,8 +187,8 @@ function onBondInlineClick() {
                 v-model="editValue"
                 type="number"
                 class="level-number level-number-input"
-                min="1"
-                max="100"
+                :min="MIN_BOND_LEVEL"
+                :max="MAX_BOND_LEVEL"
                 @blur="commitEdit"
                 @keydown="handleEditorKeydown"
               />
@@ -349,11 +350,6 @@ function onBondInlineClick() {
   border: 1px solid var(--color-bond);
   border-radius: 999px;
   overflow: visible;
-}
-
-.level-pill.maxed {
-  background: var(--background-primary);
-  border: 1px solid var(--color-bond);
 }
 
 .level-pill.maxed50 {
@@ -598,13 +594,6 @@ function onBondInlineClick() {
   font-size: 0.82rem;
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.combat-type-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
 }
 
 .bond-stat-chip {
