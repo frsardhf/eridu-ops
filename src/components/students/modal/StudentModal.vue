@@ -56,7 +56,10 @@ const props = defineProps<{
   studentsArray?: StudentProps[]
 }>();
 
-const emit = defineEmits<(event: 'close' | 'navigate', payload?: any) => void>();
+const emit = defineEmits<{
+  (e: 'close'): void;
+  (e: 'navigate', student: StudentProps): void;
+}>();
 
 const { setOwned } = useStudentOwnership();
 
@@ -249,7 +252,7 @@ const insufficientList = computed<string[]>(() => {
     const xpNeeded = computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target);
     const ownedXp  = getCharXpItems(id => itemFormData.value[id] ?? 0)
       .reduce((s, item) => s + item.owned * item.xpValue, 0);
-    if (ownedXp < xpNeeded) out.push('Activity Report');
+    if (ownedXp < xpNeeded) out.push($t('activityReport'));
   }
 
   const equipPending = Object.values(equipmentLevels.value).some(e => e && e.current < e.target);
@@ -257,31 +260,13 @@ const insufficientList = computed<string[]>(() => {
     const xpNeeded = computeEquipmentXpCost(equipmentLevels.value);
     const ownedXp  = getEquipXpItems(id => equipmentFormData.value[id] ?? 0)
       .reduce((s, item) => s + item.owned * item.xpValue, 0);
-    if (ownedXp < xpNeeded) out.push('Equipment XP');
+    if (ownedXp < xpNeeded) out.push($t('equipmentXp'));
   }
 
   return out;
 });
 
 const hasSufficientMaterials = computed(() => insufficientList.value.length === 0);
-
-const materialsPreview = computed<Material[]>(() => {
-  const map = new Map<number, Material>();
-  const add = (mats: Material[]) => {
-    for (const m of mats) {
-      const id = m.material.Id;
-      const ex = map.get(id);
-      if (ex) {
-        ex.materialQuantity += m.materialQuantity;
-      } else {
-        map.set(id, { ...m });
-      }
-    }
-  };
-  add(allMaterialsNeeded.value);
-  add(equipmentMaterialsNeeded.value);
-  return Array.from(map.values()).filter(m => m.materialQuantity > 0);
-});
 
 function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
   const student = displayedStudent.value;

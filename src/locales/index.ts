@@ -147,6 +147,7 @@ export const translations = {
       school: "School",
       club: "Club",
       pinned: "Pinned",
+      pinnedHint: "Sorting is paused while Pinned view is on.",
       method: "Sorting Method"
     },
     direction: {
@@ -276,7 +277,9 @@ export const translations = {
     leftover: "Leftover",
     used: "Used",
     notEnough: "Not enough",
-    
+    activityReport: "Activity Report",
+    equipmentXp: "Equipment XP",
+
     // Resource summary component
     itemsNeeded: "Items Needed",
     missingItems: "Missing Items",
@@ -708,6 +711,7 @@ export const translations = {
       school: "学園",
       club: "部活",
       pinned: "ピン留め",
+      pinnedHint: "ピン留め表示中は並び替えが一時停止します。",
       method: "ソート方法"
     },
     direction: {
@@ -837,7 +841,9 @@ export const translations = {
     leftover: "余剰",
     used: "使用",
     notEnough: "不足素材",
-    
+    activityReport: "活動報告書",
+    equipmentXp: "装備EXP",
+
     // Resource summary component
     itemsNeeded: "全体の必要アイテム",
     missingItems: "不足アイテム",

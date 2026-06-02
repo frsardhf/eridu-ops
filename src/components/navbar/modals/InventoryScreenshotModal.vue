@@ -138,8 +138,8 @@ const searchResults = computed<CachedResource[]>(() => {
   if (!q) return [];
   const isEquipment = inventoryType.value === 'equipment';
   const raw = isEquipment ? getAllEquipmentFromCache() : getAllItemsFromCache();
-  // Mirror the same filter used in ItemsGrid / EquipmentGrid so blueprints
-  // and other non-inventory items are excluded (avoids broken icons).
+  // Mirror the same filter used in ResourceGrid so blueprints and other
+  // non-inventory items are excluded (avoids broken icons).
   const eligible = applyFilters(raw, isEquipment ? EQUIPMENT : MATERIAL);
   return (Object.values(eligible) as CachedResource[])
     .filter(item => item.Name.toLowerCase().includes(q))
@@ -575,7 +575,7 @@ useDocumentListener('paste', onPaste);
         <!-- Step 2: Upload -->
         <template v-else-if="step === 'upload'">
           <div class="step-nav">
-            <button class="back-btn" @click="step = 'type'">← {{ $t('items') === $t(inventoryType) ? $t('items') : $t('equipment') }}</button>
+            <button class="back-btn" @click="step = 'type'">← {{ $t(inventoryType) }}</button>
           </div>
 
           <div v-if="lastAppliedCount > 0" class="apply-success">
