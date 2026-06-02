@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
@@ -13,6 +13,8 @@ import GlobalControls from './GlobalControls.vue';
 import ImportModal from './modals/ImportModal.vue';
 import InventoryScreenshotModal from './modals/InventoryScreenshotModal.vue';
 import WhatsNewModal from './modals/WhatsNewModal.vue';
+import ContactModal from './modals/ContactModal.vue';
+import CreditsModal from './modals/CreditsModal.vue';
 import '@/styles/navbar.css';
 
 defineProps<{
@@ -20,12 +22,20 @@ defineProps<{
 }>();
 
 const { currentTheme, setTheme, reinitializeData } = useStudentData();
-const { exportData } = useNavbarSettings();
+const { exportData, currentLanguage, setLanguage } = useNavbarSettings();
+
+// Language toggle is mirrored into the mobile menu (the top-bar toggle hides ≤480).
+const langLabel = computed(() => (currentLanguage.value === 'en' ? 'English' : '日本語'));
+function toggleLanguage() {
+  setLanguage(currentLanguage.value === 'en' ? 'jp' : 'en');
+}
 
 const mobileMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showScreenshotModal = ref(false);
 const showWhatsNewModal = ref(false);
+const showContactModal = ref(false);
+const showCreditsModal = ref(false);
 const menuToggleEl = ref<HTMLButtonElement | null>(null);
 const menuEl = ref<HTMLElement | null>(null);
 
@@ -68,6 +78,16 @@ function openImportModal() {
 
 function openScreenshotModal() {
   showScreenshotModal.value = true;
+  mobileMenuOpen.value = false;
+}
+
+function openContactModal() {
+  showContactModal.value = true;
+  mobileMenuOpen.value = false;
+}
+
+function openCreditsModal() {
+  showCreditsModal.value = true;
   mobileMenuOpen.value = false;
 }
 
@@ -116,7 +136,12 @@ useClickOutside(handleClickOutside);
 
       <!-- Right: theme picker, language, credits + hamburger -->
       <div class="an-right">
-        <GlobalControls :current-theme="currentTheme" @set-theme="setTheme" />
+        <GlobalControls
+          :current-theme="currentTheme"
+          @set-theme="setTheme"
+          @open-contact="openContactModal"
+          @open-credits="openCreditsModal"
+        />
         <button
           ref="menuToggleEl"
           class="hamburger-button"
@@ -177,6 +202,29 @@ useClickOutside(handleClickOutside);
               </svg>
               {{ $t('whatsNew') }}
             </button>
+            <!-- compact-only: shown once the top-bar Contact/Credits icons hide (phones) -->
+            <button class="mobile-menu-option compact-only" type="button" @click="openContactModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+              {{ $t('contact') }}
+            </button>
+            <button class="mobile-menu-option compact-only" type="button" @click="openCreditsModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"/>
+                <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"/>
+              </svg>
+              {{ $t('credits') }}
+            </button>
+            <button class="mobile-menu-option compact-only" type="button" :aria-label="`Language: ${langLabel}`" @click="toggleLanguage">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              {{ langLabel }}
+            </button>
           </div>
         </div>
       </div>
@@ -197,6 +245,8 @@ useClickOutside(handleClickOutside);
     v-if="showWhatsNewModal"
     @close="closeWhatsNewModal"
   />
+  <ContactModal v-if="showContactModal" @close="showContactModal = false" />
+  <CreditsModal v-if="showCreditsModal" @close="showCreditsModal = false" />
 </template>
 
 <style scoped>
@@ -349,6 +399,17 @@ useClickOutside(handleClickOutside);
 
 .option-icon {
   flex-shrink: 0;
+}
+
+/* Menu entries that only appear once their top-bar icons collapse (phones). */
+.compact-only {
+  display: none;
+}
+
+@media screen and (max-width: 480px) {
+  .compact-only {
+    display: flex;
+  }
 }
 
 @media screen and (max-width: 768px) {

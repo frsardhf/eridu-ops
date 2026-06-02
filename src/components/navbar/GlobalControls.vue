@@ -4,24 +4,24 @@ import { useNavbarSettings, type Language } from '@/lib/hooks/useNavbarSettings'
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
-import CreditsModal from './modals/CreditsModal.vue';
-import ContactModal from './modals/ContactModal.vue';
 
 // ── Props / emits ─────────────────────────────────────────────────────────────
 defineProps<{
   currentTheme: ThemeId;
 }>();
 
+// Contact/Credits modals are hosted by GlobalNavbar so they can also be opened
+// from the hamburger menu on phones (where these top-bar icons are hidden).
 const emit = defineEmits<{
   setTheme: [themeId: ThemeId];
+  openContact: [];
+  openCredits: [];
 }>();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const { currentLanguage, setLanguage, THEME_OPTIONS } = useNavbarSettings();
 
 const showThemeTray = ref(false);
-const showCreditsModal = ref(false);
-const showContactModal = ref(false);
 const trayEl = ref<HTMLElement | null>(null);
 const toggleEl = ref<HTMLButtonElement | null>(null);
 
@@ -114,7 +114,7 @@ useClickOutside(handleClickOutside);
       class="gc-icon-btn"
       :aria-label="$t('contact')"
       :title="$t('contact')"
-      @click="showContactModal = true"
+      @click="emit('openContact')"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -127,7 +127,7 @@ useClickOutside(handleClickOutside);
       class="gc-icon-btn"
       :aria-label="$t('credits')"
       :title="$t('credits')"
-      @click="showCreditsModal = true"
+      @click="emit('openCredits')"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
@@ -135,9 +135,6 @@ useClickOutside(handleClickOutside);
         <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
       </svg>
     </button>
-
-    <CreditsModal v-if="showCreditsModal" @close="showCreditsModal = false" />
-    <ContactModal v-if="showContactModal" @close="showContactModal = false" />
   </div>
 </template>
 
@@ -315,6 +312,15 @@ useClickOutside(handleClickOutside);
   .gc-theme-tray-toggle-dot {
     width: 16px;
     height: 16px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  /* Contact, Credits, and the language toggle move into the hamburger menu to
+     free space for search. */
+  .gc-icon-btn,
+  .gc-lang-toggle {
+    display: none;
   }
 }
 </style>
