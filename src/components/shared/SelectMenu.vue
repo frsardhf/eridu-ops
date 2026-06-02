@@ -11,6 +11,8 @@ const props = defineProps<{
   ariaLabel?: string;
   /** Full-width form-field styling instead of the compact inline toolbar look. */
   block?: boolean;
+  /** Horizontal anchor of the teleported popover relative to the trigger (default 'left'). */
+  align?: 'left' | 'right';
 }>();
 
 const emit = defineEmits<{ 'update:modelValue': [T] }>();
@@ -28,7 +30,8 @@ const triggerLabel = computed(() => selected.value?.label ?? props.placeholder ?
 const isPlaceholder = computed(() => !selected.value);
 
 function updatePosition() {
-  const el = triggerEl.value;
+  // Anchor to the default trigger when present, else to the wrapper (custom #trigger slot).
+  const el = triggerEl.value ?? wrapEl.value;
   if (!el) return;
   const r = el.getBoundingClientRect();
   const MARGIN = 8;
@@ -40,11 +43,13 @@ function updatePosition() {
   const openUp = spaceBelow < wanted && spaceAbove > spaceBelow;
 
   const style: Record<string, string> = {
-    left: `${Math.round(r.left)}px`,
     minWidth: `${Math.round(r.width)}px`,
     // Clamp to the available space so the popover never runs off either edge.
     maxHeight: `${Math.round(Math.min(CAP, openUp ? spaceAbove : spaceBelow))}px`,
   };
+  // Right-align hugs the trigger's right edge (keeps an edge-anchored icon menu on-screen).
+  if (props.align === 'right') style.right = `${Math.round(window.innerWidth - r.right)}px`;
+  else style.left = `${Math.round(r.left)}px`;
   if (openUp) style.bottom = `${Math.round(window.innerHeight - r.top + 6)}px`;
   else style.top = `${Math.round(r.bottom + 6)}px`;
   popoverStyle.value = style;
@@ -68,9 +73,15 @@ function onClickOutside(event: MouseEvent) {
   }
 }
 
-// The popover is detached (fixed), so close it if the page scrolls/resizes
-// rather than letting it drift away from the trigger.
-function closeOnViewportChange() {
+// The popover is detached (fixed), so close it when the page scrolls/resizes
+// rather than letting it drift away from the trigger. But ignore scrolls that
+// happen INSIDE the popover's own overflow (e.g. scrolling a long option list
+// down to the last item) — those must not close it.
+function closeOnViewportChange(event?: Event) {
+  if (event?.type === 'scroll') {
+    const t = event.target as Node | null;
+    if (t && popoverEl.value && (t === popoverEl.value || popoverEl.value.contains(t))) return;
+  }
   if (open.value) open.value = false;
 }
 
@@ -87,24 +98,29 @@ onUnmounted(() => {
 
 <template>
   <div ref="wrapEl" class="select-menu" :class="{ block }">
-    <button
-      ref="triggerEl"
-      type="button"
-      class="select-trigger"
-      :class="{ open, placeholder: isPlaceholder }"
-      :aria-label="ariaLabel || undefined"
-      :aria-expanded="open"
-      aria-haspopup="listbox"
-      @click="toggle"
-    >
-      <span>{{ triggerLabel }}</span>
-      <svg class="select-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </button>
+    <!-- Custom trigger via #trigger slot (gets { open, toggle }); default = label pill -->
+    <slot name="trigger" :open="open" :toggle="toggle">
+      <button
+        ref="triggerEl"
+        type="button"
+        class="select-trigger"
+        :class="{ open, placeholder: isPlaceholder }"
+        :aria-label="ariaLabel || undefined"
+        :aria-expanded="open"
+        aria-haspopup="listbox"
+        @click="toggle"
+      >
+        <span>{{ triggerLabel }}</span>
+        <svg class="select-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+    </slot>
 
     <Teleport to="body">
       <div v-if="open" ref="popoverEl" class="select-popover" :style="popoverStyle" role="listbox">
+        <!-- Optional fixed content above the options (e.g. a sort-direction row) -->
+        <slot name="header" />
         <button
           v-for="o in options"
           :key="String(o.value)"
