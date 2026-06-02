@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { getBondIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { $t } from '@/locales';
@@ -13,12 +13,33 @@ const studentIconUrl = ref<string>('');
 const studentsImgError = ref(false);
 const bondsImgError = ref(false);
 
-watch(sortedStudentsArray, (students) => {
-  if (students.length && !studentIconUrl.value) {
+/** Pick a random student portrait, avoiding an immediate repeat. */
+function cycleStudentIcon() {
+  const students = sortedStudentsArray.value;
+  if (!students.length) return;
+  let url = studentIconUrl.value;
+  for (let attempt = 0; attempt < 5 && (url === studentIconUrl.value || !studentIconUrl.value); attempt++) {
     const pick = students[Math.floor(Math.random() * students.length)];
-    studentIconUrl.value = getStudentIconUrl(pick.Id);
+    url = getStudentIconUrl(pick.Id);
+    if (students.length === 1) break;
   }
+  studentIconUrl.value = url;
+  studentsImgError.value = false;
+}
+
+watch(sortedStudentsArray, (students) => {
+  if (students.length && !studentIconUrl.value) cycleStudentIcon();
 }, { immediate: true });
+
+let studentIconInterval: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  studentIconInterval = setInterval(cycleStudentIcon, 2000);
+});
+
+onUnmounted(() => {
+  if (studentIconInterval) clearInterval(studentIconInterval);
+});
 </script>
 
 <template>
@@ -41,21 +62,24 @@ watch(sortedStudentsArray, (students) => {
       <nav class="landing-cards">
         <RouterLink to="/students" class="landing-card">
           <div class="landing-card-art">
-            <img
-              v-if="studentIconUrl && !studentsImgError"
-              :src="studentIconUrl"
-              alt=""
-              class="landing-card-img"
-              @error="studentsImgError = true"
-            />
-            <div v-else class="landing-card-img-fallback">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </div>
+            <Transition name="portrait-fade">
+              <img
+                v-if="studentIconUrl && !studentsImgError"
+                :key="studentIconUrl"
+                :src="studentIconUrl"
+                alt=""
+                class="landing-card-img"
+                @error="studentsImgError = true"
+              />
+              <div v-else class="landing-card-img-fallback">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+            </Transition>
           </div>
           <div class="landing-card-body">
             <h2 class="landing-card-title">{{ $t('students') }}</h2>
@@ -65,7 +89,7 @@ watch(sortedStudentsArray, (students) => {
         </RouterLink>
 
         <RouterLink to="/bonds" class="landing-card">
-          <div class="landing-card-art">
+          <div class="landing-card-art landing-card-art--bond100">
             <img
               v-if="!bondsImgError"
               :src="bondIconUrl"
@@ -82,6 +106,17 @@ watch(sortedStudentsArray, (students) => {
           <div class="landing-card-body">
             <h2 class="landing-card-title">{{ $t('bonds') }}</h2>
             <p class="landing-card-desc">{{ $t('bondsDesc') }}</p>
+          </div>
+          <div class="landing-card-arrow">→</div>
+        </RouterLink>
+
+        <RouterLink to="/hall" class="landing-card">
+          <div class="landing-card-art">
+            <img src="/assets/kokona100.png" alt="" class="landing-card-img" />
+          </div>
+          <div class="landing-card-body">
+            <h2 class="landing-card-title">{{ $t('bond100.nav') }}</h2>
+            <p class="landing-card-desc">{{ $t('bond100Desc') }}</p>
           </div>
           <div class="landing-card-arrow">→</div>
         </RouterLink>
@@ -192,6 +227,7 @@ watch(sortedStudentsArray, (students) => {
 }
 
 .landing-card-art {
+  position: relative;
   flex-shrink: 0;
   width: 64px;
   height: 64px;
@@ -203,6 +239,23 @@ watch(sortedStudentsArray, (students) => {
   justify-content: center;
 }
 
+/* Soft crossfade between cycling student portraits */
+.portrait-fade-enter-active,
+.portrait-fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.portrait-fade-enter-from,
+.portrait-fade-leave-to {
+  opacity: 0;
+}
+
+/* Stack the outgoing portrait over the incoming one so they blend */
+.portrait-fade-leave-active {
+  position: absolute;
+  inset: 0;
+}
+
 .landing-card-img {
   width: 100%;
   height: 100%;
@@ -212,6 +265,12 @@ watch(sortedStudentsArray, (students) => {
 .landing-card-img--icon {
   object-fit: contain;
   padding: 10px;
+}
+
+.landing-card-art--bond100 {
+  background:
+    radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent-color) 34%, transparent), transparent 48%),
+    color-mix(in srgb, var(--color-negative) 12%, var(--background-primary));
 }
 
 .landing-card-img-fallback {
