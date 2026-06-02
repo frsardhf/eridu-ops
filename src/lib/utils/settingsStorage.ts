@@ -29,6 +29,7 @@ export interface AppSettings {
   bondsTrackedStudents?: number[];
   bondsLayout: 'cards' | 'tabs';
   bondsGiftPlanningEnabled?: number[];
+  bond100Sort?: 'default' | 'name' | 'bond100';
   /** ID of the most recent CHANGELOG entry the user has seen / dismissed. */
   lastSeenChangelogId?: string;
 }
@@ -45,6 +46,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
   isPinnedMode: false,
   bondsLayout: 'tabs',
 };
+
+// Every key we currently persist. Anything else found in the stored blob is a
+// leftover from an older version (e.g. bond100Layout, sortDirectionsByOption)
+// and is pruned on load. Keep this in sync with the AppSettings interface.
+const ALLOWED_KEYS: (keyof AppSettings)[] = [
+  'theme', 'language', 'sort', 'pinnedStudents', 'isPinnedMode',
+  'craftingFodder', 'studentFilters', 'bondsTrackedStudents', 'bondsLayout',
+  'bondsGiftPlanningEnabled', 'bond100Sort', 'lastSeenChangelogId',
+];
 
 /**
  * Get consolidated settings from localStorage.
@@ -63,7 +73,7 @@ export function getSettings(): AppSettings {
       return fresh;
     }
 
-    const parsed = JSON.parse(data);
+    const parsed = JSON.parse(data) as Record<string, unknown>;
 
     // Merge with defaults to ensure all properties exist
     const merged: AppSettings = {
@@ -71,11 +81,26 @@ export function getSettings(): AppSettings {
       ...parsed,
       sort: {
         ...DEFAULT_SETTINGS.sort,
-        ...parsed.sort
-      }
-    };
-    _cachedSettings = merged;
-    return merged;
+        ...(parsed.sort as object),
+      },
+    } as AppSettings;
+
+    // Drop stale fields left by older versions (the spread above keeps unknown
+    // keys alive) — retain only the current allowlist.
+    const clean = {} as AppSettings;
+    const src = merged as unknown as Record<string, unknown>;
+    const dst = clean as unknown as Record<string, unknown>;
+    for (const key of ALLOWED_KEYS) {
+      if (key in src) dst[key] = src[key];
+    }
+    _cachedSettings = clean;
+
+    // If the stored blob actually had stale keys, rewrite it once so they're
+    // gone from localStorage, not just ignored in memory.
+    const hadStale = Object.keys(parsed).some(k => !ALLOWED_KEYS.includes(k as keyof AppSettings));
+    if (hadStale) saveSettings(clean);
+
+    return clean;
   } catch (error) {
     console.error('Error reading settings from localStorage:', error);
     return { ...DEFAULT_SETTINGS };
