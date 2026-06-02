@@ -253,7 +253,7 @@ function closeModal(event: MouseEvent) {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
@@ -268,7 +268,7 @@ function closeModal(event: MouseEvent) {
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #999;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -277,7 +277,7 @@ function closeModal(event: MouseEvent) {
 }
 
 .close-button:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .modal-content {
@@ -357,7 +357,7 @@ function closeModal(event: MouseEvent) {
 }
 
 .dropzone {
-  border: 1px dashed #444;
+  border: 1px dashed var(--border-color);
   border-radius: 8px;
   padding: 20px 15px;
   text-align: center;
@@ -395,7 +395,7 @@ function closeModal(event: MouseEvent) {
 
 .dropzone-subtext {
   margin: 4px 0;
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -404,7 +404,7 @@ function closeModal(event: MouseEvent) {
 }
 
 .browse-button {
-  background-color: #6366f1;
+  background-color: var(--accent-color);
   color: white;
   border: none;
   padding: 6px 18px;
@@ -417,11 +417,11 @@ function closeModal(event: MouseEvent) {
 }
 
 .browse-button:hover {
-  background-color: #4f46e5;
+  background-color: var(--accent-color-hover);
 }
 
 .info-text {
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   line-height: 1.4;
 }
@@ -437,14 +437,14 @@ function closeModal(event: MouseEvent) {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .loader {
   width: 20px;
   height: 20px;
-  border: 2px solid #333;
-  border-bottom-color: #6366f1;
+  border: 2px solid var(--border-color);
+  border-bottom-color: var(--accent-color);
   border-radius: 50%;
   display: inline-block;
   animation: rotation 1s linear infinite;

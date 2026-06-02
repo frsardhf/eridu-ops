@@ -45,6 +45,8 @@ interface CaptureOptions {
   scale?: number;
   backgroundColor?: string;
   fileName?: string;
+  /** 'download' (default) saves via an `<a download>`; 'open' opens the PNG in a new tab. */
+  output?: 'download' | 'open';
 }
 
 export function useImageExport() {
@@ -64,10 +66,17 @@ export function useImageExport() {
         backgroundColor: opts.backgroundColor,
       });
 
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = opts.fileName ?? 'export.png';
-      a.click();
+      if (opts.output === 'open') {
+        const blob = await fetch(dataUrl).then(r => r.blob());
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = opts.fileName ?? 'export.png';
+        a.click();
+      }
     } finally {
       for (const [img, src] of restore) img.src = src;
       exporting.value = false;

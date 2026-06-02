@@ -4,7 +4,7 @@ import { useDeckBuilder } from '@/lib/hooks/useDeckBuilder';
 import { useDragReorder } from '@/composables/useDragReorder';
 import StudentCard from '@/components/students/StudentCard.vue';
 import type { StudentProps } from '@/types/student';
-import { domToPng } from 'modern-screenshot';
+import { useImageExport } from '@/composables/useImageExport';
 import { $t } from '@/locales';
 import { studentDataStore } from '@/lib/stores/studentStore';
 
@@ -134,68 +134,26 @@ function closeIfBackdrop(event: MouseEvent) {
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
+// Image inlining + PNG capture live in useImageExport; we only add the
+// scroll-height expansion so nothing below the fold is clipped, and request the
+// 'open' output (new tab) instead of the composable's default download.
 const teamsAreaRef = ref<HTMLElement | null>(null);
-const isExporting = ref(false);
-
-async function imgToDataUrl(src: string): Promise<string | null> {
-  try {
-    const res = await fetch(src, { mode: 'cors', credentials: 'omit', cache: 'reload' });
-    const blob = await res.blob();
-    return new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
+const { exporting: isExporting, captureToPng } = useImageExport();
 
 async function exportDeckImage() {
-  if (!teamsAreaRef.value || isExporting.value) return;
-  isExporting.value = true;
+  const el = teamsAreaRef.value;
+  if (!el || isExporting.value) return;
+
+  const prev = { overflow: el.style.overflow, height: el.style.height, maxHeight: el.style.maxHeight };
+  el.style.overflow = 'visible';
+  el.style.height = `${el.scrollHeight}px`;
+  el.style.maxHeight = 'none';
   try {
-    const el = teamsAreaRef.value;
-
-    // Expand to full scroll height so nothing gets cut off
-    const prevOverflow = el.style.overflow;
-    const prevHeight = el.style.height;
-    const prevMaxHeight = el.style.maxHeight;
-    el.style.overflow = 'visible';
-    el.style.height = el.scrollHeight + 'px';
-    el.style.maxHeight = 'none';
-
-    // Pre-fetch cross-origin images as data URLs so modern-screenshot can embed them
-    const imgs = Array.from(el.querySelectorAll<HTMLImageElement>('img'));
-    const origSrcs = new Map<HTMLImageElement, string>();
-    await Promise.all(imgs.map(async img => {
-      const dataUrl = await imgToDataUrl(img.src);
-      if (dataUrl) {
-        origSrcs.set(img, img.src);
-        img.src = dataUrl;
-      }
-    }));
-
-    await new Promise(r => requestAnimationFrame(r));
-
-    const dataUrl = await domToPng(el, {
-      scale: 2,
-      backgroundColor: '#0d1117',
-    });
-
-    // Restore original srcs and dimensions
-    for (const [img, src] of origSrcs) img.src = src;
-    el.style.overflow = prevOverflow;
-    el.style.height = prevHeight;
-    el.style.maxHeight = prevMaxHeight;
-
-    const blob = await fetch(dataUrl).then(r => r.blob());
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    await captureToPng(el, { scale: 2, backgroundColor: '#0d1117', output: 'open' });
   } finally {
-    isExporting.value = false;
+    el.style.overflow = prev.overflow;
+    el.style.height = prev.height;
+    el.style.maxHeight = prev.maxHeight;
   }
 }
 

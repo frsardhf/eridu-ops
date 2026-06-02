@@ -101,7 +101,8 @@ const MAX_BOND = MAX_BOND_LEVEL;
 const MIN_BOND = MIN_BOND_LEVEL;
 
 /**
- * Encapsulates the inline bond editor state and logic for BondSection.
+ * Encapsulates the inline bond editor state and logic for MetaHeader's
+ * bond-progress mode (BondsPage).
  *
  * Same commit/cancel/sync pattern as useLevelEditor but for a single scalar
  * value (1-100) rather than a current/target pair.

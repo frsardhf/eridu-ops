@@ -64,14 +64,6 @@ const hasMaterials = computed(() => {
   border: 1px solid var(--border-color);
 }
 
-.section-title {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: var(--text-primary);
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border-color);
-}
-
 .no-materials {
   color: var(--text-secondary);
   font-style: italic;

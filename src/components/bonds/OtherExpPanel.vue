@@ -560,12 +560,6 @@ const lessonRates = [
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
 }
 
-.oe-hint {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-}
-
 .oe-total-row {
   display: flex;
   justify-content: space-between;

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useDocumentListener } from '@/composables/dom/useDocumentListener';
+import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
 import { submitBond100Submission, submitBond100Removal } from '@/lib/services/bond100Service';
@@ -254,14 +256,8 @@ function onDocumentClick(event: MouseEvent) {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('keydown', onKeydown);
-  document.addEventListener('click', onDocumentClick);
-});
-onUnmounted(() => {
-  document.removeEventListener('keydown', onKeydown);
-  document.removeEventListener('click', onDocumentClick);
-});
+useDocumentListener('keydown', onKeydown);
+useClickOutside(onDocumentClick);
 </script>
 
 <template>

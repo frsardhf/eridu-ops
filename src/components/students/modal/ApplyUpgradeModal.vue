@@ -75,9 +75,8 @@ function handleApply() {
 
 function getIconUrl(item: MaterialPreviewItem): string {
   const { Id, Icon, Tier } = item.material;
-  if (isExpBall(Id)) {
-    return `https://schaledb.com/images/equipment/icon/${Icon}.webp`;
-  }
+  // Equipment XP balls are equipment icons without the '_piece' suffix → omit tier.
+  if (isExpBall(Id)) return getItemIconUrl(Icon, 'equipment');
   return getItemIconUrl(Icon, item.type === 'equipments' ? 'equipment' : 'item', Tier);
 }
 </script>

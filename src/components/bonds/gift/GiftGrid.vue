@@ -15,12 +15,11 @@ const props = defineProps<{
   convertBox?: boolean,
   shouldShowGiftGrade: (id: number) => boolean,
   // Optional: when provided (BondsPage), renders a second "Other gifts" section
-  // below the favored gifts. Modal Bond tab omits this — only the favored
-  // section renders. Empty array also renders nothing.
+  // below the favored gifts. Empty/omitted renders nothing.
   nonFavorGifts?: GiftProps[],
-  // Per-gift quantity source for the non-favored section. BondsPage passes
-  // `nonFavorGiftsMap` from useStudentGifts so the cards reflect the actual
-  // tracked individual values (not 0 from giftFormData).
+  // Per-gift quantity source for the non-favored section (nonFavorGiftsMap from
+  // useStudentForm) so the cards reflect the actual tracked individual values
+  // rather than 0 from giftFormData.
   nonFavorValues?: Record<number, number>,
   // When true, renders a "Favored gifts" section header above the main grid
   // for visual parity with the "Other gifts" section. BondsPage sets this true.

@@ -25,8 +25,11 @@ const POTENTIAL_ICONS: Record<PotentialType, string> = {
   healpower: 'item_icon_workbook_potentialhealpower'
 };
 
+// One pair per potential type (static: attack, maxhp, healpower)
+const POTENTIAL_TYPES: PotentialType[] = ['attack', 'maxhp', 'healpower'];
+
 const potentialStates = computed(() =>
-  (['attack', 'maxhp', 'healpower'] as PotentialType[]).map(type => ({
+  POTENTIAL_TYPES.map(type => ({
     type,
     current: props.potentialLevels[type]?.current ?? 0,
     target:  props.potentialLevels[type]?.target  ?? 0,
@@ -44,8 +47,6 @@ function getPotentialName(potType: PotentialType): string {
   return names[potType];
 }
 
-// One current/target pair per potential type (static: attack, maxhp, healpower)
-const POTENTIAL_TYPES: PotentialType[] = ['attack', 'maxhp', 'healpower'];
 const potentialPairs = Object.fromEntries(
   POTENTIAL_TYPES.map(type => [
     type,

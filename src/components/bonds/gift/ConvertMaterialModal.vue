@@ -26,10 +26,6 @@ const totalSelected = computed(() =>
 
 const isReady = computed(() => totalSelected.value === props.neededCount);
 
-function interpolate(key: string, vars: Record<string, number>): string {
-  return $t(key).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`));
-}
-
 // Only SR gifts can be used as conversion materials in-game
 const giftEntries = computed(() =>
   Object.entries(props.nonFavorGiftsMap)
@@ -63,7 +59,7 @@ function confirm() {
           <span class="convert-title">{{ $t('convertMaterialTitle') }}</span>
         </div>
 
-        <p class="convert-desc">{{ interpolate('convertMaterialDesc', { needed: neededCount }) }}</p>
+        <p class="convert-desc">{{ $t('convertMaterialDesc', { needed: neededCount }) }}</p>
 
         <div class="convert-gift-grid">
           <div
@@ -95,7 +91,7 @@ function confirm() {
         </div>
 
         <div class="convert-counter" :class="{ ready: isReady }">
-          {{ interpolate('convertMaterialSelected', { current: totalSelected, needed: neededCount }) }}
+          {{ $t('convertMaterialSelected', { current: totalSelected, needed: neededCount }) }}
         </div>
 
         <p class="convert-inventory-note">{{ $t('convertMaterialInventoryNote') }}</p>
