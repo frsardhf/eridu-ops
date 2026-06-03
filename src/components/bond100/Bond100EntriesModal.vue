@@ -240,7 +240,7 @@ useClickOutside(onDocumentClick);
           <!-- ── Removal guidelines (handled on arona's side) ── -->
           <div v-else-if="mode === 'guidelines'" class="bond100-form bond100-guidelines">
             <p>{{ $t('bond100.form.guidelinesBody') }}</p>
-            <a class="bond100-guidelines-link" href="https://arona.icu/about" target="_blank" rel="noopener noreferrer">arona.icu</a>
+            <a class="bond100-guidelines-link" href="https://arona.icu/searchFriendDetail" target="_blank" rel="noopener noreferrer">arona.icu/searchFriendDetail</a>
           </div>
         </div>
 
