@@ -2,10 +2,12 @@
 import { computed, onUnmounted, ref } from 'vue';
 import { SortOption } from '@/types/header';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
+import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 import GlobalNavbar from './GlobalNavbar.vue';
 import FilterPanel from './FilterPanel.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs';
 import { StudentFilters, countActiveFilters } from '@/types/filter';
 
 const props = defineProps<{
@@ -28,6 +30,13 @@ const emit = defineEmits<{
 
 const showFilterPanel = ref(false);
 const filterWrapEl = ref<HTMLElement | null>(null);
+
+// Card-overlay visibility checklist ("eye" menu).
+const showOverlayMenu = ref(false);
+const overlayWrapEl = ref<HTMLElement | null>(null);
+const { ids: overlayIds, isShown: isOverlayShown, toggle: toggleOverlay, setAll: setOverlayAll } = useCardOverlayPrefs();
+const overlayAllShown = computed(() => overlayIds.every(id => isOverlayShown(id)));
+const overlaySomeShown = computed(() => overlayIds.some(id => isOverlayShown(id)));
 
 const activeFilterCount = computed(() =>
   props.filters ? countActiveFilters(props.filters) : 0
@@ -57,20 +66,22 @@ function onSortChange(option: SortOption) {
   emit('updateSort', option);
 }
 
-// Pin button: show a transient hint that sorting is paused, but only when
-// pinned mode is being turned ON.
-const showPinHint = ref(false);
+// Pin button: nudge that sorting is paused, shown only when pinned mode is
+// turned ON. Reuses the shared tooltip (same as GiftOption) but click-triggered
+// with an auto-hide instead of hover.
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<'pinPaused'>();
 let pinHintTimer: ReturnType<typeof setTimeout> | null = null;
 
-function onPinClick() {
+function onPinClick(event: MouseEvent) {
   const willActivate = !props.isPinnedMode;
   emit('togglePinned');
   if (pinHintTimer) clearTimeout(pinHintTimer);
   if (willActivate) {
-    showPinHint.value = true;
-    pinHintTimer = setTimeout(() => { showPinHint.value = false; }, 4000);
+    showTooltip(event, 'pinPaused');
+    pinHintTimer = setTimeout(() => hideTooltip(), 4000);
   } else {
-    showPinHint.value = false;
+    hideTooltip();
   }
 }
 
@@ -84,12 +95,21 @@ function updateSearch(event: Event) {
 // click-outside closes it when the filter button is pressed.
 function toggleFilterPanel() {
   showFilterPanel.value = !showFilterPanel.value;
+  if (showFilterPanel.value) showOverlayMenu.value = false;
+}
+
+function toggleOverlayMenu() {
+  showOverlayMenu.value = !showOverlayMenu.value;
+  if (showOverlayMenu.value) showFilterPanel.value = false;
 }
 
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as Node;
   if (showFilterPanel.value && filterWrapEl.value && !filterWrapEl.value.contains(target)) {
     showFilterPanel.value = false;
+  }
+  if (showOverlayMenu.value && overlayWrapEl.value && !overlayWrapEl.value.contains(target)) {
+    showOverlayMenu.value = false;
   }
 }
 
@@ -140,11 +160,15 @@ useClickOutside(handleClickOutside);
             <img :src="isPinnedMode ? '/assets/thumbtacks-active.png' : '/assets/thumbtacks.png'" class="vc-pin-icon" aria-hidden="true" />
           </span>
         </button>
-        <Transition name="pin-hint">
-          <div v-if="showPinHint" class="pin-hint" role="status">
-            {{ $t('sort.pinnedHint') }}
-          </div>
-        </Transition>
+        <div
+          v-if="activeTooltip !== null"
+          ref="tooltipRef"
+          class="modal-tooltip"
+          role="status"
+          :style="tooltipStyle"
+        >
+          {{ $t('sort.pinnedHint') }}
+        </div>
       </div>
 
       <!-- Filter -->
@@ -205,6 +229,64 @@ useClickOutside(handleClickOutside);
           <div class="sort-divider"></div>
         </template>
       </SelectMenu>
+
+      <!-- Separates the list controls (pin/filter/sort) from card-display (eye) -->
+      <div class="vc-divider" aria-hidden="true"></div>
+
+      <!-- Overlay visibility ("eye") — pick which stat overlays stay on cards -->
+      <div ref="overlayWrapEl" class="vc-popover-wrap">
+        <button
+          class="app-navbar-icon-btn"
+          :class="{ active: showOverlayMenu }"
+          type="button"
+          :title="$t('overlays.title')"
+          @click="toggleOverlayMenu"
+        >
+          <svg width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+        <div v-if="showOverlayMenu" class="overlay-popover vc-popover" role="menu">
+          <div class="overlay-popover-title">{{ $t('overlays.title') }}</div>
+          <button
+            type="button"
+            class="overlay-option"
+            :class="{ active: overlayAllShown }"
+            role="menuitemcheckbox"
+            :aria-checked="overlayAllShown ? 'true' : (overlaySomeShown ? 'mixed' : 'false')"
+            @click.stop="setOverlayAll(!overlayAllShown)"
+          >
+            <span class="overlay-check" :class="{ partial: overlaySomeShown && !overlayAllShown }" aria-hidden="true">
+              <svg v-if="overlayAllShown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <svg v-else-if="overlaySomeShown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <line x1="6" y1="12" x2="18" y2="12" />
+              </svg>
+            </span>
+            <span>{{ $t('overlays.selectAll') }}</span>
+          </button>
+          <div class="overlay-divider"></div>
+          <button
+            v-for="id in overlayIds"
+            :key="id"
+            type="button"
+            class="overlay-option"
+            :class="{ active: isOverlayShown(id) }"
+            role="menuitemcheckbox"
+            :aria-checked="isOverlayShown(id)"
+            @click.stop="toggleOverlay(id)"
+          >
+            <span class="overlay-check" aria-hidden="true">
+              <svg v-if="isOverlayShown(id)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span>{{ $t(`overlays.${id}`) }}</span>
+          </button>
+        </div>
+      </div>
     </div>
   </GlobalNavbar>
 </template>
@@ -218,7 +300,7 @@ useClickOutside(handleClickOutside);
   margin-right: 8px;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 960px) {
   .mobile-home-btn {
     display: inline-flex;
   }
@@ -284,41 +366,21 @@ useClickOutside(handleClickOutside);
   position: relative;
 }
 
+/* Subtle in-group separator: list controls (pin/filter/sort) | card display (eye) */
+.vc-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 6px 3px;
+  background: var(--border-color);
+}
+
 .vc-pin-wrap {
   position: relative;
   display: inline-flex;
 }
 
-/* Transient "sorting paused" hint shown when pinned mode is switched on. */
-.pin-hint {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 1100;
-  width: max-content;
-  max-width: 220px;
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: var(--background-primary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.3;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  pointer-events: none;
-}
-
-.pin-hint-enter-active,
-.pin-hint-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.pin-hint-enter-from,
-.pin-hint-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
+/* The "sorting paused" nudge reuses the shared .modal-tooltip (studentModal.css,
+   position: fixed) positioned via useTooltip — no bespoke styles needed here. */
 
 /* Pin keeps the round chip style (grey idle, yellow active) from student cards. */
 .vc-pin-btn:hover,
@@ -417,14 +479,76 @@ useClickOutside(handleClickOutside);
   margin: 4px 0;
 }
 
-@media screen and (max-width: 768px) {
-  /* Let search use the full width once the nav links are hidden. */
-  .search-container {
-    max-width: 100%;
-  }
-
-  .view-controls {
-    gap: 0;
-  }
+/* Overlay-visibility ("eye") checklist popover */
+.overlay-popover {
+  min-width: 156px;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 4px;
 }
+
+.overlay-popover-title {
+  padding: 6px 10px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+
+.overlay-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.overlay-option:hover {
+  background: var(--background-secondary);
+}
+
+.overlay-option.active {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.overlay-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
+  flex-shrink: 0;
+  color: var(--accent-color);
+}
+
+.overlay-option.active .overlay-check {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 14%, transparent);
+}
+
+/* Indeterminate (some-but-not-all) state for the Select all row. */
+.overlay-check.partial {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.overlay-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
 </style>

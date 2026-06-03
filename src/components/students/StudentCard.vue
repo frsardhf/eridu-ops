@@ -4,12 +4,14 @@ import { ref, onUnmounted, computed } from 'vue'
 import { useStudentCard } from '@/lib/hooks/useStudentCard'
 import { useWindowResize } from '@/composables/dom/useWindowResize'
 import { getStudentCollectionUrl, getBondIconUrl } from '@/lib/utils/iconUtils'
+import { getMaxTierForTypeSync } from '@/lib/utils/gearMaterialUtils'
+import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs'
 import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
 import { EquipmentType } from '@/types/gear'
 import { ModalOriginRect } from '@/types/modal';
 import StarIcon from '@/components/shared/StarIcon.vue'
 import {
-  WEAPON_STAR_THRESHOLD, MAX_EX_SKILL_LEVEL, MAX_SKILL_LEVEL, MAX_POTENTIAL_LEVEL,
+  WEAPON_STAR_THRESHOLD, MAX_LEVEL, MAX_GRADE, MAX_EX_SKILL_LEVEL, MAX_SKILL_LEVEL, MAX_POTENTIAL_LEVEL,
 } from '@/lib/constants/gameConstants'
 
 const props = defineProps<{
@@ -25,6 +27,17 @@ const isMobile = ref(false);
 const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
   computed(() => props.student.Id)
 );
+
+// Which overlays the user pinned to always-display (eye menu); the rest stay
+// hover-only. Drives the .ov-* classes on the card root.
+const { isShown: isOverlayShown } = useCardOverlayPrefs();
+const overlayClasses = computed(() => ({
+  'ov-level': isOverlayShown('level'),
+  'ov-grade': isOverlayShown('grade'),
+  'ov-equipment': isOverlayShown('equipment'),
+  'ov-skills': isOverlayShown('skills'),
+  'ov-potential': isOverlayShown('potential'),
+}));
 const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 const skillTypeNames: SkillTypeName[] = ['Ex', 'Basic', 'Enhanced', 'Sub'];
 const potentialTypes: PotentialType[] = ['maxhp', 'attack', 'healpower'];
@@ -185,6 +198,52 @@ const gradeLevel = computed(() => {
   return studentData.value?.gradeLevels?.current || 0;
 });
 
+// Investment toward absolute max across level + grade + equipment + skills +
+// potential, weighted equally per category (~20% each, 0–100). Equipment uses the
+// student's actual slots (studentEquipment) — NOT every key in equipmentLevels,
+// which holds tier-1 defaults for unused types that would drag a maxed unit < 100%.
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+const avgRatio = (xs: number[]): number | null =>
+  xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+
+const investmentPercent = computed(() => {
+  const d = studentData.value;
+  if (!d || d.isOwned === false) return 0;
+
+  const skill = d.skillLevels ? avgRatio(skillTypes.map(t => {
+    const cur = d.skillLevels![t]?.current ?? 1;
+    const max = t === 'Ex' ? MAX_EX_SKILL_LEVEL : MAX_SKILL_LEVEL;
+    return clamp01((cur - 1) / (max - 1));
+  })) : null;
+
+  const potential = d.potentialLevels ? avgRatio(potentialTypes.map(t =>
+    clamp01((d.potentialLevels![t]?.current ?? 0) / MAX_POTENTIAL_LEVEL)
+  )) : null;
+
+  const slots = studentEquipment.value;
+  const equipment = (d.equipmentLevels && slots.length) ? avgRatio(slots.map(type => {
+    const max = getMaxTierForTypeSync(type);
+    const cur = d.equipmentLevels![type as EquipmentType]?.current ?? 1;
+    return max > 1 ? clamp01((cur - 1) / (max - 1)) : 0;
+  })) : null;
+
+  const level = d.characterLevels
+    ? clamp01(((d.characterLevels.current ?? 1) - 1) / (MAX_LEVEL - 1))
+    : null;
+
+  // Grade is measured from the unit's base StarGrade (free) up to max, so base
+  // rarity isn't counted as investment.
+  const grade = d.gradeLevels ? (() => {
+    const base = props.student.StarGrade ?? 1;
+    const den = MAX_GRADE - base;
+    return den > 0 ? clamp01(((d.gradeLevels.current ?? base) - base) / den) : 1;
+  })() : null;
+
+  const cats = [level, grade, skill, potential, equipment].filter((x): x is number => x !== null);
+  if (!cats.length) return 0;
+  return Math.round((cats.reduce((a, b) => a + b, 0) / cats.length) * 100);
+});
+
 // ── Event handlers ────────────────────────────────────────────────────────────
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
@@ -221,7 +280,9 @@ function handleCardClick(event: MouseEvent) {
 </script>
 
 <template>
-  <div class="student-card"
+  <div
+    class="student-card"
+    :class="overlayClasses"
     :key="`card-${student.Id}-${isPinned}`">
     <!-- Pin icon -->
     <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle"
@@ -363,6 +424,18 @@ function handleCardClick(event: MouseEvent) {
           </div>
         </div>
       </div>
+      <!-- Investment summary: equipment + skills + potential toward max -->
+      <div
+        v-if="isOwned"
+        class="investment-bar"
+        role="progressbar"
+        :aria-valuenow="investmentPercent"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :title="`${investmentPercent}% invested`"
+      >
+        <div class="investment-bar-fill" :style="{ width: investmentPercent + '%' }"></div>
+      </div>
       <div class="card-label">
         <span :class="['label-text', getFontSizeClass(student.Name)]">
           {{ student.Name }}
@@ -438,6 +511,41 @@ function handleCardClick(event: MouseEvent) {
   align-self: end;
   display: flex;
   width: 100%;
+}
+
+/* Level + the skill/potential/equipment rows are all summarized by the progress
+   bar above the name, so they only reveal on hover or focus. Bond, grade, and
+   the pin stay visible at all times. */
+.level-container,
+.grade-container,
+.equipment-levels,
+.potential-levels,
+.skill-levels {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* Detail on demand: every overlay reveals on hover/focus. The eye menu pins any
+   of them to always-on via .ov-* classes on the card root. */
+.selection-grid-card:hover .level-container,
+.selection-grid-card:focus .level-container,
+.selection-grid-card:hover .grade-container,
+.selection-grid-card:focus .grade-container,
+.selection-grid-card:hover .equipment-levels,
+.selection-grid-card:focus .equipment-levels,
+.selection-grid-card:hover .potential-levels,
+.selection-grid-card:focus .potential-levels,
+.selection-grid-card:hover .skill-levels,
+.selection-grid-card:focus .skill-levels {
+  opacity: 1;
+}
+
+.student-card.ov-level .level-container,
+.student-card.ov-grade .grade-container,
+.student-card.ov-equipment .equipment-levels,
+.student-card.ov-potential .potential-levels,
+.student-card.ov-skills .skill-levels {
+  opacity: 1;
 }
 
 .bond-container {
@@ -612,6 +720,20 @@ function handleCardClick(event: MouseEvent) {
   filter: brightness(0.35) grayscale(0.25);
 }
 
+
+.investment-bar {
+  height: 3px;
+  width: 100%;
+  background: var(--background-secondary);
+  overflow: hidden;
+}
+
+.investment-bar-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
 
 .card-label {
   margin-top: 0;

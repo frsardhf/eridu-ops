@@ -53,10 +53,12 @@ export const translations = {
       form: {
         back: "Back",
         cancel: "Cancel",
-        send: "Submit for review",
+        send: "Submit",
         sending: "Submitting…",
         name: "In-game name",
         friendCode: "Friend code",
+        assistHint: "Put the student in a support/assist slot first — arona can only see bond levels for assisted students. Your account is pulled from arona, so you'll appear in the next update.",
+        guidelinesBody: "Listings come from arona.icu. To remove or correct your entry, manage your data on arona.icu — the change flows back here on the next update.",
         proof: "Proof URL",
         contact: "Contact",
         reason: "Reason",
@@ -67,8 +69,8 @@ export const translations = {
         optional: "optional",
         selectPlaceholder: "Select…",
         privacyNote: "Friend code is used only to verify your entry and prevent duplicates — never published or stored as-is. Contact and proof are seen only by moderators.",
-        submittedTitle: "Submitted for review",
-        submittedBody: "Thanks! Your entry appears once a moderator approves it.",
+        submittedTitle: "Submitted",
+        submittedBody: "Thanks! Your account will be pulled from arona and appear in the next update.",
         removalSubmittedBody: "Thanks! We'll review your removal request shortly.",
         error: "Couldn't submit right now. Please try again later.",
       },
@@ -153,6 +155,15 @@ export const translations = {
     direction: {
       ascending: "Ascending",
       descending: "Descending"
+    },
+    overlays: {
+      title: "Show on cards",
+      selectAll: "Select all",
+      level: "Level",
+      grade: "Grade",
+      equipment: "Equipment",
+      skills: "Skills",
+      potential: "Potential"
     },
     data: "Data",
     exportData: "Export Data",
@@ -617,10 +628,12 @@ export const translations = {
       form: {
         back: "戻る",
         cancel: "キャンセル",
-        send: "確認用に送信",
+        send: "送信",
         sending: "送信中…",
         name: "ゲーム内名",
         friendCode: "フレンドコード",
+        assistHint: "先に学生をサポート（助っ人）枠に設定してください。arona は助っ人枠の学生の好感度しか取得できません。データは arona から取得されるため、次回の更新時に反映されます。",
+        guidelinesBody: "掲載データは arona.icu に基づいています。削除・修正は arona.icu 側でご自身のデータを管理してください。変更は次回の更新時にこちらへ反映されます。",
         proof: "証明URL",
         contact: "連絡先",
         reason: "理由",
@@ -631,8 +644,8 @@ export const translations = {
         optional: "任意",
         selectPlaceholder: "選択…",
         privacyNote: "フレンドコードはエントリーの確認と重複防止のみに使用し、そのまま保存・公開することはありません。連絡先・証明はモデレーターのみが確認します。",
-        submittedTitle: "確認用に送信しました",
-        submittedBody: "ありがとうございます！モデレーターの承認後に表示されます。",
+        submittedTitle: "送信しました",
+        submittedBody: "ありがとうございます！アカウント情報が arona から取得され、次回の更新時に表示されます。",
         removalSubmittedBody: "ありがとうございます！削除リクエストを確認します。",
         error: "現在送信できません。後でもう一度お試しください。",
       },
@@ -717,6 +730,15 @@ export const translations = {
     direction: {
       ascending: "昇順",
       descending: "降順"
+    },
+    overlays: {
+      title: "カードに表示",
+      selectAll: "すべて選択",
+      level: "レベル",
+      grade: "星級",
+      equipment: "装備",
+      skills: "スキル",
+      potential: "潜在能力"
     },
     data: "データ",
     exportData: "データエクスポート",

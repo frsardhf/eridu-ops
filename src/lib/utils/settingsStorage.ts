@@ -3,6 +3,7 @@
 import type { SortOption, SortDirection } from '../../types/header';
 import type { ThemeId } from '@/types/theme';
 import type { StudentFilters } from '@/types/filter';
+import type { CardOverlayId } from '@/types/card';
 import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
@@ -32,6 +33,8 @@ export interface AppSettings {
   bond100Sort?: 'default' | 'name' | 'bond100';
   /** ID of the most recent CHANGELOG entry the user has seen / dismissed. */
   lastSeenChangelogId?: string;
+  /** Card overlays pinned to always-display (undefined = all shown by default). */
+  cardOverlays?: CardOverlayId[];
 }
 
 // Default settings
@@ -54,6 +57,7 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'theme', 'language', 'sort', 'pinnedStudents', 'isPinnedMode',
   'craftingFodder', 'studentFilters', 'bondsTrackedStudents', 'bondsLayout',
   'bondsGiftPlanningEnabled', 'bond100Sort', 'lastSeenChangelogId',
+  'cardOverlays',
 ];
 
 /**
