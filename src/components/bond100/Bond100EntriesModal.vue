@@ -4,8 +4,6 @@ import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
-import { submitBond100Submission } from '@/lib/services/bond100Service';
-import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { $t } from '@/locales';
 import type {
   Bond100Entry,
@@ -118,52 +116,17 @@ const entryColumns = computed(() =>
   pageRight.value.length ? [pageLeft.value, pageRight.value] : [pageLeft.value]
 );
 
-// ── View mode: entry list, submission form, removal guidelines, or success ────
-type Mode = 'list' | 'submit' | 'guidelines' | 'done';
+// ── View mode: entry list or removal guidelines ──────────────────────────────
+// Submission ("add me") now lives in a global toolbar button on /hall, since
+// arona's /refresh is account-level, not per-student.
+type Mode = 'list' | 'guidelines';
 const mode = ref<Mode>('list');
-const submitting = ref(false);
-const formError = ref('');
-const doneMessage = ref('');
 
-// Submission fields — bridge model: only server + friend code. The backend
-// triggers an arona /refresh; the player appears in the next sync.
-const subServer = ref<Bond100ServerRegion | ''>('');
-const subFriendCode = ref('');
+function openGuidelines() { mode.value = 'guidelines'; }
+function backToList() { mode.value = 'list'; }
 
-const submitServerOptions = computed(() =>
-  props.serverOptions.map(o => ({ value: o.code, label: $t(o.labelKey) }))
-);
-
-function resetForms() {
-  formError.value = '';
-  doneMessage.value = '';
-  subServer.value = '';
-  subFriendCode.value = '';
-}
-
-function openSubmit() { resetForms(); mode.value = 'submit'; }
-function openGuidelines() { resetForms(); mode.value = 'guidelines'; }
-function backToList() { resetForms(); mode.value = 'list'; }
-
-async function doSubmit() {
-  if (submitting.value || !subServer.value || !subFriendCode.value.trim()) return;
-  submitting.value = true;
-  formError.value = '';
-  try {
-    await submitBond100Submission({
-      serverRegion: subServer.value,
-      friendCode: subFriendCode.value.trim(),
-    });
-    doneMessage.value = $t('bond100.form.submittedBody');
-    mode.value = 'done';
-  } catch {
-    formError.value = $t('bond100.form.error');
-  } finally {
-    submitting.value = false;
-  }
-}
-
-// Reset page + any open form whenever a new student is opened or the filter changes.
+// Reset page + close the guidelines panel whenever a new student is opened or
+// the filter changes.
 watch([() => props.entriesResponse, () => props.serverFilter], () => {
   currentPage.value = 1;
   backToList();
@@ -274,37 +237,6 @@ useClickOutside(onDocumentClick);
             <p v-else class="bond100-empty-line">{{ $t('bond100.noEntries') }}</p>
           </template>
 
-          <!-- ── Success ── -->
-          <div v-else-if="mode === 'done'" class="bond100-form-done">
-            <div class="bond100-form-done-check" aria-hidden="true">✓</div>
-            <h3>{{ $t('bond100.form.submittedTitle') }}</h3>
-            <p>{{ doneMessage }}</p>
-            <button type="button" class="bond100-footer-btn" @click="backToList">{{ $t('bond100.form.back') }}</button>
-          </div>
-
-          <!-- ── Add Bond 100 form (server + friend code only) ── -->
-          <form v-else-if="mode === 'submit'" id="bond100-submit-form" class="bond100-form" @submit.prevent="doSubmit">
-            <div class="bond100-form-grid">
-              <div class="bond100-field span-3">
-                <span>{{ $t('bond100.server') }}</span>
-                <SelectMenu
-                  v-model="subServer"
-                  block
-                  :options="submitServerOptions"
-                  :placeholder="$t('bond100.form.selectPlaceholder')"
-                  :aria-label="$t('bond100.server')"
-                />
-              </div>
-              <label class="bond100-field span-3">
-                <span>{{ $t('bond100.form.friendCode') }}</span>
-                <input v-model="subFriendCode" type="text" maxlength="20" autocomplete="off" required />
-              </label>
-            </div>
-
-            <p class="bond100-form-note">{{ $t('bond100.form.assistHint') }}</p>
-            <p v-if="formError" class="bond100-form-error">{{ formError }}</p>
-          </form>
-
           <!-- ── Removal guidelines (handled on arona's side) ── -->
           <div v-else-if="mode === 'guidelines'" class="bond100-form bond100-guidelines">
             <p>{{ $t('bond100.form.guidelinesBody') }}</p>
@@ -315,9 +247,6 @@ useClickOutside(onDocumentClick);
         <footer v-if="mode === 'list'" class="bond100-modal-footer">
           <!-- left: actions + ? -->
           <div class="bond100-footer-left">
-            <button type="button" class="bond100-footer-btn" @click="openSubmit">
-              + {{ $t('bond100.submit') }}
-            </button>
             <button type="button" class="bond100-footer-btn ghost" @click="openGuidelines">
               {{ $t('bond100.requestRemoval') }}
             </button>
@@ -354,14 +283,6 @@ useClickOutside(onDocumentClick);
               @click="currentPage++"
             >›</button>
           </div>
-        </footer>
-
-        <!-- Form footers (pinned to the modal bottom; buttons drive the form via the form attr) -->
-        <footer v-else-if="mode === 'submit'" class="bond100-modal-footer bond100-form-footer">
-          <button type="button" class="bond100-footer-btn ghost" @click="backToList">{{ $t('bond100.form.cancel') }}</button>
-          <button type="submit" form="bond100-submit-form" class="bond100-footer-btn" :disabled="submitting || !subServer || !subFriendCode.trim()">
-            {{ submitting ? $t('bond100.form.sending') : $t('bond100.form.send') }}
-          </button>
         </footer>
 
         <footer v-else-if="mode === 'guidelines'" class="bond100-modal-footer bond100-form-footer">
@@ -608,120 +529,10 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   gap: 6px;
 }
 
-/* Submit form: 2 rows on a 6-col base — Server | Name (3+3), then
-   Friend code | Contact | Proof (2+2+2) — to keep the form short so the
-   hero doesn't stretch. */
-.bond100-form-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px 12px;
-}
-
-.bond100-form-grid .span-6 {
-  grid-column: 1 / -1;
-}
-
-.bond100-form-grid .span-3 {
-  grid-column: span 3;
-}
-
-.bond100-form-grid .span-2 {
-  grid-column: span 2;
-}
-
-.bond100-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.bond100-field > span {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.bond100-field > span em {
-  font-style: normal;
-  font-weight: 500;
-  opacity: 0.7;
-}
-
-.bond100-field input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 5px 8px;
-  border: 1px solid var(--input-border);
-  border-radius: 8px;
-  background: var(--input-background);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.88rem;
-}
-
-.bond100-field input:focus {
-  outline: none;
-  border-color: var(--accent-color);
-}
-
-.bond100-form-note {
-  margin: 0;
-  font-size: 0.74rem;
-  line-height: 1.4;
-  color: var(--text-secondary);
-}
-
-.bond100-form-error {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-negative);
-}
-
 /* Form footer: same bar as the list footer, buttons right-aligned. */
 .bond100-form-footer {
   justify-content: flex-end;
   gap: 8px;
-}
-
-.bond100-form-done {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 8px;
-  padding: 24px 12px;
-}
-
-.bond100-form-done-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--color-positive) 16%, transparent);
-  color: var(--color-positive);
-  font-size: 1.4rem;
-  font-weight: 900;
-}
-
-.bond100-form-done h3 {
-  margin: 4px 0 0;
-  font-size: 1.05rem;
-}
-
-.bond100-form-done p {
-  margin: 0;
-  max-width: 38ch;
-  font-size: 0.86rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.bond100-form-done .bond100-footer-btn {
-  margin-top: 8px;
 }
 
 /* ── Footer ──────────────────────────────────────────────── */

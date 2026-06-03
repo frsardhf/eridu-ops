@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import Bond100EntriesModal from '@/components/bond100/Bond100EntriesModal.vue';
+import Bond100SubmitModal from '@/components/bond100/Bond100SubmitModal.vue';
 import Bond100StatsPopover from '@/components/bond100/Bond100StatsPopover.vue';
 import Bond100Wall from '@/components/bond100/Bond100Wall.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
@@ -34,6 +35,7 @@ const summaryError = ref('');
 
 const searchQuery = ref('');
 const selectedServer = ref<Bond100ServerFilter>('all');
+const showSubmit = ref(false);
 
 const sortMode = ref<Bond100SortMode>(getSettings().bond100Sort ?? 'default');
 watch(sortMode, (v) => updateSetting('bond100Sort', v));
@@ -285,6 +287,10 @@ onMounted(loadSummary);
           />
         </label>
 
+        <button type="button" class="bond100-submit-btn" @click="showSubmit = true">
+          + {{ $t('bond100.submit') }}
+        </button>
+
         <SelectMenu
           v-model="selectedServer"
           :options="serverFilterOptions"
@@ -395,6 +401,12 @@ onMounted(loadSummary);
       :loading="isEntriesLoading"
       :error="entriesError"
       @close="closeEntries"
+    />
+
+    <Bond100SubmitModal
+      v-if="showSubmit"
+      :server-options="BOND100_SERVER_OPTIONS"
+      @close="showSubmit = false"
     />
   </div>
 </template>
@@ -512,6 +524,27 @@ onMounted(loadSummary);
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 10px;
+}
+
+.bond100-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-color);
+  background: var(--accent-color);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.bond100-submit-btn:hover {
+  opacity: 0.9;
 }
 
 /* ── Owner-only export ─────────────────────────────────────── */
