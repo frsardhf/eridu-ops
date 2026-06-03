@@ -29,6 +29,7 @@ function closeModal(event: MouseEvent) {
           <p>{{ $t('creditsModal.dataSourcesBody') }}</p>
           <ul>
             <li><a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a></li>
+            <li><a href="https://arona.icu" target="_blank" rel="noopener noreferrer">arona.icu</a></li>
           </ul>
         </div>
 
