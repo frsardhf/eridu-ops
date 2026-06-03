@@ -202,7 +202,8 @@ useClickOutside(handleClickOutside);
               </svg>
               {{ $t('whatsNew') }}
             </button>
-            <!-- compact-only: shown once the top-bar Contact/Credits icons hide (phones) -->
+            <!-- compact-only: shown once the matching top-bar control collapses
+                 (Contact/Credits ≤960, Language ≤480) -->
             <button class="mobile-menu-option compact-only" type="button" @click="openContactModal">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -217,7 +218,7 @@ useClickOutside(handleClickOutside);
               </svg>
               {{ $t('credits') }}
             </button>
-            <button class="mobile-menu-option compact-only" type="button" :aria-label="`Language: ${langLabel}`" @click="toggleLanguage">
+            <button class="mobile-menu-option compact-only-sm" type="button" :aria-label="`Language: ${langLabel}`" @click="toggleLanguage">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="2" y1="12" x2="22" y2="12"/>
@@ -401,23 +402,35 @@ useClickOutside(handleClickOutside);
   flex-shrink: 0;
 }
 
-/* Menu entries that only appear once their top-bar icons collapse (phones). */
-.compact-only {
+/* Menu entries shown only once the matching top-bar control collapses: Contact
+   and Credits at the tablet breakpoint, Language at the phone breakpoint. */
+.compact-only,
+.compact-only-sm {
   display: none;
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 960px) {
   .compact-only {
     display: flex;
   }
 }
 
-@media screen and (max-width: 768px) {
-  /* On compact navbars (search pages), hide nav links so search can expand. */
+@media screen and (max-width: 480px) {
+  .compact-only-sm {
+    display: flex;
+  }
+}
+
+/* On compact navbars (search pages), hide nav links so search can expand;
+   SearchNavbar's mobile home button takes over for navigation. Matches the
+   960px point where Contact/Credits collapse into the menu. */
+@media screen and (max-width: 960px) {
   .an-left--compact {
     display: none;
   }
+}
 
+@media screen and (max-width: 768px) {
   .an-mobile-menu {
     max-width: 100%;
   }

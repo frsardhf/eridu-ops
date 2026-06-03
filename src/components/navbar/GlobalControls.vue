@@ -6,7 +6,7 @@ import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
 
 // ── Props / emits ─────────────────────────────────────────────────────────────
-defineProps<{
+const props = defineProps<{
   currentTheme: ThemeId;
 }>();
 
@@ -43,6 +43,13 @@ function toggleLanguage() {
 const langLabel = computed(() => currentLanguage.value === 'en' ? 'English' : '日本語');
 const langSwitchTarget = computed(() => currentLanguage.value === 'en' ? '日本語' : 'English');
 
+// Two-tone swatch of the CURRENT theme's own colors (same source as the tray
+// swatches) — a meaningful "your theme" hint instead of an arbitrary gradient.
+const activeThemeGradient = computed(() => {
+  const t = THEME_OPTIONS.find(o => o.id === props.currentTheme);
+  return t ? `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})` : 'var(--accent-color)';
+});
+
 function handleClickOutside(event: MouseEvent) {
   if (!showThemeTray.value) return;
   const target = event.target as Node;
@@ -78,7 +85,7 @@ useClickOutside(handleClickOutside);
         :aria-label="$t('app')"
         @click="toggleThemeTray"
       >
-        <span class="gc-theme-tray-toggle-dot"></span>
+        <span class="gc-theme-tray-toggle-dot" :style="{ background: activeThemeGradient }"></span>
       </button>
 
       <div
@@ -208,21 +215,25 @@ useClickOutside(handleClickOutside);
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid rgba(var(--accent-color-rgb), 0.4);
-  background: color-mix(in srgb, var(--card-background) 78%, white 22%);
+  border: 1px solid var(--border-color);
+  background: var(--background-secondary);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.gc-theme-tray-toggle:hover {
+  border-color: var(--accent-color);
 }
 
 .gc-theme-tray-toggle-dot {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  background: linear-gradient(135deg, #4f46e5, #7c3aed 40%, #e61b72 70%, #ff6a00);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .gc-theme-tray {
@@ -310,15 +321,21 @@ useClickOutside(handleClickOutside);
   }
 
   .gc-theme-tray-toggle-dot {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 }
 
+/* Contact + Credits are secondary, so they collapse into the hamburger menu
+   early (tablet ≤960) to keep the search box usable. */
+@media screen and (max-width: 960px) {
+  .gc-icon-btn {
+    display: none;
+  }
+}
+
+/* The language toggle is more essential — it holds out until phones. */
 @media screen and (max-width: 480px) {
-  /* Contact, Credits, and the language toggle move into the hamburger menu to
-     free space for search. */
-  .gc-icon-btn,
   .gc-lang-toggle {
     display: none;
   }
