@@ -238,9 +238,19 @@ useClickOutside(onDocumentClick);
           </template>
 
           <!-- ── Removal guidelines (handled on arona's side) ── -->
-          <div v-else-if="mode === 'guidelines'" class="bond100-form bond100-guidelines">
-            <p>{{ $t('bond100.form.guidelinesBody') }}</p>
-            <a class="bond100-guidelines-link" href="https://arona.icu/searchFriendDetail" target="_blank" rel="noopener noreferrer">arona.icu/searchFriendDetail</a>
+          <div v-else-if="mode === 'guidelines'" class="bond100-guidelines">
+            <p class="bond100-guidelines-body">{{ $t('bond100.form.guidelinesBody') }}</p>
+            <a
+              class="bond100-guidelines-link"
+              href="https://arona.icu/searchFriendDetail"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>arona.icu/searchFriendDetail</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/>
+              </svg>
+            </a>
           </div>
         </div>
 
@@ -435,7 +445,6 @@ useClickOutside(onDocumentClick);
   flex: 1;
   min-height: 0;        /* allow the body to shrink within the modal */
   overflow-y: auto;     /* scroll if a page overflows (e.g. 1-column on mobile) */
-  padding: 6px 10px;
 }
 
 .bond100-entry-cols {
@@ -533,6 +542,49 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
 .bond100-form-footer {
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* ── Removal guidelines ──────────────────────────────────── */
+.bond100-guidelines {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 20px 12px;
+}
+
+.bond100-guidelines-body {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.bond100-guidelines-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  color: var(--accent-color);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.bond100-guidelines-link:hover {
+  background: color-mix(in srgb, var(--accent-color) 22%, transparent);
+}
+
+.bond100-guidelines-link svg {
+  display: block;
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
