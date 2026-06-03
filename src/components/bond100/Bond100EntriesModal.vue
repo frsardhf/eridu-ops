@@ -4,7 +4,7 @@ import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
-import { submitBond100Submission, submitBond100Removal } from '@/lib/services/bond100Service';
+import { submitBond100Submission } from '@/lib/services/bond100Service';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { $t } from '@/locales';
 import type {
@@ -118,96 +118,43 @@ const entryColumns = computed(() =>
   pageRight.value.length ? [pageLeft.value, pageRight.value] : [pageLeft.value]
 );
 
-// ── View mode: entry list, submission form, removal form, or success ──────────
-type Mode = 'list' | 'submit' | 'removal' | 'done';
+// ── View mode: entry list, submission form, removal guidelines, or success ────
+type Mode = 'list' | 'submit' | 'guidelines' | 'done';
 const mode = ref<Mode>('list');
 const submitting = ref(false);
 const formError = ref('');
 const doneMessage = ref('');
 
-// Submission fields
+// Submission fields — bridge model: only server + friend code. The backend
+// triggers an arona /refresh; the player appears in the next sync.
 const subServer = ref<Bond100ServerRegion | ''>('');
-const subName = ref('');
 const subFriendCode = ref('');
-const subProof = ref('');
-const subContact = ref('');
 
-// Removal fields
-const remEntryId = ref('');
-const remReason = ref('');
-const remContact = ref('');
-
-// Dropdown options
 const submitServerOptions = computed(() =>
   props.serverOptions.map(o => ({ value: o.code, label: $t(o.labelKey) }))
 );
-const listingOptions = computed(() =>
-  entries.value.map(e => ({ value: e.id, label: `[${resolveShortLabel(e.serverRegion)}] ${e.playerName}` }))
-);
-const reasonOptions = computed(() => [
-  { value: 'privacy', label: $t('bond100.form.reasonPrivacy') },
-  { value: 'incorrect', label: $t('bond100.form.reasonIncorrect') },
-  { value: 'other', label: $t('bond100.form.reasonOther') },
-]);
-
-// Stable English text sent to moderators regardless of the user's locale.
-const REASON_TEXT: Record<string, string> = {
-  privacy: 'Privacy / opt-out — does not want to be listed',
-  incorrect: 'Incorrect entry / not me',
-  other: 'Other',
-};
 
 function resetForms() {
   formError.value = '';
   doneMessage.value = '';
   subServer.value = '';
-  subName.value = '';
   subFriendCode.value = '';
-  subProof.value = '';
-  subContact.value = '';
-  remEntryId.value = '';
-  remReason.value = '';
-  remContact.value = '';
 }
 
 function openSubmit() { resetForms(); mode.value = 'submit'; }
-function openRemoval() { resetForms(); mode.value = 'removal'; }
+function openGuidelines() { resetForms(); mode.value = 'guidelines'; }
 function backToList() { resetForms(); mode.value = 'list'; }
 
 async function doSubmit() {
-  if (submitting.value || !subServer.value || !subName.value.trim() || !subFriendCode.value.trim()) return;
+  if (submitting.value || !subServer.value || !subFriendCode.value.trim()) return;
   submitting.value = true;
   formError.value = '';
   try {
     await submitBond100Submission({
-      studentId: props.student.Id,
       serverRegion: subServer.value,
-      playerName: subName.value.trim(),
       friendCode: subFriendCode.value.trim(),
-      contactHandle: subContact.value.trim() || undefined,
-      proofUrl: subProof.value.trim() || undefined,
     });
     doneMessage.value = $t('bond100.form.submittedBody');
-    mode.value = 'done';
-  } catch {
-    formError.value = $t('bond100.form.error');
-  } finally {
-    submitting.value = false;
-  }
-}
-
-async function doRemoval() {
-  if (submitting.value || !remEntryId.value || !remReason.value) return;
-  submitting.value = true;
-  formError.value = '';
-  try {
-    await submitBond100Removal({
-      entryId: remEntryId.value,
-      studentId: props.student.Id,
-      reason: REASON_TEXT[remReason.value] ?? remReason.value,
-      contactHandle: remContact.value.trim() || undefined,
-    });
-    doneMessage.value = $t('bond100.form.removalSubmittedBody');
     mode.value = 'done';
   } catch {
     formError.value = $t('bond100.form.error');
@@ -309,7 +256,7 @@ useClickOutside(onDocumentClick);
             >
               <table v-for="(col, ci) in entryColumns" :key="ci" class="bond100-entry-table">
                 <tbody>
-                  <tr v-for="entry in col" :key="entry.id" :lang="detectLang(entry.playerName)">
+                  <tr v-for="(entry, ri) in col" :key="`${ci}-${ri}`" :lang="detectLang(entry.playerName)">
                     <td class="bond100-entry-server">
                       <span
                         class="bond100-server-pill"
@@ -335,7 +282,7 @@ useClickOutside(onDocumentClick);
             <button type="button" class="bond100-footer-btn" @click="backToList">{{ $t('bond100.form.back') }}</button>
           </div>
 
-          <!-- ── Add Bond 100 form ── -->
+          <!-- ── Add Bond 100 form (server + friend code only) ── -->
           <form v-else-if="mode === 'submit'" id="bond100-submit-form" class="bond100-form" @submit.prevent="doSubmit">
             <div class="bond100-form-grid">
               <div class="bond100-field span-3">
@@ -349,58 +296,20 @@ useClickOutside(onDocumentClick);
                 />
               </div>
               <label class="bond100-field span-3">
-                <span>{{ $t('bond100.form.name') }}</span>
-                <input v-model="subName" type="text" maxlength="60" required autocomplete="off" />
-              </label>
-              <label class="bond100-field span-2">
                 <span>{{ $t('bond100.form.friendCode') }}</span>
-                <input v-model="subFriendCode" type="text" maxlength="300" autocomplete="off" required />
-              </label>
-              <label class="bond100-field span-2">
-                <span>{{ $t('bond100.form.contact') }} <em>{{ $t('bond100.form.optional') }}</em></span>
-                <input v-model="subContact" type="text" maxlength="300" autocomplete="off" />
-              </label>
-              <label class="bond100-field span-2">
-                <span>{{ $t('bond100.form.proof') }} <em>{{ $t('bond100.form.optional') }}</em></span>
-                <input v-model="subProof" type="url" maxlength="300" autocomplete="off" placeholder="https://" />
+                <input v-model="subFriendCode" type="text" maxlength="20" autocomplete="off" required />
               </label>
             </div>
 
-            <p class="bond100-form-note">{{ $t('bond100.form.privacyNote') }}</p>
+            <p class="bond100-form-note">{{ $t('bond100.form.assistHint') }}</p>
             <p v-if="formError" class="bond100-form-error">{{ formError }}</p>
           </form>
 
-          <!-- ── Request removal form ── -->
-          <form v-else-if="mode === 'removal'" id="bond100-removal-form" class="bond100-form" @submit.prevent="doRemoval">
-            <div class="bond100-form-grid">
-              <div class="bond100-field span-6">
-                <span>{{ $t('bond100.form.whichListing') }}</span>
-                <SelectMenu
-                  v-model="remEntryId"
-                  block
-                  :options="listingOptions"
-                  :placeholder="$t('bond100.form.selectPlaceholder')"
-                  :aria-label="$t('bond100.form.whichListing')"
-                />
-              </div>
-              <div class="bond100-field span-3">
-                <span>{{ $t('bond100.form.reason') }}</span>
-                <SelectMenu
-                  v-model="remReason"
-                  block
-                  :options="reasonOptions"
-                  :placeholder="$t('bond100.form.selectPlaceholder')"
-                  :aria-label="$t('bond100.form.reason')"
-                />
-              </div>
-              <label class="bond100-field span-3">
-                <span>{{ $t('bond100.form.contact') }} <em>{{ $t('bond100.form.optional') }}</em></span>
-                <input v-model="remContact" type="text" maxlength="300" autocomplete="off" />
-              </label>
-            </div>
-
-            <p v-if="formError" class="bond100-form-error">{{ formError }}</p>
-          </form>
+          <!-- ── Removal guidelines (handled on arona's side) ── -->
+          <div v-else-if="mode === 'guidelines'" class="bond100-form bond100-guidelines">
+            <p>{{ $t('bond100.form.guidelinesBody') }}</p>
+            <a class="bond100-guidelines-link" href="https://arona.icu/about" target="_blank" rel="noopener noreferrer">arona.icu</a>
+          </div>
         </div>
 
         <footer v-if="mode === 'list'" class="bond100-modal-footer">
@@ -409,7 +318,7 @@ useClickOutside(onDocumentClick);
             <button type="button" class="bond100-footer-btn" @click="openSubmit">
               + {{ $t('bond100.submit') }}
             </button>
-            <button type="button" class="bond100-footer-btn ghost" :disabled="!entries.length" @click="openRemoval">
+            <button type="button" class="bond100-footer-btn ghost" @click="openGuidelines">
               {{ $t('bond100.requestRemoval') }}
             </button>
             <div ref="footerInfoWrapEl" class="bond100-footer-info-wrap">
@@ -450,16 +359,13 @@ useClickOutside(onDocumentClick);
         <!-- Form footers (pinned to the modal bottom; buttons drive the form via the form attr) -->
         <footer v-else-if="mode === 'submit'" class="bond100-modal-footer bond100-form-footer">
           <button type="button" class="bond100-footer-btn ghost" @click="backToList">{{ $t('bond100.form.cancel') }}</button>
-          <button type="submit" form="bond100-submit-form" class="bond100-footer-btn" :disabled="submitting || !subServer || !subName.trim()">
+          <button type="submit" form="bond100-submit-form" class="bond100-footer-btn" :disabled="submitting || !subServer || !subFriendCode.trim()">
             {{ submitting ? $t('bond100.form.sending') : $t('bond100.form.send') }}
           </button>
         </footer>
 
-        <footer v-else-if="mode === 'removal'" class="bond100-modal-footer bond100-form-footer">
-          <button type="button" class="bond100-footer-btn ghost" @click="backToList">{{ $t('bond100.form.cancel') }}</button>
-          <button type="submit" form="bond100-removal-form" class="bond100-footer-btn" :disabled="submitting || !remEntryId || !remReason">
-            {{ submitting ? $t('bond100.form.sending') : $t('bond100.form.send') }}
-          </button>
+        <footer v-else-if="mode === 'guidelines'" class="bond100-modal-footer bond100-form-footer">
+          <button type="button" class="bond100-footer-btn" @click="backToList">{{ $t('bond100.form.back') }}</button>
         </footer>
       </div>
     </section>

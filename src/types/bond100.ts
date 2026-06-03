@@ -32,10 +32,8 @@ export interface Bond100SummaryResponse {
   isMock?: boolean;
 }
 
-/** A single published record: one player at bond 100 with one student. */
+/** A single listed player at bond 100 for a student (display only). */
 export interface Bond100Entry {
-  id: string;
-  studentId: number;
   serverRegion: Bond100ServerRegion;
   playerName: string;
 }
@@ -47,24 +45,12 @@ export interface Bond100StudentEntriesResponse {
 }
 
 /**
- * Create request — a player asking to be added to the wall.
- * Friend code / UID / proof are collected for moderator review only and are
- * never published; the public record shows name + server only.
+ * "Add me" request. Bridge model: only server + friend code. The backend
+ * triggers an arona /refresh for that account (rate-limited); the player shows
+ * up in the next sync. The friend code is never stored (only a salted hash for
+ * rate limiting). Removal is handled on arona's side (the modal links out).
  */
 export interface Bond100SubmissionPayload {
-  studentId: number;
   serverRegion: Bond100ServerRegion;
-  playerName: string;
-  /** Required: hashed server-side into the cross-source dedup identity. Never published. */
   friendCode: string;
-  contactHandle?: string;
-  proofUrl?: string;
-}
-
-/** Delete request — asking to remove a published entry, with a reason. */
-export interface Bond100RemovalPayload {
-  entryId: string;
-  studentId: number;
-  reason: string;
-  contactHandle?: string;
 }

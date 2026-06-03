@@ -1,6 +1,5 @@
 import { getPrimaryStudentId } from '@/lib/constants/linkedStudents';
 import type {
-  Bond100RemovalPayload,
   Bond100ServerRegion,
   Bond100StudentEntriesResponse,
   Bond100StudentSummary,
@@ -51,25 +50,25 @@ const MOCK_ENTRIES: Record<number, Bond100StudentEntriesResponse> = {
     studentId: 20039,
     isMock: true,
     entries: [
-      { id: 'mock-rio-na-1',   studentId: 20039, serverRegion: 'global_na',   playerName: 'DemoSensei' },
-      { id: 'mock-rio-na-2',   studentId: 20039, serverRegion: 'global_na',   playerName: 'ArchiveRunner' },
-      { id: 'mock-rio-eu',     studentId: 20039, serverRegion: 'global_eu',   playerName: 'Eunere' },
-      { id: 'mock-rio-eu-2',   studentId: 20039, serverRegion: 'global_eu',   playerName: 'Ryzaki' },
-      { id: 'mock-rio-asia',   studentId: 20039, serverRegion: 'global_asia', playerName: 'ミドクニ' },
-      { id: 'mock-rio-asia-2', studentId: 20039, serverRegion: 'global_asia', playerName: '先生の夢' },
-      { id: 'mock-rio-tw',     studentId: 20039, serverRegion: 'global_tw',   playerName: '三遇還素琴' },
-      { id: 'mock-rio-tw-2',   studentId: 20039, serverRegion: 'global_tw',   playerName: '全陽奈百羈絆' },
-      { id: 'mock-rio-kr',     studentId: 20039, serverRegion: 'global_kr',   playerName: '히나머리냄새디퓨저' },
-      { id: 'mock-rio-kr-2',   studentId: 20039, serverRegion: 'global_kr',   playerName: '선도부팬' },
+      { serverRegion: 'global_na',   playerName: 'DemoSensei' },
+      { serverRegion: 'global_na',   playerName: 'ArchiveRunner' },
+      { serverRegion: 'global_eu',   playerName: 'Eunere' },
+      { serverRegion: 'global_eu',   playerName: 'Ryzaki' },
+      { serverRegion: 'global_asia', playerName: 'ミドクニ' },
+      { serverRegion: 'global_asia', playerName: '先生の夢' },
+      { serverRegion: 'global_tw',   playerName: '三遇還素琴' },
+      { serverRegion: 'global_tw',   playerName: '全陽奈百羈絆' },
+      { serverRegion: 'global_kr',   playerName: '히나머리냄새디퓨저' },
+      { serverRegion: 'global_kr',   playerName: '선도부팬' },
     ],
   },
   10098: {
     studentId: 10098,
     isMock: true,
     entries: [
-      { id: 'mock-hoshino-asia', studentId: 10098, serverRegion: 'global_asia', playerName: 'SleepyVeteran' },
-      { id: 'mock-hoshino-kr',   studentId: 10098, serverRegion: 'global_kr',   playerName: '악한선물' },
-      { id: 'mock-hoshino-tw',   studentId: 10098, serverRegion: 'global_tw',   playerName: '我真的好喜欢hoshino啊' },
+      { serverRegion: 'global_asia', playerName: 'SleepyVeteran' },
+      { serverRegion: 'global_kr',   playerName: '악한선물' },
+      { serverRegion: 'global_tw',   playerName: '我真的好喜欢hoshino啊' },
     ],
   },
 };
@@ -143,7 +142,11 @@ function normalizeSummary(response: Bond100SummaryResponse): Bond100SummaryRespo
   return { ...response, students, total };
 }
 
-/** Submit a create request (player reached bond 100). Enters the moderation queue. */
+/**
+ * Ask to be listed: server + friend code only. The backend triggers an arona
+ * /refresh for that account (rate-limited); the player appears in the next sync.
+ * Removal is handled on arona's side — the modal shows guidelines instead.
+ */
 export async function submitBond100Submission(payload: Bond100SubmissionPayload): Promise<void> {
   try {
     await fetchJson('/bond100/submissions', {
@@ -153,18 +156,5 @@ export async function submitBond100Submission(payload: Bond100SubmissionPayload)
     });
   } catch {
     throw new Bond100ApiError('Bond100 submissions are not available yet.');
-  }
-}
-
-/** Request removal of a published entry. Enters the moderation queue as a delete request. */
-export async function submitBond100Removal(payload: Bond100RemovalPayload): Promise<void> {
-  try {
-    await fetchJson('/bond100/removals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    throw new Bond100ApiError('Bond100 removal requests are not available yet.');
   }
 }
