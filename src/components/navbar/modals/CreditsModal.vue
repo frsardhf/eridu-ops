@@ -41,6 +41,7 @@ function closeModal(event: MouseEvent) {
         <div class="credits-section">
           <h3>{{ $t('creditsModal.acknowledgements') }}</h3>
           <p>{{ $t('creditsModal.acknowledgementsBody') }}</p>
+          <p>{{ $t('creditsModal.acknowledgementsArona') }}</p>
         </div>
       </div>
     </div>

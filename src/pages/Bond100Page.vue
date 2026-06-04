@@ -52,6 +52,12 @@ const sortOptions = computed<{ value: Bond100SortMode; label: string }[]>(() =>
 const infoOpen = ref(false);
 const infoWrapEl = ref<HTMLElement | null>(null);
 
+// Split the "about" blurb around the literal "arona.icu" so it can render as a
+// link without baking markup into the locale string (works for EN + JP, both of
+// which contain the literal token).
+const ARONA_URL = 'https://arona.icu';
+const aboutSourcesParts = computed(() => $t('bond100.aboutSources').split('arona.icu'));
+
 const statsOpen = ref(false);
 const statsWrapEl = ref<HTMLElement | null>(null);
 
@@ -364,7 +370,11 @@ onMounted(loadSummary);
             <div v-if="infoOpen" class="bond100-info-popover" role="dialog" :aria-label="$t('bond100.aboutTitle')">
               <h3>{{ $t('bond100.aboutTitle') }}</h3>
               <p class="bond100-info-text">{{ $t('bond100.aboutCount') }}</p>
-              <p class="bond100-info-text">{{ $t('bond100.aboutSources') }}</p>
+              <p class="bond100-info-text">
+                <template v-if="aboutSourcesParts.length === 2">{{ aboutSourcesParts[0]
+                  }}<a class="bond100-info-link" :href="ARONA_URL" target="_blank" rel="noopener noreferrer">arona.icu</a>{{ aboutSourcesParts[1] }}</template>
+                <template v-else>{{ $t('bond100.aboutSources') }}</template>
+              </p>
             </div>
           </div>
         </div>
@@ -512,6 +522,15 @@ onMounted(loadSummary);
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+
+.bond100-info-link {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.bond100-info-link:hover {
+  text-decoration: underline;
 }
 
 .bond100-info-text:last-child {
