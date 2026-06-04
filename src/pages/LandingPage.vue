@@ -4,9 +4,16 @@ import { useStudentData } from '@/lib/hooks/useStudentData';
 import { getBondIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { $t } from '@/locales';
 import GlobalControls from '@/components/navbar/GlobalControls.vue';
+import ContactModal from '@/components/navbar/modals/ContactModal.vue';
+import CreditsModal from '@/components/navbar/modals/CreditsModal.vue';
 import '@/styles/navbar.css';
 
 const { currentTheme, setTheme, sortedStudentsArray } = useStudentData();
+
+// GlobalControls only emits open events; on /students these modals are hosted by
+// GlobalNavbar, but the landing page uses GlobalControls directly, so it hosts them.
+const showContact = ref(false);
+const showCredits = ref(false);
 
 const bondIconUrl = getBondIconUrl();
 const studentIconUrl = ref<string>('');
@@ -46,7 +53,12 @@ onUnmounted(() => {
   <div class="landing">
     <header class="app-navbar">
       <div class="app-navbar-content lp-bar">
-        <GlobalControls :current-theme="currentTheme" @set-theme="setTheme" />
+        <GlobalControls
+          :current-theme="currentTheme"
+          @set-theme="setTheme"
+          @open-contact="showContact = true"
+          @open-credits="showCredits = true"
+        />
       </div>
     </header>
 
@@ -122,6 +134,18 @@ onUnmounted(() => {
         </RouterLink>
       </nav>
     </div>
+
+    <footer class="landing-footer">
+      <p class="landing-footer-disclaimer">
+        Eridu Ops is an unofficial fan project, not affiliated with Nexon, Nexon Games, or Yostar.
+        Game data and images are provided via
+        <a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a>;
+        all artwork, information, and assets remain the property of their respective owners.
+      </p>
+    </footer>
+
+    <ContactModal v-if="showContact" @close="showContact = false" />
+    <CreditsModal v-if="showCredits" @close="showCredits = false" />
   </div>
 </template>
 
@@ -304,6 +328,30 @@ onUnmounted(() => {
   color: var(--text-secondary);
   flex-shrink: 0;
   transition: transform 0.18s, color 0.18s;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────────── */
+.landing-footer {
+  padding: 16px 20px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.landing-footer-disclaimer {
+  margin: 0 auto;
+  max-width: 640px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.landing-footer-disclaimer a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.landing-footer-disclaimer a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 576px) {
