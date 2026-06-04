@@ -8,6 +8,7 @@ import BulkModifyStudentsModal from '@/components/students/tools/BulkModifyStude
 import BondUpdateModal from '@/components/students/tools/BondUpdateModal.vue';
 import CraftingFodderModal from '@/components/students/tools/CraftingFodderModal.vue';
 import DeckBuilderModal from '@/components/students/tools/DeckBuilderModal.vue';
+import EquipmentFarmingModal from '@/components/students/tools/EquipmentFarmingModal.vue';
 import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
 import StudentGrid from '@/components/students/StudentGrid.vue';
@@ -48,6 +49,7 @@ const isBondUpdateVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
 const isCraftingFodderVisible = ref(false);
+const isEquipmentFarmingVisible = ref(false);
 
 const modalOriginRect = ref<ModalOriginRect | null>(null);
 const allStudentsArray = computed<StudentProps[]>(() => {
@@ -159,6 +161,7 @@ function handleClearFilters() {
       @open-inventory="isInventoryModalVisible = true"
       @open-bond-update="isBondUpdateVisible = true"
       @open-crafting-fodder="isCraftingFodderVisible = true"
+      @open-equipment-farming="isEquipmentFarmingVisible = true"
     />
 
     <StudentGrid
@@ -207,6 +210,11 @@ function handleClearFilters() {
     <CraftingFodderModal
       v-if="isCraftingFodderVisible"
       @close="isCraftingFodderVisible = false"
+    />
+
+    <EquipmentFarmingModal
+      v-if="isEquipmentFarmingVisible"
+      @close="isEquipmentFarmingVisible = false"
     />
   </div>
 </template>

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "changelog:draft": "node scripts/changelog-draft.mjs"
+    "changelog:draft": "node scripts/changelog-draft.mjs",
+    "build:equipment-drops": "node scripts/build-equipment-drops.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.7",

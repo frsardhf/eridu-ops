@@ -375,7 +375,7 @@ export const translations = {
 
     // Contact modal
     contactModal: {
-      body: "If you have any inquiries or want to report bugs, you can contact me on Discord:",
+      body: "If you have any inquiries or want to report bugs, you can contact me on Discord or Twitter:",
     },
 
     // Credits modal
@@ -386,6 +386,7 @@ export const translations = {
       translationsBody: "English translations of skills are provided by Lonqie and are used with permission. Please note that translations in other languages may be contributed by other translators and are not free to use in other projects without explicit permission.",
       acknowledgements: "Acknowledgements",
       acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
+      acknowledgementsArona: "Special thanks to 本心 (benx1n) for granting access to the arona.icu API, which powers the Bond 100 community counts on the Hall.",
     },
 
     // Ownership (recruited / not recruited)
@@ -557,6 +558,17 @@ export const translations = {
       legendCraft: "Crafts",
       legendExcess: "Excess",
       legendQty: "Recyclable",
+    },
+
+    equipmentFarming: {
+      title: "Equipment Farming",
+      subtitle: "Normal stages to farm for your missing Tier 2+ equipment.",
+      dropEvent: "Drop rate event",
+      empty: "No missing equipment — every Tier 2+ piece you need is already covered.",
+      runs: "≈{n} runs",
+      stages: "{n} stages",
+      expandAll: "Expand all",
+      collapseAll: "Collapse all",
     },
 
     // Student filter panel
@@ -950,7 +962,7 @@ export const translations = {
 
     // Contact modal
     contactModal: {
-      body: "ご質問やバグの報告はDiscordでお問い合わせください：",
+      body: "ご質問やバグの報告はDiscordまたはTwitterでお問い合わせください：",
     },
 
     // Credits modal
@@ -958,9 +970,10 @@ export const translations = {
       dataSources: "データソース",
       dataSourcesBody: "このアプリケーションで使用されているデータは以下を元にしています：",
       translationsHeader: "翻訳",
-      translationsBody: "English translations of skills are provided by Lonqie and are used with permission. Please note that translations in other languages may be contributed by other translators and are not free to use in other projects without explicit permission.",
+      translationsBody: "スキルの英語翻訳は Lonqie 氏によって提供され、許可を得て使用しています。他言語の翻訳は別の翻訳者によって提供される場合があり、明示的な許可なく他のプロジェクトで自由に使用することはできませんのでご注意ください。",
       acknowledgements: "謝辞",
-      acknowledgementsBody: "Special thanks to the SchaleDB team and Lonqie for their incredible work in maintaining comprehensive Blue Archive data resources that make applications like this possible.",
+      acknowledgementsBody: "このようなアプリを実現する包括的なブルーアーカイブのデータリソースを維持してくださっている SchaleDB チームと Lonqie 氏の素晴らしい取り組みに、心より感謝いたします。",
+      acknowledgementsArona: "絆100殿堂の集計データを支える arona.icu API へのアクセスを許可してくださった本心 (benx1n) 氏に、心より感謝いたします。",
     },
 
     // Ownership (recruited / not recruited)
@@ -1132,6 +1145,17 @@ export const translations = {
       legendCraft: "クラフト",
       legendExcess: "余剰",
       legendQty: "リサイクル可能",
+    },
+
+    equipmentFarming: {
+      title: "装備ファーム",
+      subtitle: "不足しているTier2以上の装備を集めるための通常ステージ。",
+      dropEvent: "ドロップ率イベント",
+      empty: "不足している装備はありません — 必要なTier2以上はすべて充足しています。",
+      runs: "≈{n}回",
+      stages: "{n}ステージ",
+      expandAll: "すべて展開",
+      collapseAll: "すべて折りたたむ",
     },
 
     // Student filter panel

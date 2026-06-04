@@ -12,6 +12,7 @@ const emit = defineEmits<{
   'open-inventory': [];
   'open-bond-update': [];
   'open-crafting-fodder': [];
+  'open-equipment-farming': [];
 }>();
 
 function handleFocusOut(event: FocusEvent) {
@@ -90,48 +91,6 @@ useDocumentListener('keydown', handleEscape);
         class="tools-action-btn"
         style="--i: 0;"
         type="button"
-        @click="emit('open-deck-builder')"
-        title="Deck Builder"
-        aria-label="Deck Builder"
-      >
-        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
-          />
-          <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
-          <path
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
-          />
-        </svg>
-      </button>
-
-      <button
-        class="tools-action-btn"
-        style="--i: 1;"
-        type="button"
-        @click="emit('open-inventory')"
-        :title="$t('inventory')"
-        :aria-label="$t('inventory')"
-      >
-        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
-        </svg>
-      </button>
-
-      <button
-        class="tools-action-btn"
-        style="--i: 2;"
-        type="button"
         @click="emit('open-bulk-modify')"
         :title="$t('bulkModify.title')"
         :aria-label="$t('bulkModify.title')"
@@ -163,9 +122,23 @@ useDocumentListener('keydown', handleEscape);
           />
         </svg>
       </button>
+
       <button
         class="tools-action-btn"
-        style="--i: 3;"
+        style="--i: 1;"
+        type="button"
+        @click="emit('open-inventory')"
+        :title="$t('inventory')"
+        :aria-label="$t('inventory')"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+        </svg>
+      </button>
+
+      <button
+        class="tools-action-btn"
+        style="--i: 2;"
         type="button"
         @click="emit('open-bond-update')"
         :title="$t('bondUpdate.title')"
@@ -179,6 +152,35 @@ useDocumentListener('keydown', handleEscape);
             stroke-linecap="round"
             stroke-linejoin="round"
             d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="tools-action-btn"
+        style="--i: 3;"
+        type="button"
+        @click="emit('open-deck-builder')"
+        title="Deck Builder"
+        aria-label="Deck Builder"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+          />
+          <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
           />
         </svg>
       </button>
@@ -207,6 +209,27 @@ useDocumentListener('keydown', handleEscape);
             stroke-linecap="round"
             stroke-linejoin="round"
             d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="tools-action-btn"
+        style="--i: 5;"
+        type="button"
+        @click="emit('open-equipment-farming')"
+        :title="$t('equipmentFarming.title')"
+        :aria-label="$t('equipmentFarming.title')"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"
           />
         </svg>
       </button>
