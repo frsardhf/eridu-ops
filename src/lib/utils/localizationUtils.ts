@@ -85,9 +85,13 @@ export function formatSkillDescription(
     return `${knockbackSum} units`;
   });
 
-  // Process special tags with localization data
-  formattedDesc = formattedDesc.replace(/<([bcds]):([^>]+)>/g,
-    (match: string, tagType: string, value: string) => {
+  // Process special tags with localization data. Some tags carry an inline
+  // display override inside the brackets, e.g. <s:CH0076_Ex='Keychains'> — when
+  // present, use the quoted text verbatim so the raw key never leaks. Plain tags
+  // (<s:CH0076_Ex>, <b:AttackPower>) fall through to the localization lookup.
+  formattedDesc = formattedDesc.replace(/<([bcds]):([^>=']+)(?:='([^']*)')?>/g,
+    (match: string, tagType: string, value: string, override?: string) => {
+      if (override !== undefined) return override;
       let prefix = '';
       switch (tagType) {
         case 'b': prefix = 'Buff_'; break;
