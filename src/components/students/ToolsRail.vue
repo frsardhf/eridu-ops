@@ -160,6 +160,27 @@ useDocumentListener('keydown', handleEscape);
         class="tools-action-btn"
         style="--i: 3;"
         type="button"
+        @click="emit('open-equipment-farming')"
+        :title="$t('equipmentFarming.title')"
+        :aria-label="$t('equipmentFarming.title')"
+      >
+        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="tools-action-btn"
+        style="--i: 4;"
+        type="button"
         @click="emit('open-deck-builder')"
         title="Deck Builder"
         aria-label="Deck Builder"
@@ -187,7 +208,7 @@ useDocumentListener('keydown', handleEscape);
 
       <button
         class="tools-action-btn"
-        style="--i: 4;"
+        style="--i: 5;"
         type="button"
         @click="emit('open-crafting-fodder')"
         :title="$t('craftingFodder.title')"
@@ -209,27 +230,6 @@ useDocumentListener('keydown', handleEscape);
             stroke-linecap="round"
             stroke-linejoin="round"
             d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"
-          />
-        </svg>
-      </button>
-
-      <button
-        class="tools-action-btn"
-        style="--i: 5;"
-        type="button"
-        @click="emit('open-equipment-farming')"
-        :title="$t('equipmentFarming.title')"
-        :aria-label="$t('equipmentFarming.title')"
-      >
-        <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-          <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
-          <path
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"
           />
         </svg>
       </button>
