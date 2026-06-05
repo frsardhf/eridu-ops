@@ -51,6 +51,57 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-06-hall-and-farming',
+    date: '2026-06-04',
+    title: {
+      en: 'Bond 100 Hall & equipment farming',
+      jp: '絆100殿堂と装備ファーム',
+    },
+    summary: {
+      en: 'A community Bond 100 wall, a new equipment farming planner, and a refreshed landing page and navigation.',
+      jp: 'コミュニティの絆100ウォール、新しい装備ファームプランナー、刷新されたランディングページとナビゲーションを追加。',
+    },
+    sections: [
+      {
+        title: { en: 'Bond 100 Hall', jp: '絆100殿堂' },
+        highlights: [
+          {
+            en: 'A new Hall page shows how many players have reached Bond 100 with each student across the Global servers.',
+            jp: '新しい殿堂ページで、グローバル各サーバーで各生徒と絆100に到達したプレイヤー数を表示。',
+          },
+          {
+            en: "Open one to see who's there, with per-server breakdowns and stats; counts refresh daily from public ranking data via arona.icu.",
+            jp: '生徒を開くと、サーバー別の内訳や統計とともに到達者を確認できます。件数は arona.icu 経由の公開ランキングデータから毎日更新されます。',
+          },
+        ],
+      },
+      {
+        title: { en: 'Equipment farming suggestions', jp: '装備ファームの提案' },
+        highlights: [
+          {
+            en: 'A new Students tool recommends which normal stages to farm for your missing Tier 2+ equipment, with expected runs and AP per stage and a 2× / 3× drop-event toggle.',
+            jp: '新しい生徒ツールが、不足しているTier2以上の装備を集めるのに最適な通常ステージを、想定周回数・APと2倍／3倍のドロップイベント倍率の切り替え付きで提案。',
+          },
+        ],
+      },
+      {
+        title: { en: 'Navigation & polish', jp: 'ナビゲーションと細かな改善' },
+        highlights: [
+          {
+            en: 'A new landing page with quick-access cards for Students, Bonds, and the Hall, plus Contact and Credits.',
+            jp: '生徒・絆・殿堂へのクイックアクセスカードに加え、問い合わせとクレジットも開ける新しいランディングページ。',
+          },
+          {
+            en: 'A responsive navbar with redesigned dropdown menus and per-card overlay toggles in the student grid.',
+            jp: 'レスポンシブなナビゲーションバー、刷新されたドロップダウンメニュー、生徒一覧のカードごとの表示切り替えを追加。',
+          },
+        ],
+      },
+    ],
+    fromCommit: 'eeb7a0f',
+    toCommit: '616b83b',
+  },
+  {
     id: '2026-05-scanner-batch',
     date: '2026-05-29',
     title: {
