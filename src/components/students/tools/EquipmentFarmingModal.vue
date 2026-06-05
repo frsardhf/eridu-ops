@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useEquipmentFarming, type FarmMultiplier } from '@/lib/hooks/useEquipmentFarming';
-import { getEquipmentIconUrl } from '@/lib/utils/iconUtils';
+import { getItemIconUrl } from '@/lib/utils/iconUtils';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 
 const emit = defineEmits<{ close: [] }>();
 
-const { plan, multiplier, hasMissing } = useEquipmentFarming();
+const { plan, multiplier, hasMissing, missingList } = useEquipmentFarming();
 const multipliers: FarmMultiplier[] = [1, 2, 3];
+
+// Missing-equipment reference (same data as GlobalInventory's "missing" view),
+// collapsed by default so it doesn't crowd the farm plan.
+const showMissing = ref(false);
 
 // Per-stage breakdown is collapsed by default — the item rows are what eat space.
 const expanded = ref<Record<number, boolean>>({});
@@ -85,8 +89,33 @@ useDocumentListener('keydown', onKeydown);
           <p>{{ $t('equipmentFarming.empty') }}</p>
         </div>
 
-        <!-- Suggestions, grouped by stage; breakdown collapsed by default -->
-        <div v-else class="efm-stages">
+        <template v-else>
+          <!-- Missing equipment reference (collapsible) -->
+          <div class="efm-missing" :class="{ 'is-open': showMissing }">
+            <button
+              type="button"
+              class="efm-missing-head"
+              :aria-expanded="showMissing"
+              @click="showMissing = !showMissing"
+            >
+              <span class="efm-missing-title">{{ $t('equipmentFarming.missingTitle') }}</span>
+              <span class="efm-missing-count">{{ missingList.length }}</span>
+              <svg class="efm-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <ul v-if="showMissing" class="efm-missing-list">
+              <li v-for="m in missingList" :key="m.equipId" class="efm-cover">
+                <img :src="getItemIconUrl(m.icon, 'equipment', m.tier)" :alt="m.name" class="efm-cover-icon" loading="lazy" />
+                <span class="efm-cover-name">{{ m.name }}</span>
+                <span class="efm-cover-tier">T{{ m.tier }}</span>
+                <span class="efm-missing-qty">×{{ m.qty }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Suggestions, grouped by stage; breakdown collapsed by default -->
+          <div class="efm-stages">
           <article v-for="s in plan" :key="s.id" class="efm-stage" :class="{ 'is-open': expanded[s.id] }">
             <button
               type="button"
@@ -103,14 +132,15 @@ useDocumentListener('keydown', onKeydown);
             </button>
             <ul v-if="expanded[s.id]" class="efm-covers">
               <li v-for="c in s.covers" :key="c.equipId" class="efm-cover">
-                <img :src="getEquipmentIconUrl(c.category, c.tier)" :alt="c.name" class="efm-cover-icon" loading="lazy" />
+                <img :src="getItemIconUrl(c.icon, 'equipment', c.tier)" :alt="c.name" class="efm-cover-icon" loading="lazy" />
                 <span class="efm-cover-name">{{ c.name }}</span>
                 <span class="efm-cover-tier">T{{ c.tier }}</span>
                 <span class="efm-cover-qty"><strong>≈{{ c.expected }}</strong> / {{ c.need }}</span>
               </li>
             </ul>
           </article>
-        </div>
+          </div>
+        </template>
       </div>
     </section>
   </div>
@@ -289,6 +319,83 @@ useDocumentListener('keydown', onKeydown);
   max-width: 34ch;
   font-size: 0.9rem;
   color: var(--text-secondary);
+}
+
+/* Missing-equipment reference (collapsible) */
+.efm-missing {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-background);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.efm-missing-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.efm-missing-head:hover {
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+.efm-missing.is-open .efm-missing-head {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.efm-missing-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.efm-missing-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
+  color: var(--accent-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.efm-missing-head .efm-chevron {
+  margin-left: auto;
+}
+
+.efm-missing.is-open .efm-chevron {
+  transform: rotate(180deg);
+}
+
+.efm-missing-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2px 12px;
+}
+
+.efm-missing-qty {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .efm-stages {

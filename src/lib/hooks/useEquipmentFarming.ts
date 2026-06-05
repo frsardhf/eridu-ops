@@ -8,6 +8,7 @@ export interface FarmCover {
   equipId: number;
   name: string;
   category: string;
+  icon: string;       // equipment Icon name (for getItemIconUrl piece art)
   tier: number;
   need: number;       // original missing quantity
   expected: number;   // ~pieces obtained from this stage's runs
@@ -27,6 +28,7 @@ interface MissingPiece {
   tier: number;
   name: string;
   category: string;
+  icon: string;
 }
 
 /**
@@ -65,6 +67,7 @@ export function useEquipmentFarming() {
         tier,
         name: mat.Name ?? String(mat.Id),
         category: mat.Category ?? '',
+        icon: mat.Icon ?? '',
       });
     }
     return m;
@@ -72,6 +75,15 @@ export function useEquipmentFarming() {
 
   const hasMissing = computed(() => missing.value.size > 0);
   const missingCount = computed(() => missing.value.size);
+
+  // The raw missing pieces (deficit) — same data the GlobalInventory "missing"
+  // view shows, surfaced here so users don't have to switch modals. Highest tier
+  // first, then by name.
+  const missingList = computed(() =>
+    [...missing.value.entries()]
+      .map(([equipId, p]) => ({ equipId, ...p }))
+      .sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name)),
+  );
 
   const plan = computed<FarmStagePlan[]>(() => {
     const want = missing.value;
@@ -142,6 +154,7 @@ export function useEquipmentFarming() {
           equipId: d.equipId,
           name: p.name,
           category: p.category,
+          icon: p.icon,
           tier: p.tier,
           need: p.qty,
           expected: Math.round(runs * eff(d.rate)),
@@ -155,5 +168,5 @@ export function useEquipmentFarming() {
     return result;
   });
 
-  return { plan, multiplier, hasMissing, missingCount };
+  return { plan, multiplier, hasMissing, missingCount, missingList };
 }

@@ -569,6 +569,7 @@ export const translations = {
       stages: "{n} stages",
       expandAll: "Expand all",
       collapseAll: "Collapse all",
+      missingTitle: "Missing equipment",
     },
 
     // Student filter panel
@@ -1156,6 +1157,7 @@ export const translations = {
       stages: "{n}ステージ",
       expandAll: "すべて展開",
       collapseAll: "すべて折りたたむ",
+      missingTitle: "不足装備",
     },
 
     // Student filter panel
