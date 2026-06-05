@@ -350,6 +350,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                   >
                     <StudentCard
                       :student="getStudentById(team.units[idx])!"
+                      force-show-overlays
                       @click="() => openPicker(tIdx, idx)"
                     />
                     <span v-if="isAssistSlot(tIdx, idx)" class="assist-badge">A</span>
@@ -397,6 +398,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                   >
                     <StudentCard
                       :student="getStudentById(team.units[idx])!"
+                      force-show-overlays
                       @click="() => openPicker(tIdx, idx)"
                     />
                     <span v-if="isAssistSlot(tIdx, idx)" class="assist-badge">A</span>
@@ -457,6 +459,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
             v-for="student in pickerStudents"
             :key="student.Id"
             :student="student"
+            force-show-overlays
             @click="handlePickerSelect"
           />
           <div v-if="pickerStudents.length === 0" class="picker-empty">

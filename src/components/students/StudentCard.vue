@@ -16,6 +16,9 @@ import {
 
 const props = defineProps<{
   student: StudentProps;
+  /** Ignore the /students eye-menu hide prefs and always show every overlay
+   *  (used by DeckBuilder so its cards aren't affected by the grid's setting). */
+  forceShowOverlays?: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'click', payload: { student: StudentProps; originRect: ModalOriginRect | null }): void;
@@ -32,11 +35,11 @@ const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
 // hover-only. Drives the .ov-* classes on the card root.
 const { isShown: isOverlayShown } = useCardOverlayPrefs();
 const overlayClasses = computed(() => ({
-  'ov-level': isOverlayShown('level'),
-  'ov-grade': isOverlayShown('grade'),
-  'ov-equipment': isOverlayShown('equipment'),
-  'ov-skills': isOverlayShown('skills'),
-  'ov-potential': isOverlayShown('potential'),
+  'ov-level': props.forceShowOverlays || isOverlayShown('level'),
+  'ov-grade': props.forceShowOverlays || isOverlayShown('grade'),
+  'ov-equipment': props.forceShowOverlays || isOverlayShown('equipment'),
+  'ov-skills': props.forceShowOverlays || isOverlayShown('skills'),
+  'ov-potential': props.forceShowOverlays || isOverlayShown('potential'),
 }));
 const skillTypes: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 const skillTypeNames: SkillTypeName[] = ['Ex', 'Basic', 'Enhanced', 'Sub'];
