@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
+import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
 import { $t } from '@/locales';
@@ -112,8 +113,14 @@ const pagedEntries = computed(() => {
 });
 const pageLeft = computed(() => pagedEntries.value.slice(0, COLUMN_SIZE));
 const pageRight = computed(() => pagedEntries.value.slice(COLUMN_SIZE));
+// Below 600px the modal goes leaner, so collapse the two 5-row tables into one
+// continuous column (otherwise they'd cramp or stack awkwardly).
+const isNarrow = ref(false);
+useWindowResize(() => { isNarrow.value = window.innerWidth < 600; });
 const entryColumns = computed(() =>
-  pageRight.value.length ? [pageLeft.value, pageRight.value] : [pageLeft.value]
+  isNarrow.value
+    ? [pagedEntries.value]
+    : pageRight.value.length ? [pageLeft.value, pageRight.value] : [pageLeft.value]
 );
 
 // ── View mode: entry list or removal guidelines ──────────────────────────────
@@ -174,6 +181,7 @@ useClickOutside(onDocumentClick);
   <div class="bond100-modal-backdrop" @click.self="emit('close')">
     <section class="bond100-entry-modal" role="dialog" aria-modal="true" :aria-label="$t('bond100.entriesTitle', { name: student.Name })">
       <div class="bond100-hero">
+        <img :src="getStudentCollectionUrl(student.Id)" alt="" aria-hidden="true" class="bond100-hero-bg" />
         <img :src="getStudentCollectionUrl(student.Id)" :alt="student.Name" class="bond100-hero-img" />
         <div class="bond100-hero-overlay">
           <p class="bond100-hero-kicker">{{ $t('bond100.entriesKicker') }}</p>
@@ -341,6 +349,11 @@ useClickOutside(onDocumentClick);
   object-fit: cover;
   object-position: top center;
   display: block;
+}
+
+/* Blurred fill behind the contained portrait — only used on the narrow banner. */
+.bond100-hero-bg {
+  display: none;
 }
 
 .bond100-hero-overlay {
@@ -726,11 +739,31 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
 
   .bond100-entry-modal {
     flex-direction: column;
+    width: min(400px, 100%);
     max-height: calc(100vh - 20px);
   }
 
   .bond100-hero {
-    flex: 0 0 160px;
+    flex: 0 0 200px;
+  }
+
+  /* Show the complete portrait (it's near-square, so a wide cover-crop would
+     cut it off); fill the sides with a blurred copy so the banner still reads. */
+  .bond100-hero-bg {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(20px) brightness(0.7);
+    transform: scale(1.15);
+  }
+
+  .bond100-hero-img {
+    position: relative;
+    object-fit: contain;
+    object-position: center;
   }
 
   .bond100-hero-name {
