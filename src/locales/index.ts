@@ -393,8 +393,8 @@ export const translations = {
     ownership: {
       recruited: "Recruited",
       notRecruited: "Not Recruited",
-      markRecruited: "Mark as Recruited",
-      markNotRecruited: "Mark as Not Recruited",
+      markRecruited: "Mark Recruited",
+      markNotRecruited: "Mark Not Recruited",
       ownershipFilter: "Recruitment",
       filterAll: "All",
       filterOwned: "Recruited",
