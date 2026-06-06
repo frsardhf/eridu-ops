@@ -986,4 +986,21 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
     display: none;
   }
 }
+
+@media (max-width: 480px) {
+  /* Stack Recruitment + Apply Upgrade — side-by-side, each half is too narrow
+     for its label + button (and JP labels are longer), so they clip. */
+  .status-bars-row {
+    flex-direction: column;
+  }
+
+  .recruitment-bar {
+    border-right: none;   /* full width now, not a left half */
+  }
+
+  /* Divider only when the upgrade bar follows (unowned students have just this one). */
+  .recruitment-bar:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+}
 </style>
