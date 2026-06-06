@@ -117,3 +117,13 @@ Student, item, and equipment data is fetched from [SchaleDB](https://schaledb.co
 ## Contributing
 
 Pull requests are welcome. Please open an issue first to discuss larger changes.
+
+---
+
+## License
+
+[GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0) — © 2026 EriduOps.
+
+You're welcome to study, modify, and self-host this project. AGPL-3.0 is copyleft: if you run a modified version as a public/network service, you must make your modified source available to its users.
+
+The license covers this project's own source code only. Blue Archive artwork, names, and game data are the property of Nexon / Nexon Games / Yostar and are sourced via [SchaleDB](https://schaledb.com); they are not covered by this license.
