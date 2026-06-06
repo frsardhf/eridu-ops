@@ -18,8 +18,11 @@ const emit = defineEmits<{ close: [] }>();
 const subServer = ref<Bond100ServerRegion | ''>('');
 const subFriendCode = ref('');
 const submitting = ref(false);
-const formError = ref('');
 const done = ref(false);
+// When a submission can't go through (our daily arona quota is spent, or arona
+// is down), fall back to letting the user add themselves directly on arona.icu.
+const showFallback = ref(false);
+const ARONA_ADD_URL = 'https://arona.icu/searchFriendDetail';
 
 const serverChoices = computed(() =>
   props.serverOptions.map(o => ({ value: o.code, label: $t(o.labelKey) }))
@@ -28,7 +31,6 @@ const serverChoices = computed(() =>
 async function doSubmit() {
   if (submitting.value || !subServer.value || !subFriendCode.value.trim()) return;
   submitting.value = true;
-  formError.value = '';
   try {
     await submitBond100Submission({
       serverRegion: subServer.value,
@@ -36,10 +38,14 @@ async function doSubmit() {
     });
     done.value = true;
   } catch {
-    formError.value = $t('bond100.form.error');
+    showFallback.value = true;
   } finally {
     submitting.value = false;
   }
+}
+
+function backToForm() {
+  showFallback.value = false;
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -64,6 +70,19 @@ useDocumentListener('keydown', onKeydown);
           <p>{{ $t('bond100.form.submittedBody') }}</p>
         </div>
 
+        <!-- Fallback: couldn't submit (quota/down) → self-add on arona.icu -->
+        <div v-else-if="showFallback" class="bsm-fallback">
+          <h3>{{ $t('bond100.form.fallbackTitle') }}</h3>
+          <p>{{ $t('bond100.form.fallbackBody') }}</p>
+          <p class="bsm-fallback-steps">{{ $t('bond100.form.fallbackSteps') }}</p>
+          <a class="bsm-fallback-link" :href="ARONA_ADD_URL" target="_blank" rel="noopener noreferrer">
+            <span>arona.icu/searchFriendDetail</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/>
+            </svg>
+          </a>
+        </div>
+
         <!-- Form -->
         <form v-else id="bsm-form" class="bsm-form" @submit.prevent="doSubmit">
           <div class="bsm-grid">
@@ -83,12 +102,15 @@ useDocumentListener('keydown', onKeydown);
             </label>
           </div>
           <p class="bsm-note">{{ $t('bond100.form.assistHint') }}</p>
-          <p v-if="formError" class="bsm-error">{{ formError }}</p>
         </form>
       </div>
 
       <footer class="bsm-footer">
         <template v-if="done">
+          <button type="button" class="bsm-btn" @click="emit('close')">{{ $t('bond100.form.back') }}</button>
+        </template>
+        <template v-else-if="showFallback">
+          <button type="button" class="bsm-btn ghost" @click="backToForm">{{ $t('bond100.form.tryAgain') }}</button>
           <button type="button" class="bsm-btn" @click="emit('close')">{{ $t('bond100.form.back') }}</button>
         </template>
         <template v-else>
@@ -254,6 +276,50 @@ useDocumentListener('keydown', onKeydown);
   font-size: 0.86rem;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+
+.bsm-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.bsm-fallback h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.bsm-fallback p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.bsm-fallback p.bsm-fallback-steps {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.bsm-fallback-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--accent-color);
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.bsm-fallback-link:hover {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 10%, transparent);
 }
 
 .bsm-footer {

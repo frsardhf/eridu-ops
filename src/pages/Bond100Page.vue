@@ -375,6 +375,7 @@ onMounted(loadSummary);
                   }}<a class="bond100-info-link" :href="ARONA_URL" target="_blank" rel="noopener noreferrer">arona.icu</a>{{ aboutSourcesParts[1] }}</template>
                 <template v-else>{{ $t('bond100.aboutSources') }}</template>
               </p>
+              <p class="bond100-info-text">{{ $t('bond100.aboutDelay') }}</p>
             </div>
           </div>
         </div>
