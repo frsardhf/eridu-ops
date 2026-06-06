@@ -15,6 +15,7 @@
   z-index: 100;
   display: flex;
   align-items: center;
+  flex-shrink: 0;   /* never collapse below its set height in a flex-column page */
 }
 
 .app-navbar-content {

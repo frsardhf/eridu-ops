@@ -8,6 +8,10 @@ import { ThemeId } from '@/types/theme';
 // ── Props / emits ─────────────────────────────────────────────────────────────
 const props = defineProps<{
   currentTheme: ThemeId;
+  /** No hamburger sibling (e.g. the landing page) — keep every control inline at
+   *  all widths instead of collapsing Contact/Credits/Language into a menu that
+   *  isn't there. */
+  standalone?: boolean;
 }>();
 
 // Contact/Credits modals are hosted by GlobalNavbar so they can also be opened
@@ -65,7 +69,7 @@ useClickOutside(handleClickOutside);
 </script>
 
 <template>
-  <div class="global-controls">
+  <div class="global-controls" :class="{ 'global-controls--standalone': standalone }">
     <!-- Language toggle -->
     <button
       type="button"
@@ -321,8 +325,8 @@ useClickOutside(handleClickOutside);
   }
 
   .gc-theme-tray-toggle-dot {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -339,5 +343,13 @@ useClickOutside(handleClickOutside);
   .gc-lang-toggle {
     display: none;
   }
+}
+
+/* Standalone (no hamburger to host the collapsed controls, e.g. the landing
+   page): keep Contact/Credits/Language inline at every width. Higher specificity
+   than the collapse rules above, so it wins regardless of viewport. */
+.global-controls--standalone .gc-icon-btn,
+.global-controls--standalone .gc-lang-toggle {
+  display: inline-flex;
 }
 </style>

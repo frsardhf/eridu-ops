@@ -55,6 +55,7 @@ onUnmounted(() => {
       <div class="app-navbar-content lp-bar">
         <GlobalControls
           :current-theme="currentTheme"
+          standalone
           @set-theme="setTheme"
           @open-contact="showContact = true"
           @open-credits="showCredits = true"
@@ -370,6 +371,9 @@ onUnmounted(() => {
   .landing-card {
     min-width: unset;
     max-width: unset;
+    /* Size to content instead of stretching to fill the column — keeps the cards
+       compact and stops the over-full column from squeezing the navbar. */
+    flex: 0 0 auto;
   }
 }
 </style>
