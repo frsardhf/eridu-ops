@@ -66,6 +66,25 @@ function parseIntOr(value: string | number | undefined, fallback: number): numbe
 }
 
 /**
+ * True if an imported `current` state shows real in-game progress — i.e. the
+ * student is owned. justin163's `enabled` flag is a "show in planner" toggle,
+ * NOT an ownership flag: players routinely disable students they own (e.g. ones
+ * they've finished), which would otherwise import as Not Recruited and hide all
+ * their level/skill/gear tracking. You can't level or bond a student you don't
+ * own, so any progress above the default base = owned, regardless of `enabled`.
+ */
+function hasImportedProgress(state: OtherSiteCharacterState | undefined): boolean {
+  if (!state) return false;
+  const n = (v: string | number | undefined) => parseInt(String(v ?? ''), 10) || 0;
+  return (
+    n(state.level) > 1 || n(state.bond) > 1 ||
+    n(state.ex) > 1 || n(state.basic) > 1 || n(state.passive) > 1 || n(state.sub) > 1 ||
+    n(state.gear1) > 1 || n(state.gear2) > 1 || n(state.gear3) > 1 ||
+    n(state.bond_gear) > 0 || n(state.book_atk) > 0 || n(state.book_hp) > 0 || n(state.book_heal) > 0
+  );
+}
+
+/**
  * Saves student-specific form data to IndexedDB
  * @param studentId The ID of the student
  * @param data The data to save
@@ -467,7 +486,9 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
 
       const formData = {
         studentId,
-        isOwned: char.enabled !== false,
+        // `enabled` is justin163's planner-visibility toggle, not ownership —
+        // also treat a student as owned if their current state shows progress.
+        isOwned: char.enabled !== false || hasImportedProgress(char.current),
         bondDetailData: {
           currentBond: parseIntOr(char.current.bond, 1)
         },
