@@ -51,6 +51,30 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-06-hall-entries-redesign',
+    date: '2026-06-07',
+    title: {
+      en: 'Bond 100 Hall, redesigned',
+      jp: '絆100殿堂をリニューアル',
+    },
+    summary: {
+      en: 'A roomier Hall entries view with search, a quicker way to add yourself, and a note on data delays.',
+      jp: '殿堂のエントリー表示を見やすく刷新し、検索や自分を追加する手段を追加。データ遅延についての案内も掲載。',
+    },
+    highlights: [
+      {
+        en: 'Opening a student in the Hall now shows a larger portrait and every listed sensei in one scrollable view (no more flipping through pages), plus a search box to find a specific name.',
+        jp: '殿堂で生徒を開くと、大きなポートレートと掲載中の全先生を1つのスクロール表示でまとめて確認できるようになりました（ページ送り不要）。名前を探せる検索ボックスも追加。',
+      },
+      {
+        en: 'Heads up: the Hall shows a daily snapshot from arona.icu, which is currently having server issues on their side, so newly added or updated players can take longer than usual (sometimes a few days) to appear.',
+        jp: 'ご注意：殿堂は arona.icu の1日1回のスナップショットを表示しています。現在 arona.icu 側でサーバーの不具合が発生しているため、新しく追加・更新されたプレイヤーの反映に通常より時間がかかる（数日かかる）場合があります。',
+      },
+    ],
+    fromCommit: '616b83b',
+    toCommit: 'c8487b9',
+  },
+  {
     id: '2026-06-hall-and-farming',
     date: '2026-06-04',
     title: {
