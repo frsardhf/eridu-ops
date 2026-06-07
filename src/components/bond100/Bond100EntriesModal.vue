@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
-import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
-import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
+import { useStudentImages } from '@/composables/useStudentImages';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
 import { $t } from '@/locales';
 import type {
@@ -29,6 +28,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
 }>();
+
+// Hero portrait + background, matching StudentModal's header: a transparent
+// character cutout over a blurred collection-BG scene, with a load shimmer.
+const {
+  portraitSrc, backgroundSrc, imageLoading,
+  handlePortraitLoad, handlePortraitError, handleBackgroundLoad, handleBackgroundError,
+} = useStudentImages(toRef(() => props.student));
 
 const serverLabelMap = computed(() => {
   return new Map(props.serverOptions.map(option => [option.code, $t(option.labelKey)]));
@@ -100,28 +106,42 @@ function pillStyle(server: string): Record<string, string> {
   };
 }
 
-// ── Pagination ────────────────────────────────────────────────
-// 10 per page, laid out as two columns of 5 (single column on the last/short
-// page and on mobile).
-const COLUMN_SIZE = 5;
-const PAGE_SIZE = COLUMN_SIZE * 2;
-const currentPage = ref(1);
-const totalPages = computed(() => Math.max(1, Math.ceil(entries.value.length / PAGE_SIZE)));
-const pagedEntries = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE;
-  return entries.value.slice(start, start + PAGE_SIZE);
-});
-const pageLeft = computed(() => pagedEntries.value.slice(0, COLUMN_SIZE));
-const pageRight = computed(() => pagedEntries.value.slice(COLUMN_SIZE));
-// Below 600px the modal goes leaner, so collapse the two 5-row tables into one
-// continuous column (otherwise they'd cramp or stack awkwardly).
+// ── Layout ────────────────────────────────────────────────────
+// Every entry is shown in one scrollable view (no pagination), so players who
+// used to land on a later page are no longer buried. The list area is a fixed
+// ROWS_PER_COLUMN rows tall (see the body height) so every modal is the same
+// size; shorter lists leave empty rows, longer lists scroll.
+const ROWS_PER_COLUMN = 10;
+// Below this viewport width two columns get cramped, so the list collapses to a
+// single column.
+const SINGLE_COLUMN_MAX_WIDTH = 800;
 const isNarrow = ref(false);
-useWindowResize(() => { isNarrow.value = window.innerWidth < 600; });
-const entryColumns = computed(() =>
-  isNarrow.value
-    ? [pagedEntries.value]
-    : pageRight.value.length ? [pageLeft.value, pageRight.value] : [pageLeft.value]
-);
+useWindowResize(() => { isNarrow.value = window.innerWidth < SINGLE_COLUMN_MAX_WIDTH; });
+
+// ── Search: narrow the visible list by player name ────────────
+// The footer search only appears once a list is long enough to be worth
+// scanning. It filters the rows only; the header total + breakdown still
+// describe the full set (the search is a find tool, not a re-count).
+const SEARCH_MIN_COUNT = 1;
+const searchQuery = ref('');
+const showSearch = computed(() => entries.value.length >= SEARCH_MIN_COUNT);
+const filteredEntries = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return entries.value;
+  return entries.value.filter(e => e.playerName.toLowerCase().includes(q));
+});
+
+// Fill the left column to ROWS_PER_COLUMN first, then spill into the right, so a
+// 14-entry list reads 10 + 4 rather than a balanced 7 + 7. Stay single-column
+// until the left overflows. For long lists where both columns pass the cap,
+// balance them so the two sides scroll together evenly.
+const entryColumns = computed<Bond100Entry[][]>(() => {
+  const list = filteredEntries.value;
+  if (list.length === 0) return [];
+  if (isNarrow.value || list.length <= ROWS_PER_COLUMN) return [list];
+  const col1 = Math.max(ROWS_PER_COLUMN, Math.ceil(list.length / 2));
+  return [list.slice(0, col1), list.slice(col1)];
+});
 
 // ── View mode: entry list or removal guidelines ──────────────────────────────
 // Submission ("add me") now lives in a global toolbar button on /hall, since
@@ -132,57 +152,75 @@ const mode = ref<Mode>('list');
 function openGuidelines() { mode.value = 'guidelines'; }
 function backToList() { mode.value = 'list'; }
 
-// Reset page + close the guidelines panel whenever a new student is opened or
-// the filter changes.
+// Scrollable entry list element (reset to the top when the student changes).
+const bodyEl = ref<HTMLElement | null>(null);
+
+// Reset search + scroll to the top + close the guidelines panel whenever a new
+// student is opened or the filter changes.
 watch([() => props.entriesResponse, () => props.serverFilter], () => {
-  currentPage.value = 1;
   backToList();
+  searchQuery.value = '';
+  if (bodyEl.value) bodyEl.value.scrollTop = 0;
 });
 
+// Escape clears a non-empty search (and is swallowed so it doesn't also close
+// the modal); an empty search lets Escape fall through to the global handler.
+function onSearchKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && searchQuery.value) {
+    searchQuery.value = '';
+    event.stopPropagation();
+  }
+}
+
 // Detect script from player name so the browser picks the right CJK font.
-// Hangul, Hiragana/Katakana, and CJK Ideographs share U+4E00-9FFF — without
+// Hangul, Hiragana/Katakana, and CJK Ideographs share U+4E00-9FFF; without
 // a lang hint the browser always uses the first font in the stack that covers
 // that block (Noto Serif KR), making all three scripts look identical.
 function detectLang(text: string): string | undefined {
   if (/[가-힣ᄀ-ᇿ㄰-㆏]/.test(text)) return 'ko';
   if (/[぀-ヿ]/.test(text)) return 'ja';
-  if (/[一-鿿豈-﫿]/.test(text)) return 'zh-TW';
+  if (/[一-鿿豈-﫿]/.test(text)) return 'zh-TW';
   return undefined;
 }
 
-// ── Footer info popover ───────────────────────────────────────
-const footerInfoOpen = ref(false);
-const footerInfoWrapEl = ref<HTMLElement | null>(null);
-
+// ── Keyboard: Escape backs out of guidelines, else closes the modal ──────────
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    if (footerInfoOpen.value) footerInfoOpen.value = false;
-    else if (mode.value !== 'list') backToList();
-    else emit('close');
-    return;
-  }
-  // Arrow paging only when viewing the list (not while typing in a form).
-  if (mode.value !== 'list') return;
-  if (event.key === 'ArrowLeft' && currentPage.value > 1) currentPage.value--;
-  if (event.key === 'ArrowRight' && currentPage.value < totalPages.value) currentPage.value++;
-}
-
-function onDocumentClick(event: MouseEvent) {
-  if (footerInfoOpen.value && footerInfoWrapEl.value && !footerInfoWrapEl.value.contains(event.target as Node)) {
-    footerInfoOpen.value = false;
-  }
+  if (event.key !== 'Escape') return;
+  if (mode.value !== 'list') backToList();
+  else emit('close');
 }
 
 useDocumentListener('keydown', onKeydown);
-useClickOutside(onDocumentClick);
 </script>
 
 <template>
   <div class="bond100-modal-backdrop" @click.self="emit('close')">
     <section class="bond100-entry-modal" role="dialog" aria-modal="true" :aria-label="$t('bond100.entriesTitle', { name: student.Name })">
       <div class="bond100-hero">
-        <img :src="getStudentCollectionUrl(student.Id)" alt="" aria-hidden="true" class="bond100-hero-bg" />
-        <img :src="getStudentCollectionUrl(student.Id)" :alt="student.Name" class="bond100-hero-img" />
+        <div v-if="backgroundSrc" class="bond100-hero-bg">
+          <img
+            :src="backgroundSrc"
+            alt=""
+            aria-hidden="true"
+            @load="handleBackgroundLoad"
+            @error="handleBackgroundError"
+          />
+        </div>
+        <div v-else class="bond100-hero-bg-fallback" aria-hidden="true"></div>
+
+        <div class="bond100-hero-fg">
+          <img
+            :src="portraitSrc"
+            :alt="student.Name"
+            @load="handlePortraitLoad"
+            @error="handlePortraitError"
+          />
+        </div>
+
+        <div v-if="imageLoading" class="bond100-hero-shimmer" aria-hidden="true">
+          <div class="bond100-hero-shimmer-bar"></div>
+        </div>
+
         <div class="bond100-hero-overlay">
           <p class="bond100-hero-kicker">{{ $t('bond100.entriesKicker') }}</p>
           <h2 class="bond100-hero-name">{{ student.Name }}</h2>
@@ -211,7 +249,7 @@ useClickOutside(onDocumentClick);
           </div>
         </header>
 
-        <div class="bond100-content-body">
+        <div ref="bodyEl" class="bond100-content-body">
           <!-- ── List ── -->
           <template v-if="mode === 'list'">
             <div v-if="loading" class="bond100-modal-state">
@@ -221,7 +259,7 @@ useClickOutside(onDocumentClick);
               {{ error }}
             </div>
             <div
-              v-else-if="pagedEntries.length"
+              v-else-if="filteredEntries.length"
               class="bond100-entry-cols"
               :class="{ single: entryColumns.length === 1 }"
             >
@@ -242,6 +280,7 @@ useClickOutside(onDocumentClick);
                 </tbody>
               </table>
             </div>
+            <p v-else-if="searchQuery" class="bond100-empty-line">{{ $t('bond100.noEntriesSearch') }}</p>
             <p v-else class="bond100-empty-line">{{ $t('bond100.noEntries') }}</p>
           </template>
 
@@ -263,43 +302,42 @@ useClickOutside(onDocumentClick);
         </div>
 
         <footer v-if="mode === 'list'" class="bond100-modal-footer">
-          <!-- left: actions + ? -->
           <div class="bond100-footer-left">
-            <button type="button" class="bond100-footer-btn ghost" @click="openGuidelines">
-              {{ $t('bond100.requestRemoval') }}
+            <button
+              type="button"
+              class="bond100-footer-btn ghost bond100-removal-btn"
+              :title="$t('bond100.requestRemoval')"
+              :aria-label="$t('bond100.requestRemoval')"
+              @click="openGuidelines"
+            >
+              <svg class="bond100-removal-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M17 8 22 13M22 8 17 13"/>
+              </svg>
+              <span class="bond100-removal-label">{{ $t('bond100.requestRemoval') }}</span>
             </button>
-            <div ref="footerInfoWrapEl" class="bond100-footer-info-wrap">
-              <button
-                type="button"
-                class="bond100-footer-info-btn"
-                :class="{ open: footerInfoOpen }"
-                :aria-label="$t('bond100.aboutInfo')"
-                :aria-expanded="footerInfoOpen"
-                @click.stop="footerInfoOpen = !footerInfoOpen"
-              >?</button>
-              <div v-if="footerInfoOpen" class="bond100-footer-popover" role="dialog">
-                <p>{{ $t('bond100.removalNote') }}</p>
-              </div>
-            </div>
           </div>
 
-          <!-- right: pager -->
-          <div v-if="totalPages > 1" class="bond100-footer-pager">
+          <div v-if="showSearch" class="bond100-footer-search">
+            <svg class="bond100-search-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"/>
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="bond100-search-input"
+              :placeholder="$t('bond100.searchEntries')"
+              :aria-label="$t('bond100.searchEntries')"
+              @keydown="onSearchKeydown"
+            />
             <button
+              v-if="searchQuery"
               type="button"
-              class="bond100-pager-btn"
-              :disabled="currentPage === 1"
-              aria-label="Previous page"
-              @click="currentPage--"
-            >‹</button>
-            <span class="bond100-pager-label">{{ currentPage }} / {{ totalPages }}</span>
-            <button
-              type="button"
-              class="bond100-pager-btn"
-              :disabled="currentPage === totalPages"
-              aria-label="Next page"
-              @click="currentPage++"
-            >›</button>
+              class="bond100-search-clear"
+              :aria-label="$t('clear')"
+              @click="searchQuery = ''"
+            >×</button>
           </div>
         </footer>
 
@@ -326,7 +364,11 @@ useClickOutside(onDocumentClick);
 .bond100-entry-modal {
   display: flex;
   width: min(840px, 100%);
-  max-height: min(760px, calc(100vh - 48px));
+  /* Height follows the entry count: a short list yields a short modal (and a
+     shorter cropped hero), a long list grows to the viewport cap and the body
+     scrolls. The floor keeps a tiny list from collapsing the hero to a sliver. */
+  min-height: 180px;
+  max-height: calc(100vh - 48px);
   overflow: hidden;
   border: 1px solid var(--border-color);
   border-radius: 22px;
@@ -335,30 +377,100 @@ useClickOutside(onDocumentClick);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
 }
 
-/* ── Hero (left) ─────────────────────────────────────────── */
+/* ── Hero (left): blurred scene + character cutout, like StudentModal ──── */
 .bond100-hero {
   position: relative;
   flex: 0 0 248px;
+  overflow: hidden;
+  isolation: isolate;
   background: var(--card-background);
+}
+
+.bond100-hero-bg,
+.bond100-hero-bg-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.bond100-hero-bg {
   overflow: hidden;
 }
 
-.bond100-hero-img {
+.bond100-hero-bg img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
-  display: block;
+  filter: blur(2px) saturate(1.08);
+  transform: scale(1.12);
 }
 
-/* Blurred fill behind the contained portrait — only used on the narrow banner. */
-.bond100-hero-bg {
-  display: none;
+.bond100-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 14, 28, 0.18) 0%,
+    rgba(10, 14, 28, 0.3) 55%,
+    rgba(10, 14, 28, 0.55) 100%
+  );
+}
+
+.bond100-hero-bg-fallback {
+  background: linear-gradient(140deg, var(--header-gradient-start), var(--header-gradient-end));
+}
+
+/* Absolute (out of flow) so the portrait's intrinsic height can't drive the
+   modal height. Height keys off the entry list only, so two students with the
+   same entry count get the same modal height regardless of their art's size. */
+.bond100-hero-fg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bond100-hero-fg img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
+}
+
+.bond100-hero-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  background: var(--card-background);
+}
+
+.bond100-hero-shimmer-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--text-primary) 6%, transparent) 50%,
+    transparent 100%
+  );
+  animation: bond100-hero-shimmer 1.5s infinite;
+}
+
+@keyframes bond100-hero-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .bond100-hero-overlay {
   position: absolute;
   inset: auto 0 0 0;
+  z-index: 2;
   padding: 14px 16px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.32) 62%, transparent);
   color: #fff;
@@ -455,23 +567,23 @@ useClickOutside(onDocumentClick);
 }
 
 .bond100-content-body {
-  flex: 1;
-  min-height: 0;        /* allow the body to shrink within the modal */
-  overflow-y: auto;     /* scroll if a page overflows (e.g. 1-column on mobile) */
+  /* Fixed ~10-row list area so every modal is the same height (and the hero is
+     a consistent size): short lists show empty rows below, long lists (e.g. 124
+     entries) scroll. flex-shrink lets it degrade on short viewports instead of
+     pushing the footer off-screen. */
+  flex: 0 1 22rem;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .bond100-entry-cols {
   display: grid;
-  /* minmax(0, 1fr) — not the default minmax(auto, 1fr) — so a long no-wrap name
+  /* minmax(0, 1fr), not the default minmax(auto, 1fr), so a long no-wrap name
      can't grow its track past the pane (which, with two long names, would force
      a horizontal scrollbar). Over-long names ellipsize within the column. */
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0 6px;
   align-items: start;
-  /* Reserve a full page's height (≈5 rows) so the modal — and the hero that
-     follows it — stays the same size whether a page has 2, 4, or 5 rows.
-     Full pages already meet this, so their look is unchanged. */
-  min-height: 170px;
   align-content: start;
 }
 
@@ -507,13 +619,13 @@ useClickOutside(onDocumentClick);
   font-weight: 700;
 }
 
-/* Per-script font overrides — lang is detected from the player name text */
+/* Per-script font overrides (lang is detected from the player name text) */
 tr[lang="ko"] .bond100-entry-name { font-family: 'Noto Serif KR', sans-serif; }
 tr[lang="ja"] .bond100-entry-name { font-family: 'Zen Old Mincho', sans-serif; }
 tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; }
 
 .bond100-empty-line {
-  margin: 12px 0;
+  margin: 12px;
   color: var(--text-secondary);
   font-size: 0.86rem;
 }
@@ -532,7 +644,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
 }
 
 .bond100-modal-state {
-  margin: 12px 0;
+  margin: 12px;
   padding: 20px;
   border-radius: 16px;
   background: var(--card-background);
@@ -542,13 +654,6 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
 
 .bond100-modal-state.error {
   color: var(--color-negative);
-}
-
-/* ── Forms (submit / removal) ────────────────────────────── */
-.bond100-form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 /* Form footer: same bar as the list footer, buttons right-aligned. */
@@ -565,7 +670,9 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   justify-content: center;
   text-align: center;
   gap: 10px;
-  min-height: 180px;
+  /* Fill the fixed-height body so the content centers vertically (not just at
+     the top) in the removal/guidelines view. */
+  min-height: 100%;
   padding: 20px 12px;
 }
 
@@ -617,52 +724,84 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   gap: 8px;
 }
 
-.bond100-footer-info-wrap {
-  position: relative;
-}
-
-.bond100-footer-info-btn {
+.bond100-removal-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--background-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1;
+  gap: 6px;
+}
+
+/* Red (negative) tint so "Request removal" reads as a distinct, slightly
+   destructive action, set apart from the neutral "?" info button. The triple
+   class outranks .bond100-footer-btn.ghost regardless of source order. */
+.bond100-footer-btn.ghost.bond100-removal-btn {
+  color: var(--color-negative);
   transition: border-color 0.15s, color 0.15s;
 }
 
-.bond100-footer-info-btn:hover,
-.bond100-footer-info-btn.open {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+.bond100-footer-btn.ghost.bond100-removal-btn:hover {
+  border-color: var(--color-negative);
 }
 
-.bond100-footer-popover {
+.bond100-removal-icon {
+  flex: 0 0 auto;
+}
+
+.bond100-footer-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 220px;
+  min-width: 0;
+}
+
+.bond100-search-icon {
   position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  z-index: 10;
-  width: 260px;
-  max-width: calc(100vw - 48px);
-  padding: 12px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--background-primary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  left: 10px;
+  color: var(--text-secondary);
+  pointer-events: none;
 }
 
-.bond100-footer-popover p {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
+.bond100-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 26px 5px 30px;
+  border: 1px solid var(--input-border);
+  border-radius: 999px;
+  background: var(--input-background);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.bond100-search-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.bond100-search-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.bond100-search-clear {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;   /* override the global button padding so the glyph stays centered */
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.bond100-search-clear:hover {
+  color: var(--text-primary);
 }
 
 .bond100-footer-btn {
@@ -688,47 +827,23 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   cursor: not-allowed;
 }
 
-/* ── Pager ───────────────────────────────────────────────── */
-.bond100-footer-pager {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+/* ── Responsive: icon-only removal below 800px ───────────── */
+@media (max-width: 800px) {
+  .bond100-removal-label {
+    display: none;
+  }
 
-.bond100-pager-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--background-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.bond100-pager-btn:hover:not(:disabled) {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-}
-
-.bond100-pager-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.bond100-pager-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  min-width: 36px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+  /* Icon-only: same box as the "?" info button for a consistent size; only the
+     colour differs (red, set on the base rule). The double-class selector beats
+     .bond100-footer-btn.ghost (later source) so the box + background win. */
+  .bond100-footer-btn.bond100-removal-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--background-primary);
+  }
 }
 
 /* ── Responsive: stack hero on top ───────────────────────── */
@@ -747,30 +862,11 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
     flex: 0 0 200px;
   }
 
-  /* Show the complete portrait (it's near-square, so a wide cover-crop would
-     cut it off); fill the sides with a blurred copy so the banner still reads. */
-  .bond100-hero-bg {
-    display: block;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: blur(20px) brightness(0.7);
-    transform: scale(1.15);
-  }
-
-  .bond100-hero-img {
-    position: relative;
-    object-fit: contain;
-    object-position: center;
-  }
-
   .bond100-hero-name {
     font-size: 1.35rem;
   }
 
-  /* Single column on narrow screens — two would cramp long CJK names. */
+  /* Single column on narrow screens; two would cramp long CJK names. */
   .bond100-entry-cols {
     grid-template-columns: 1fr;
   }
