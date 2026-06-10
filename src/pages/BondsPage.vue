@@ -9,14 +9,15 @@ import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import StudentStrip from '@/components/shared/StudentStrip.vue';
 import BondsStudentEditor from '@/components/bonds/BondsStudentEditor.vue';
 import BondsStudentPicker from '@/components/bonds/BondsStudentPicker.vue';
-
-// Lazy in every importer (here, StudentsPage, StudentModal) so the inventory
-// modal + ResourceGrid subtree split into one shared on-demand chunk.
-const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
+import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
 import { computeStudentBondExpTotal } from '@/lib/utils/bondExpUtils';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 import { $t } from '@/locales';
 import type { StudentProps } from '@/types/student';
+
+// Lazy in every importer (here, StudentsPage, StudentModal) so the inventory
+// modal + ResourceGrid subtree split into one shared on-demand chunk.
+const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
 
 const route = useRoute();
 const router = useRouter();
@@ -156,6 +157,8 @@ function onRemoveStudent(id: number) {
     <GlobalNavbar />
 
     <main class="bonds-body">
+      <DataLoadErrorBanner />
+
       <div class="bonds-toolbar">
         <button type="button" class="bonds-btn primary" @click="showPicker = true">
           + {{ $t('addStudent') }}

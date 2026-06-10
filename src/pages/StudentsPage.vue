@@ -6,6 +6,7 @@ import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
 import ToolsRail from '@/components/students/ToolsRail.vue';
 import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
 import StudentGrid from '@/components/students/StudentGrid.vue';
+import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
 
 // Tool modals are user-triggered and behind v-if, so each loads as its own
@@ -166,6 +167,8 @@ function handleClearFilters() {
       @open-crafting-fodder="isCraftingFodderVisible = true"
       @open-equipment-farming="isEquipmentFarmingVisible = true"
     />
+
+    <DataLoadErrorBanner />
 
     <!-- No grid-level :key here: both v-for sections key by student.Id, so sort/
          search/filter changes diff in place instead of remounting every card. -->

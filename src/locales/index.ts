@@ -141,6 +141,10 @@ export const translations = {
     reachesBondN: "→ Bond {n}",
     reachesBondMax: "→ Bond 100",
 
+    // Data load failure banner
+    dataLoadError: "Could not load student data from SchaleDB. Check your connection and try again.",
+    retry: "Retry",
+
     // Navbar
     students: "Students",
     bonds: "Bonds",
@@ -739,6 +743,10 @@ export const translations = {
     projection: "予測",
     reachesBondN: "→ 絆 {n}",
     reachesBondMax: "→ 絆 100",
+
+    // Data load failure banner
+    dataLoadError: "SchaleDBから生徒データを読み込めませんでした。接続を確認して、もう一度お試しください。",
+    retry: "再試行",
 
     // Navbar
     students: "生徒",
