@@ -164,10 +164,11 @@ function handleClearFilters() {
       @open-equipment-farming="isEquipmentFarmingVisible = true"
     />
 
+    <!-- No grid-level :key here: both v-for sections key by student.Id, so sort/
+         search/filter changes diff in place instead of remounting every card. -->
     <StudentGrid
       :students-array="ownedStudentsArray"
       :unowned-students-array="unownedStudentsArray"
-      :key="`${currentSort}-${sortDirection}-${searchQuery}`"
       @open-modal="openModal"
       @student-pinned="handleStudentPinned"
     />
