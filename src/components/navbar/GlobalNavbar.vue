@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
@@ -10,12 +10,16 @@ import {
   setLastSeenChangelogId,
 } from '@/lib/utils/settingsStorage';
 import GlobalControls from './GlobalControls.vue';
-import ImportModal from './modals/ImportModal.vue';
-import InventoryScreenshotModal from './modals/InventoryScreenshotModal.vue';
-import WhatsNewModal from './modals/WhatsNewModal.vue';
 import ContactModal from './modals/ContactModal.vue';
 import CreditsModal from './modals/CreditsModal.vue';
 import '@/styles/navbar.css';
+
+// The navbar mounts on every page; its heavy, rarely-opened modals load as
+// their own chunks on first open. Contact/Credits stay eager: they're small
+// and the landing page also imports them statically.
+const ImportModal = defineAsyncComponent(() => import('./modals/ImportModal.vue'));
+const InventoryScreenshotModal = defineAsyncComponent(() => import('./modals/InventoryScreenshotModal.vue'));
+const WhatsNewModal = defineAsyncComponent(() => import('./modals/WhatsNewModal.vue'));
 
 defineProps<{
   compact?: boolean;

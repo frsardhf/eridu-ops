@@ -1,8 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+// Landing stays eager (it's the entry route); the heavy pages are lazy so each
+// gets its own chunk and first paint doesn't download the whole app.
 import LandingPage from '@/pages/LandingPage.vue';
-import StudentsPage from '@/pages/StudentsPage.vue';
-import BondsPage from '@/pages/BondsPage.vue';
-import Bond100Page from '@/pages/Bond100Page.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -13,17 +12,17 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/students',
     name: 'Students',
-    component: StudentsPage,
+    component: () => import('@/pages/StudentsPage.vue'),
   },
   {
     path: '/bonds',
     name: 'Bonds',
-    component: BondsPage,
+    component: () => import('@/pages/BondsPage.vue'),
   },
   {
     path: '/hall',
     name: 'Hall',
-    component: Bond100Page,
+    component: () => import('@/pages/Bond100Page.vue'),
   },
   {
     path: '/bond100',

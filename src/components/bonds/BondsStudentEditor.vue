@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStudentForm } from '@/lib/hooks/useStudentForm';
 import { useStudentData } from '@/lib/hooks/useStudentData';
@@ -9,8 +9,11 @@ import GiftOption from '@/components/bonds/gift/GiftOption.vue';
 import GiftGrid from '@/components/bonds/gift/GiftGrid.vue';
 import ConvertMaterialModal from '@/components/bonds/gift/ConvertMaterialModal.vue';
 import SyncGiftsModeModal from '@/components/bonds/gift/SyncGiftsModeModal.vue';
-import OtherExpPanel from '@/components/bonds/OtherExpPanel.vue';
 import MetaHeader from '@/components/shared/MetaHeader.vue';
+
+// Lazy: the cafe planner pulls in @vuepic/vue-datepicker (a large dependency)
+// that should only load when someone actually opens the Other EXP modal.
+const OtherExpPanel = defineAsyncComponent(() => import('@/components/bonds/OtherExpPanel.vue'));
 import type { GiftProps } from '@/types/gift';
 import { YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID } from '@/types/resource';
 import { HIDDEN_BOX_IDS } from '@/lib/constants/giftConstants';

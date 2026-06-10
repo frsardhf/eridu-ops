@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRef, CSSProperties } from 'vue';
+import { ref, computed, defineAsyncComponent, watch, toRef, CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
@@ -14,7 +14,6 @@ import { initializeStudentFormData } from '@/lib/services/studentFormService';
 import { setStudentDataDirect } from '@/lib/stores/studentStore';
 import { hasLinkedPartner, getLinkedPartnerId } from '@/lib/constants/linkedStudents';
 import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
-import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import EquipmentGrowthSection from '@/components/students/modal/gear/EquipmentGrowthSection.vue';
 import ElephEligmaSection from '@/components/students/modal/gear/ElephEligmaSection.vue';
 import ExclusiveWeaponSection from '@/components/students/modal/gear/ExclusiveWeaponSection.vue';
@@ -40,6 +39,10 @@ import { sortMaterials } from '@/lib/utils/materialUtils';
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
 import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/lib/stores/resourceCacheStore';
 import '@/styles/studentModal.css'
+
+// Lazy in every importer (here, StudentsPage, BondsPage) so the inventory
+// modal + ResourceGrid subtree split into one shared on-demand chunk.
+const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
 
 type ModalTab = 'info' | 'upgrade' | 'gear';
 

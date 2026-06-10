@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
 import ToolsRail from '@/components/students/ToolsRail.vue';
-import BulkModifyStudentsModal from '@/components/students/tools/BulkModifyStudentsModal.vue';
-import BondUpdateModal from '@/components/students/tools/BondUpdateModal.vue';
-import CraftingFodderModal from '@/components/students/tools/CraftingFodderModal.vue';
-import DeckBuilderModal from '@/components/students/tools/DeckBuilderModal.vue';
-import EquipmentFarmingModal from '@/components/students/tools/EquipmentFarmingModal.vue';
-import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
 import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
 import StudentGrid from '@/components/students/StudentGrid.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue'
+
+// Tool modals are user-triggered and behind v-if, so each loads as its own
+// chunk on first open instead of weighing down the page bundle.
+const BulkModifyStudentsModal = defineAsyncComponent(() => import('@/components/students/tools/BulkModifyStudentsModal.vue'));
+const BondUpdateModal = defineAsyncComponent(() => import('@/components/students/tools/BondUpdateModal.vue'));
+const CraftingFodderModal = defineAsyncComponent(() => import('@/components/students/tools/CraftingFodderModal.vue'));
+const DeckBuilderModal = defineAsyncComponent(() => import('@/components/students/tools/DeckBuilderModal.vue'));
+const EquipmentFarmingModal = defineAsyncComponent(() => import('@/components/students/tools/EquipmentFarmingModal.vue'));
+const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
 import { SortOption } from '@/types/header';
 import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';

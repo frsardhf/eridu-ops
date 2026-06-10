@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, defineAsyncComponent } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
@@ -9,7 +9,10 @@ import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import StudentStrip from '@/components/shared/StudentStrip.vue';
 import BondsStudentEditor from '@/components/bonds/BondsStudentEditor.vue';
 import BondsStudentPicker from '@/components/bonds/BondsStudentPicker.vue';
-import GlobalInventoryModal from '@/components/inventory/GlobalInventoryModal.vue';
+
+// Lazy in every importer (here, StudentsPage, StudentModal) so the inventory
+// modal + ResourceGrid subtree split into one shared on-demand chunk.
+const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
 import { computeStudentBondExpTotal } from '@/lib/utils/bondExpUtils';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 import { $t } from '@/locales';
