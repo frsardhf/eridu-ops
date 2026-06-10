@@ -10,13 +10,19 @@ export const localizationData = ref<SchaleLocalization | null>(null);
  * @param lang Language code (e.g. 'en', 'jp')
  * @returns Promise that resolves with the localization data
  */
+// Per-language cache of the in-flight or resolved fetch, so toggling back to a
+// language loaded this session reuses it. Applying the result to `localizationData`
+// is left to the caller (localizationStore), which guards against stale toggles.
+const _locCache = new Map<string, Promise<SchaleLocalization>>();
+
 export function fetchLocalizationData(lang: string = 'en'): Promise<SchaleLocalization> {
-  return fetch(`https://schaledb.com/data/${lang}/localization.json`)
-    .then(response => response.json())
-    .then((data: SchaleLocalization) => {
-      localizationData.value = data;
-      return data;
-    });
+  const cached = _locCache.get(lang);
+  if (cached) return cached;
+  const promise = fetch(`https://schaledb.com/data/${lang}/localization.json`)
+    .then(response => response.json() as Promise<SchaleLocalization>);
+  _locCache.set(lang, promise);
+  promise.catch(() => _locCache.delete(lang));
+  return promise;
 }
 
 /**

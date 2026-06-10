@@ -32,10 +32,11 @@ export function setLanguage(language: Language) {
 // Re-exported so consumers don't need to import from localizationUtils directly.
 export { localizationData };
 
+// Used only for the initial load. Language *switches* are handled by the
+// coordinated loader in useStudentData, which fetches localization together with
+// the student data and applies both atomically (no separate watcher here, so the
+// two can't update out of sync).
 export async function initializeLocalizationData(lang?: string): Promise<void> {
-  await fetchLocalizationData(lang ?? currentLanguage.value);
+  const target = lang ?? currentLanguage.value;
+  localizationData.value = await fetchLocalizationData(target);
 }
-
-watch(currentLanguage, (newLang) => {
-  initializeLocalizationData(newLang);
-});

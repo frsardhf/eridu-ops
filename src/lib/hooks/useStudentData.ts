@@ -26,10 +26,11 @@ import {
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { studentDataStore, batchSetStudentData } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
-import { currentLanguage, initializeLocalizationData } from '../stores/localizationStore';
+import { currentLanguage, initializeLocalizationData, localizationData } from '../stores/localizationStore';
 import { fetchAllData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
-import { resolveLocalized } from '../utils/localizationUtils';
+import { resolveLocalized, fetchLocalizationData } from '../utils/localizationUtils';
+import { SchaleLocalization } from '@/types/schaledb';
 import { StudentFilters, EMPTY_FILTERS, isFiltersEmpty } from '../../types/filter';
 import { splitAndSortStudents, StudentSplit } from '../utils/sortUtils';
 import { filterSecondaryStudents, isSecondaryStudent } from '../constants/linkedStudents';
@@ -45,6 +46,9 @@ import {
 
 // Singleton state (shared across all calls)
 let _langChangeTimer: ReturnType<typeof setTimeout> | null = null;
+// Monotonic counter for language reinitializations; a reinit only applies its
+// result if it's still the latest, so rapid toggling can't apply stale data.
+let _langReqSeq = 0;
 let _studentData: Ref<{ [key: string]: StudentProps }>;
 let _itemsData: Ref<Record<string, ResourceProps>>;
 let _equipmentData: Ref<Record<string, ResourceProps>>;
@@ -141,6 +145,8 @@ async function refreshSchaleDBData() {
   try {
     console.log('Fetching fresh data from SchaleDB...');
     const { students, items, equipment } = await fetchAllData();
+    // A failed fetch returns empty objects; don't overwrite the cache with them.
+    if (!students || Object.keys(students).length === 0) return;
 
     await Promise.all([
       saveStudents(Object.values(students)),
@@ -160,10 +166,15 @@ async function refreshSchaleDBData() {
 async function processAndPopulateData(
   students: Record<string, StudentProps>,
   items: Record<string, ResourceProps>,
-  equipment: Record<string, ResourceProps>
+  equipment: Record<string, ResourceProps>,
+  localization?: SchaleLocalization
 ) {
   await initializeAllCaches();
 
+  // On a language switch, swap localization in the same synchronous block as the
+  // student/gift data so the grid and its school/club labels never render a mix
+  // of languages (Vue batches both ref writes into one re-render).
+  if (localization) localizationData.value = localization;
   _studentData.value = attachElephIcons(students, items);
 
   _giftData.value = filterByProperty(items, 'category', 'Favor');
@@ -227,12 +238,51 @@ async function initializeData() {
   }
 }
 
+// Reload the in-memory caches from IndexedDB after an import or inventory update.
+// No network and no SchaleDB re-fetch: the master data is unchanged, only the
+// user's forms/inventory differ, so re-reading IndexedDB and reprocessing is
+// enough (and far cheaper than the old full refresh).
 async function reinitializeData() {
   _isLoading.value = true;
   try {
-    await refreshSchaleDBData();
+    await loadFromCache();
+  } catch (error) {
+    console.error('Data reload failed:', error);
   } finally {
     _isLoading.value = false;
+  }
+}
+
+// Coordinated language switch: fetch the target language's student data and
+// localization together (both cached per language), then commit them in one tick
+// via processAndPopulateData so labels and the grid switch atomically. Latest-
+// wins: a newer switch supersedes an in-flight one, and an empty (failed) fetch
+// leaves the current language untouched rather than wiping the UI.
+async function applyLanguage() {
+  const seq = ++_langReqSeq;
+  const targetLang = currentLanguage.value;
+  _isLoading.value = true;
+  try {
+    const [data, localization] = await Promise.all([
+      fetchAllData(targetLang),
+      fetchLocalizationData(targetLang),
+    ]);
+    if (seq !== _langReqSeq) return;
+    if (!data.students || Object.keys(data.students).length === 0) return;
+
+    await Promise.all([
+      saveStudents(Object.values(data.students)),
+      saveItems(Object.values(data.items)),
+      saveEquipment(Object.values(data.equipment)),
+    ]);
+    await updateCacheMetadata();
+
+    if (seq !== _langReqSeq) return;
+    await processAndPopulateData(data.students, data.items, data.equipment, localization);
+  } catch (error) {
+    console.error('Language load failed:', error);
+  } finally {
+    if (seq === _langReqSeq) _isLoading.value = false;
   }
 }
 
@@ -290,8 +340,8 @@ export function useStudentData() {
     ]);
   }
 
-  // Watch for language changes and reinitialize data (only once).
-  // Debounced 200ms so rapid language switching only triggers one reinit.
+  // Watch for language changes and load the new language (only once).
+  // Debounced 200ms so a rapid toggle burst only triggers one coordinated load.
   if (!_isInitialized) {
     watch(
       () => currentLanguage.value,
@@ -299,7 +349,7 @@ export function useStudentData() {
         if (_langChangeTimer) clearTimeout(_langChangeTimer);
         _langChangeTimer = setTimeout(() => {
           _langChangeTimer = null;
-          reinitializeData();
+          applyLanguage();
         }, 200);
       }
     );
