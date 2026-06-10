@@ -8,6 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "vue-tsc --noEmit",
     "changelog:draft": "node scripts/changelog-draft.mjs",
     "build:equipment-drops": "node scripts/build-equipment-drops.mjs"
   },
@@ -29,6 +32,8 @@
     "@types/postcss-load-config": "^2.0.1",
     "@types/tailwindcss": "^3.0.11",
     "@vue/tsconfig": "^0.7.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.8",
+    "vue-tsc": "^3.3.4"
   }
 }
