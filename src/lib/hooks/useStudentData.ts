@@ -1,17 +1,29 @@
 import { ref, computed, watch, Ref, ComputedRef } from 'vue'
 import { StudentProps } from '../../types/student';
-import { SortOption, SortDirection } from '../../types/header';
 import { GiftProps } from '../../types/gift';
 import {
   ResourceProps,
   GIFT_BOX_IDS
 } from '../../types/resource';
 import {
-  getSettings,
-  getPinnedStudents,
-  updateSetting,
-  updateSortSettings
-} from '../utils/settingsStorage';
+  searchQuery,
+  pinnedStudentIds,
+  currentTheme,
+  currentSort,
+  sortDirection,
+  isPinnedMode,
+  activeFilters,
+  loadUiPrefs,
+  syncPinnedStudents,
+  setSortOption,
+  toggleDirection,
+  setTheme,
+  updateSearchQuery,
+  togglePinnedMode,
+  setStudentFilters,
+  clearStudentFilters,
+  areFiltersEmpty,
+} from '../stores/uiPrefsStore';
 import {
   getAllStudents,
   getAllItems,
@@ -27,15 +39,12 @@ import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { studentDataStore, batchSetStudentData } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage, initializeLocalizationData, localizationData } from '../stores/localizationStore';
-import { fetchAllData } from '../services/schaleDbFetchService';
+import { fetchAllData, fetchLocalizationData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
-import { resolveLocalized, fetchLocalizationData } from '../utils/localizationUtils';
+import { resolveLocalized } from '../utils/localizationUtils';
 import { SchaleLocalization } from '@/types/schaledb';
-import { StudentFilters, EMPTY_FILTERS, isFiltersEmpty } from '../../types/filter';
 import { splitAndSortStudents, StudentSplit } from '../utils/sortUtils';
 import { filterSecondaryStudents, isSecondaryStudent } from '../constants/linkedStudents';
-import { normalizeTheme } from '../utils/themeUtils';
-import { ThemeId } from '@/types/theme';
 import { buildGiftsByStudent } from '../utils/giftUtils';
 import {
   attachElephIcons,
@@ -57,71 +66,21 @@ let _boxData: Ref<Record<string, ResourceProps>>;
 let _favoredGift: Ref<Record<string, GiftProps[]>>;
 let _allGifts: Ref<Record<string, GiftProps[]>>;
 let _giftBoxData: Ref<Record<string, GiftProps[]>>;
-let _searchQuery: Ref<string>;
-let _pinnedStudentIds: Ref<string[]>;
-let _currentTheme: Ref<ThemeId>;
-let _currentSort: Ref<SortOption>;
-let _sortDirection: Ref<SortDirection>;
 let _sortedStudentsArray: ComputedRef<StudentProps[]>;
 let _splitStudents: ComputedRef<StudentSplit>;
-let _isPinnedMode: Ref<boolean>;
-let _activeFilters: Ref<StudentFilters>;
 let _availableSchools: ComputedRef<string[]>;
 let _isLoading: Ref<boolean>;
 let _isReady: Ref<boolean>;
+// True when there is nothing to show AND the SchaleDB fetch failed (first visit
+// offline, blocked, etc.). Drives the retry banner; never set while cached data
+// is still on screen.
+let _loadError: Ref<boolean>;
 let _isInitialized = false;
 let _initPromise: Promise<void>;
 
 // --- Module-level functions (operate on singleton refs) ---
-
-function syncPinnedStudents() {
-  _pinnedStudentIds.value = getPinnedStudents();
-}
-
-function loadSettings() {
-  const settings = getSettings();
-
-  const theme = normalizeTheme(settings.theme);
-  _currentTheme.value = theme;
-  _currentSort.value = settings.sort.option;
-  _sortDirection.value = settings.sort.direction;
-  _isPinnedMode.value = settings.isPinnedMode ?? false;
-  if (settings.studentFilters) {
-    _activeFilters.value = { ...EMPTY_FILTERS, ...settings.studentFilters };
-  }
-  syncPinnedStudents();
-
-  document.documentElement.setAttribute('data-theme', theme);
-}
-
-function saveSortPreferences() {
-  updateSortSettings(_currentSort.value, _sortDirection.value);
-}
-
-function setSortOption(option: SortOption) {
-  if (_currentSort.value === option) {
-    _sortDirection.value = _sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    _currentSort.value = option;
-  }
-
-  saveSortPreferences();
-}
-
-function toggleDirection() {
-  _sortDirection.value = _sortDirection.value === 'asc' ? 'desc' : 'asc';
-  saveSortPreferences();
-}
-
-function setTheme(theme: ThemeId) {
-  _currentTheme.value = theme;
-  document.documentElement.setAttribute('data-theme', theme);
-  updateSetting('theme', theme);
-}
-
-function updateSearchQuery(query: string) {
-  _searchQuery.value = query;
-}
+// UI preference state/actions (search, sort, pins, filters, theme) live in
+// stores/uiPrefsStore and are re-exported from the hook's return below.
 
 async function loadFromCache() {
   try {
@@ -144,9 +103,12 @@ async function loadFromCache() {
 async function refreshSchaleDBData() {
   try {
     console.log('Fetching fresh data from SchaleDB...');
-    const { students, items, equipment } = await fetchAllData();
+    const { students, items, equipment } = await fetchAllData(currentLanguage.value);
     // A failed fetch returns empty objects; don't overwrite the cache with them.
-    if (!students || Object.keys(students).length === 0) return;
+    if (!students || Object.keys(students).length === 0) {
+      markLoadErrorIfEmpty();
+      return;
+    }
 
     await Promise.all([
       saveStudents(Object.values(students)),
@@ -156,10 +118,20 @@ async function refreshSchaleDBData() {
 
     await updateCacheMetadata();
     await processAndPopulateData(students, items, equipment);
+    _loadError.value = false;
 
     console.log('Background refresh completed successfully');
   } catch (error) {
     console.error('Background refresh failed:', error);
+    markLoadErrorIfEmpty();
+  }
+}
+
+// Only surface the error banner when the failure leaves the user with nothing:
+// a stale-but-present cache is still a working app, not an error state.
+function markLoadErrorIfEmpty() {
+  if (Object.keys(_studentData.value).length === 0) {
+    _loadError.value = true;
   }
 }
 
@@ -214,28 +186,42 @@ async function preloadStudentStore() {
 async function initializeData() {
   try {
     _isLoading.value = true;
+    _loadError.value = false;
 
     await Promise.all([
       migrateFromLocalStorageToIndexedDB(),
       initializeLocalizationData()
     ]);
 
-    loadSettings();
+    loadUiPrefs();
     await loadFromCache();
+
+    if (Object.keys(_studentData.value).length === 0) {
+      // Empty cache (first visit): the fetch IS the initial load, so run it in
+      // the foreground; on failure markLoadErrorIfEmpty surfaces the banner.
+      await refreshSchaleDBData();
+    } else {
+      const shouldRefresh = await needsRefresh(7);
+      if (shouldRefresh) {
+        console.log('Cache is stale, triggering background refresh...');
+        refreshSchaleDBData();
+      }
+    }
 
     _isReady.value = true;
     _isLoading.value = false;
-
-    const shouldRefresh = await needsRefresh(7);
-    if (shouldRefresh) {
-      console.log('Cache is stale, triggering background refresh...');
-      refreshSchaleDBData();
-    }
   } catch (error) {
     console.error('Error initializing data:', error);
     _isLoading.value = false;
     _isReady.value = true;
+    markLoadErrorIfEmpty();
   }
+}
+
+// Banner retry: rerun the full initialization (failed fetches are evicted from
+// the per-language caches, so this really refetches).
+async function retryDataLoad() {
+  await initializeData();
 }
 
 // Reload the in-memory caches from IndexedDB after an import or inventory update.
@@ -299,15 +285,9 @@ export function useStudentData() {
     _favoredGift = ref<Record<string, GiftProps[]>>({});
     _allGifts = ref<Record<string, GiftProps[]>>({});
     _giftBoxData = ref<Record<string, GiftProps[]>>({});
-    _searchQuery = ref<string>('');
-    _pinnedStudentIds = ref<string[]>([]);
-    _currentTheme = ref<ThemeId>('dark');
-    _currentSort = ref<SortOption>('id');
-    _sortDirection = ref<SortDirection>('asc');
-    _isPinnedMode = ref<boolean>(false);
-    _activeFilters = ref<StudentFilters>({ ...EMPTY_FILTERS });
     _isLoading = ref<boolean>(true);
     _isReady = ref<boolean>(false);
+    _loadError = ref<boolean>(false);
 
     _availableSchools = computed(() => {
       const schools = new Set<string>();
@@ -319,17 +299,18 @@ export function useStudentData() {
       );
     });
 
+    // Join point between the data refs above and the uiPrefsStore refs.
     _splitStudents = computed(() => {
       return splitAndSortStudents({
         students: filterSecondaryStudents(Object.values(_studentData.value)),
-        pinnedStudentIds: _pinnedStudentIds.value,
-        searchQuery: _searchQuery.value,
-        sortOption: _currentSort.value,
-        sortDirection: _sortDirection.value,
-        isPinnedMode: _isPinnedMode.value,
+        pinnedStudentIds: pinnedStudentIds.value,
+        searchQuery: searchQuery.value,
+        sortOption: currentSort.value,
+        sortDirection: sortDirection.value,
+        isPinnedMode: isPinnedMode.value,
         studentStore: studentDataStore.value,
         resolveLocalized,
-        filters: _activeFilters.value,
+        filters: activeFilters.value,
       });
     });
 
@@ -371,37 +352,31 @@ export function useStudentData() {
     favoredGift: _favoredGift,
     allGifts: _allGifts,
     giftBoxData: _giftBoxData,
-    searchQuery: _searchQuery,
-    currentTheme: _currentTheme,
     sortedStudentsArray: _sortedStudentsArray,
     ownedStudentsArray:   computed(() => _splitStudents.value.owned),
     unownedStudentsArray: computed(() => _splitStudents.value.unowned),
+    availableSchools: _availableSchools,
+    reinitializeData,
+    isLoading: _isLoading,
+    isReady: _isReady,
+    loadError: _loadError,
+    retryDataLoad,
+    // UI preference state/actions, re-exported from uiPrefsStore so existing
+    // consumers keep their single useStudentData() entry point.
+    searchQuery,
+    currentTheme,
     setTheme,
     setSortOption,
-    currentSort: _currentSort,
-    sortDirection: _sortDirection,
+    currentSort,
+    sortDirection,
     updateSearchQuery,
     toggleDirection,
     syncPinnedStudents,
-    reinitializeData,
-    isPinnedMode: _isPinnedMode,
-    togglePinnedMode: () => {
-      _isPinnedMode.value = !_isPinnedMode.value;
-      updateSetting('isPinnedMode', _isPinnedMode.value);
-    },
-    activeFilters: _activeFilters,
-    availableSchools: _availableSchools,
-    setStudentFilters: (key: keyof StudentFilters, value: StudentFilters[keyof StudentFilters]) => {
-      // Replace the whole object so the _splitStudents computed re-runs
-      _activeFilters.value = { ..._activeFilters.value, [key]: value };
-      updateSetting('studentFilters', _activeFilters.value);
-    },
-    clearStudentFilters: () => {
-      _activeFilters.value = { ...EMPTY_FILTERS };
-      updateSetting('studentFilters', { ...EMPTY_FILTERS });
-    },
-    isFiltersEmpty: () => isFiltersEmpty(_activeFilters.value),
-    isLoading: _isLoading,
-    isReady: _isReady,
+    isPinnedMode,
+    togglePinnedMode,
+    activeFilters,
+    setStudentFilters,
+    clearStudentFilters,
+    isFiltersEmpty: areFiltersEmpty,
   }
 }

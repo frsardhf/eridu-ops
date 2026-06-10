@@ -1,5 +1,5 @@
-import { currentLanguage } from '../stores/localizationStore';
 import { FetchedData } from '../../types/student';
+import type { SchaleLocalization } from '../../types/schaledb';
 
 /**
  * Fetch a single SchaleDB data file with automatic retry on failure.
@@ -37,7 +37,8 @@ async function fetchData(type: string, lang: string, maxRetries = 2): Promise<an
 // is evicted so the next attempt retries.
 const _dataCache = new Map<string, Promise<FetchedData>>();
 
-export function fetchAllData(lang: string = currentLanguage.value): Promise<FetchedData> {
+// `lang` is explicit (no store read here) so the service stays a pure I/O layer.
+export function fetchAllData(lang: string): Promise<FetchedData> {
   const cached = _dataCache.get(lang);
   if (cached) return cached;
 
@@ -57,5 +58,20 @@ export function fetchAllData(lang: string = currentLanguage.value): Promise<Fetc
     },
     () => _dataCache.delete(lang),
   );
+  return promise;
+}
+
+// Per-language cache, same eviction idea as `_dataCache`. Applying the result
+// to the localizationData store ref is the caller's job (localizationStore /
+// useStudentData), which also guards against stale language toggles.
+const _locCache = new Map<string, Promise<SchaleLocalization>>();
+
+export function fetchLocalizationData(lang: string): Promise<SchaleLocalization> {
+  const cached = _locCache.get(lang);
+  if (cached) return cached;
+  const promise = fetch(`https://schaledb.com/data/${lang}/localization.json`)
+    .then(response => response.json() as Promise<SchaleLocalization>);
+  _locCache.set(lang, promise);
+  promise.catch(() => _locCache.delete(lang));
   return promise;
 }

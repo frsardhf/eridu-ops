@@ -1,0 +1,95 @@
+// uiPrefsStore.ts - Settings-backed UI preference state: search, sort, pin
+// mode, filters, theme. Extracted from useStudentData so presentation prefs
+// live apart from data loading; useStudentData re-exports everything, so
+// components keep consuming the hook unchanged.
+
+import { ref } from 'vue';
+import {
+  getSettings,
+  getPinnedStudents,
+  updateSetting,
+  updateSortSettings,
+} from '../utils/settingsStorage';
+import { normalizeTheme } from '../utils/themeUtils';
+import { ThemeId } from '@/types/theme';
+import { SortOption, SortDirection } from '@/types/header';
+import { StudentFilters, StudentFilterValue, EMPTY_FILTERS, isFiltersEmpty } from '@/types/filter';
+
+export const searchQuery = ref<string>('');
+export const pinnedStudentIds = ref<string[]>([]);
+export const currentTheme = ref<ThemeId>('dark');
+export const currentSort = ref<SortOption>('id');
+export const sortDirection = ref<SortDirection>('asc');
+export const isPinnedMode = ref<boolean>(false);
+export const activeFilters = ref<StudentFilters>({ ...EMPTY_FILTERS });
+
+/** Re-read the pinned list from settings (cards toggle pins outside this store). */
+export function syncPinnedStudents() {
+  pinnedStudentIds.value = getPinnedStudents();
+}
+
+/** Hydrate all prefs from the persisted settings blob (called once during init). */
+export function loadUiPrefs() {
+  const settings = getSettings();
+
+  const theme = normalizeTheme(settings.theme);
+  currentTheme.value = theme;
+  currentSort.value = settings.sort.option;
+  sortDirection.value = settings.sort.direction;
+  isPinnedMode.value = settings.isPinnedMode ?? false;
+  if (settings.studentFilters) {
+    activeFilters.value = { ...EMPTY_FILTERS, ...settings.studentFilters };
+  }
+  syncPinnedStudents();
+
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+function saveSortPreferences() {
+  updateSortSettings(currentSort.value, sortDirection.value);
+}
+
+export function setSortOption(option: SortOption) {
+  if (currentSort.value === option) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.value = option;
+  }
+
+  saveSortPreferences();
+}
+
+export function toggleDirection() {
+  sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  saveSortPreferences();
+}
+
+export function setTheme(theme: ThemeId) {
+  currentTheme.value = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  updateSetting('theme', theme);
+}
+
+export function updateSearchQuery(query: string) {
+  searchQuery.value = query;
+}
+
+export function togglePinnedMode() {
+  isPinnedMode.value = !isPinnedMode.value;
+  updateSetting('isPinnedMode', isPinnedMode.value);
+}
+
+export function setStudentFilters(key: keyof StudentFilters, value: StudentFilterValue) {
+  // Replace the whole object so dependent computeds re-run
+  activeFilters.value = { ...activeFilters.value, [key]: value };
+  updateSetting('studentFilters', activeFilters.value);
+}
+
+export function clearStudentFilters() {
+  activeFilters.value = { ...EMPTY_FILTERS };
+  updateSetting('studentFilters', { ...EMPTY_FILTERS });
+}
+
+export function areFiltersEmpty(): boolean {
+  return isFiltersEmpty(activeFilters.value);
+}

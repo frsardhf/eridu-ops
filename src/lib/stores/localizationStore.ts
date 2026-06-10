@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue';
 import { getSettings, updateSetting } from '../utils/settingsStorage';
-import { fetchLocalizationData, localizationData } from '../utils/localizationUtils';
+import { fetchLocalizationData } from '../services/schaleDbFetchService';
+import type { SchaleLocalization } from '@/types/schaledb';
 
 export type Language = 'en' | 'jp';
 
@@ -29,8 +30,9 @@ export function setLanguage(language: Language) {
   currentLanguage.value = language;
 }
 
-// Re-exported so consumers don't need to import from localizationUtils directly.
-export { localizationData };
+// Reactive cache of SchaleDB localization strings for the active language.
+// Read by the pure helpers in localizationUtils (resolveLocalized etc.).
+export const localizationData = ref<SchaleLocalization | null>(null);
 
 // Used only for the initial load. Language *switches* are handled by the
 // coordinated loader in useStudentData, which fetches localization together with
