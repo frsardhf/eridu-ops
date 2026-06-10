@@ -25,6 +25,15 @@ function normalizeText(value: string): string {
   return value.trim().toLowerCase();
 }
 
+// Investment sort key: total of `current` across a {current, target} level map
+// (skillLevels, potentialLevels, equipmentLevels all share that shape).
+function sumCurrentLevels(levels?: Record<string, { current?: number }>): number {
+  if (!levels) return 0;
+  let total = 0;
+  for (const key in levels) total += levels[key]?.current ?? 0;
+  return total;
+}
+
 export function studentMatchesQuery(student: StudentProps, query: string): boolean {
   const q = normalizeText(query);
   if (!q) return true;
@@ -48,6 +57,12 @@ function toComparableValue(
       return studentStore[student.Id]?.characterLevels?.current ?? 1;
     case 'grade':
       return studentStore[student.Id]?.gradeLevels?.current ?? student.StarGrade ?? 0;
+    case 'equipment':
+      return sumCurrentLevels(studentStore[student.Id]?.equipmentLevels);
+    case 'skill':
+      return sumCurrentLevels(studentStore[student.Id]?.skillLevels);
+    case 'potential':
+      return sumCurrentLevels(studentStore[student.Id]?.potentialLevels);
     case 'school':
       return resolveLocalized?.('School', student.School) || student.School || '';
     case 'club':

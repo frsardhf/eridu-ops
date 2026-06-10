@@ -7,6 +7,9 @@ export type SortOption =
   | 'bond'
   | 'level'
   | 'grade'
+  | 'equipment'
+  | 'skill'
+  | 'potential'
   | 'school'
   | 'club';
 

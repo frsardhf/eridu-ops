@@ -152,11 +152,16 @@ export const translations = {
       bond: "Bond",
       level: "Level",
       grade: "Grade",
+      equipment: "Equipment",
+      skill: "Skills",
+      potential: "Potential",
       school: "School",
       club: "Club",
       pinned: "Pinned",
       pinnedHint: "Sorting is paused while Pinned view is on.",
-      method: "Sorting Method"
+      method: "Sorting Method",
+      sectionInfo: "Student Info",
+      sectionProgress: "Progression"
     },
     direction: {
       ascending: "Ascending",
@@ -746,11 +751,16 @@ export const translations = {
       bond: "絆",
       level: "レベル",
       grade: "星級",
+      equipment: "装備",
+      skill: "スキル",
+      potential: "潜在能力",
       school: "学園",
       club: "部活",
       pinned: "ピン留め",
       pinnedHint: "ピン留め表示中は並び替えが一時停止します。",
-      method: "ソート方法"
+      method: "ソート方法",
+      sectionInfo: "生徒情報",
+      sectionProgress: "育成状況"
     },
     direction: {
       ascending: "昇順",

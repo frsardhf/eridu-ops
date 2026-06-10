@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onUnmounted, ref } from 'vue';
 import { SortOption } from '@/types/header';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
-import { useTooltip } from '@/composables/useTooltip';
+import { positionAtElement, useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 import GlobalNavbar from './GlobalNavbar.vue';
 import FilterPanel from './FilterPanel.vue';
-import SelectMenu from '@/components/shared/SelectMenu.vue';
+import SortPanel from './SortPanel.vue';
 import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs';
 import { StudentFilters, countActiveFilters } from '@/types/filter';
 
@@ -31,6 +31,9 @@ const emit = defineEmits<{
 const showFilterPanel = ref(false);
 const filterWrapEl = ref<HTMLElement | null>(null);
 
+const showSortPanel = ref(false);
+const sortWrapEl = ref<HTMLElement | null>(null);
+
 // Card-overlay visibility checklist ("eye" menu).
 const showOverlayMenu = ref(false);
 const overlayWrapEl = ref<HTMLElement | null>(null);
@@ -42,45 +45,56 @@ const activeFilterCount = computed(() =>
   props.filters ? countActiveFilters(props.filters) : 0
 );
 
-const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
-  { value: 'id', labelKey: 'sort.id' },
-  { value: 'name', labelKey: 'sort.name' },
-  { value: 'default', labelKey: 'sort.default' },
-  { value: 'bond', labelKey: 'sort.bond' },
-  { value: 'level', labelKey: 'sort.level' },
-  { value: 'grade', labelKey: 'sort.grade' },
-  { value: 'school', labelKey: 'sort.school' },
-  { value: 'club', labelKey: 'sort.club' },
-];
-
-const currentSortLabel = computed(() => {
-  const selected = SORT_OPTIONS.find(o => o.value === props.currentSort);
-  return selected ? $t(selected.labelKey) : $t('sort.default');
-});
-
-const sortSelectOptions = computed(() =>
-  SORT_OPTIONS.map(o => ({ value: o.value, label: $t(o.labelKey) }))
-);
+// Every SortOption's label lives under the `sort.` locale namespace.
+const currentSortLabel = computed(() => $t(`sort.${props.currentSort ?? 'default'}`));
 
 function onSortChange(option: SortOption) {
   emit('updateSort', option);
+  showSortPanel.value = false;
+  // Sorting is paused while pinned — shake the pin hint instead of pretending
+  // the pick took effect. The choice is still persisted for when pin turns off.
+  if (props.isPinnedMode) showPinHint(true);
 }
 
-// Pin button: nudge that sorting is paused, shown only when pinned mode is
-// turned ON. Reuses the shared tooltip (same as GiftOption) but click-triggered
-// with an auto-hide instead of hover.
-const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+function onDirectionToggle() {
+  emit('toggleDirection');
+  if (props.isPinnedMode) showPinHint(true);
+}
+
+// Pin button: nudge that sorting is paused. Shown when pinned mode is turned
+// ON, and re-shown with a shake when a sort change is attempted while pinned.
+// Reuses the shared .modal-tooltip, anchored to the pin button (not the
+// cursor — sort attempts happen over the sort panel) with an auto-hide.
+const { activeTooltip, tooltipStyle, tooltipRef, hideTooltip } =
   useTooltip<'pinPaused'>();
+const pinBtnEl = ref<HTMLElement | null>(null);
+const pinHintShake = ref(false);
+// :key bump recreates the tooltip node so the shake animation restarts on
+// every repeated sort attempt, even while the hint is already visible.
+const pinHintKey = ref(0);
 let pinHintTimer: ReturnType<typeof setTimeout> | null = null;
 
-function onPinClick(event: MouseEvent) {
+async function showPinHint(shake: boolean) {
+  if (!pinBtnEl.value) return;
+  if (pinHintTimer) clearTimeout(pinHintTimer);
+  pinHintShake.value = shake;
+  if (shake) pinHintKey.value++;
+  tooltipStyle.value = positionAtElement(pinBtnEl.value);
+  activeTooltip.value = 'pinPaused';
+  pinHintTimer = setTimeout(() => hideTooltip(), 4000);
+  await nextTick();
+  if (pinBtnEl.value && tooltipRef.value) {
+    tooltipStyle.value = positionAtElement(pinBtnEl.value, tooltipRef.value);
+  }
+}
+
+function onPinClick() {
   const willActivate = !props.isPinnedMode;
   emit('togglePinned');
-  if (pinHintTimer) clearTimeout(pinHintTimer);
   if (willActivate) {
-    showTooltip(event, 'pinPaused');
-    pinHintTimer = setTimeout(() => hideTooltip(), 4000);
+    showPinHint(false);
   } else {
+    if (pinHintTimer) clearTimeout(pinHintTimer);
     hideTooltip();
   }
 }
@@ -91,22 +105,39 @@ function updateSearch(event: Event) {
   emit('update:searchQuery', (event.target as HTMLInputElement).value);
 }
 
-// Not `.stop` — the click must bubble to window so the sort SelectMenu's own
-// click-outside closes it when the filter button is pressed.
+// Filter / sort / overlay popovers are mutually exclusive — opening one
+// closes the others.
 function toggleFilterPanel() {
   showFilterPanel.value = !showFilterPanel.value;
-  if (showFilterPanel.value) showOverlayMenu.value = false;
+  if (showFilterPanel.value) {
+    showOverlayMenu.value = false;
+    showSortPanel.value = false;
+  }
+}
+
+function toggleSortPanel() {
+  showSortPanel.value = !showSortPanel.value;
+  if (showSortPanel.value) {
+    showFilterPanel.value = false;
+    showOverlayMenu.value = false;
+  }
 }
 
 function toggleOverlayMenu() {
   showOverlayMenu.value = !showOverlayMenu.value;
-  if (showOverlayMenu.value) showFilterPanel.value = false;
+  if (showOverlayMenu.value) {
+    showFilterPanel.value = false;
+    showSortPanel.value = false;
+  }
 }
 
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as Node;
   if (showFilterPanel.value && filterWrapEl.value && !filterWrapEl.value.contains(target)) {
     showFilterPanel.value = false;
+  }
+  if (showSortPanel.value && sortWrapEl.value && !sortWrapEl.value.contains(target)) {
+    showSortPanel.value = false;
   }
   if (showOverlayMenu.value && overlayWrapEl.value && !overlayWrapEl.value.contains(target)) {
     showOverlayMenu.value = false;
@@ -151,6 +182,7 @@ useClickOutside(handleClickOutside);
       <!-- Pin -->
       <div class="vc-pin-wrap">
         <button
+          ref="pinBtnEl"
           class="app-navbar-icon-btn vc-pin-btn"
           type="button"
           :title="$t('sort.pinned')"
@@ -162,8 +194,10 @@ useClickOutside(handleClickOutside);
         </button>
         <div
           v-if="activeTooltip !== null"
+          :key="pinHintKey"
           ref="tooltipRef"
-          class="modal-tooltip"
+          class="modal-tooltip pin-hint"
+          :class="{ 'pin-hint-shake': pinHintShake }"
           role="status"
           :style="tooltipStyle"
         >
@@ -196,39 +230,27 @@ useClickOutside(handleClickOutside);
       </div>
 
       <!-- Sort -->
-      <SelectMenu
-        :model-value="currentSort ?? 'default'"
-        :options="sortSelectOptions"
-        align="right"
-        @update:model-value="onSortChange"
-      >
-        <template #trigger="{ open, toggle }">
-          <button
-            class="app-navbar-icon-btn"
-            :class="{ active: open }"
-            type="button"
-            :title="currentSortLabel"
-            @click="(e) => { showFilterPanel = false; toggle(e); }"
-          >
-            <svg width="26" height="20" viewBox="0 0 576 512" aria-hidden="true">
-              <path fill="currentColor" d="M450.7 38c8.3 6 13.3 15.7 13.3 26v96h16c17.7 0 32 14.3 32 32s-14.3 32-32 32H432 384c-17.7 0-32-14.3-32-32s14.3-32 32-32h16V108.4l-5.9 2c-16.8 5.6-34.9-3.5-40.5-20.2s3.5-34.9 20.2-40.5l48-16c9.8-3.3 20.5-1.6 28.8 4.4zM160 32c9 0 17.5 3.8 23.6 10.4l88 96c11.9 13 11.1 33.3-2 45.2s-33.3 11.1-45.2-2L192 146.3V448c0 17.7-14.3 32-32 32s-32-14.3-32-32V146.3L95.6 181.6c-11.9 13-32.2 13.9-45.2 2s-13.9-32.2-2-45.2l88-96C142.5 35.8 151 32 160 32zM445.7 364.9A32 32 0 1 0 418.3 307a32 32 0 1 0 27.4 57.9zm-40.7 54.9C369.6 408.4 344 375.2 344 336c0-48.6 39.4-88 88-88s88 39.4 88 88c0 23.5-7.5 46.3-21.5 65.2L449.7 467c-10.5 14.2-30.6 17.2-44.8 6.7s-17.2-30.6-6.7-44.8l6.8-9.2z"/>
-            </svg>
-          </button>
-        </template>
-        <template #header>
-          <button
-            type="button"
-            class="sort-direction-row"
-            @click.stop="emit('toggleDirection')"
-          >
-            <span class="sort-direction-arrow">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
-            <span class="sort-direction-label">
-              {{ sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending') }}
-            </span>
-          </button>
-          <div class="sort-divider"></div>
-        </template>
-      </SelectMenu>
+      <div ref="sortWrapEl" class="vc-popover-wrap">
+        <button
+          class="app-navbar-icon-btn"
+          :class="{ active: showSortPanel }"
+          type="button"
+          :title="currentSortLabel"
+          @click="toggleSortPanel"
+        >
+          <svg width="26" height="20" viewBox="0 0 576 512" aria-hidden="true">
+            <path fill="currentColor" d="M450.7 38c8.3 6 13.3 15.7 13.3 26v96h16c17.7 0 32 14.3 32 32s-14.3 32-32 32H432 384c-17.7 0-32-14.3-32-32s14.3-32 32-32h16V108.4l-5.9 2c-16.8 5.6-34.9-3.5-40.5-20.2s3.5-34.9 20.2-40.5l48-16c9.8-3.3 20.5-1.6 28.8 4.4zM160 32c9 0 17.5 3.8 23.6 10.4l88 96c11.9 13 11.1 33.3-2 45.2s-33.3 11.1-45.2-2L192 146.3V448c0 17.7-14.3 32-32 32s-32-14.3-32-32V146.3L95.6 181.6c-11.9 13-32.2 13.9-45.2 2s-13.9-32.2-2-45.2l88-96C142.5 35.8 151 32 160 32zM445.7 364.9A32 32 0 1 0 418.3 307a32 32 0 1 0 27.4 57.9zm-40.7 54.9C369.6 408.4 344 375.2 344 336c0-48.6 39.4-88 88-88s88 39.4 88 88c0 23.5-7.5 46.3-21.5 65.2L449.7 467c-10.5 14.2-30.6 17.2-44.8 6.7s-17.2-30.6-6.7-44.8l6.8-9.2z"/>
+          </svg>
+        </button>
+        <SortPanel
+          v-if="showSortPanel"
+          class="vc-popover"
+          :current-sort="currentSort ?? 'default'"
+          :sort-direction="sortDirection ?? 'asc'"
+          @update-sort="onSortChange"
+          @toggle-direction="onDirectionToggle"
+        />
+      </div>
 
       <!-- Separates the list controls (pin/filter/sort) from card-display (eye) -->
       <div class="vc-divider" aria-hidden="true"></div>
@@ -380,7 +402,24 @@ useClickOutside(handleClickOutside);
 }
 
 /* The "sorting paused" nudge reuses the shared .modal-tooltip (studentModal.css,
-   position: fixed) positioned via useTooltip — no bespoke styles needed here. */
+   position: fixed) anchored to the pin button via positionAtElement. Raised
+   above the sort/filter popovers (.vc-popover z-index 1100) so it stays
+   visible when a sort attempt happens with the panel still open. */
+.pin-hint {
+  z-index: 1200;
+}
+
+.pin-hint-shake {
+  animation: pin-hint-shake 0.45s ease-in-out;
+}
+
+@keyframes pin-hint-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
 
 /* Pin keeps the round chip style (grey idle, yellow active) from student cards. */
 .vc-pin-btn:hover,
@@ -439,44 +478,6 @@ useClickOutside(handleClickOutside);
   top: calc(100% + 8px);
   right: 0;
   z-index: 1100;
-}
-
-/* Sort popover chrome comes from SelectMenu; these style its #header slot
-   (rendered inside the teleported popover — scoped data-attr travels with it). */
-.sort-direction-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  border-radius: 6px;
-  text-align: left;
-}
-
-.sort-direction-row:hover {
-  background: var(--background-secondary);
-}
-
-.sort-direction-arrow {
-  font-weight: 700;
-  color: var(--accent-color);
-  width: 14px;
-  text-align: center;
-}
-
-.sort-direction-label {
-  font-weight: 600;
-}
-
-.sort-divider {
-  height: 1px;
-  background: var(--border-color);
-  margin: 4px 0;
 }
 
 /* Overlay-visibility ("eye") checklist popover */
