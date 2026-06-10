@@ -31,9 +31,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo: PreRenderedAsset) => {
-          const fileName = typeof assetInfo.source === 'string' ? assetInfo.source : 'asset';
-          const extType = fileName.split('.').at(1) ?? 'unknown';
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+          // Classify by the asset's file name; `source` is the file CONTENT and
+          // using it produced content-derived directory names for CSS chunks
+          // (fatal ENAMETOOLONG once a chunk's first rule got long enough).
+          const fileName = assetInfo.names?.[0] ?? 'asset';
+          const extType = fileName.split('.').pop() ?? 'unknown';
+          if (/^(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(extType)) {
             return `assets/img/[name]-[hash][extname]`;
           }
           return `assets/${extType}/[name]-[hash][extname]`;
