@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { saveItemsInventory } from '../utils/studentStorage';
+import { saveItemsInventory } from '../services/studentPersistenceService';
 import { getAllItemsInventories } from '../services/dbService';
 import { getAllItemsFromCache, updateItemInCache } from '../stores/resourceCacheStore';
 import type { CachedResource } from '../../types/resource';

@@ -12,7 +12,7 @@ import {
   BondDetailDataProps, DEFAULT_BOND_DETAIL,
   OtherExpDataProps, DEFAULT_OTHER_EXP,
 } from '../../types/gift';
-import { loadFormDataToRefs, saveFormData } from '../utils/studentStorage';
+import { loadFormDataToRefs, saveFormData } from '../services/studentPersistenceService';
 import { setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { updateMaterialsData } from '../stores/materialsStore';
 import { updateGearsData, getAllGearsData } from '../stores/gearsStore';

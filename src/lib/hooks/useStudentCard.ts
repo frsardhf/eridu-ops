@@ -1,6 +1,6 @@
 import { computed, ref, type ComputedRef } from 'vue';
 import { useStudentFormData } from '../stores/studentStore';
-import { isStudentPinned, togglePinnedStudent } from '../utils/studentStorage';
+import { isStudentPinned, togglePinnedStudent } from '../utils/settingsStorage';
 import { currentLanguage } from '../stores/localizationStore';
 
 /**

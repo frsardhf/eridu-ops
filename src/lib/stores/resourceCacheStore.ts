@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { getItems, getEquipment } from '../utils/studentStorage';
+import { getItems, getEquipment } from '../services/studentPersistenceService';
 import type { CachedResource } from '../../types/resource';
 
 /**

@@ -1,7 +1,7 @@
 /**
  * Synthetic Entities — application-defined entities that don't exist in SchaleDB.
  *
- * `studentStorage.getItems` unions these in at read time so they appear in the
+ * `studentPersistenceService.getItems` unions these in at read time so they appear in the
  * items cache with metadata + user-tracked QuantityOwned from `items_inventory`.
  * They are deliberately NOT persisted to the items master table.
  */

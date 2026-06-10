@@ -2,7 +2,7 @@
 import { ref, computed, onBeforeUnmount } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
-import { saveItemsInventory, saveEquipmentInventory } from '@/lib/utils/studentStorage';
+import { saveItemsInventory, saveEquipmentInventory } from '@/lib/services/studentPersistenceService';
 import {
   getAllItemsFromCache,
   updateItemInCache,

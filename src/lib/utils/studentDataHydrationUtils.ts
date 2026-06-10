@@ -7,7 +7,7 @@ import {
   getEquipment,
   saveItemsInventory,
   saveEquipmentInventory,
-} from '../utils/studentStorage';
+} from '../services/studentPersistenceService';
 
 export function toRecordById<T extends { Id: number | string }>(
   items: T[]

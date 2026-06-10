@@ -1,6 +1,6 @@
 import { currentLanguage, setLanguage } from '../stores/localizationStore';
 import { THEME_OPTIONS } from '../utils/themeUtils';
-import { downloadLocalStorageData } from '../utils/studentStorage';
+import { downloadLocalStorageData } from '../services/importExportService';
 
 export type { Language } from '../stores/localizationStore';
 
