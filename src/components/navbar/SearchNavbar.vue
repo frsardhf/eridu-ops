@@ -8,7 +8,7 @@ import GlobalNavbar from './GlobalNavbar.vue';
 import FilterPanel from './FilterPanel.vue';
 import SortPanel from './SortPanel.vue';
 import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs';
-import { StudentFilters, countActiveFilters } from '@/types/filter';
+import { StudentFilters, StudentFilterValue, countActiveFilters } from '@/types/filter';
 
 const props = defineProps<{
   searchQuery: string;
@@ -24,7 +24,7 @@ const emit = defineEmits<{
   'updateSort': [option: SortOption];
   'toggleDirection': [];
   'togglePinned': [];
-  'updateFilter': [key: keyof StudentFilters, value: any[]];
+  'updateFilter': [key: keyof StudentFilters, value: StudentFilterValue];
   'clearFilters': [];
 }>();
 

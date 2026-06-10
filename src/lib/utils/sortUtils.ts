@@ -1,6 +1,7 @@
 import { SortDirection, SortOption } from '@/types/header';
 import { StudentProps } from '@/types/student';
 import { StudentFilters, isFiltersEmpty } from '@/types/filter';
+import type { FormRecord } from '@/lib/db/database';
 
 export interface StudentSplit {
   owned: StudentProps[];
@@ -16,7 +17,7 @@ interface SortStudentsParams {
   sortOption: SortOption;
   sortDirection: SortDirection;
   isPinnedMode: boolean;
-  studentStore: Record<number, any>;
+  studentStore: Record<number, FormRecord>;
   resolveLocalized?: (category: ResolveCategory, key?: string) => string;
   filters?: StudentFilters;
 }
@@ -43,7 +44,7 @@ export function studentMatchesQuery(student: StudentProps, query: string): boole
 function toComparableValue(
   student: StudentProps,
   option: SortOption,
-  studentStore: Record<number, any>,
+  studentStore: Record<number, FormRecord>,
   resolveLocalized?: (category: ResolveCategory, key?: string) => string
 ): number | string {
   switch (option) {
@@ -78,7 +79,7 @@ function compareStudents(
   b: StudentProps,
   option: SortOption,
   direction: SortDirection,
-  studentStore: Record<number, any>,
+  studentStore: Record<number, FormRecord>,
   resolveLocalized?: (category: ResolveCategory, key?: string) => string
 ): number {
   const aValue = toComparableValue(a, option, studentStore, resolveLocalized);
@@ -123,7 +124,7 @@ function applyStudentFilters(
   });
 }
 
-function byBondDesc(studentStore: Record<number, any>) {
+function byBondDesc(studentStore: Record<number, FormRecord>) {
   return (a: StudentProps, b: StudentProps) =>
     (studentStore[b.Id]?.bondDetailData?.currentBond ?? 0) -
     (studentStore[a.Id]?.bondDetailData?.currentBond ?? 0);

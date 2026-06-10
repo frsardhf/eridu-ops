@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { StudentFilters } from '@/types/filter';
+import { StudentFilters, StudentFilterValue } from '@/types/filter';
 import { $t } from '@/locales';
 import { computed } from 'vue';
 import { getSchoolIconUrl, getEquipmentSlotIconUrl } from '@/lib/utils/iconUtils';
@@ -21,7 +21,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'updateFilter': [key: keyof StudentFilters, value: any[]];
+  'updateFilter': [key: keyof StudentFilters, value: StudentFilterValue];
   'clearAll': [];
 }>();
 
@@ -37,15 +37,16 @@ const isOtherActive = computed(() =>
 );
 
 function toggle(key: keyof StudentFilters, value: string | number) {
-  const current = [...(props.filters[key] as (string | number)[])];
-  const idx = current.indexOf(value as never);
-  if (idx === -1) current.push(value as never);
+  const current: (string | number)[] = [...props.filters[key]];
+  const idx = current.indexOf(value);
+  if (idx === -1) current.push(value);
   else current.splice(idx, 1);
-  emit('updateFilter', key, current);
+  // The mixed array narrows back to the key's homogeneous type at the consumer.
+  emit('updateFilter', key, current as StudentFilterValue);
 }
 
 function isActive(key: keyof StudentFilters, value: string | number): boolean {
-  return (props.filters[key] as (string | number)[]).includes(value as never);
+  return (props.filters[key] as (string | number)[]).includes(value);
 }
 
 function toggleOtherSchools() {

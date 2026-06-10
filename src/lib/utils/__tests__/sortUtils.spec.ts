@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sortStudentsWithPins, splitAndSortStudents } from '../sortUtils';
 import type { SortDirection, SortOption } from '@/types/header';
 import type { StudentProps } from '@/types/student';
+import type { FormRecord } from '@/lib/db/database';
 import { EMPTY_FILTERS } from '@/types/filter';
 
 function makeStudent(overrides: Partial<StudentProps>): StudentProps {
@@ -26,9 +27,9 @@ const eimi = makeStudent({ Id: 2, Name: 'Eimi', DefaultOrder: 10, StarGrade: 2 }
 const hina = makeStudent({ Id: 3, Name: 'Hina', DefaultOrder: 20, StarGrade: 3 });
 const students = [aru, eimi, hina];
 
-// Shape mirrors FormRecord; sortUtils only reads these slices.
-const store: Record<number, any> = {
+const store: Record<number, FormRecord> = {
   1: {
+    studentId: 1,
     bondDetailData: { currentBond: 5 },
     characterLevels: { current: 40, target: 40 },
     gradeLevels: { current: 5, target: 5 },
@@ -50,6 +51,7 @@ const store: Record<number, any> = {
     },
   },
   2: {
+    studentId: 2,
     bondDetailData: { currentBond: 20 },
     characterLevels: { current: 10, target: 10 },
     skillLevels: {

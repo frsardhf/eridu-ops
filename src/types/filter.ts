@@ -10,6 +10,9 @@ export interface StudentFilters {
   availability: number[];       // IsLimited[0]: 0=Regular, 1=Limited, 2=Unique, 3=Fest, 4=Perm 3★
 }
 
+/** Value type accepted for any single filter key (string[] | number[] | ...). */
+export type StudentFilterValue = StudentFilters[keyof StudentFilters];
+
 export const EMPTY_FILTERS: StudentFilters = {
   squadType: [],
   starGrade: [],
