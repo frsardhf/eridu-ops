@@ -23,6 +23,10 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      # Correctness lint (vue essential + ts recommended); warnings don't fail.
+      - name: Lint
+        run: npm run lint
+
       - name: Unit tests
         run: npm test
 
