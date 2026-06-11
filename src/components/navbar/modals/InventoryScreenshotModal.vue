@@ -55,7 +55,6 @@ interface ParsedItem {
 
 const emit = defineEmits<{
   'close': [];
-  'inventory-updated': [];
 }>();
 
 const step = ref<Step>('type');
@@ -387,7 +386,8 @@ async function applyResults() {
     }
   }
 
-  emit('inventory-updated');
+  // No global reinit here: the per-id cache updates above are the full effect
+  // of an inventory edit, so dependents react without reloading the world.
 
   // Reset to upload step instead of closing — user can scan more screenshots.
   // Inventory type is preserved so a 10-page items scan doesn't re-prompt the

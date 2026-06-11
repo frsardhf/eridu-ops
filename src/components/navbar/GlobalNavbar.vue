@@ -241,10 +241,10 @@ useClickOutside(handleClickOutside);
     @close="showImportModal = false"
     @import-success="reinitializeData"
   />
+  <!-- No reinit on inventory updates: the modal syncs resourceCacheStore per id. -->
   <InventoryScreenshotModal
     v-if="showScreenshotModal"
     @close="showScreenshotModal = false"
-    @inventory-updated="reinitializeData"
   />
   <WhatsNewModal
     v-if="showWhatsNewModal"
