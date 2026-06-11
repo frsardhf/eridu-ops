@@ -3,7 +3,7 @@
 // live apart from data loading; useStudentData re-exports everything, so
 // components keep consuming the hook unchanged.
 
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   getSettings,
   getPinnedStudents,
@@ -23,9 +23,33 @@ export const sortDirection = ref<SortDirection>('asc');
 export const isPinnedMode = ref<boolean>(false);
 export const activeFilters = ref<StudentFilters>({ ...EMPTY_FILTERS });
 
-/** Re-read the pinned list from settings (cards toggle pins outside this store). */
+/** O(1) membership view for per-card isPinned checks. */
+export const pinnedIdSet = computed(() => new Set(pinnedStudentIds.value));
+
+/**
+ * Re-read the pinned list from settings (after imports replace the blob).
+ * Copied on assign: the settings cache hands out the same array object it
+ * holds, and assigning an identical reference to a ref is a reactivity no-op.
+ */
 export function syncPinnedStudents() {
-  pinnedStudentIds.value = getPinnedStudents();
+  pinnedStudentIds.value = [...getPinnedStudents()];
+}
+
+/**
+ * Toggle a student's pin. The ref is the source of truth: build a NEW array,
+ * assign it (new identity, so every reader recomputes), then persist a copy.
+ * Never mutate the settings-cache array in place; that bypasses Vue tracking
+ * and re-assigning the same reference later won't trigger anything.
+ */
+export function togglePinned(studentId: string | number): boolean {
+  const id = String(studentId);
+  const wasPinned = pinnedIdSet.value.has(id);
+  const next = wasPinned
+    ? pinnedStudentIds.value.filter(sid => sid !== id)
+    : [...pinnedStudentIds.value, id];
+  pinnedStudentIds.value = next;
+  updateSetting('pinnedStudents', [...next]);
+  return !wasPinned;
 }
 
 /** Hydrate all prefs from the persisted settings blob (called once during init). */

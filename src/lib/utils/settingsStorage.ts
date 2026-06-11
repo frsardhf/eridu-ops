@@ -210,56 +210,6 @@ export function getPinnedStudents(): string[] {
 }
 
 /**
- * Set pinned students
- * @param studentIds Array of student IDs
- * @returns True if successful, false otherwise
- */
-export function setPinnedStudents(studentIds: string[]): boolean {
-  return updateSetting('pinnedStudents', studentIds);
-}
-
-/**
- * Toggle a student's pinned status
- * @param studentId The ID of the student to toggle
- * @returns The new pinned status (true if pinned, false if unpinned)
- */
-export function togglePinnedStudent(studentId: string | number): boolean {
-  try {
-    const pinnedStudents = getPinnedStudents();
-    const id = studentId.toString();
-    const isCurrentlyPinned = pinnedStudents.includes(id);
-
-    if (isCurrentlyPinned) {
-      const updatedPinned = pinnedStudents.filter(sid => sid !== id);
-      setPinnedStudents(updatedPinned);
-      return false;
-    } else {
-      pinnedStudents.push(id);
-      setPinnedStudents(pinnedStudents);
-      return true;
-    }
-  } catch (error) {
-    console.error('Error toggling pinned student:', error);
-    return false;
-  }
-}
-
-/**
- * Check if a student is pinned
- * @param studentId The ID of the student to check
- * @returns True if pinned, false otherwise
- */
-export function isStudentPinned(studentId: string | number): boolean {
-  try {
-    const pinnedStudents = getPinnedStudents();
-    return pinnedStudents.includes(studentId.toString());
-  } catch (error) {
-    console.error('Error checking if student is pinned:', error);
-    return false;
-  }
-}
-
-/**
  * Get sort settings
  * @returns Current sort option and direction
  */

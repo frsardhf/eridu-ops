@@ -1,6 +1,6 @@
-import { computed, ref, type ComputedRef } from 'vue';
+import { computed, type ComputedRef } from 'vue';
 import { useStudentFormData } from '../stores/studentStore';
-import { isStudentPinned, togglePinnedStudent } from '../utils/settingsStorage';
+import { pinnedIdSet, togglePinned } from '../stores/uiPrefsStore';
 import { currentLanguage } from '../stores/localizationStore';
 
 /**
@@ -10,18 +10,12 @@ import { currentLanguage } from '../stores/localizationStore';
 export function useStudentCard(studentId: ComputedRef<number>) {
   const studentData = useStudentFormData(studentId);
 
-  // Reactive version counter triggers isPinned recompute after a toggle,
-  // replacing the ad-hoc forceUpdate ref that was previously in the component.
-  const _pinnedVersion = ref(0);
-  const isPinned = computed(() => {
-    _pinnedVersion.value; // reactive dependency
-    return isStudentPinned(studentId.value);
-  });
+  // Naturally reactive: pin state lives in uiPrefsStore (settings-backed), so
+  // no version-counter hack is needed to observe localStorage changes.
+  const isPinned = computed(() => pinnedIdSet.value.has(String(studentId.value)));
 
   function togglePin(id: number): boolean {
-    const result = togglePinnedStudent(id);
-    _pinnedVersion.value++;
-    return result;
+    return togglePinned(id);
   }
 
   return { studentData, isPinned, togglePin, currentLanguage };

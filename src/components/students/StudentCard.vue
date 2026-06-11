@@ -22,7 +22,6 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   (e: 'click', payload: { student: StudentProps; originRect: ModalOriginRect | null }): void;
-  (e: 'pin-toggled', studentId: string | number, isPinned: boolean): void;
 }>();
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -250,7 +249,9 @@ const investmentPercent = computed(() => {
 // ── Event handlers ────────────────────────────────────────────────────────────
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
-  const newPinStatus = togglePin(props.student.Id);
+  // Store-backed toggle: persistence + reactivity flow through uiPrefsStore,
+  // so no event needs to bubble up for state syncing.
+  togglePin(props.student.Id);
   if (pinPopTimer) {
     clearTimeout(pinPopTimer);
   }
@@ -261,7 +262,6 @@ function handlePinToggle(event: MouseEvent) {
       pinPop.value = false;
     }, 240);
   });
-  emit('pin-toggled', props.student.Id, newPinStatus);
 }
 
 function handleCardClick(event: MouseEvent) {

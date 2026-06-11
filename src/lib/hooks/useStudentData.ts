@@ -12,7 +12,6 @@ import {
 } from '../../types/resource';
 import {
   searchQuery,
-  pinnedStudentIds,
   currentTheme,
   currentSort,
   sortDirection,

@@ -4,24 +4,19 @@ import { ModalOriginRect } from '@/types/modal';
 import StudentCard from './StudentCard.vue';
 import { $t } from '@/locales';
 
-const props = defineProps<{
+defineProps<{
   studentsArray: StudentProps[];
   unownedStudentsArray?: StudentProps[];
 }>();
 
 type EmitEvents = {
   'openModal': [payload: { student: StudentProps; originRect: ModalOriginRect | null }];
-  'studentPinned': [studentId: string | number, isPinned: boolean];
 }
 
 const emit = defineEmits<EmitEvents>();
 
 function handleOpenModal(payload: { student: StudentProps; originRect: ModalOriginRect | null }) {
   emit('openModal', payload);
-}
-
-function handlePinToggled(studentId: string | number, isPinned: boolean) {
-  emit('studentPinned', studentId, isPinned);
 }
 </script>
 
@@ -36,7 +31,6 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
         <StudentCard
           :student="student"
           @click="handleOpenModal"
-          @pin-toggled="handlePinToggled"
         />
       </div>
 
@@ -50,7 +44,6 @@ function handlePinToggled(studentId: string | number, isPinned: boolean) {
           <StudentCard
             :student="student"
             @click="handleOpenModal"
-            @pin-toggled="handlePinToggled"
           />
         </div>
       </template>

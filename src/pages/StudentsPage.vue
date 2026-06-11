@@ -36,7 +36,6 @@ const {
   sortDirection,
   updateSearchQuery,
   toggleDirection,
-  syncPinnedStudents,
   isPinnedMode,
   togglePinnedMode,
   activeFilters,
@@ -129,10 +128,6 @@ function handleToggleDirection() {
   toggleDirection();
 }
 
-function handleStudentPinned() {
-  syncPinnedStudents();
-}
-
 function handleUpdateFilter(key: keyof StudentFilters, value: StudentFilters[typeof key]) {
   setStudentFilters(key, value);
 }
@@ -176,7 +171,6 @@ function handleClearFilters() {
       :students-array="ownedStudentsArray"
       :unowned-students-array="unownedStudentsArray"
       @open-modal="openModal"
-      @student-pinned="handleStudentPinned"
     />
 
     <Transition name="student-modal-shell" appear>
