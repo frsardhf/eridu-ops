@@ -93,8 +93,6 @@ export interface PotentialSettings {
 // Re-export CREDITS_ID from centralized synthetic entities
 export { CREDITS_ID } from '../lib/constants/syntheticEntities';
 
-export const EXP_REPORT_ID = [10, 11, 12, 13];
-
 export const ELIGMAS_ID = 23;
 
 export const WORKBOOK_ID = [2000, 2001, 2002];

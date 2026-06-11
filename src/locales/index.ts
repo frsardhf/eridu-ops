@@ -1,4 +1,3 @@
-import { computed } from 'vue';
 import { currentLanguage, Language } from '../lib/stores/localizationStore';
 
 // Translation strings for each supported language
@@ -1211,18 +1210,13 @@ export const translations = {
   }
 };
 
-// Create a computed ref that returns the translations for the current language
-export const t = computed(() => {
-  return translations[currentLanguage.value];
-});
-
 // Resolved translation cache keyed by "lang:path".
 // Keying on language means no invalidation is ever needed — switching language
 // just uses a different key prefix, leaving old entries harmlessly stale.
 const _translationCache = new Map<string, string>();
 
-// Function to get a specific translation using a path
-export function useTranslation(path: string, language?: Language): string {
+// Function to get a specific translation using a path (internal: $t wraps this)
+function useTranslation(path: string, language?: Language): string {
   const lang = language || currentLanguage.value;
   const cacheKey = `${lang}:${path}`;
 

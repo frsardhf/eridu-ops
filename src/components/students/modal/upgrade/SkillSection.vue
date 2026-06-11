@@ -35,7 +35,6 @@ const {
   getSkillIcon,
   getSkillName,
   getMaxLevel,
-  getLevelDisplayState,
   getSkillDescription,
   getSkillCostDisplay,
   getSkillIconUrl

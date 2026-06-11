@@ -13,28 +13,6 @@ import {
 import { StudentProps } from '@/types/student';
 import { SkillType } from '@/types/upgrade';
 
-/**
- * Pure display-state helper — no reactive deps.
- * Returns 'max' | 'same' | 'different' given raw current/target/maxLevel values.
- */
-export function getLevelDisplayState(
-  current: number,
-  target: number,
-  maxLevel: number
-): 'max' | 'same' | 'different' {
-  if (current === maxLevel && target === maxLevel) return 'max';
-  if (current === target) return 'same';
-  return 'different';
-}
-
-/**
- * Pure display-state helper — no reactive deps.
- * Returns true when target equals maxLevel.
- */
-export function isTargetMaxLevel(target: number, maxLevel: number): boolean {
-  return target === maxLevel;
-}
-
 export function useStudentSkillDisplay(
   student: MaybeRefOrGetter<StudentProps>,
   skillLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
@@ -145,8 +123,6 @@ export function useStudentSkillDisplay(
     getSkillName,
     getMaxLevel,
     getLevelDisplay,
-    getLevelDisplayState,
-    isTargetMaxLevel,
     getSkillData,
     getSkillDescription,
     getSkillCostDisplay,
