@@ -68,7 +68,7 @@ function parseLine(raw: string): ParsedEntry | null {
 
 // Matches both ASCII (Bunny) and full-width （バニー） bracket styles — used only
 // as a fallback for auto-resolving the base character when PathName is absent.
-const BRACKET_RE = /[\(（]([^)\）]+)[\)）]/;
+const BRACKET_RE = /[(（]([^)）]+)[)）]/;
 
 function resolveEntry(entry: ParsedEntry): ParsedEntry {
   const hits = props.students.filter(s => {

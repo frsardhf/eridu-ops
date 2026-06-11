@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useNavbarSettings, type Language } from '@/lib/hooks/useNavbarSettings';
+import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';

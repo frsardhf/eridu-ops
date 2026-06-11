@@ -40,12 +40,12 @@ const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
 const currentExpBall = ref(1);  // Start with Novice exp ball (ID: 1)
 
 const {
-  studentsWithGifts, pagedLeftoverResources, leftoverByMaterialId,
+  studentsWithGifts, pagedLeftoverResources,
   displayResources, hasDisplayResources, noResourcesText, allStudentMaterialRows,
 } = useResourceSummary(activeTab, activeMode);
 
 const {
-  hoveredItemId, hoveredStudentId, tooltipPosition, isHoveringTooltip,
+  hoveredItemId, hoveredStudentId, tooltipPosition,
   studentUsageForMaterial, giftsForHoveredStudent,
   tooltipGridColumns, giftTooltipGridColumns,
   creditOwned, creditNeeded, creditRemaining,
@@ -105,7 +105,7 @@ const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
   const isEquipmentTab = activeTab.value === 'equipment';
   return {
     src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon.value, currentExpBall.value),
-    alt: getMaterialName(item, isEquipmentTab)
+    alt: getMaterialName(item)
   };
 };
 
@@ -320,7 +320,7 @@ watch(
                   v-for="(item, itemIndex) in pageItems"
                   :key="`resource-${item.material?.Id || pageIndex}-${itemIndex}`"
                   class="resource-item"
-                  :title="getMaterialName(item, activeTab === 'equipment')"
+                  :title="getMaterialName(item)"
                   @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
                   @mouseleave="hideTooltip()"
                 >
@@ -372,7 +372,7 @@ watch(
             v-for="(item, index) in displayResourceStates"
             :key="`resource-${item.material?.Id || index}`"
             class="resource-item"
-            :title="getMaterialName(item, activeTab === 'equipment')"
+            :title="getMaterialName(item)"
             @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
             @mouseleave="hideTooltip()"
           >

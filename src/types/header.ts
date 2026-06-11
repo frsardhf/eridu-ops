@@ -1,5 +1,3 @@
-import type { StudentFilters } from './filter';
-
 export type SortOption =
   | 'id'
   | 'name'

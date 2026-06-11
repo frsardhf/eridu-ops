@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue';
-import type { MaterialWithRemaining, Material, MaterialType } from '@/types/upgrade';
+import type { MaterialWithRemaining, Material } from '@/types/upgrade';
 import { MATERIAL, EQUIPMENT, type CachedResource } from '@/types/resource';
 import type { StudentProps } from '@/types/student';
 import { useMaterialCalculation } from '@/lib/hooks/useMaterialCalculation';

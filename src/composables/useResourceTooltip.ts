@@ -75,7 +75,7 @@ export function useResourceTooltip(
 
     if (cache.has(cacheKey)) return cache.get(cacheKey)!;
 
-    let usage: StudentUsage[] = [];
+    let usage: StudentUsage[];
     if (isEquipmentView) {
       usage = getEquipmentUsageByStudents(materialId, usageMode)
         .sort((a, b) => b.quantity - a.quantity);

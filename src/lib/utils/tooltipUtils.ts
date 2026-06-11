@@ -1,4 +1,3 @@
-import type { EquipmentType } from '@/types/gear';
 import { formatLargeNumber, isExpReport, isExpBall } from './materialUtils';
 
 /**
@@ -18,8 +17,7 @@ export function getTooltipGridColumns(count: number): string {
  */
 export function formatUsageQuantity(
   quantity: number,
-  materialId?: number | null,
-  equipmentTypes?: EquipmentType[]
+  materialId?: number | null
 ): string {
   if (materialId && (isExpReport(materialId) || isExpBall(materialId))) {
     return quantity.toString();

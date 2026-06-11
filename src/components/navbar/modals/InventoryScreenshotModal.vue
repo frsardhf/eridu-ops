@@ -333,10 +333,6 @@ async function processFiles(fileList: File[]) {
 }
 
 // ── Review actions ────────────────────────────────────────────────────────
-function confidenceLabel(confidence: number): string {
-  return `${Math.round(confidence * 100)}%`;
-}
-
 function updateQuantity(pk: string, event: Event) {
   const val = parseInt((event.target as HTMLInputElement).value);
   editedQuantities.value[pk] = isNaN(val) ? 0 : val;

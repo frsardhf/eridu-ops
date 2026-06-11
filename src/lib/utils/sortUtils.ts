@@ -85,7 +85,7 @@ function compareStudents(
   const aValue = toComparableValue(a, option, studentStore, resolveLocalized);
   const bValue = toComparableValue(b, option, studentStore, resolveLocalized);
 
-  let comparison = 0;
+  let comparison: number;
   if (typeof aValue === 'string' || typeof bValue === 'string') {
     comparison = String(aValue).localeCompare(String(bValue));
   } else {

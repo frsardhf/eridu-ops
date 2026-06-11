@@ -145,7 +145,7 @@ export function calculateEquipmentCredits(
   const materialsNeeded: Material[] = [];
   const creditsData = getResourceDataByIdSync(CREDITS_ID);
 
-  Object.entries(equipmentLevels).forEach(([type, levels]) => {
+  Object.values(equipmentLevels).forEach((levels) => {
     const { current, target } = levels;
 
     if (current >= target) return;

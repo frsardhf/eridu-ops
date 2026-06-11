@@ -13,7 +13,7 @@ import type { StudentProps } from '@/types/student';
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 const { sortedStudentsArray } = useStudentData();
-const { trackedIds, isTracked, toggleTracked } = useBondsTracked();
+const { trackedIds, toggleTracked } = useBondsTracked();
 const { getStudentsWithGifts } = useGiftCalculation();
 
 const query = ref('');

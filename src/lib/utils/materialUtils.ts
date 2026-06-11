@@ -226,7 +226,7 @@ export function isExpBall(materialId: number): boolean {
 /**
  * Helper function to get material name
  */
-export function getMaterialName(item: any, isEquipmentTab: boolean): string {
+export function getMaterialName(item: { material?: { Id?: number; Name?: string } }): string {
   if (isExpReport(item.material?.Id)) return 'Activity Report';
   if (isExpBall(item.material?.Id)) return 'Enhancement Stone';
   return item.material?.Name ?? 'Unknown Resource';
