@@ -14,6 +14,8 @@ export interface ResourceProps {
   Description?: string;
   LevelUpFeedExp?: number;
   SubCategory?: string;
+  /** Credit cost to craft this item (gear pieces only; absent on exp/weapon items). */
+  RecipeCost?: number;
 }
 
 /**
@@ -30,10 +32,12 @@ export const MATERIAL = {
   'id': ['5', '23', '2000', '2001', '2002', '9999']
 };
 
+// Equipment inventory = the 'Exp' enhancement balls PLUS craftable gear pieces,
+// the latter selected by their RecipeCost (each value is a gear-tier credit cost).
 export const EQUIPMENT = {
   'category': ['Exp'],
-  'recipecost': ['1500', '10000', '25000', '50000', 
-    '75000', '100000', '125000', '150000', '175000']
+  'recipecost': ['1500', '10000', '25000', '50000',
+    '75000', '100000', '125000', '150000', '175000'],
 };
 
 export const ALL_RARITIES = ['N', 'R', 'SR', 'SSR'] as const;
