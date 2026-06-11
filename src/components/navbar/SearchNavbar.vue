@@ -99,10 +99,22 @@ function onPinClick() {
   }
 }
 
-onUnmounted(() => { if (pinHintTimer) clearTimeout(pinHintTimer); });
+onUnmounted(() => {
+  if (pinHintTimer) clearTimeout(pinHintTimer);
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+});
+
+// Debounced: each emitted query re-filters and re-sorts the whole grid, so
+// batch keystrokes instead of paying that per character.
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 function updateSearch(event: Event) {
-  emit('update:searchQuery', (event.target as HTMLInputElement).value);
+  const value = (event.target as HTMLInputElement).value;
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    searchDebounceTimer = null;
+    emit('update:searchQuery', value);
+  }, 150);
 }
 
 // Filter / sort / overlay popovers are mutually exclusive — opening one

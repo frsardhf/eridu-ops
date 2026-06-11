@@ -299,10 +299,13 @@ function handleCardClick(event: MouseEvent) {
     
     <a class="selection-grid-card" @click="handleCardClick">
       <div class="card-img">
+        <!-- lazy: only viewport-near portraits load, instead of all ~260 at once -->
         <img
           :src="getStudentCollectionUrl(student.Id)"
           :alt="student.Name"
           :class="{ 'img--unowned': !isOwned }"
+          loading="lazy"
+          decoding="async"
         >
         <!-- Stats overlay -->
         <div class="stats-overlay">
