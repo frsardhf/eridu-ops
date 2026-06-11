@@ -79,16 +79,6 @@ export interface PotentialLevels {
   };
 }
 
-export interface SkillSettings extends PotentialSettings {
-  maxLevel: number;
-}
-
-export interface PotentialSettings {
-  current: number;
-  target: number;
-  icon: string;
-  name: string;
-}
 
 // Re-export CREDITS_ID from centralized synthetic entities
 export { CREDITS_ID } from '../lib/constants/syntheticEntities';

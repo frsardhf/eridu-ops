@@ -1,7 +1,7 @@
 import { currentLanguage, Language } from '../lib/stores/localizationStore';
 
 // Translation strings for each supported language
-export const translations = {
+const translations = {
   en: {
     // Landing
     landingSubtitle: "Blue Archive Student Progression Planner",

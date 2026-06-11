@@ -2,8 +2,6 @@ import { currentLanguage, setLanguage } from '../stores/localizationStore';
 import { THEME_OPTIONS } from '../utils/themeUtils';
 import { downloadLocalStorageData } from '../services/importExportService';
 
-export type { Language } from '../stores/localizationStore';
-
 /**
  * Hook facade for navbar components — aggregates localization, theme, and
  * export utilities so components stay within the components → hooks boundary.

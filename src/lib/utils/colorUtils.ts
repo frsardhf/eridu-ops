@@ -13,7 +13,7 @@
 /**
  * BulletType (attack type) color mapping
  */
-export const BULLET_TYPE_COLORS: Record<string, string> = {
+const BULLET_TYPE_COLORS: Record<string, string> = {
   Explosion: 'rgb(167, 12, 25)',
   Pierce: 'rgb(178, 109, 31)',
   Mystic: 'rgb(33, 111, 156)',
@@ -25,7 +25,7 @@ export const BULLET_TYPE_COLORS: Record<string, string> = {
  * ArmorType (defense type) color mapping
  * Same color families as BulletType
  */
-export const ARMOR_TYPE_COLORS: Record<string, string> = {
+const ARMOR_TYPE_COLORS: Record<string, string> = {
   LightArmor: 'rgb(167, 12, 25)',
   HeavyArmor: 'rgb(178, 109, 31)',
   SpecialArmor: 'rgb(33, 111, 156)',
@@ -37,7 +37,7 @@ export const ARMOR_TYPE_COLORS: Record<string, string> = {
 /**
  * School brand color mapping (approximate, based on in-game visual identity)
  */
-export const SCHOOL_COLORS: Record<string, string> = {
+const SCHOOL_COLORS: Record<string, string> = {
   Abydos:      '#c8962e',
   Trinity:     '#c9a227',
   Gehenna:     '#cc2233',
@@ -58,7 +58,7 @@ export const SCHOOL_COLORS: Record<string, string> = {
  * SquadType (role) color mapping
  * Main = STRIKER (red), Support = SPECIAL (blue)
  */
-export const SQUAD_TYPE_COLORS: Record<string, string> = {
+const SQUAD_TYPE_COLORS: Record<string, string> = {
   Main: 'rgba(204, 26, 37, 1)',
   Support: 'rgba(0, 107, 255, 1)',
 };
@@ -67,7 +67,7 @@ export const SQUAD_TYPE_COLORS: Record<string, string> = {
  * Bond 100 server region color mapping.
  * One distinct hue per region — used for server pills in the Hall entries modal.
  */
-export const BOND100_SERVER_COLORS: Record<string, string> = {
+const BOND100_SERVER_COLORS: Record<string, string> = {
   global_na:   'rgb(59, 130, 246)',   // blue
   global_eu:   'rgb(245, 158, 11)',   // amber  (was cyan — too close to TW/HK)
   global_asia: 'rgb(139, 92, 246)',   // violet

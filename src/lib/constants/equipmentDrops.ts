@@ -3,7 +3,7 @@
 // Source: normal campaign stages (Difficulty 0, ServerData.Global), equipment
 // drops Tier >= 2. Generated 2026-06-03.
 
-export interface FarmStageDrop {
+interface FarmStageDrop {
   /** Equipment id — matches equipment.json / the gear store. */
   equipId: number;
   /** Expected pieces per run = guaranteed (1.0 if always dropped) + bonus

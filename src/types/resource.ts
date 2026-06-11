@@ -37,7 +37,6 @@ export const EQUIPMENT = {
 };
 
 export const ALL_RARITIES = ['N', 'R', 'SR', 'SSR'] as const;
-export type Rarity = (typeof ALL_RARITIES)[number];
 
 export const GENERIC_GIFT_TAGS = ["BC", "Bc", "ew", "DW"];
 

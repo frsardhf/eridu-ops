@@ -9,7 +9,7 @@
  * maintain the style-pair mapping manually here.
  */
 
-export interface LinkedStudentPair {
+interface LinkedStudentPair {
   primaryId: number;
   secondaryId: number;
 }
@@ -18,12 +18,12 @@ export interface LinkedStudentPair {
  * All linked student pairs.
  * To add a future pair, just add an entry here.
  */
-export const LINKED_STUDENT_PAIRS: LinkedStudentPair[] = [
+const LINKED_STUDENT_PAIRS: LinkedStudentPair[] = [
   { primaryId: 10098, secondaryId: 10099 },
 ];
 
 /** Set of all secondary IDs for O(1) lookup */
-export const SECONDARY_STUDENT_IDS: Set<number> = new Set(
+const SECONDARY_STUDENT_IDS: Set<number> = new Set(
   LINKED_STUDENT_PAIRS.map(pair => pair.secondaryId)
 );
 
@@ -40,11 +40,6 @@ const PRIMARY_TO_SECONDARY: Map<number, number> = new Map(
 /** Check if a student ID is a secondary (hidden) linked student. */
 export function isSecondaryStudent(id: number): boolean {
   return SECONDARY_STUDENT_IDS.has(id);
-}
-
-/** Check if a student ID is part of any linked pair (primary or secondary). */
-export function isLinkedStudent(id: number): boolean {
-  return PRIMARY_TO_SECONDARY.has(id) || SECONDARY_TO_PRIMARY.has(id);
 }
 
 /**

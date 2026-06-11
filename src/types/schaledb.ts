@@ -7,7 +7,7 @@
  */
 
 /** A single skill-effect entry. `Type` discriminates the rest of the shape. */
-export interface SchaleSkillEffect {
+interface SchaleSkillEffect {
   Type: string;
   Scale?: number[];
   [key: string]: unknown;

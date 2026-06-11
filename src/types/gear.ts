@@ -2,25 +2,7 @@
 export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' |
   'Hairpin' | 'Charm' | 'Watch' | 'Necklace';
 
-export const EQUIPMENT_TYPES: readonly EquipmentType[] = [
-  'Hat', 'Gloves', 'Shoes', 'Bag', 'Badge', 'Hairpin', 'Charm', 'Watch', 'Necklace',
-] as const;
-
-export interface EquipmentItem {
-  Id: number;
-  Category: string;
-  Tier: number;
-  MaxLevel: number;
-  Recipe: number[][];
-}
-
-export interface EquipmentMaterial {
-  material: Record<string, any>;
-  materialQuantity: number;
-  equipmentType: EquipmentType;
-}
-
-export interface EquipmentLevel {
+interface EquipmentLevel {
   current: number;
   target: number;
 }
@@ -38,13 +20,6 @@ export interface GradeInfos {
   owned?: number;
   price?: number;
   purchasable?: number;
-}
-
-export interface EquipmentSettings {
-  current: number;
-  target: number;
-  icon: string;
-  name: string;
 }
 
 export interface ExclusiveGearLevel {

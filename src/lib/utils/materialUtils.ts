@@ -239,7 +239,7 @@ export function getMaterialName(item: { material?: { Id?: number; Name?: string 
  * - Artifact items (SubCategory === 'Artifact') use item icons
  * - Equipment blueprints use equipment icons with _piece suffix
  */
-export function isItemIconMaterial(
+function isItemIconMaterial(
   material: Partial<ResourceProps> | undefined
 ): boolean {
 

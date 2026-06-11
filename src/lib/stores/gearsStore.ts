@@ -14,20 +14,6 @@ export function updateGearsData(studentId: string | number, gears: Material[]) {
   gearsDataStore.value[numericId] = gears;
 }
 
-export function getGearsData(studentId: string | number): Material[] {
-  const numericId = toNumericId(studentId);
-  return gearsDataStore.value[numericId] || [];
-}
-
-export function clearGearsData(studentId: string | number) {
-  const numericId = toNumericId(studentId);
-  delete gearsDataStore.value[numericId];
-}
-
 export function getAllGearsData(): Record<number, Material[]> {
   return gearsDataStore.value;
-}
-
-export function clearAllGearsData() {
-  gearsDataStore.value = {};
 }

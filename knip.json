@@ -2,5 +2,5 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": ["index.html", "public/image-cache-sw.js"],
   "project": ["src/**/*.{ts,vue}"],
-  "ignoreDependencies": ["rollup"]
+  "ignoreDependencies": ["rollup", "postcss-load-config", "@types/postcss-load-config"]
 }

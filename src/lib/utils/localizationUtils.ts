@@ -22,7 +22,7 @@ export function resolveLocalized (category: keyof SchaleLocalization, key?: stri
  * @param key The buff key to lookup (e.g. 'Buff_AttackPower')
  * @returns The localized buff name or the cleaned key as fallback
  */
-export function fetchLocalizedBuffName(key: string): string {
+function fetchLocalizedBuffName(key: string): string {
   const cache = localizationData.value;
   if (cache?.BuffName?.[key]) {
     return cache.BuffName[key];

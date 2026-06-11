@@ -17,7 +17,6 @@
  *    `locales/index.ts` with ~70 changelog-only keys.
  */
 
-import { computed } from 'vue';
 import { currentLanguage } from '@/lib/stores/localizationStore';
 
 export interface LocalizedText {
@@ -31,7 +30,7 @@ export interface LocalizedText {
  * their own header (e.g. a frontend page + a backend OCR upgrade shipped the
  * same week). Single-feature entries skip `sections` and use `highlights`.
  */
-export interface ChangelogSection {
+interface ChangelogSection {
   title: LocalizedText;
   highlights: LocalizedText[];
 }
@@ -368,7 +367,3 @@ export const CHANGELOG: ChangelogEntry[] = [
  */
 export const localizeChangelogText = (text: LocalizedText): string =>
   text[currentLanguage.value] ?? text.en;
-
-/** Reactive helper for `<template>` use — re-renders when language changes. */
-export const useChangelogText = (text: LocalizedText) =>
-  computed(() => localizeChangelogText(text));

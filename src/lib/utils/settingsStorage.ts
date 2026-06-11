@@ -168,61 +168,11 @@ export function updateSortSettings(
 }
 
 /**
- * Get theme setting
- * @returns Current theme
- */
-export function getTheme(): ThemeId {
-  return getSettings().theme;
-}
-
-/**
- * Set theme setting
- * @param theme New theme value
- * @returns True if successful, false otherwise
- */
-export function setTheme(theme: ThemeId): boolean {
-  return updateSetting('theme', theme);
-}
-
-/**
- * Get language setting
- * @returns Current language
- */
-export function getLanguage(): 'en' | 'jp' {
-  return getSettings().language;
-}
-
-/**
- * Set language setting
- * @param language New language value
- * @returns True if successful, false otherwise
- */
-export function setLanguage(language: 'en' | 'jp'): boolean {
-  return updateSetting('language', language);
-}
-
-/**
  * Get pinned students
  * @returns Array of pinned student IDs
  */
 export function getPinnedStudents(): string[] {
   return getSettings().pinnedStudents;
-}
-
-/**
- * Get sort settings
- * @returns Current sort option and direction
- */
-export function getSortSettings(): { option: SortOption; direction: SortDirection } {
-  return getSettings().sort;
-}
-
-/**
- * Reset settings to defaults
- * @returns True if successful, false otherwise
- */
-export function resetSettings(): boolean {
-  return saveSettings({ ...DEFAULT_SETTINGS });
 }
 
 /** Read the last changelog entry id the user dismissed (undefined ⇒ unseen). */

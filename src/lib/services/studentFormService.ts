@@ -86,27 +86,3 @@ export async function initializeStudentFormData(student: StudentProps): Promise<
   });
 }
 
-/**
- * Check if a student has form data in IndexedDB
- * Does NOT initialize - use initializeStudentFormData for that
- */
-export async function hasStudentFormData(studentId: number): Promise<boolean> {
-  const existing = await db.forms.get(studentId);
-  return existing !== undefined;
-}
-
-/**
- * Clear the session initialization cache
- * Useful for testing or when user clears data
- */
-export function clearInitializationCache(): void {
-  initializedStudents.clear();
-}
-
-/**
- * Remove a student from the initialization cache
- * Call this if student data is deleted
- */
-export function removeFromInitializationCache(studentId: number): void {
-  initializedStudents.delete(studentId);
-}

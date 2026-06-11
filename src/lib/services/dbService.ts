@@ -49,7 +49,7 @@ export async function isMigrationCompleted(): Promise<boolean> {
 /**
  * Get last fetched timestamp
  */
-export async function getLastFetched(): Promise<number> {
+async function getLastFetched(): Promise<number> {
   const timestamp = await getMetadata<number>('lastFetched');
   return timestamp || 0;
 }
@@ -57,7 +57,7 @@ export async function getLastFetched(): Promise<number> {
 /**
  * Get data source (api or migration)
  */
-export async function getDataSource(): Promise<'api' | 'migration' | undefined> {
+async function getDataSource(): Promise<'api' | 'migration' | undefined> {
   return await getMetadata<'api' | 'migration'>('dataSource');
 }
 
@@ -118,18 +118,6 @@ export async function getAllStudentsAsRecord(): Promise<Record<number, StudentRe
 }
 
 /**
- * Get student by ID
- */
-export async function getStudentById(id: number): Promise<StudentRecord | undefined> {
-  try {
-    return await db.students.get(id);
-  } catch (error) {
-    console.error(`Error getting student ${id}:`, error);
-    return undefined;
-  }
-}
-
-/**
  * Save students (bulk upsert)
  */
 export async function saveStudents(students: StudentRecord[]): Promise<boolean> {
@@ -182,7 +170,7 @@ export async function saveItems(items: ItemRecord[]): Promise<boolean> {
 /**
  * Get all equipment as array
  */
-export async function getAllEquipment(): Promise<EquipmentRecord[]> {
+async function getAllEquipment(): Promise<EquipmentRecord[]> {
   try {
     return await db.equipment.toArray();
   } catch (error) {
@@ -334,32 +322,6 @@ export async function getAllFormData(): Promise<Record<number, FormRecord>> {
 // ========== Items Inventory Operations ==========
 
 /**
- * Get items inventory quantity for a single item
- */
-export async function getItemsInventory(id: number): Promise<number> {
-  try {
-    const record = await db.items_inventory.get(id);
-    return record?.QuantityOwned || 0;
-  } catch (error) {
-    console.error(`Error getting items inventory ${id}:`, error);
-    return 0;
-  }
-}
-
-/**
- * Set items inventory quantity for a single item
- */
-export async function setItemsInventory(id: number, quantity: number): Promise<boolean> {
-  try {
-    await db.items_inventory.put({ Id: id, QuantityOwned: quantity });
-    return true;
-  } catch (error) {
-    console.error(`Error setting items inventory ${id}:`, error);
-    return false;
-  }
-}
-
-/**
  * Get all items inventories as id→quantity record
  */
 export async function getAllItemsInventories(): Promise<Record<number, number>> {
@@ -389,32 +351,6 @@ export async function saveItemsInventories(inventories: ItemsInventoryRecord[]):
 }
 
 // ========== Equipment Inventory Operations ==========
-
-/**
- * Get equipment inventory
- */
-export async function getEquipmentInventory(id: number): Promise<number> {
-  try {
-    const record = await db.equipment_inventory.get(id);
-    return record?.QuantityOwned || 0;
-  } catch (error) {
-    console.error(`Error getting equipment inventory ${id}:`, error);
-    return 0;
-  }
-}
-
-/**
- * Set equipment inventory
- */
-export async function setEquipmentInventory(id: number, quantity: number): Promise<boolean> {
-  try {
-    await db.equipment_inventory.put({ Id: id, QuantityOwned: quantity });
-    return true;
-  } catch (error) {
-    console.error(`Error setting equipment inventory ${id}:`, error);
-    return false;
-  }
-}
 
 /**
  * Get all equipment inventories

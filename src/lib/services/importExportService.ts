@@ -81,7 +81,7 @@ function hasImportedProgress(state: OtherSiteCharacterState | undefined): boolea
  * Exports all IndexedDB data and settings to a downloadable JSON file
  * @returns Promise resolving to a Blob URL to download the exported data
  */
-export async function exportLocalStorageData(): Promise<string> {
+async function exportLocalStorageData(): Promise<string> {
   try {
     // Export ONLY user data (v3.0 format)
     const [forms, resources, equipments] = await Promise.all([

@@ -4,7 +4,7 @@ import { EQUIPMENT_FARM_STAGES, type FarmStage } from '@/lib/constants/equipment
 
 export type FarmMultiplier = 1 | 2 | 3;
 
-export interface FarmCover {
+interface FarmCover {
   equipId: number;
   name: string;
   category: string;

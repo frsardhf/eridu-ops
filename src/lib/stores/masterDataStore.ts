@@ -52,7 +52,7 @@ export const availableSchools = computed(() => {
 });
 
 // Join point between the master data above and the uiPrefsStore refs.
-export const splitStudents = computed(() => {
+const splitStudents = computed(() => {
   return splitAndSortStudents({
     students: filterSecondaryStudents(Object.values(studentData.value)),
     pinnedStudentIds: pinnedStudentIds.value,

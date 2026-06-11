@@ -14,20 +14,6 @@ export function updateMaterialsData(studentId: string | number, materials: Mater
   materialsDataStore.value[numericId] = materials;
 }
 
-export function getMaterialsData(studentId: string | number): Material[] {
-  const numericId = toNumericId(studentId);
-  return materialsDataStore.value[numericId] || [];
-}
-
-export function clearMaterialsData(studentId: string | number) {
-  const numericId = toNumericId(studentId);
-  delete materialsDataStore.value[numericId];
-}
-
 export function getAllMaterialsData(): Record<number, Material[]> {
   return materialsDataStore.value;
-}
-
-export function clearAllMaterialsData() {
-  materialsDataStore.value = {};
 }

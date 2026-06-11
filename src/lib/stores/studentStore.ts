@@ -12,12 +12,6 @@ export function getStudentData(studentId: string | number): FormRecord | undefin
   return studentDataStore.value[numericId];
 }
 
-export function clearStudentData(studentId: string | number) {
-  const numericId = toNumericId(studentId);
-  const newStore = { ...studentDataStore.value };
-  delete newStore[numericId];
-  studentDataStore.value = newStore;
-}
 
 /**
  * Reactive accessor for a single student's form data.

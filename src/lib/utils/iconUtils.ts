@@ -4,7 +4,7 @@
  * No Vue reactivity; composables wrap these with toValue() where needed.
  */
 
-export const SCHALEDB_BASE = 'https://schaledb.com/images';
+const SCHALEDB_BASE = 'https://schaledb.com/images';
 
 // ── Student images ────────────────────────────────────────────────────────────
 
@@ -28,10 +28,6 @@ export function getBackgroundUrl(bg: string): string {
 
 export function getSkillIconUrl(iconName: string): string {
   return `${SCHALEDB_BASE}/skill/${iconName}.webp`;
-}
-
-export function getPotentialIconUrl(iconName: string): string {
-  return `${SCHALEDB_BASE}/item/icon/${iconName}.webp`;
 }
 
 export function getWeaponIconUrl(weaponImg: string | null | undefined): string {

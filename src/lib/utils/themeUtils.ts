@@ -18,7 +18,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'violet', label: 'Violet', colors: ['#ccb8ff', '#7c3aed'] }
 ];
 
-export function isThemeId(value: string): value is ThemeId {
+function isThemeId(value: string): value is ThemeId {
   return (THEME_IDS as readonly string[]).includes(value);
 }
 

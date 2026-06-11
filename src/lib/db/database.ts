@@ -17,7 +17,7 @@ export interface EquipmentRecord extends ResourceProps {
   Id: number; // Primary key
 }
 
-export interface MetadataRecord {
+interface MetadataRecord {
   key: string; // Primary key
   value: any;
 }
@@ -90,8 +90,8 @@ export interface DeckRecord {
   updatedAt: number;
 }
 
-// Define the database class
-export class EriduOpsDatabase extends Dexie {
+// Define the database class (only the `db` singleton below is exported)
+class EriduOpsDatabase extends Dexie {
   // Declare tables
   students!: Table<StudentRecord, number>;
   items!: Table<ItemRecord, number>;

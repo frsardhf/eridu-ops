@@ -22,7 +22,7 @@ const isEquipmentLoaded = ref(false);
  * Initialize items cache from IndexedDB
  * Should be called once at app startup
  */
-export async function initializeItemsCache() {
+async function initializeItemsCache() {
   try {
     const items = await getItems();
     if (items) {
@@ -43,7 +43,7 @@ export async function initializeItemsCache() {
  * Initialize equipment cache from IndexedDB
  * Should be called once at app startup
  */
-export async function initializeEquipmentCache() {
+async function initializeEquipmentCache() {
   try {
     const equipment = await getEquipment();
     if (equipment) {

@@ -109,7 +109,7 @@ export async function getEquipment(): Promise<Record<string, any> | null> {
  * @param studentId The ID of the student
  * @returns Promise<Record> The student form data or null if not found
  */
-export async function getFormData(studentId: string | number): Promise<Record<string, any> | null> {
+async function getFormData(studentId: string | number): Promise<Record<string, any> | null> {
   if (!studentId) return null;
 
   try {
