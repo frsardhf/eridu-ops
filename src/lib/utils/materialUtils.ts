@@ -1,5 +1,3 @@
-import { getAllFormData } from '../services/dbService';
-import { useStudentData } from '../hooks/useStudentData';
 import {
   Material,
   MaterialType,
@@ -17,6 +15,8 @@ import { calculateAllGears } from '../utils/gearMaterialUtils';
 import { getEquipmentDataByIdSync, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import { getItemIconUrl } from './iconUtils';
 import { ResourceProps } from '../../types/resource';
+import { StudentProps } from '../../types/student';
+import type { FormRecord } from '../db/database';
 
 /**
  * Builds a consolidated material map by summing quantities for duplicate IDs
@@ -81,21 +81,20 @@ export function consolidateAndSortMaterials(materials: Material[]): Material[] {
 }
 
 /**
- * Function to preload all student materials and gears during initialization
- * This will calculate materials and gears for all students that have form data
+ * Bulk-computes materials and gears for every student with form data, writing
+ * the results into materialsStore/gearsStore. Pure over its inputs: the caller
+ * (useStudentData's pipeline) passes the already-loaded master data and form
+ * records, so this never re-reads IndexedDB or reaches into hooks.
  */
-export async function preloadAllStudentsData() {
+export function preloadAllStudentsData(
+  students: Record<string, StudentProps>,
+  forms: Record<number, FormRecord>,
+) {
   try {
-    const allFormData = await getAllFormData();
-
-    const { studentData, equipmentData } = useStudentData();
-    const allStudentsData = studentData.value;
-    const allGearsData = equipmentData.value;
-
-    Object.entries(allFormData).forEach(([studentId, formData]) => {
+    Object.entries(forms).forEach(([studentId, formData]) => {
       if (!formData) return;
 
-      const student = allStudentsData[studentId];
+      const student = students[studentId];
       if (!student) return;
 
       const skillLevels = formData.skillLevels ?? DEFAULT_SKILL_LEVELS;

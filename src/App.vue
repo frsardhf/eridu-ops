@@ -1,21 +1,10 @@
 <script setup>
-import { watch } from 'vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
-import { preloadAllStudentsData } from '@/lib/utils/materialUtils';
 
-const { studentData, isReady } = useStudentData();
-
-// Watch for when studentData is ready and populated, then preload materials/gears
-watch(
-  () => isReady.value,
-  async (ready) => {
-    if (ready && Object.keys(studentData.value).length > 0) {
-      await preloadAllStudentsData();
-      console.log('All data preloaded successfully');
-    }
-  },
-  { immediate: true }
-);
+// Kick off the one-shot data pipeline as soon as the app shell mounts. The
+// pipeline itself preloads the per-student materials/gears aggregates, so no
+// follow-up watcher is needed here.
+useStudentData();
 </script>
 
 <template>

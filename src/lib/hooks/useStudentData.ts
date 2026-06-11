@@ -1,6 +1,11 @@
-import { ref, computed, watch, Ref, ComputedRef } from 'vue'
+// useStudentData.ts - Load pipeline + facade. State lives elsewhere:
+//   stores/masterDataStore  - SchaleDB data, gift derivations, sorted views, load flags
+//   stores/uiPrefsStore     - search/sort/pins/filters/theme (settings-backed)
+// This hook owns orchestration only (init, refresh, language switch, retry)
+// and returns one combined API so components keep a single entry point.
+
+import { watch } from 'vue'
 import { StudentProps } from '../../types/student';
-import { GiftProps } from '../../types/gift';
 import {
   ResourceProps,
   GIFT_BOX_IDS
@@ -25,9 +30,21 @@ import {
   areFiltersEmpty,
 } from '../stores/uiPrefsStore';
 import {
+  studentData,
+  favoredGift,
+  allGifts,
+  giftBoxData,
+  isLoading,
+  isReady,
+  loadError,
+  availableSchools,
+  ownedStudentsArray,
+  unownedStudentsArray,
+  sortedStudentsArray,
+} from '../stores/masterDataStore';
+import {
   getAllStudents,
   getAllItems,
-  getAllEquipment,
   getAllFormData,
   saveStudents,
   saveItems,
@@ -36,65 +53,40 @@ import {
   updateCacheMetadata
 } from '../services/dbService';
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
-import { studentDataStore, batchSetStudentData } from '../stores/studentStore';
+import { batchSetStudentData, studentDataStore } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage, initializeLocalizationData, localizationData } from '../stores/localizationStore';
 import { fetchAllData, fetchLocalizationData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
-import { resolveLocalized } from '../utils/localizationUtils';
 import { SchaleLocalization } from '@/types/schaledb';
-import { splitAndSortStudents, StudentSplit } from '../utils/sortUtils';
-import { filterSecondaryStudents, isSecondaryStudent } from '../constants/linkedStudents';
+import { isSecondaryStudent } from '../constants/linkedStudents';
 import { buildGiftsByStudent } from '../utils/giftUtils';
+import { preloadAllStudentsData } from '../utils/materialUtils';
 import {
   attachElephIcons,
-  hydrateItemsData,
-  hydrateEquipmentData,
   toRecordById
 } from '../utils/studentDataHydrationUtils';
 
-// Singleton state (shared across all calls)
+// --- One-shot lifecycle guards (shared across all hook calls) ---
 let _langChangeTimer: ReturnType<typeof setTimeout> | null = null;
 // Monotonic counter for language reinitializations; a reinit only applies its
 // result if it's still the latest, so rapid toggling can't apply stale data.
 let _langReqSeq = 0;
-let _studentData: Ref<{ [key: string]: StudentProps }>;
-let _itemsData: Ref<Record<string, ResourceProps>>;
-let _equipmentData: Ref<Record<string, ResourceProps>>;
-let _giftData: Ref<Record<string, ResourceProps>>;
-let _boxData: Ref<Record<string, ResourceProps>>;
-let _favoredGift: Ref<Record<string, GiftProps[]>>;
-let _allGifts: Ref<Record<string, GiftProps[]>>;
-let _giftBoxData: Ref<Record<string, GiftProps[]>>;
-let _sortedStudentsArray: ComputedRef<StudentProps[]>;
-let _splitStudents: ComputedRef<StudentSplit>;
-let _availableSchools: ComputedRef<string[]>;
-let _isLoading: Ref<boolean>;
-let _isReady: Ref<boolean>;
-// True when there is nothing to show AND the SchaleDB fetch failed (first visit
-// offline, blocked, etc.). Drives the retry banner; never set while cached data
-// is still on screen.
-let _loadError: Ref<boolean>;
 let _isInitialized = false;
-let _initPromise: Promise<void>;
+let _initPromise: Promise<void> | null = null;
 
-// --- Module-level functions (operate on singleton refs) ---
-// UI preference state/actions (search, sort, pins, filters, theme) live in
-// stores/uiPrefsStore and are re-exported from the hook's return below.
+// --- Load pipeline (writes masterDataStore) ---
 
 async function loadFromCache() {
   try {
-    const [students, items, equipment] = await Promise.all([
+    // Equipment isn't read here: processAndPopulateData only needs students +
+    // items (gift derivations), and initializeAllCaches loads equipment itself.
+    const [students, items] = await Promise.all([
       getAllStudents(),
-      getAllItems(),
-      getAllEquipment()
+      getAllItems()
     ]);
 
-    const studentRecord = toRecordById(students);
-    const itemRecord = toRecordById(items);
-    const equipmentRecord = toRecordById(equipment);
-
-    await processAndPopulateData(studentRecord, itemRecord, equipmentRecord);
+    await processAndPopulateData(toRecordById(students), toRecordById(items));
   } catch (error) {
     console.error('Error loading from cache:', error);
   }
@@ -117,8 +109,8 @@ async function refreshSchaleDBData() {
     ]);
 
     await updateCacheMetadata();
-    await processAndPopulateData(students, items, equipment);
-    _loadError.value = false;
+    await processAndPopulateData(students, items);
+    loadError.value = false;
 
     console.log('Background refresh completed successfully');
   } catch (error) {
@@ -130,42 +122,47 @@ async function refreshSchaleDBData() {
 // Only surface the error banner when the failure leaves the user with nothing:
 // a stale-but-present cache is still a working app, not an error state.
 function markLoadErrorIfEmpty() {
-  if (Object.keys(_studentData.value).length === 0) {
-    _loadError.value = true;
+  if (Object.keys(studentData.value).length === 0) {
+    loadError.value = true;
   }
 }
 
 async function processAndPopulateData(
   students: Record<string, StudentProps>,
   items: Record<string, ResourceProps>,
-  equipment: Record<string, ResourceProps>,
   localization?: SchaleLocalization
 ) {
+  // Single item/equipment source: resourceCacheStore reads both tables merged
+  // with inventory quantities here, and per-id updates keep it current after
+  // inventory edits. Nothing else holds a copy.
   await initializeAllCaches();
 
   // On a language switch, swap localization in the same synchronous block as the
   // student/gift data so the grid and its school/club labels never render a mix
   // of languages (Vue batches both ref writes into one re-render).
   if (localization) localizationData.value = localization;
-  _studentData.value = attachElephIcons(students, items);
+  studentData.value = attachElephIcons(students, items);
 
-  _giftData.value = filterByProperty(items, 'category', 'Favor');
-  _boxData.value = filterByProperty(items, 'id', GIFT_BOX_IDS);
+  // Gift metadata slices are pipeline locals; only the per-student maps persist.
+  const gifts = filterByProperty(items, 'category', 'Favor');
+  const boxes = filterByProperty(items, 'id', GIFT_BOX_IDS);
 
-  _favoredGift.value = buildGiftsByStudent(_studentData.value, _giftData.value);
-  _allGifts.value = buildGiftsByStudent(_studentData.value, _giftData.value, {
+  favoredGift.value = buildGiftsByStudent(studentData.value, gifts);
+  allGifts.value = buildGiftsByStudent(studentData.value, gifts, {
     includeAll: true,
   });
-  _giftBoxData.value = buildGiftsByStudent(_studentData.value, _boxData.value, {
+  giftBoxData.value = buildGiftsByStudent(studentData.value, boxes, {
     isGiftBox: true,
-    favoredGiftByStudent: _favoredGift.value
+    favoredGiftByStudent: favoredGift.value
   });
-
-  _itemsData.value = await hydrateItemsData(items);
-  _equipmentData.value = await hydrateEquipmentData(equipment);
 
   await preloadStudentStore();
   syncPinnedStudents();
+
+  // Recompute the per-student materials/gears aggregates from the freshly
+  // loaded forms. Running here covers init, imports (reinitializeData), and
+  // language switches alike instead of only the first App.vue mount.
+  preloadAllStudentsData(studentData.value, studentDataStore.value);
 }
 
 async function preloadStudentStore() {
@@ -185,8 +182,8 @@ async function preloadStudentStore() {
 
 async function initializeData() {
   try {
-    _isLoading.value = true;
-    _loadError.value = false;
+    isLoading.value = true;
+    loadError.value = false;
 
     await Promise.all([
       migrateFromLocalStorageToIndexedDB(),
@@ -196,7 +193,7 @@ async function initializeData() {
     loadUiPrefs();
     await loadFromCache();
 
-    if (Object.keys(_studentData.value).length === 0) {
+    if (Object.keys(studentData.value).length === 0) {
       // Empty cache (first visit): the fetch IS the initial load, so run it in
       // the foreground; on failure markLoadErrorIfEmpty surfaces the banner.
       await refreshSchaleDBData();
@@ -208,12 +205,12 @@ async function initializeData() {
       }
     }
 
-    _isReady.value = true;
-    _isLoading.value = false;
+    isReady.value = true;
+    isLoading.value = false;
   } catch (error) {
     console.error('Error initializing data:', error);
-    _isLoading.value = false;
-    _isReady.value = true;
+    isLoading.value = false;
+    isReady.value = true;
     markLoadErrorIfEmpty();
   }
 }
@@ -229,13 +226,13 @@ async function retryDataLoad() {
 // user's forms/inventory differ, so re-reading IndexedDB and reprocessing is
 // enough (and far cheaper than the old full refresh).
 async function reinitializeData() {
-  _isLoading.value = true;
+  isLoading.value = true;
   try {
     await loadFromCache();
   } catch (error) {
     console.error('Data reload failed:', error);
   } finally {
-    _isLoading.value = false;
+    isLoading.value = false;
   }
 }
 
@@ -247,7 +244,7 @@ async function reinitializeData() {
 async function applyLanguage() {
   const seq = ++_langReqSeq;
   const targetLang = currentLanguage.value;
-  _isLoading.value = true;
+  isLoading.value = true;
   try {
     const [data, localization] = await Promise.all([
       fetchAllData(targetLang),
@@ -264,66 +261,20 @@ async function applyLanguage() {
     await updateCacheMetadata();
 
     if (seq !== _langReqSeq) return;
-    await processAndPopulateData(data.students, data.items, data.equipment, localization);
+    await processAndPopulateData(data.students, data.items, localization);
   } catch (error) {
     console.error('Language load failed:', error);
   } finally {
-    if (seq === _langReqSeq) _isLoading.value = false;
+    if (seq === _langReqSeq) isLoading.value = false;
   }
 }
 
 // --- Composable entry point ---
 
 export function useStudentData() {
-  // Initialize refs on first call only
-  if (!_studentData) {
-    _studentData = ref<{ [key: string]: StudentProps }>({});
-    _itemsData = ref<Record<string, ResourceProps>>({});
-    _equipmentData = ref<Record<string, ResourceProps>>({});
-    _giftData = ref<Record<string, ResourceProps>>({});
-    _boxData = ref<Record<string, ResourceProps>>({});
-    _favoredGift = ref<Record<string, GiftProps[]>>({});
-    _allGifts = ref<Record<string, GiftProps[]>>({});
-    _giftBoxData = ref<Record<string, GiftProps[]>>({});
-    _isLoading = ref<boolean>(true);
-    _isReady = ref<boolean>(false);
-    _loadError = ref<boolean>(false);
-
-    _availableSchools = computed(() => {
-      const schools = new Set<string>();
-      for (const s of Object.values(_studentData.value)) {
-        if (s.School) schools.add(s.School);
-      }
-      return [...schools].sort((a, b) =>
-        resolveLocalized('School', a).localeCompare(resolveLocalized('School', b))
-      );
-    });
-
-    // Join point between the data refs above and the uiPrefsStore refs.
-    _splitStudents = computed(() => {
-      return splitAndSortStudents({
-        students: filterSecondaryStudents(Object.values(_studentData.value)),
-        pinnedStudentIds: pinnedStudentIds.value,
-        searchQuery: searchQuery.value,
-        sortOption: currentSort.value,
-        sortDirection: sortDirection.value,
-        isPinnedMode: isPinnedMode.value,
-        studentStore: studentDataStore.value,
-        resolveLocalized,
-        filters: activeFilters.value,
-      });
-    });
-
-    // Concatenated owned + unowned for modal prev/next navigation
-    _sortedStudentsArray = computed(() => [
-      ..._splitStudents.value.owned,
-      ..._splitStudents.value.unowned,
-    ]);
-  }
-
-  // Watch for language changes and load the new language (only once).
-  // Debounced 200ms so a rapid toggle burst only triggers one coordinated load.
-  if (!_isInitialized) {
+  if (!_isInitialized && !_initPromise) {
+    // Watch for language changes and load the new language (only once).
+    // Debounced 200ms so a rapid toggle burst only triggers one coordinated load.
     watch(
       () => currentLanguage.value,
       () => {
@@ -334,32 +285,26 @@ export function useStudentData() {
         }, 200);
       }
     );
-  }
 
-  // Initialize data only once
-  if (!_isInitialized && !_initPromise) {
+    // Initialize data only once
     _initPromise = initializeData().then(() => {
       _isInitialized = true;
     });
   }
 
   return {
-    studentData: _studentData,
-    giftData: _giftData,
-    boxData: _boxData,
-    itemsData: _itemsData,
-    equipmentData: _equipmentData,
-    favoredGift: _favoredGift,
-    allGifts: _allGifts,
-    giftBoxData: _giftBoxData,
-    sortedStudentsArray: _sortedStudentsArray,
-    ownedStudentsArray:   computed(() => _splitStudents.value.owned),
-    unownedStudentsArray: computed(() => _splitStudents.value.unowned),
-    availableSchools: _availableSchools,
+    studentData,
+    favoredGift,
+    allGifts,
+    giftBoxData,
+    sortedStudentsArray,
+    ownedStudentsArray,
+    unownedStudentsArray,
+    availableSchools,
     reinitializeData,
-    isLoading: _isLoading,
-    isReady: _isReady,
-    loadError: _loadError,
+    isLoading,
+    isReady,
+    loadError,
     retryDataLoad,
     // UI preference state/actions, re-exported from uiPrefsStore so existing
     // consumers keep their single useStudentData() entry point.
