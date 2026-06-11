@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue';
 import { getSettings, updateSetting } from '../utils/settingsStorage';
-import { fetchLocalizationData } from '../services/schaleDbFetchService';
+import { loadLocalizationData } from '../services/schaleDbFetchService';
 import type { SchaleLocalization } from '@/types/schaledb';
 
 export type Language = 'en' | 'jp';
@@ -38,7 +38,15 @@ export const localizationData = ref<SchaleLocalization | null>(null);
 // coordinated loader in useStudentData, which fetches localization together with
 // the student data and applies both atomically (no separate watcher here, so the
 // two can't update out of sync).
+//
+// Cache-first (IndexedDB) and non-fatal: a failure must never block the data
+// pipeline. With a warm student cache and no localization, resolveLocalized
+// falls back to raw keys, which beats an empty screen.
 export async function initializeLocalizationData(lang?: string): Promise<void> {
   const target = lang ?? currentLanguage.value;
-  localizationData.value = await fetchLocalizationData(target);
+  try {
+    localizationData.value = await loadLocalizationData(target);
+  } catch (error) {
+    console.error('Localization load failed:', error);
+  }
 }

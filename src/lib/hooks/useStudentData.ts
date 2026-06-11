@@ -56,7 +56,7 @@ import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { batchSetStudentData, studentDataStore } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import { currentLanguage, initializeLocalizationData, localizationData } from '../stores/localizationStore';
-import { fetchAllData, fetchLocalizationData } from '../services/schaleDbFetchService';
+import { fetchAllData, loadLocalizationData, refreshLocalizationData } from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
 import { SchaleLocalization } from '@/types/schaledb';
 import { isSecondaryStudent } from '../constants/linkedStudents';
@@ -95,7 +95,12 @@ async function loadFromCache() {
 async function refreshSchaleDBData() {
   try {
     console.log('Fetching fresh data from SchaleDB...');
-    const { students, items, equipment } = await fetchAllData(currentLanguage.value);
+    // Localization refreshes on the same cycle so labels and data can't drift;
+    // its failure is non-fatal (the previously applied strings stay in place).
+    const [{ students, items, equipment }, localization] = await Promise.all([
+      fetchAllData(currentLanguage.value),
+      refreshLocalizationData(currentLanguage.value).catch(() => null),
+    ]);
     // A failed fetch returns empty objects; don't overwrite the cache with them.
     if (!students || Object.keys(students).length === 0) {
       markLoadErrorIfEmpty();
@@ -109,7 +114,7 @@ async function refreshSchaleDBData() {
     ]);
 
     await updateCacheMetadata();
-    await processAndPopulateData(students, items);
+    await processAndPopulateData(students, items, localization ?? undefined);
     loadError.value = false;
 
     console.log('Background refresh completed successfully');
@@ -248,7 +253,7 @@ async function applyLanguage() {
   try {
     const [data, localization] = await Promise.all([
       fetchAllData(targetLang),
-      fetchLocalizationData(targetLang),
+      loadLocalizationData(targetLang),
     ]);
     if (seq !== _langReqSeq) return;
     if (!data.students || Object.keys(data.students).length === 0) return;

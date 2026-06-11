@@ -1,5 +1,6 @@
 import { FetchedData } from '../../types/student';
 import type { SchaleLocalization } from '../../types/schaledb';
+import { getMetadata, setMetadata } from './dbService';
 
 /**
  * Fetch a single SchaleDB data file with automatic retry on failure.
@@ -61,17 +62,44 @@ export function fetchAllData(lang: string): Promise<FetchedData> {
   return promise;
 }
 
-// Per-language cache, same eviction idea as `_dataCache`. Applying the result
-// to the localizationData store ref is the caller's job (localizationStore /
-// useStudentData), which also guards against stale language toggles.
+// Localization is also persisted per language in the IndexedDB metadata table
+// (key `localization:{lang}`), so cold starts don't need a network round-trip
+// and a warm cache keeps working offline. Freshness rides the same 7-day cycle
+// as the master data: refreshSchaleDBData calls refreshLocalizationData.
+// Applying the result to the localizationData store ref is the caller's job
+// (localizationStore / useStudentData), which guards against stale toggles.
 const _locCache = new Map<string, Promise<SchaleLocalization>>();
 
-export function fetchLocalizationData(lang: string): Promise<SchaleLocalization> {
-  const cached = _locCache.get(lang);
-  if (cached) return cached;
+const locCacheKey = (lang: string) => `localization:${lang}`;
+
+// Network fetch with write-through to IndexedDB and the session cache.
+function fetchAndPersistLocalization(lang: string): Promise<SchaleLocalization> {
   const promise = fetch(`https://schaledb.com/data/${lang}/localization.json`)
-    .then(response => response.json() as Promise<SchaleLocalization>);
+    .then(response => response.json() as Promise<SchaleLocalization>)
+    .then(data => {
+      setMetadata(locCacheKey(lang), data);
+      return data;
+    });
   _locCache.set(lang, promise);
   promise.catch(() => _locCache.delete(lang));
   return promise;
+}
+
+/** Cache-first read: session cache → IndexedDB (seeds the session) → network. */
+export async function loadLocalizationData(lang: string): Promise<SchaleLocalization> {
+  const inFlight = _locCache.get(lang);
+  if (inFlight) return inFlight;
+
+  const persisted = await getMetadata<SchaleLocalization>(locCacheKey(lang));
+  if (persisted) {
+    _locCache.set(lang, Promise.resolve(persisted));
+    return persisted;
+  }
+
+  return fetchAndPersistLocalization(lang);
+}
+
+/** Force a network refetch (the 7-day refresh path); updates both caches. */
+export function refreshLocalizationData(lang: string): Promise<SchaleLocalization> {
+  return fetchAndPersistLocalization(lang);
 }
