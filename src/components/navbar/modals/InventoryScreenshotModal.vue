@@ -27,8 +27,8 @@ const PARSER_BASE = (import.meta.env.VITE_PARSER_URL as string | undefined) ?? '
 //   can't sneak in HEIC, GIF, BMP, etc. that would either be rejected by the
 //   backend or waste a Gemini call on an unparseable image.
 // - Dimensions are gated to FHD landscape (1920×1080) and above in the 16:9
-//   family. Below FHD the icon CLIP matching degrades because cells fall under
-//   ~100px and CLIP's 224×224 input requires aggressive upsampling. The 1900
+//   family. Below FHD the icon template matching loses pixel detail (the
+//   sprite templates are calibrated against ~150px cells). The 1900
 //   floor leaves ~20px of slop for Snipping Tool / DPI rounding (e.g. 1919×1079).
 // - Aspect ratio band 1.70–1.85 covers 16:9 with pixel tolerance while rejecting
 //   16:10 (1.60), 21:9 ultrawide (2.37), and portrait phone screenshots.
@@ -72,11 +72,14 @@ const lastAppliedCount = ref(0);
 let appliedTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Two-phase progress bar:
-//   Fast path (Gemini): typically ~20s — bar fills 0→85% in 30s.
-//   Slow path (Florence-2 CPU fallback): ~4 min — bar crawls 85→95% over 210s.
-// The switch happens automatically at 30s if the response hasn't arrived yet.
-const FAST_SECONDS = 30;   // Gemini expected ceiling
-const SLOW_SECONDS = 240;  // Florence-2 CPU fallback ceiling
+//   Typical path: ~10–15s for a full 3-screenshot scan — icon matching runs
+//   concurrently with the Gemini quantity call, so a request costs
+//   max(matching, Gemini). Bar fills 0→85% in 20s.
+//   Slow path: Gemini transient retries / model fallbacks — bar crawls
+//   85→95%; the chain gives up within ~90s and unread quantities degrade
+//   to 0 + red confidence for manual entry.
+const FAST_SECONDS = 20;   // full-scan expected ceiling
+const SLOW_SECONDS = 90;   // Gemini retry-chain ceiling
 const elapsedSeconds = ref(0);
 let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -499,13 +502,6 @@ useDocumentListener('paste', onPaste);
             <li v-html="$t('scanGuide.reviewing.appliesDetected')"></li>
           </ul>
         </div>
-        <div class="guide-section">
-          <p class="guide-section-title">{{ $t('scanGuide.limitations.title') }}</p>
-          <ul class="guide-list">
-            <li v-html="$t('scanGuide.limitations.iconSimilarity')"></li>
-          </ul>
-        </div>
-
         <!-- Screenshot example table -->
         <div class="guide-section">
           <p class="guide-section-title">{{ $t('scanGuide.examples.title') }}</p>

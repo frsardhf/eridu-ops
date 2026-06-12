@@ -469,10 +469,6 @@ const translations = {
         hoverControls: "Hover any card to reveal controls: <strong>✏</strong> change item · edit quantity field · <strong>×</strong> remove.",
         appliesDetected: "Applying only updates quantities for <strong>detected items</strong>. Undetected cells are left unchanged.",
       },
-      limitations: {
-        title: "Known limitations",
-        iconSimilarity: "The icon model may misidentify visually similar items within the same design family (e.g. blu-ray series).",
-      },
       examples: {
         title: "Screenshot examples",
         correct: "✓ Correct",
@@ -489,8 +485,8 @@ const translations = {
       errTooSmall: "Screenshot must be at least {minWidth}px wide (FHD or higher). Yours is {width}×{height}.",
       errBadAspect: "Screenshot must be 16:9 (e.g. 1920×1080). Yours is {width}×{height}, not a supported aspect ratio.",
       errTooMany: "Up to {max} screenshots per scan. Please select fewer.",
-      tipFast: "Reading quantities with AI vision…",
-      tipSlow: "Taking longer than expected, running local OCR (~4 min total). Feel free to leave this tab open.",
+      tipFast: "Matching icons & reading quantities…",
+      tipSlow: "Taking longer than usual, retrying the quantity reader. Unread quantities will be flagged for manual entry.",
       appliedOne: "Applied 1 item. Upload another screenshot or close.",
       appliedMany: "Applied {count} items. Upload another screenshot or close.",
       prepHintItems: "<strong>Before screenshotting:</strong> apply in-game filters so only EXP materials, Artifacts, Blu-ray, Tech Notes, and Gifts are visible. Other categories won't be detected.",
@@ -1072,10 +1068,6 @@ const translations = {
         hoverControls: "カードにカーソルを合わせると操作ボタンが表示されます：<strong>✏</strong> アイテム変更 · 個数を編集 · <strong>×</strong> 削除。",
         appliesDetected: "適用は<strong>検出されたアイテム</strong>の個数のみを更新します。未検出のセルはそのまま残ります。",
       },
-      limitations: {
-        title: "既知の制限事項",
-        iconSimilarity: "同じデザインシリーズ内で見た目の似たアイテム（戦術教育BDシリーズなど）を誤認識する場合があります。",
-      },
       examples: {
         title: "スクリーンショットの例",
         correct: "✓ 正しい",
@@ -1092,8 +1084,8 @@ const translations = {
       errTooSmall: "スクリーンショットは{minWidth}px以上の幅が必要です（FHD以上）。現在は{width}×{height}です。",
       errBadAspect: "スクリーンショットは 16:9（例：1920×1080）にしてください。現在の{width}×{height}は対応していないアスペクト比です。",
       errTooMany: "1回のスキャンにつき最大{max}枚です。枚数を減らしてください。",
-      tipFast: "AIビジョンで個数を読み取り中…",
-      tipSlow: "想定より時間がかかっています — ローカルOCRを実行中（合計約4分）。タブを開いたままで構いません。",
+      tipFast: "アイコン照合と個数読み取りを実行中…",
+      tipSlow: "想定より時間がかかっています。個数リーダーを再試行中です。読み取れなかった個数は手動入力用にフラグ表示されます。",
       appliedOne: "1個のアイテムを適用しました。次のスクリーンショットをアップロード、または閉じてください。",
       appliedMany: "{count}個のアイテムを適用しました。次のスクリーンショットをアップロード、または閉じてください。",
       prepHintItems: "<strong>スクリーンショットを撮る前に：</strong>ゲーム内フィルターで経験値素材、秘伝記、戦術教育BD、技術ノート、贈り物のみを表示してください。それ以外のカテゴリは検出されません。",
