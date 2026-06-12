@@ -83,6 +83,42 @@
   color: var(--color-positive);
 }
 
+/* Quantity input overlay (ResourceCard, GiftCard, ElephEligmaSection).
+   Lives here — not in studentModal.css — because that stylesheet only loads
+   with the Students-page chunk since the lazy-loading split, while these
+   cards also render in the global scanner modal on any route. */
+.resource-input {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 52px;
+  height: 24px;
+  padding: 0 2px;
+  margin: 0;
+  font-size: 0.8em;
+  text-align: center;
+  background-color: var(--input-color, var(--background-primary));
+  border: 1px solid var(--border-color);
+  border-radius: 3px 0 0 0;
+  opacity: 0;
+  z-index: 2;
+  transition: opacity 0.2s ease;
+  /* Remove native spin buttons on all browsers */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.resource-input:focus {
+  opacity: 1;
+  border-color: var(--accent-color);
+}
+
+.resource-input::-webkit-inner-spin-button,
+.resource-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Responsive adjustments */
 @media (max-width: 600px) {
   .resources-grid {

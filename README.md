@@ -11,8 +11,9 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) �
 - **Student grid** (`/students`) — Search, sort, pin, filter (school, equipment slot, attack/defense type, rarity, availability), and bulk-edit students
 - **Student planner** — Per-student modal for skill levels, character levels, potentials, equipment tiers, and exclusive weapon (EX Weapon) levels with material cost breakdowns
 - **Bond planner** (`/bonds`) — Tracked-students view with gift allocation, cafe-tap projection (start/end dates), bonus EXP from lessons, and per-gift EXP breakdowns
+- **Bond 100 Hall** (`/hall`) — Community wall of senseis who've reached bond level 100 with each student; search, server filters, sorting, friend-code submission, and a per-student entries view (data via arona.icu)
 - **Inventory** — Manage owned materials, equipment, and gifts across all students; bulk-update from a single screenshot via OCR scan
-- **Tools** (ToolsRail on `/students`) — Bulk bond update (paste `name bond` pairs), bulk modify students, crafting fodder picker, deck builder
+- **Tools** (ToolsRail on `/students`) — Bulk bond update (paste `name bond` pairs), bulk modify students, crafting fodder picker, equipment farming suggestions, deck builder
 - **Themes** — 7 built-in colour themes (dark, light, ocean, forest, sunset, rose, violet)
 - **Import / Export** — Back up and share your planner data as JSON
 - **Multi-language** — English and Japanese UI
@@ -57,18 +58,19 @@ In production, `/api` routes to the hosted parser service. In local development,
 
 ## Project Structure
 
-Folders under `components/` map to a **route surface** (`students/`, `bonds/`) or a **cross-page domain** (`inventory/`, `navbar/`, `shared/`).
+Folders under `components/` map to a **route surface** (`students/`, `bonds/`, `bond100/`) or a **cross-page domain** (`inventory/`, `navbar/`, `shared/`).
 
 ```
 src/
-  pages/                # Route components — LandingPage, StudentsPage, BondsPage
+  pages/                # Route components — LandingPage, StudentsPage, BondsPage, Bond100Page
   router/               # vue-router config
   components/
     students/           # /students surface
       modal/            #   StudentModal + Info / Upgrade / Gear / Shared subtrees
-      tools/            #   ToolsRail-triggered modals (BondUpdate, BulkModify, CraftingFodder, DeckBuilder)
+      tools/            #   ToolsRail-triggered modals (BondUpdate, BulkModify, CraftingFodder, EquipmentFarming, DeckBuilder)
     bonds/              # /bonds surface — BondsStudentEditor, BondsStudentPicker, OtherExpPanel
       gift/             #   Gift allocation building blocks (GiftCard, GiftGrid, GiftOption, …)
+    bond100/            # /hall surface — Bond100Wall, Bond100EntriesModal, Bond100SubmitModal, Bond100StatsPopover
     inventory/          # GlobalInventoryModal, ItemsGrid, EquipmentGrid, ResourceCard, ResourceSummary
     navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel
       modals/           #   Navbar-triggered modals (Contact, Credits, Import, InventoryScreenshot)
