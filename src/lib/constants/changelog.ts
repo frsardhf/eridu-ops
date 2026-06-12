@@ -50,6 +50,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-06-scanner-exact-matching',
+    date: '2026-06-13',
+    title: {
+      en: 'Inventory scanner: faster and more accurate',
+      jp: 'インベントリスキャナーがより速く、より正確に',
+    },
+    summary: {
+      en: 'The inventory scanner now reads your screenshots in seconds and identifies every item correctly.',
+      jp: 'インベントリスキャナーが数秒でスクリーンショットを読み取り、アイテムを正確に認識できるようになりました。',
+    },
+    highlights: [
+      {
+        en: 'Items are now identified by comparing them directly with the real game icons. In our tests, every item was detected correctly, including ones that look almost the same (like Blu-ray and Tech Note tiers).',
+        jp: 'アイテムをゲーム内の実際のアイコンと直接比較して識別するようになりました。テストでは、戦術教育BDや技術ノートのような見た目がそっくりなアイテムも含め、すべて正しく検出されました。',
+      },
+      {
+        en: 'The "Known limitations" note about similar-looking items was removed from the guide, since this is no longer an issue. Cells the scanner is unsure about are still highlighted so you can double-check them.',
+        jp: '見た目が似たアイテムに関する「既知の制限事項」は、問題が解消されたためガイドから削除しました。スキャナーが確信を持てないセルは今までどおりハイライト表示されるので、すぐに確認できます。',
+      },
+    ],
+  },
+  {
     id: '2026-06-hall-entries-redesign',
     date: '2026-06-07',
     title: {
