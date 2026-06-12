@@ -113,7 +113,7 @@ const translations = {
     conversion: "Conversion",
     consumed: "Consumed",
 
-    // BondsPage — Other EXP sources panel
+    // BondsPage: Other EXP sources panel
     otherExpSources: "Other EXP",
     otherExpTooltip: "Plan cafe taps and add bonus EXP from lessons",
     cafeTaps: "Cafe taps",
@@ -449,7 +449,7 @@ const translations = {
     lowConfidenceWarning: "Low-confidence items may be incorrect. Check before applying.",
     noItemsDetected: "No items detected. Check that the parser service is running and the screenshot is correct.",
 
-    // Inventory screenshot scanner — guide panel
+    // Inventory screenshot scanner: guide panel
     scanGuide: {
       beforeScanning: {
         title: "Before scanning",
@@ -481,7 +481,7 @@ const translations = {
       },
     },
 
-    // Inventory screenshot scanner — modal UX strings (validation errors, loading tips, banners)
+    // Inventory screenshot scanner: modal UX strings (validation errors, loading tips, banners)
     scanModal: {
       errInvalidMime: "Please select a PNG, JPG, or WebP image.",
       errDecodeFailed: "Could not read image dimensions. Try a different file.",
@@ -622,7 +622,7 @@ const translations = {
       aboutCount: "各数値は、その生徒と絆100に到達したプレイヤーの人数です。",
       aboutSources: "件数は arona.icu 経由のゲーム内公開ランキングの日次スナップショットに基づいています。表示されるのはプレイヤー名とサーバーのみです。",
       aboutDelay: "新しく追加・更新されたプレイヤーは表示まで1〜2日かかることがあります。ウォールは日次スナップショットで、arona の更新タイミングにも依存します。",
-      demoDataNote: "プレビューデータ — 実際の件数は近日公開。",
+      demoDataNote: "プレビューデータ（実際の件数は近日公開）。",
       summaryUnavailable: "絆100殿堂は現在利用できません。",
       entriesUnavailable: "この生徒のエントリーを読み込めませんでした。",
       atBond100: "人が絆100",
@@ -716,7 +716,7 @@ const translations = {
     conversion: "変換",
     consumed: "消費",
 
-    // BondsPage — Other EXP sources panel
+    // BondsPage: Other EXP sources panel
     otherExpSources: "その他EXP",
     otherExpTooltip: "カフェタップとレッスンEXPを計画",
     cafeTaps: "カフェタップ",
@@ -1028,7 +1028,7 @@ const translations = {
       selectStriker: "ストライカーを選択",
       selectSpecial: "スペシャルを選択",
       filterByName: "名前で絞り込み...",
-      assistLimitReached: "アシスト制限に達しました (1/1) — 既にアシストとして使用中の生徒は非表示",
+      assistLimitReached: "アシスト制限に達しました (1/1)。既にアシストとして使用中の生徒は非表示",
       noStudentsAvailable: "このスロットに配置できる生徒はいません",
       addTeam: "+ チームを追加",
       exportImage: "画像をエクスポート",
@@ -1052,13 +1052,13 @@ const translations = {
     lowConfidenceWarning: "信頼度の低いアイテムは誤認識の可能性があります。適用前にご確認ください。",
     noItemsDetected: "アイテムが検出されませんでした。パーサーサービスとスクリーンショットを確認してください。",
 
-    // Inventory screenshot scanner — guide panel
+    // Inventory screenshot scanner: guide panel
     scanGuide: {
       beforeScanning: {
         title: "スキャン前の準備",
         sortOrder: "インベントリの並び順を<strong>アイテムIDの昇順または降順</strong>（ゲーム標準）に設定してください。名前・使用回数・所持数による並び替えには対応していません。",
-        onePerScan: "1回のスキャンにつき最大3枚 — まとめて選択またはドロップしてください。追加ページは再アップロードで。",
-        selectType: "正しい種類を選択してください：<strong>アイテム</strong>または<strong>装備</strong> — グリッドの構造が異なります。",
+        onePerScan: "1回のスキャンにつき最大3枚。まとめて選択またはドロップしてください。追加ページは再アップロードで。",
+        selectType: "正しい種類を選択してください：<strong>アイテム</strong>または<strong>装備</strong>。グリッドの構造が異なります。",
       },
       screenshots: {
         title: "スクリーンショット",
@@ -1080,11 +1080,11 @@ const translations = {
         title: "スクリーンショットの例",
         correct: "✓ 正しい",
         clipped: "✗ 見切れ",
-        clippedCaption: "1行目が途切れています — 全ての辺にグレーの余白が必要です",
+        clippedCaption: "1行目が途切れています。全ての辺にグレーの余白が必要です",
       },
     },
 
-    // Inventory screenshot scanner — modal UX strings (validation errors, loading tips, banners)
+    // Inventory screenshot scanner: modal UX strings (validation errors, loading tips, banners)
     scanModal: {
       errInvalidMime: "PNG、JPG、WebP のいずれかの画像を選択してください。",
       errDecodeFailed: "画像のサイズを読み取れませんでした。別のファイルをお試しください。",
@@ -1094,8 +1094,8 @@ const translations = {
       errTooMany: "1回のスキャンにつき最大{max}枚です。枚数を減らしてください。",
       tipFast: "AIビジョンで個数を読み取り中…",
       tipSlow: "想定より時間がかかっています — ローカルOCRを実行中（合計約4分）。タブを開いたままで構いません。",
-      appliedOne: "1個のアイテムを適用しました — 次のスクリーンショットをアップロード、または閉じてください。",
-      appliedMany: "{count}個のアイテムを適用しました — 次のスクリーンショットをアップロード、または閉じてください。",
+      appliedOne: "1個のアイテムを適用しました。次のスクリーンショットをアップロード、または閉じてください。",
+      appliedMany: "{count}個のアイテムを適用しました。次のスクリーンショットをアップロード、または閉じてください。",
       prepHintItems: "<strong>スクリーンショットを撮る前に：</strong>ゲーム内フィルターで経験値素材、秘伝記、戦術教育BD、技術ノート、贈り物のみを表示してください。それ以外のカテゴリは検出されません。",
       prepHintEquipment: "<strong>スクリーンショットを撮る前に：</strong>1行目にT2以上の装備が表示されるようにスクロールしてください。T1装備および装備経験値アイテムは対象外です。",
     },
@@ -1153,7 +1153,7 @@ const translations = {
       guideTitle: "フォーマットガイド",
       guideLine1: "1行につき1人",
       guideLine2: "名前は大文字・小文字を区別しません",
-      guideLine3: "バリアントはprefix.nameで指定 — 文字を追加すると絞り込めます:",
+      guideLine3: "バリアントはprefix.nameで指定。文字を追加すると絞り込めます:",
       guideLine4: "マッチしない名前は手動で選択できます",
       guideLineRomaji: "名前は常にローマ字で入力してください（全言語で使用可能）",
       guideLinePrefixes: "よく使うプレフィックス（文字を追加すると絞り込めます: bu=バニー, ba=臨戦）:",
@@ -1181,7 +1181,7 @@ const translations = {
       title: "装備ファーム",
       subtitle: "不足しているTier2以上の装備を集めるための通常ステージ。",
       dropEvent: "ドロップ率イベント",
-      empty: "不足している装備はありません — 必要なTier2以上はすべて充足しています。",
+      empty: "不足している装備はありません。必要なTier2以上はすべて充足しています。",
       runs: "≈{n}回",
       stages: "{n}ステージ",
       expandAll: "すべて展開",
@@ -1211,7 +1211,7 @@ const translations = {
 };
 
 // Resolved translation cache keyed by "lang:path".
-// Keying on language means no invalidation is ever needed — switching language
+// Keying on language means no invalidation is ever needed: switching language
 // just uses a different key prefix, leaving old entries harmlessly stale.
 const _translationCache = new Map<string, string>();
 
