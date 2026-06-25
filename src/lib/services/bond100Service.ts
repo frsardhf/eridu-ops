@@ -21,11 +21,13 @@ const MOCK_SUMMARY: Bond100SummaryResponse = {
       studentId: 20039,
       count: 14,
       byServer: { global_na: 2, global_eu: 2, global_asia: 2, global_tw: 2, global_kr: 2 },
+      fetchedAt: '2026-05-26',
     },
     {
       studentId: 10098,
       count: 8,
       byServer: { global_asia: 5, global_kr: 3 },
+      fetchedAt: '2026-05-24',
     },
     {
       studentId: 10099,
@@ -49,6 +51,7 @@ const MOCK_ENTRIES: Record<number, Bond100StudentEntriesResponse> = {
   20039: {
     studentId: 20039,
     isMock: true,
+    fetchedAt: '2026-05-26',
     entries: [
       { serverRegion: 'global_na',   playerName: 'DemoSensei' },
       { serverRegion: 'global_na',   playerName: 'ArchiveRunner' },
@@ -65,6 +68,7 @@ const MOCK_ENTRIES: Record<number, Bond100StudentEntriesResponse> = {
   10098: {
     studentId: 10098,
     isMock: true,
+    fetchedAt: '2026-05-24',
     entries: [
       { serverRegion: 'global_asia', playerName: 'SleepyVeteran' },
       { serverRegion: 'global_kr',   playerName: '악한선물' },
@@ -134,6 +138,10 @@ function normalizeSummary(response: Bond100SummaryResponse): Bond100SummaryRespo
     for (const [region, count] of Object.entries(item.byServer) as Array<[Bond100ServerRegion, number | undefined]>) {
       if (!count) continue;
       existing.byServer[region] = (existing.byServer[region] ?? 0) + count;
+    }
+    // Both styles share one unit; show the most recent fetch (YYYY-MM-DD sorts).
+    if (item.fetchedAt && (!existing.fetchedAt || item.fetchedAt > existing.fetchedAt)) {
+      existing.fetchedAt = item.fetchedAt;
     }
   }
 

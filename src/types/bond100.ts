@@ -23,6 +23,10 @@ export interface Bond100StudentSummary {
   studentId: number;
   count: number;
   byServer: Partial<Record<Bond100ServerRegion, number>>;
+  /** When this student's bond-100 data was last fetched (YYYY-MM-DD). The
+   * rolling /rank sweep refreshes students independently, so freshness is
+   * per-student rather than one wall-wide snapshot. */
+  fetchedAt?: string;
 }
 
 export interface Bond100SummaryResponse {
@@ -40,6 +44,8 @@ export interface Bond100Entry {
 
 export interface Bond100StudentEntriesResponse {
   studentId: number;
+  /** When this student's entries were last fetched (YYYY-MM-DD). */
+  fetchedAt?: string;
   entries: Bond100Entry[];
   isMock?: boolean;
 }

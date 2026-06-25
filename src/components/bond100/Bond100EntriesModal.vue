@@ -4,6 +4,7 @@ import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { useStudentImages } from '@/composables/useStudentImages';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
+import { formatBond100Freshness } from '@/lib/utils/bond100Freshness';
 import { $t } from '@/locales';
 import type {
   Bond100Entry,
@@ -96,6 +97,11 @@ const serverRows = computed(() => {
     }))
     .sort((a, b) => b.count - a.count);
 });
+
+// Per-student data freshness (the rolling sweep refreshes students separately).
+const freshnessLabel = computed(() =>
+  formatBond100Freshness(props.entriesResponse?.fetchedAt ?? props.summary?.fetchedAt)
+);
 
 function pillStyle(server: string): Record<string, string> {
   const color = getBond100ServerColor(server);
@@ -247,6 +253,7 @@ useDocumentListener('keydown', onKeydown);
               <strong class="bond100-server-chip-count">{{ row.count }}</strong>
             </span>
           </div>
+          <p v-if="freshnessLabel" class="bond100-freshness">{{ freshnessLabel }}</p>
         </header>
 
         <div ref="bodyEl" class="bond100-content-body">
@@ -508,9 +515,20 @@ useDocumentListener('keydown', onKeydown);
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--border-color);
+}
+
+/* Sits on its own line under the total + server chips. */
+.bond100-freshness {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  opacity: 0.85;
 }
 
 .bond100-server-chips {

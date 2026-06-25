@@ -58,8 +58,15 @@ const topStudents = computed(() =>
     .map(s => ({ id: s.studentId, name: studentName.value(s.studentId), count: s.count }))
 );
 
+// Freshest per-student fetch (the rolling sweep updates students independently),
+// falling back to the wall-wide snapshotDate. Honest in both regimes: a single
+// seeded snapshot shows that date; once the sweep rolls it shows the latest fetch.
 const snapshotLabel = computed(() => {
-  const iso = props.summary?.snapshotDate;
+  const freshest = (props.summary?.students ?? []).reduce<string | undefined>(
+    (max, s) => (s.fetchedAt && (!max || s.fetchedAt > max) ? s.fetchedAt : max),
+    undefined,
+  );
+  const iso = freshest ?? props.summary?.snapshotDate;
   if (!iso) return '';
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return '';
