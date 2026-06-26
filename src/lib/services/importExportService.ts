@@ -37,7 +37,6 @@ interface OtherSiteCharacterState {
 
 interface OtherSiteCharacter {
   id: string | number;
-  enabled?: boolean;
   current: OtherSiteCharacterState;
   target: OtherSiteCharacterState;
   eleph?: {
@@ -49,32 +48,12 @@ interface OtherSiteCharacter {
 
 interface OtherSiteImport {
   characters: OtherSiteCharacter[];
-  disabled_characters?: string[];
   owned_materials?: Record<string, number>;
 }
 
 /** parseInt with explicit radix and a fallback for missing / non-numeric input. */
 function parseIntOr(value: string | number | undefined, fallback: number): number {
   return parseInt(String(value ?? ''), 10) || fallback;
-}
-
-/**
- * True if an imported `current` state shows real in-game progress — i.e. the
- * student is owned. justin163's `enabled` flag is a "show in planner" toggle,
- * NOT an ownership flag: players routinely disable students they own (e.g. ones
- * they've finished), which would otherwise import as Not Recruited and hide all
- * their level/skill/gear tracking. You can't level or bond a student you don't
- * own, so any progress above the default base = owned, regardless of `enabled`.
- */
-function hasImportedProgress(state: OtherSiteCharacterState | undefined): boolean {
-  if (!state) return false;
-  const n = (v: string | number | undefined) => parseInt(String(v ?? ''), 10) || 0;
-  return (
-    n(state.level) > 1 || n(state.bond) > 1 ||
-    n(state.ex) > 1 || n(state.basic) > 1 || n(state.passive) > 1 || n(state.sub) > 1 ||
-    n(state.gear1) > 1 || n(state.gear2) > 1 || n(state.gear3) > 1 ||
-    n(state.bond_gear) > 0 || n(state.book_atk) > 0 || n(state.book_hp) > 0 || n(state.book_heal) > 0
-  );
 }
 
 /**
@@ -207,11 +186,6 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       getAllStudentsAsRecord()
     ]);
 
-    // Enabled IDs are excluded from the disabled pass below.
-    const enabledIds = new Set<number>(
-      importData.characters.map(c => parseInt(String(c.id), 10)).filter(Boolean)
-    );
-
     const formDataArray: FormRecord[] = [];
 
     importData.characters.forEach((char) => {
@@ -238,9 +212,12 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
 
       const formData = {
         studentId,
-        // `enabled` is justin163's planner-visibility toggle, not ownership —
-        // also treat a student as owned if their current state shows progress.
-        isOwned: char.enabled !== false || hasImportedProgress(char.current),
+        // justin163 has no ownership field: every student in `characters[]` is one
+        // the user added to their planner, i.e. one they own. `enabled` is only a
+        // "count this toward farming targets" toggle, NOT ownership — so a disabled
+        // student is still owned. Mark them all recruited; users prune any non-owned
+        // planning targets via the Bulk Modify tool.
+        isOwned: true,
         bondDetailData: {
           currentBond: parseIntOr(char.current.bond, 1)
         },
@@ -283,16 +260,6 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       // Merge with existing data (strip any ghost numeric 'id' key)
       const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as any;
       formDataArray.push({ ...existingClean, ...formData });
-    });
-
-    // Mark disabled / unowned characters so they appear in the Not Recruited section
-    const disabledIds: string[] = importData.disabled_characters ?? [];
-    disabledIds.forEach((rawId: string) => {
-      const studentId = parseInt(rawId, 10);
-      // Same phantom-ID guard as the enabled pass — only persist IDs SchaleDB knows.
-      if (!studentId || !students[studentId] || enabledIds.has(studentId)) return;
-      const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as any;
-      formDataArray.push({ ...existingClean, studentId, isOwned: false });
     });
 
     await db.forms.bulkPut(formDataArray);
