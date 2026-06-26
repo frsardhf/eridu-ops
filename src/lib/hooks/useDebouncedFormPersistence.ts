@@ -61,7 +61,11 @@ export function useDebouncedFormPersistence<R extends RefMap, T = any>(opts: {
   watch(opts.watchSources, () => {
     if (!opts.isVisible() || isLoading.value) return;
     if (timer) clearTimeout(timer);
-    timer = setTimeout(flushNow, opts.debounceMs ?? 250);
+    // Catch here so a failed debounced save (e.g. storage QuotaExceededError)
+    // never becomes an unhandled promise rejection / watcher error.
+    timer = setTimeout(() => {
+      flushNow().catch((error) => console.error('Debounced form save failed:', error));
+    }, opts.debounceMs ?? 250);
   }, { deep: true });
 
   /**

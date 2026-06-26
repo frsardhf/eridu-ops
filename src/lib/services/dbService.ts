@@ -1,6 +1,7 @@
 // dbService.ts - Database operations and cache management
 
 import { db, arrayToRecord } from '../db/database';
+import { isQuotaExceededError, clearImageCacheStorage } from '../utils/storageQuota';
 import type {
   StudentRecord,
   ItemRecord,
@@ -9,6 +10,30 @@ import type {
   ItemsInventoryRecord,
   EquipmentInventoryRecord
 } from '../db/database';
+
+/**
+ * Run an IndexedDB write, recovering from a full storage budget. The schaledb
+ * image cache shares the origin quota with IndexedDB, so once it fills up every
+ * write throws QuotaExceededError. On that error we free the image cache (drops
+ * usage back under the limit) and retry the write once. `fallback` is returned
+ * if the write still fails.
+ */
+async function withQuotaRetry<T>(write: () => Promise<T>, label: string, fallback: T): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    if (isQuotaExceededError(error) && await clearImageCacheStorage()) {
+      try {
+        return await write();
+      } catch (retryError) {
+        console.error(`${label} after freeing storage:`, retryError);
+        return fallback;
+      }
+    }
+    console.error(`${label}:`, error);
+    return fallback;
+  }
+}
 
 // ========== Metadata Operations ==========
 
@@ -283,11 +308,11 @@ function sanitizeFormData(data: any): any {
  * Returns the merged sanitized data on success for immediate store updates.
  */
 export async function saveFormData(studentId: number, formData: Partial<FormRecord>): Promise<FormRecord | null> {
-  try {
-    // Sanitize outside the transaction — pure CPU work, no DB I/O needed.
-    const sanitizedFormData = sanitizeFormData(formData);
+  // Sanitize outside the transaction — pure CPU work, no DB I/O needed.
+  const sanitizedFormData = sanitizeFormData(formData);
 
-    return await db.transaction('rw', db.forms, async () => {
+  return withQuotaRetry(
+    () => db.transaction('rw', db.forms, async () => {
       const existing = await db.forms.get(studentId);
       const merged: FormRecord = {
         studentId,
@@ -296,11 +321,10 @@ export async function saveFormData(studentId: number, formData: Partial<FormReco
       };
       await db.forms.put(merged);
       return merged;
-    });
-  } catch (error) {
-    console.error(`Error saving form data for student ${studentId}:`, error);
-    return null;
-  }
+    }),
+    `Error saving form data for student ${studentId}`,
+    null,
+  );
 }
 
 /**
@@ -341,13 +365,11 @@ export async function getAllItemsInventories(): Promise<Record<number, number>> 
  * Save multiple items inventories (bulk upsert)
  */
 export async function saveItemsInventories(inventories: ItemsInventoryRecord[]): Promise<boolean> {
-  try {
-    await db.items_inventory.bulkPut(inventories);
-    return true;
-  } catch (error) {
-    console.error('Error saving items inventories:', error);
-    return false;
-  }
+  return withQuotaRetry(
+    async () => { await db.items_inventory.bulkPut(inventories); return true; },
+    'Error saving items inventories',
+    false,
+  );
 }
 
 // ========== Equipment Inventory Operations ==========
@@ -372,11 +394,9 @@ export async function getAllEquipmentInventories(): Promise<Record<number, numbe
  * Save multiple equipment inventories (bulk upsert)
  */
 export async function saveEquipmentInventories(inventories: EquipmentInventoryRecord[]): Promise<boolean> {
-  try {
-    await db.equipment_inventory.bulkPut(inventories);
-    return true;
-  } catch (error) {
-    console.error('Error saving equipment inventories:', error);
-    return false;
-  }
+  return withQuotaRetry(
+    async () => { await db.equipment_inventory.bulkPut(inventories); return true; },
+    'Error saving equipment inventories',
+    false,
+  );
 }

@@ -11,6 +11,7 @@ import type { FormRecord } from '@/lib/hooks/useBulkStudentModify';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { getStudentIconUrl } from '@/lib/utils/iconUtils';
+import { isQuotaExceededError, clearImageCacheStorage } from '@/lib/utils/storageQuota';
 import StarIcon from '@/components/shared/StarIcon.vue';
 import {
   MAX_LEVEL, MAX_BOND_LEVEL, MIN_BOND_LEVEL, MAX_GRADE, WEAPON_STAR_THRESHOLD,
@@ -309,7 +310,27 @@ async function bulkSetOwnership(owned: boolean) {
     // Reflect in local allFormData so ownership filter updates immediately
     Object.assign(allFormData.value, updates);
   } catch (error) {
-    console.error('Failed to bulk-update ownership:', error);
+    // The schaledb image cache can fill the origin's storage budget, after
+    // which even tiny IndexedDB writes throw QuotaExceededError. Free that
+    // cache and retry once before giving up.
+    if (isQuotaExceededError(error) && await clearImageCacheStorage()) {
+      try {
+        const updates = await applyOwnershipBulk(ids, owned, allFormData.value);
+        Object.assign(allFormData.value, updates);
+        return;
+      } catch (retryError) {
+        console.error('Failed to bulk-update ownership after freeing storage:', retryError);
+      }
+    } else {
+      console.error('Failed to bulk-update ownership:', error);
+    }
+    if (isQuotaExceededError(error)) {
+      window.alert(
+        'Your browser storage is full, so the change could not be saved. ' +
+        'Clearing the cached images did not free enough space. Try removing ' +
+        'other site data for this browser, then reload and try again.'
+      );
+    }
   } finally {
     isSubmitting.value = false;
   }

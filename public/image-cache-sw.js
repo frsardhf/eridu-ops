@@ -2,6 +2,21 @@ const staticCacheVer = 1;
 const staticCacheName = `eridu-images-v${staticCacheVer}`;
 const currentCacheList = [staticCacheName];
 
+// Cap the image cache so it can't grow until it exhausts the origin's storage
+// budget and starves IndexedDB writes (QuotaExceededError). Student icons are
+// small, so a few thousand entries is plenty; oldest entries are trimmed first.
+const MAX_CACHE_ENTRIES = 2500;
+
+async function trimCache(cache) {
+  const keys = await cache.keys();
+  if (keys.length <= MAX_CACHE_ENTRIES) return;
+  // keys() preserves insertion order, so the front is the oldest.
+  const overflow = keys.length - MAX_CACHE_ENTRIES;
+  for (let i = 0; i < overflow; i++) {
+    await cache.delete(keys[i]);
+  }
+}
+
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     self.skipWaiting();
@@ -42,7 +57,8 @@ self.addEventListener('fetch', (e) => {
     if (response.ok || response.type === 'opaque') {
       const cache = await caches.open(staticCacheName);
       try {
-        cache.put(e.request, response.clone());
+        await cache.put(e.request, response.clone());
+        await trimCache(cache);
       } catch (error) {
         // Quota exceeded or other cache error
       }
