@@ -6,6 +6,12 @@ import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import ResourceGrid from './ResourceGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
 
+const props = withDefaults(defineProps<{
+  initialTab?: InventoryTab,
+}>(), {
+  initialTab: 'items',
+});
+
 const emit = defineEmits<{
   (e: 'close'): void,
 }>();
@@ -39,7 +45,7 @@ const SUMMARY_MODE_ORDER: Record<SummaryViewMode, number> = {
   leftover: 2
 };
 
-const activeTab = ref<InventoryTab>('items');
+const activeTab = ref<InventoryTab>(props.initialTab);
 const summaryMode = ref(false);
 const summaryTab = ref<SummaryTab>('materials');
 const summaryViewMode = ref<SummaryViewMode>('needed');

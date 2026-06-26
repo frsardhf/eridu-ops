@@ -5,7 +5,7 @@ import { getItemIconUrl } from '@/lib/utils/iconUtils';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 
-const emit = defineEmits<{ close: [] }>();
+const emit = defineEmits<{ close: []; 'open-inventory': [] }>();
 
 const { plan, multiplier, hasMissing, missingList } = useEquipmentFarming();
 const multipliers: FarmMultiplier[] = [1, 2, 3];
@@ -64,7 +64,12 @@ useDocumentListener('keydown', onKeydown);
               @click="multiplier = m"
             >{{ m }}×</button>
           </div>
-          <button type="button" class="efm-close" :aria-label="$t('close')" @click="emit('close')">×</button>
+          <button type="button" class="efm-inventory-btn" @click="emit('open-inventory')">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+            </svg>
+            <span>{{ $t('inventory') }}</span>
+          </button>
         </div>
       </header>
 
@@ -220,24 +225,25 @@ useDocumentListener('keydown', onKeydown);
   color: #fff;
 }
 
-.efm-close {
+.efm-inventory-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: none;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 1.2rem;
-  line-height: 1;
+  background: var(--background-secondary);
+  color: var(--text-primary);
   cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 
-.efm-close:hover {
-  background: var(--card-background);
-  color: var(--text-primary);
+.efm-inventory-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
 }
 
 /* Totals bar */

@@ -51,8 +51,15 @@ const isBulkModifyModalVisible = ref(false);
 const isBondUpdateVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
+const inventoryInitialTab = ref<'items' | 'equipment'>('items');
 const isCraftingFodderVisible = ref(false);
 const isEquipmentFarmingVisible = ref(false);
+
+function openInventoryFromFarming() {
+  isEquipmentFarmingVisible.value = false;
+  inventoryInitialTab.value = 'equipment';
+  isInventoryModalVisible.value = true;
+}
 
 const modalOriginRect = ref<ModalOriginRect | null>(null);
 const allStudentsArray = computed<StudentProps[]>(() => {
@@ -187,7 +194,8 @@ function handleClearFilters() {
 
     <GlobalInventoryModal
       v-if="isInventoryModalVisible"
-      @close="isInventoryModalVisible = false"
+      :initial-tab="inventoryInitialTab"
+      @close="isInventoryModalVisible = false; inventoryInitialTab = 'items'"
     />
 
     <BulkModifyStudentsModal
@@ -216,6 +224,7 @@ function handleClearFilters() {
     <EquipmentFarmingModal
       v-if="isEquipmentFarmingVisible"
       @close="isEquipmentFarmingVisible = false"
+      @open-inventory="openInventoryFromFarming"
     />
   </div>
 </template>
