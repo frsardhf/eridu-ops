@@ -30,6 +30,9 @@ export interface StudentProps {
   BulletType: string;
   ArmorType: string;
   IsLimited: number[];
+  /** Per-region release flags from SchaleDB: [Japan, Global, China]. Index 1 is
+   * Global; used by the Hall to drop JP-only students from a Global-only wall. */
+  IsReleased?: boolean[];
   Skills: Record<string, SchaleSkill>;
 }
 

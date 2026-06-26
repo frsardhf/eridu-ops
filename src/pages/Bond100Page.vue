@@ -91,7 +91,11 @@ const isEntriesLoading = ref(false);
 const entriesError = ref('');
 
 const allStudents = computed<StudentProps[]>(() => {
+  // The Hall is a Global-only wall: drop JP-only students (IsReleased[Global] is
+  // false) so stray 0-count tiles don't appear and the "N of M" coverage uses
+  // the real Global roster. Fail open if the flag is missing (keep the student).
   return filterSecondaryStudents(Object.values(studentData.value))
+    .filter(s => s.IsReleased?.[1] !== false)
     .sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
