@@ -27,11 +27,25 @@ function normalizeText(value: string): string {
 }
 
 // Investment sort key: total of `current` across a {current, target} level map
-// (skillLevels, potentialLevels, equipmentLevels all share that shape).
+// (skillLevels, potentialLevels all share that shape).
 function sumCurrentLevels(levels?: Record<string, { current?: number }>): number {
   if (!levels) return 0;
   let total = 0;
   for (const key in levels) total += levels[key]?.current ?? 0;
+  return total;
+}
+
+// Equipment differs from skills/potentials: `equipmentLevels` carries tier-1
+// defaults for types the student doesn't actually use (see StudentCard's
+// investment calc), so summing every key would let an 8/8/8 unit with phantom
+// entries tie a clean 9/9/9. Sum only the student's real slots, matching the card.
+function sumEquipmentLevels(
+  student: StudentProps,
+  levels?: Record<string, { current?: number }>
+): number {
+  if (!levels || !student.Equipment) return 0;
+  let total = 0;
+  for (const type of student.Equipment) total += levels[type]?.current ?? 0;
   return total;
 }
 
@@ -59,7 +73,7 @@ function toComparableValue(
     case 'grade':
       return studentStore[student.Id]?.gradeLevels?.current ?? student.StarGrade ?? 0;
     case 'equipment':
-      return sumCurrentLevels(studentStore[student.Id]?.equipmentLevels);
+      return sumEquipmentLevels(student, studentStore[student.Id]?.equipmentLevels);
     case 'skill':
       return sumCurrentLevels(studentStore[student.Id]?.skillLevels);
     case 'potential':
