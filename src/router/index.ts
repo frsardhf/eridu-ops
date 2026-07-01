@@ -29,6 +29,13 @@ const routes: RouteRecordRaw[] = [
     redirect: '/hall',
   },
   {
+    // Dev/test surface for the live-3D chibi (Road 2). Lazy so three.js + the GLB
+    // never touch the entry chunk. Not linked from nav.
+    path: '/chibi3d',
+    name: 'Chibi3dTest',
+    component: () => import('@/pages/Chibi3dTestPage.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },

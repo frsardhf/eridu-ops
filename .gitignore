@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 CLAUDE.md
 .claude
+# Extracted in-game chibi assets (large binaries, do not commit). Also keeps Tailwind v4's
+# content scanner from reading these megabyte GLB/PNG files as text and pegging CPU/memory
+# (Tailwind skips gitignored paths) — see useChibi3dScene / Chibi3dPet.
+public/chibi/
+public/chibi3d/

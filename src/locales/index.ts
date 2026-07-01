@@ -3,6 +3,12 @@ import { currentLanguage, Language } from '../lib/stores/localizationStore';
 // Translation strings for each supported language
 const translations = {
   en: {
+    // Chibi (dev POC)
+    chibi: {
+      hint: "Click anywhere to send the Chibi walking there.",
+      idle: "Idle",
+    },
+
     // Landing
     landingSubtitle: "Blue Archive Student Progression Planner",
     studentsDesc: "Track bond levels, skill upgrades, gear progression, and material costs.",
@@ -605,6 +611,12 @@ const translations = {
     },
   },
   jp: {
+    // Chibi (dev POC)
+    chibi: {
+      hint: "クリックした場所にリオが歩いていきます。",
+      idle: "待機",
+    },
+
     // Landing
     landingSubtitle: "ブルーアーカイブ 生徒育成プランナー",
     studentsDesc: "絆レベル、スキル強化、装備の進捗、素材コストを追跡。",

@@ -90,3 +90,31 @@ export function getEquipmentSlotIconUrl(slot: string): string {
 export function getBondIconUrl(): string {
   return `${SCHALEDB_BASE}/ui/School_Icon_Schedule_Favor.png`;
 }
+
+// ── Chibi 3D (live three.js path) ──────────────────────────────────────────────
+// One GLB + manifest + shared mouth textures per character. Base maps are embedded in the
+// GLB; only the mouth atlas + mask load externally (from `textures/`). Defaults to the local
+// `public/chibi3d/` for dev; in production set VITE_CHIBI3D_BASE to the R2 origin (e.g.
+// https://assets.eriduops.com/chibi3d) — the GLBs are too big / too many for the app host.
+const CHIBI3D_BASE = (import.meta.env.VITE_CHIBI3D_BASE as string | undefined) ?? '/chibi3d';
+
+export function getChibi3dManifestUrl(charId: string): string {
+  return `${CHIBI3D_BASE}/${charId}/${charId}.manifest.json`;
+}
+
+export function getChibi3dModelUrl(charId: string, model: string): string {
+  return `${CHIBI3D_BASE}/${charId}/${model}`;
+}
+
+export function getChibi3dTextureUrl(charId: string, file: string): string {
+  return `${CHIBI3D_BASE}/${charId}/textures/${file}`;
+}
+
+// ── Chibi voice lines (SchaleDB R2 CDN) ────────────────────────────────────────
+// In-game JP voice clips, e.g. the pickup line `ch0158_formation_select.mp3`. Played
+// via an HTMLAudioElement (no CORS needed). Path: `voice/jp_<charId>/<charId>_<line>.mp3`.
+const SCHALEDB_VOICE_BASE = 'https://r2.schaledb.com/voice';
+
+export function getChibiVoiceUrl(charId: string, line: string): string {
+  return `${SCHALEDB_VOICE_BASE}/jp_${charId}/${charId}_${line}.mp3`;
+}

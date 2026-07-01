@@ -6,6 +6,8 @@ import { SchaleSkill } from '@/types/schaledb';
 export interface StudentProps {
   Id: number;
   Name: string;
+  /** SchaleDB dev name, e.g. `CH0158` — bridges a student to its chibi assets (`ch0158`). */
+  DevName?: string;
   PathName?: string;
   DefaultOrder: number;
   WeaponImg: string;
