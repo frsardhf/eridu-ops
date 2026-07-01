@@ -11,6 +11,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src')
     }
   },
+  // Pre-bundle three + its addon entry points up front. Without this, the lazy
+  // /chibi3d route's deep imports (GLTFLoader) get discovered mid-session and
+  // trigger Vite to re-optimize + full-reload, which churns dev-server memory/CPU.
+  optimizeDeps: {
+    include: [
+      'three',
+      'three/examples/jsm/loaders/GLTFLoader.js',
+      'three/examples/jsm/controls/OrbitControls.js'
+    ]
+  },
   base: '/',
   server: {
     headers: {
