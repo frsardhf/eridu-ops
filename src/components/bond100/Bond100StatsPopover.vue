@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { getStudentIconUrl } from '@/lib/utils/iconUtils';
-import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
+import { getSchoolIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
+import { colorWithOpacity, getBond100ServerColor, getSchoolColor } from '@/lib/utils/colorUtils';
+import { resolveLocalized } from '@/lib/utils/localizationUtils';
 import { $t } from '@/locales';
 import type {
   Bond100ServerOption,
@@ -51,6 +52,29 @@ const serverRows = computed(() => {
     .sort((a, b) => b.count - a.count);
 });
 
+// Bond-100 totals grouped by the student's School (joined from the roster).
+// Icon-only chips (colored per school) keep ~10-12 rows compact.
+const schoolRows = computed(() => {
+  const schoolOf = new Map<number, string>(props.roster.map(s => [s.Id, s.School]));
+  const totals = new Map<string, number>();
+  for (const s of students.value) {
+    const school = schoolOf.get(s.studentId);
+    if (school && s.count) totals.set(school, (totals.get(school) ?? 0) + s.count);
+  }
+  const max = Math.max(1, ...totals.values());
+  return [...totals.entries()]
+    .map(([school, count]) => ({
+      school,
+      name: resolveLocalized('School', school) || school,
+      icon: getSchoolIconUrl(school),
+      color: getSchoolColor(school),
+      count,
+      barPct: Math.round((count / max) * 100),
+      sharePct: total.value ? Math.round((count / total.value) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+});
+
 const topStudents = computed(() =>
   [...students.value]
     .sort((a, b) => b.count - a.count)
@@ -79,6 +103,10 @@ function barStyle(color: string, pct: number) {
 function chipStyle(color: string) {
   return { color, background: colorWithOpacity(color, 0.14), borderColor: colorWithOpacity(color, 0.4) };
 }
+// School emblems are white silhouettes, so the chip is a solid school-color pill.
+function schoolChipStyle(color: string) {
+  return { background: color, borderColor: color };
+}
 </script>
 
 <template>
@@ -99,6 +127,21 @@ function chipStyle(color: string) {
       <p class="bond100-stats-label">{{ $t('bond100.stats.byServer') }}</p>
       <div v-for="row in serverRows" :key="row.region" class="bond100-stats-srv">
         <span class="bond100-stats-srv-chip" :style="chipStyle(row.color)">{{ row.short }}</span>
+        <span class="bond100-stats-bar-track">
+          <span class="bond100-stats-bar" :style="barStyle(row.color, row.barPct)"></span>
+        </span>
+        <span class="bond100-stats-srv-count">{{ row.count }}</span>
+        <span class="bond100-stats-srv-pct">{{ row.sharePct }}%</span>
+      </div>
+    </section>
+
+    <!-- By school -->
+    <section v-if="schoolRows.length" class="bond100-stats-section">
+      <p class="bond100-stats-label">{{ $t('bond100.stats.bySchool') }}</p>
+      <div v-for="row in schoolRows" :key="row.school" class="bond100-stats-srv">
+        <span class="bond100-stats-school-chip" :style="schoolChipStyle(row.color)" :title="row.name">
+          <img :src="row.icon" :alt="row.name" />
+        </span>
         <span class="bond100-stats-bar-track">
           <span class="bond100-stats-bar" :style="barStyle(row.color, row.barPct)"></span>
         </span>
@@ -218,6 +261,28 @@ function chipStyle(color: string) {
   font-size: 0.68rem;
   font-weight: 800;
   box-sizing: border-box;
+}
+
+/* School chip: a solid school-color pill holding the (white) emblem, aligned to
+   the same 52px column as the server chips. */
+.bond100-stats-school-chip {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+
+.bond100-stats-school-chip img {
+  height: 15px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .bond100-stats-bar-track {
