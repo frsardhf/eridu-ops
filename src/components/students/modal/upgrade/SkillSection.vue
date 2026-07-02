@@ -6,12 +6,12 @@ import { useTooltip } from '@/composables/useTooltip';
 import { makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import { SkillType, SKILL_TYPES } from '@/types/upgrade';
+import { SkillType, SkillLevels, SKILL_TYPES } from '@/types/upgrade';
 import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
   student: StudentProps;
-  skillLevels: Record<string, { current: number; target: number }>;
+  skillLevels: SkillLevels;
   allSkillsMaxed: boolean;
   targetSkillsMaxed: boolean;
 }>();

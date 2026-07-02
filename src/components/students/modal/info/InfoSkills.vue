@@ -5,11 +5,11 @@ import { useStudentSkillDisplay } from '@/composables/useStudentSkillDisplay';
 import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
-import { SkillType } from '@/types/upgrade';
+import { SkillType, SkillLevels } from '@/types/upgrade';
 
 const props = defineProps<{
   student: StudentProps;
-  skillLevels: Record<string, { current: number; target: number }>;
+  skillLevels: SkillLevels;
 }>();
 
 const studentRef = toRef(() => props.student);

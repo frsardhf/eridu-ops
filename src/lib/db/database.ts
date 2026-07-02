@@ -3,6 +3,7 @@
 import Dexie, { Table } from 'dexie';
 import type { StudentProps } from '../../types/student';
 import type { ResourceProps } from '../../types/resource';
+import type { EquipmentLevels } from '../../types/gear';
 
 // Database interfaces
 export interface StudentRecord extends StudentProps {
@@ -42,7 +43,7 @@ export interface FormRecord {
     maxhp: { current: number; target: number };
     healpower: { current: number; target: number };
   };
-  equipmentLevels?: Record<string, { current: number; target: number }>;
+  equipmentLevels?: EquipmentLevels;
   gradeLevels?: {
     current: number;
     target: number;

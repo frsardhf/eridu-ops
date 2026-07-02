@@ -3,7 +3,7 @@
 
 import { db, type FormRecord } from '../db/database';
 import type { StudentProps } from '../../types/student';
-import type { EquipmentType } from '../../types/gear';
+import type { EquipmentType, EquipmentLevels } from '../../types/gear';
 import {
   DEFAULT_CHARACTER_LEVELS,
   DEFAULT_SKILL_LEVELS,
@@ -21,7 +21,7 @@ const initializedStudents = new Set<number>();
  */
 export function buildDefaultFormData(student: StudentProps): FormRecord {
   // Build equipment levels based on student's equipment types
-  const equipmentLevels: Record<string, { current: number; target: number }> = {};
+  const equipmentLevels: EquipmentLevels = {};
   if (student.Equipment) {
     student.Equipment.forEach((type) => {
       equipmentLevels[type as EquipmentType] = { current: 1, target: 1 };

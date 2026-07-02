@@ -11,11 +11,11 @@ import {
   MAX_SKILL_LEVEL,
 } from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
-import { SkillType } from '@/types/upgrade';
+import { SkillType, SkillLevels } from '@/types/upgrade';
 
 export function useStudentSkillDisplay(
   student: MaybeRefOrGetter<StudentProps>,
-  skillLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
+  skillLevels: MaybeRefOrGetter<SkillLevels>,
 ) {
   const studentData = computed(() => getStudentData(getPrimaryStudentId(toValue(student).Id)));
   const isPassiveEnhanced = computed(

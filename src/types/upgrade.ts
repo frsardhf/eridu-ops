@@ -49,7 +49,6 @@ export interface CharacterLevels {
 }
 
 export interface SkillLevels {
-  [key: string]: { current: number; target: number };
   Ex: {
     current: number;
     target: number;
@@ -69,7 +68,6 @@ export interface SkillLevels {
 }
 
 export interface PotentialLevels {
-  [key: string]: { current: number; target: number };
   attack: {
     current: number;
     target: number;

@@ -5,13 +5,13 @@ import { getMaxTierForTypeSync } from '@/lib/utils/gearMaterialUtils';
 import { clampLevelPair } from '@/lib/utils/upgradeUtils';
 import { MAX_EXCLUSIVE_GEAR_LEVEL } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
-import { EquipmentType } from '@/types/gear';
+import { EquipmentType, EquipmentLevels } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
   student: StudentProps;
-  equipmentLevels: Record<string, { current: number; target: number }>;
+  equipmentLevels: EquipmentLevels;
   exclusiveGearLevel: { current?: number; target?: number };
   hasExclusiveGear: boolean;
   maxUnlockableGearTier: number;

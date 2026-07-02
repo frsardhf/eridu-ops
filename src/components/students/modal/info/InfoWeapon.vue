@@ -2,13 +2,14 @@
 import { toRef } from 'vue';
 import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
 import { $t } from '@/locales';
+import { EquipmentLevels } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 import StarIcon from '@/components/shared/StarIcon.vue';
 
 const props = defineProps<{
   student: StudentProps;
   gradeLevels: { current?: number; target?: number };
-  equipmentLevels: Record<string, { current: number; target: number }>;
+  equipmentLevels: EquipmentLevels;
   exclusiveGearLevel: { current?: number; target?: number };
 }>();
 
