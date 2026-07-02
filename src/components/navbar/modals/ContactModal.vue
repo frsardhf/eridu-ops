@@ -23,7 +23,7 @@ function closeModal(event: MouseEvent) {
         </button>
       </div>
       
-      <div class="modal-content">
+      <div class="contact-modal-content">
         <div class="contact-section">
           <p>{{ $t('contactModal.body') }}</p>
           
@@ -75,7 +75,7 @@ function closeModal(event: MouseEvent) {
   animation: modal-appear 0.3s ease;
 }
 
-.modal-content {
+.contact-modal-content {
   padding: 16px;
   width: 100%;
 }
@@ -202,7 +202,7 @@ function closeModal(event: MouseEvent) {
     max-height: 80vh;
   }
   
-  .modal-content {
+  .contact-modal-content {
     padding: 12px;
   }
 }

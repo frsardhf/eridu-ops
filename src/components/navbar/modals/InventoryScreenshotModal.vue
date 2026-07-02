@@ -539,7 +539,7 @@ useDocumentListener('paste', onPaste);
         </div>
       </div>
 
-      <div class="modal-content">
+      <div class="screenshot-modal-content">
 
         <!-- Step 1: Choose type -->
         <template v-if="step === 'type'">
@@ -931,7 +931,7 @@ useDocumentListener('paste', onPaste);
 .swatch--med { background: color-mix(in srgb, var(--color-warning) 55%, transparent); }
 .swatch--low { background: color-mix(in srgb, #ef4444 55%, transparent); }
 
-.modal-content {
+.screenshot-modal-content {
   padding: 16px;
   overflow-y: auto;
   flex: 1;

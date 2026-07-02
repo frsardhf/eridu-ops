@@ -140,7 +140,7 @@ function closeModal(event: MouseEvent) {
         </button>
       </div>
       
-      <div class="modal-content">
+      <div class="import-modal-content">
         <div class="import-method-toggle">
           <button 
             class="method-button" 
@@ -280,7 +280,7 @@ function closeModal(event: MouseEvent) {
   color: var(--text-primary);
 }
 
-.modal-content {
+.import-modal-content {
   padding: 16px;
   width: 100%;
 }
