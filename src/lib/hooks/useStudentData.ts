@@ -49,6 +49,7 @@ import {
   updateCacheMetadata,
 } from '../services/dbService';
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
+import type { FormRecord } from '../db/database';
 import { batchSetStudentData, studentDataStore } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
 import {
@@ -171,7 +172,7 @@ async function processAndPopulateData(
 async function preloadStudentStore() {
   try {
     const allFormData = await getAllFormData();
-    const numericKeyData: Record<number, any> = {};
+    const numericKeyData: Record<number, FormRecord> = {};
     Object.entries(allFormData).forEach(([studentId, formData]) => {
       const id = Number(studentId);
       if (isSecondaryStudent(id)) return;

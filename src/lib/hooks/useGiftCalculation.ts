@@ -3,6 +3,7 @@ import { getResourceDataByIdSync, getAllItemsFromCache } from '../stores/resourc
 import { useStudentData } from './useStudentData';
 import { studentDataStore } from '../stores/studentStore';
 import { StudentProps } from '../../types/student';
+import { CachedResource } from '../../types/resource';
 import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 import { toNumericId } from '../utils/idCoercion';
@@ -11,7 +12,7 @@ import { toNumericId } from '../utils/idCoercion';
 interface StudentGiftUsage {
   student: StudentProps;
   totalGifts: number;
-  gifts: { gift: any; quantity: number }[];
+  gifts: { gift: CachedResource; quantity: number }[];
 }
 
 type GiftViewMode = 'needed' | 'missing' | 'leftover';
@@ -128,7 +129,7 @@ export function useGiftCalculation() {
       if (!student || !form) return;
       if (form.isOwned === false) return; // skip unowned
 
-      const gifts: { gift: any; quantity: number }[] = [];
+      const gifts: { gift: CachedResource; quantity: number }[] = [];
       let totalGifts = 0;
 
       const giftFormData = form.giftFormData ?? {};
@@ -253,7 +254,7 @@ export function useGiftCalculation() {
     if (!form) return [];
 
     const resources = getAllItemsFromCache();
-    const gifts: { gift: any; quantity: number }[] = [];
+    const gifts: { gift: CachedResource; quantity: number }[] = [];
 
     // Process giftFormData (favored gifts)
     const giftFormData = form.giftFormData ?? {};
@@ -334,7 +335,7 @@ export function useGiftCalculation() {
     const resources = getAllItemsFromCache();
     const giftNeededMap = buildGiftNeededMap();
 
-    const leftovers: { gift: any; quantity: number; remaining: number }[] = [];
+    const leftovers: { gift: CachedResource; quantity: number; remaining: number }[] = [];
     giftNeededMap.forEach((needed, giftId) => {
       const gift = getResourceDataByIdSync(giftId);
       if (!gift) return;

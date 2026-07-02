@@ -240,7 +240,8 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
   // --- Display selection (tab x mode multiplexer) ---
 
   const displayResources = computed(() => {
-    let resources: any[] = [];
+    // Needed mode yields Material[]; missing/leftover yield MaterialWithRemaining[].
+    let resources: (Material & { remaining?: number })[] = [];
 
     if (activeTab.value === 'materials') {
       if (activeMode.value === 'needed') {

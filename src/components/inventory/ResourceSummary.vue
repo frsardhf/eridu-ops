@@ -8,6 +8,7 @@ import {
   getMaterialName,
   getMaterialIconSrc,
 } from '@/lib/utils/materialUtils';
+import type { Material } from '@/types/upgrade';
 import { formatUsageQuantity } from '@/lib/utils/tooltipUtils';
 import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import { useResourceTooltip } from '@/composables/useResourceTooltip';
@@ -118,7 +119,7 @@ function hideChipTooltip() {
 }
 
 // Helper function to get material icon source and alt text (Materials and Equipment tabs)
-const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
+const getMaterialIconSrcAndAlt = (item: Material): { src: string; alt: string } => {
   const isEquipmentTab = activeTab.value === 'equipment';
   return {
     src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon.value, currentExpBall.value),
