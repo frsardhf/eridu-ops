@@ -2,7 +2,7 @@ import { computed, toValue, MaybeRefOrGetter } from 'vue';
 import { MAX_LEVEL } from '@/lib/constants/gameConstants';
 
 export function useStudentLevels(
-  characterLevels: MaybeRefOrGetter<{ current: number; target: number }>
+  characterLevels: MaybeRefOrGetter<{ current: number; target: number }>,
 ) {
   const isMaxLevel = computed(() => {
     const levels = toValue(characterLevels);

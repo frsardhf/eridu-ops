@@ -6,14 +6,17 @@ import { useFocusInput, useGradeInfoEditor } from '@/composables/useInputEditor'
 import { formatItemQuantity } from '@/lib/utils/materialUtils';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
 import {
-  MAX_ELEPH_OWNED, MIN_ELEPH_PRICE, MAX_ELEPH_PRICE,
-  MIN_ELEPH_PURCHASABLE, MAX_ELEPH_PURCHASABLE,
+  MAX_ELEPH_OWNED,
+  MIN_ELEPH_PRICE,
+  MAX_ELEPH_PRICE,
+  MIN_ELEPH_PURCHASABLE,
+  MAX_ELEPH_PURCHASABLE,
 } from '@/lib/constants/gameConstants';
 
 const props = defineProps<{
   student: StudentProps;
   elephNeeded: number;
-  gradeInfos: { owned?: number; price?: number; purchasable?: number; };
+  gradeInfos: { owned?: number; price?: number; purchasable?: number };
 }>();
 
 const emit = defineEmits<{
@@ -39,11 +42,7 @@ const elephIcon = computed(() => {
       <div class="eleph-owned-card" @click="forceInputFocus">
         <div class="eleph-owned-header">
           <div class="gift-icon-container">
-            <img
-              :src="elephIcon"
-              alt="Eleph"
-              class="gift-icon"
-            />
+            <img :src="elephIcon" alt="Eleph" class="gift-icon" />
 
             <div
               v-if="!isInputFocused && gradeState.owned"
@@ -99,9 +98,7 @@ const elephIcon = computed(() => {
           </label>
         </div>
 
-        <div class="eleph-summary-chip strong">
-          {{ $t('elephsNeeded') }}: {{ elephNeeded }}
-        </div>
+        <div class="eleph-summary-chip strong">{{ $t('elephsNeeded') }}: {{ elephNeeded }}</div>
       </div>
     </div>
   </div>

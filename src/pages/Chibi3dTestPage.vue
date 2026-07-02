@@ -57,15 +57,23 @@ function onStagePointerDown(e: PointerEvent): void {
 </script>
 
 <template>
-  <div class="chibi-stage" :class="{ 'chibi-stage--orbit': orbit }" @pointerdown="onStagePointerDown">
+  <div
+    class="chibi-stage"
+    :class="{ 'chibi-stage--orbit': orbit }"
+    @pointerdown="onStagePointerDown"
+  >
     <div class="chibi-orbit" @pointerdown.stop>
       <button
         type="button"
         class="chibi-debug__btn"
         :class="{ 'chibi-debug__btn--active': orbit }"
         @click="orbit = !orbit"
-      >Orbit: {{ orbit ? 'On' : 'Off' }}</button>
-      <span class="chibi-orbit__hint">{{ orbit ? 'drag to spin · wheel to zoom' : $t('chibi.hint') }}</span>
+      >
+        Orbit: {{ orbit ? 'On' : 'Off' }}
+      </button>
+      <span class="chibi-orbit__hint">{{
+        orbit ? 'drag to spin · wheel to zoom' : $t('chibi.hint')
+      }}</span>
     </div>
 
     <div class="chibi-chars" @pointerdown.stop>
@@ -76,21 +84,16 @@ function onStagePointerDown(e: PointerEvent): void {
         class="chibi-debug__btn"
         :class="{ 'chibi-debug__btn--active': c.id === charId }"
         @click="charId = c.id"
-      >{{ c.label }}</button>
+      >
+        {{ c.label }}
+      </button>
       <label class="chibi-slider">
         Size ×{{ zoom.toFixed(2) }}
         <input v-model.number="zoom" type="range" min="1" max="1.5" step="0.05" />
       </label>
     </div>
 
-    <Chibi3dPet
-      :key="charId"
-      ref="pet"
-      :char-id="charId"
-      :size="540"
-      :zoom="zoom"
-      :orbit="orbit"
-    />
+    <Chibi3dPet :key="charId" ref="pet" :char-id="charId" :size="540" :zoom="zoom" :orbit="orbit" />
 
     <div class="chibi-debug" @pointerdown.stop>
       <button
@@ -99,13 +102,18 @@ function onStagePointerDown(e: PointerEvent): void {
         type="button"
         class="chibi-debug__btn"
         @click="pet?.playClip(d.clip)"
-      >{{ d.label }}</button>
+      >
+        {{ d.label }}
+      </button>
     </div>
 
     <div class="chibi-voice" @pointerdown.stop>
       <div class="chibi-voice__title">Voice ({{ charId }})</div>
       <div v-for="line in CHIBI_VOICE_LINES" :key="line" class="chibi-voice__row">
-        <span class="chibi-voice__dot" :class="`is-${pet?.voiceStatus?.[line] ?? 'loading'}`"></span>
+        <span
+          class="chibi-voice__dot"
+          :class="`is-${pet?.voiceStatus?.[line] ?? 'loading'}`"
+        ></span>
         {{ line }}
       </div>
     </div>
@@ -117,8 +125,11 @@ function onStagePointerDown(e: PointerEvent): void {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 50% 30%, var(--background-secondary), var(--background-primary));
+  background: radial-gradient(
+    circle at 50% 30%,
+    var(--background-secondary),
+    var(--background-primary)
+  );
   overflow: hidden;
   cursor: crosshair;
   user-select: none;

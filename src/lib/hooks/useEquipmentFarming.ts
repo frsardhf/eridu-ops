@@ -8,10 +8,10 @@ interface FarmCover {
   equipId: number;
   name: string;
   category: string;
-  icon: string;       // equipment Icon name (for getItemIconUrl piece art)
+  icon: string; // equipment Icon name (for getItemIconUrl piece art)
   tier: number;
-  need: number;       // original missing quantity
-  expected: number;   // ~pieces obtained from this stage's runs
+  need: number; // original missing quantity
+  expected: number; // ~pieces obtained from this stage's runs
 }
 
 export interface FarmStagePlan {
@@ -19,7 +19,7 @@ export interface FarmStagePlan {
   area: number;
   stage: number;
   ap: number;
-  runs: number;       // expected runs to clear this stage's primary need
+  runs: number; // expected runs to clear this stage's primary need
   covers: FarmCover[]; // every missing piece this stage yields (primary + byproducts)
 }
 
@@ -102,12 +102,15 @@ export function useEquipmentFarming() {
     const bestStageFor = (equipId: number): { stage: FarmStage; rate: number } | null => {
       let best: { stage: FarmStage; rate: number } | null = null;
       for (const s of EQUIPMENT_FARM_STAGES) {
-        const d = s.drops.find(x => x.equipId === equipId);
+        const d = s.drops.find((x) => x.equipId === equipId);
         if (!d) continue;
         const r = eff(d.rate);
         const rank = s.area * 1000 + s.stage;
-        if (!best || r > best.rate ||
-            (r === best.rate && rank > best.stage.area * 1000 + best.stage.stage)) {
+        if (
+          !best ||
+          r > best.rate ||
+          (r === best.rate && rank > best.stage.area * 1000 + best.stage.stage)
+        ) {
           best = { stage: s, rate: r };
         }
       }
@@ -124,12 +127,18 @@ export function useEquipmentFarming() {
       for (const [id, q] of remaining) {
         if (q <= 0) continue;
         const rank = (want.get(id)?.tier ?? 0) * 1_000_000 + q;
-        if (rank > bestRank) { bestRank = rank; target = id; }
+        if (rank > bestRank) {
+          bestRank = rank;
+          target = id;
+        }
       }
       if (target == null) break;
 
       const pick = bestStageFor(target);
-      if (!pick || pick.rate <= 0) { remaining.set(target, 0); continue; } // not farmable in normal
+      if (!pick || pick.rate <= 0) {
+        remaining.set(target, 0);
+        continue;
+      } // not farmable in normal
 
       const runs = Math.ceil(remaining.get(target)! / pick.rate);
       const acc = runsByStage.get(pick.stage.id) ?? { stage: pick.stage, runs: 0 };
@@ -161,10 +170,17 @@ export function useEquipmentFarming() {
         });
       }
       covers.sort((a, b) => b.tier - a.tier);
-      result.push({ id: stage.id, area: stage.area, stage: stage.stage, ap: stage.ap, runs, covers });
+      result.push({
+        id: stage.id,
+        area: stage.area,
+        stage: stage.stage,
+        ap: stage.ap,
+        runs,
+        covers,
+      });
     }
     // highest stages first (matches "farm the highest stage" mental model)
-    result.sort((a, b) => (b.area * 1000 + b.stage) - (a.area * 1000 + a.stage));
+    result.sort((a, b) => b.area * 1000 + b.stage - (a.area * 1000 + a.stage));
     return result;
   });
 

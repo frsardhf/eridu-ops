@@ -199,7 +199,11 @@ function makeHaloFollower(root: THREE.Object3D, scene: THREE.Scene): HaloFollowe
   let head: THREE.Object3D | null = null;
   let halo: THREE.Object3D | null = null;
   // GLTFLoader sanitizes 'Bip001 Head' -> 'Bip001_Head'; normalize before matching.
-  const norm = (s: string) => (s || '').toLowerCase().replace(/[\s_]+/g, ' ').trim();
+  const norm = (s: string) =>
+    (s || '')
+      .toLowerCase()
+      .replace(/[\s_]+/g, ' ')
+      .trim();
   const wantHead = norm(HALO_CFG.targetBone);
   root.traverse((o) => {
     const nm = norm(o.name);
@@ -236,7 +240,9 @@ function makeHaloFollower(root: THREE.Object3D, scene: THREE.Scene): HaloFollowe
     clampMin: new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z)),
     clampMax: new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z)),
     geomCenter,
-    tweakQuat: new THREE.Quaternion().setFromEuler(new THREE.Euler(td[0] * D, td[1] * D, td[2] * D)),
+    tweakQuat: new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(td[0] * D, td[1] * D, td[2] * D),
+    ),
     posPow: HALO_CFG.posPow,
     rotPow: HALO_CFG.rotPow,
     prevPos: new THREE.Vector3(),
@@ -340,16 +346,17 @@ export function useChibi3dScene(
       return;
     }
 
-    const gltf = await new Promise<{ scene: THREE.Object3D; animations: THREE.AnimationClip[] } | null>(
-      (resolve) => {
-        new GLTFLoader().load(
-          getChibi3dModelUrl(charId, manifest.model),
-          (g) => resolve(g),
-          undefined,
-          () => resolve(null),
-        );
-      },
-    );
+    const gltf = await new Promise<{
+      scene: THREE.Object3D;
+      animations: THREE.AnimationClip[];
+    } | null>((resolve) => {
+      new GLTFLoader().load(
+        getChibi3dModelUrl(charId, manifest.model),
+        (g) => resolve(g),
+        undefined,
+        () => resolve(null),
+      );
+    });
     if (!gltf || disposed || !scene) {
       if (!gltf) error.value = true;
       return;
@@ -361,7 +368,9 @@ export function useChibi3dScene(
 
     // External mouth textures (the only maps glTF can't carry; base maps are embedded).
     const em = manifest.materials.EyeMouth?.textures ?? {};
-    const atlas = em.mouthAtlas ? await loadTexture(getChibi3dTextureUrl(charId, em.mouthAtlas)) : null;
+    const atlas = em.mouthAtlas
+      ? await loadTexture(getChibi3dTextureUrl(charId, em.mouthAtlas))
+      : null;
     const mask = em.mouthMask
       ? await loadTexture(getChibi3dTextureUrl(charId, em.mouthMask), false)
       : null;

@@ -2,18 +2,19 @@ import { ResourceProps } from '@/types/resource';
 import { StudentProps } from '@/types/student';
 import { GiftProps } from '@/types/gift';
 
-export function toRecordById<T extends { Id: number | string }>(
-  items: T[]
-): Record<string, T> {
-  return items.reduce((acc, item) => {
-    acc[String(item.Id)] = item;
-    return acc;
-  }, {} as Record<string, T>);
+export function toRecordById<T extends { Id: number | string }>(items: T[]): Record<string, T> {
+  return items.reduce(
+    (acc, item) => {
+      acc[String(item.Id)] = item;
+      return acc;
+    },
+    {} as Record<string, T>,
+  );
 }
 
 export function attachElephIcons(
   students: Record<string, StudentProps>,
-  items: Record<string, ResourceProps>
+  items: Record<string, ResourceProps>,
 ): Record<string, StudentProps> {
   const patched: Record<string, StudentProps> = { ...students };
   Object.entries(patched).forEach(([studentId, student]) => {
@@ -21,7 +22,7 @@ export function attachElephIcons(
     if (icon) {
       patched[studentId] = {
         ...student,
-        ElephIcon: icon
+        ElephIcon: icon,
       };
     }
   });

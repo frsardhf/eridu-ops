@@ -83,7 +83,11 @@ const stripStyle = {
   background: var(--background-primary);
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.15s, transform 0.15s, opacity 0.15s, filter 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.15s,
+    opacity 0.15s,
+    filter 0.15s;
 }
 
 .bond100-tile:hover {

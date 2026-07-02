@@ -37,14 +37,14 @@ interface ChangelogSection {
 
 export interface ChangelogEntry {
   id: string;
-  date: string;            // YYYY-MM-DD, display only
+  date: string; // YYYY-MM-DD, display only
   title: LocalizedText;
   summary: LocalizedText;
   /** Multi-feature release. Mutually exclusive with `highlights` at the modal. */
   sections?: ChangelogSection[];
   /** Flat list for single-feature releases. Ignored when `sections` is set. */
   highlights?: LocalizedText[];
-  fromCommit?: string;     // metadata for the draft script
+  fromCommit?: string; // metadata for the draft script
   toCommit?: string;
 }
 

@@ -46,14 +46,28 @@ export function useChibiVoice(charId: string) {
     const audio = new Audio(getChibiVoiceUrl(charId, line));
     audio.preload = 'auto';
     // loadedmetadata = the resource exists and is decodable; error = 404 / not playable.
-    audio.addEventListener('loadedmetadata', () => { status[line] = 'available'; }, { once: true });
-    audio.addEventListener('error', () => { status[line] = 'missing'; }, { once: true });
+    audio.addEventListener(
+      'loadedmetadata',
+      () => {
+        status[line] = 'available';
+      },
+      { once: true },
+    );
+    audio.addEventListener(
+      'error',
+      () => {
+        status[line] = 'missing';
+      },
+      { once: true },
+    );
     audio.load();
     audios[line] = audio;
   }
 
   // Battle lines start un-requested ('idle') until loadBattleLines(); the rest preload now.
-  ARMED_MOVE_LINES.forEach((line) => { status[line] = 'idle'; });
+  ARMED_MOVE_LINES.forEach((line) => {
+    status[line] = 'idle';
+  });
   ALWAYS_LINES.forEach(loadLine);
 
   /**

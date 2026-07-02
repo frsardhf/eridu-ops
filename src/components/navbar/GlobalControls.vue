@@ -44,13 +44,13 @@ function toggleLanguage() {
   setLanguage(currentLanguage.value === 'en' ? 'jp' : 'en');
 }
 
-const langLabel = computed(() => currentLanguage.value === 'en' ? 'English' : '日本語');
-const langSwitchTarget = computed(() => currentLanguage.value === 'en' ? '日本語' : 'English');
+const langLabel = computed(() => (currentLanguage.value === 'en' ? 'English' : '日本語'));
+const langSwitchTarget = computed(() => (currentLanguage.value === 'en' ? '日本語' : 'English'));
 
 // Two-tone swatch of the CURRENT theme's own colors (same source as the tray
 // swatches): a meaningful "your theme" hint instead of an arbitrary gradient.
 const activeThemeGradient = computed(() => {
-  const t = THEME_OPTIONS.find(o => o.id === props.currentTheme);
+  const t = THEME_OPTIONS.find((o) => o.id === props.currentTheme);
   return t ? `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})` : 'var(--accent-color)';
 });
 
@@ -58,8 +58,10 @@ function handleClickOutside(event: MouseEvent) {
   if (!showThemeTray.value) return;
   const target = event.target as Node;
   if (
-    trayEl.value && !trayEl.value.contains(target) &&
-    toggleEl.value && !toggleEl.value.contains(target)
+    trayEl.value &&
+    !trayEl.value.contains(target) &&
+    toggleEl.value &&
+    !toggleEl.value.contains(target)
   ) {
     showThemeTray.value = false;
   }
@@ -92,11 +94,7 @@ useClickOutside(handleClickOutside);
         <span class="gc-theme-tray-toggle-dot" :style="{ background: activeThemeGradient }"></span>
       </button>
 
-      <div
-        ref="trayEl"
-        class="gc-theme-tray"
-        :class="{ open: showThemeTray }"
-      >
+      <div ref="trayEl" class="gc-theme-tray" :class="{ open: showThemeTray }">
         <div class="gc-theme-swatch-row" role="radiogroup" aria-label="Theme">
           <button
             v-for="theme in THEME_OPTIONS"
@@ -112,7 +110,9 @@ useClickOutside(handleClickOutside);
           >
             <span
               class="gc-theme-swatch-inner"
-              :style="{ background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` }"
+              :style="{
+                background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})`,
+              }"
             ></span>
           </button>
         </div>
@@ -127,8 +127,20 @@ useClickOutside(handleClickOutside);
       :title="$t('contact')"
       @click="emit('openContact')"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+        />
       </svg>
     </button>
 
@@ -140,9 +152,21 @@ useClickOutside(handleClickOutside);
       :title="$t('credits')"
       @click="emit('openCredits')"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"></path>
+        <path
+          d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"
+        ></path>
         <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"></circle>
       </svg>
     </button>
@@ -172,7 +196,9 @@ useClickOutside(handleClickOutside);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .gc-lang-toggle:hover {
@@ -191,7 +217,9 @@ useClickOutside(handleClickOutside);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .gc-icon-btn svg {
@@ -247,7 +275,9 @@ useClickOutside(handleClickOutside);
   opacity: 0;
   transform: translateY(-6px) scale(0.96);
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   z-index: 1200;
 }
 

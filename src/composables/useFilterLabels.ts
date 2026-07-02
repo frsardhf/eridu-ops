@@ -5,8 +5,24 @@ export const SQUAD_TYPE_KEYS = ['Main', 'Support'] as const;
 export const STAR_GRADE_VALUES = [1, 2, 3] as const;
 export const BULLET_TYPE_KEYS = ['Explosion', 'Pierce', 'Mystic', 'Sonic', 'Chemical'] as const;
 // Unarmed = Special Armor in-game; kept as a single representative key (matches SpecialArmor too)
-export const ARMOR_TYPE_KEYS = ['LightArmor', 'HeavyArmor', 'ElasticArmor', 'Unarmed', 'CompositeArmor'] as const;
-export const EQUIPMENT_TYPE_KEYS = ['Hat', 'Gloves', 'Shoes', 'Bag', 'Badge', 'Hairpin', 'Charm', 'Watch', 'Necklace'] as const;
+export const ARMOR_TYPE_KEYS = [
+  'LightArmor',
+  'HeavyArmor',
+  'ElasticArmor',
+  'Unarmed',
+  'CompositeArmor',
+] as const;
+export const EQUIPMENT_TYPE_KEYS = [
+  'Hat',
+  'Gloves',
+  'Shoes',
+  'Bag',
+  'Badge',
+  'Hairpin',
+  'Charm',
+  'Watch',
+  'Necklace',
+] as const;
 
 // Schools grouped under a single "Other" chip in the filter panel
 // (crossover / catch-all schools that aren't part of the main Blue Archive setting)

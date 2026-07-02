@@ -18,13 +18,17 @@ export function useStudentSkillDisplay(
   skillLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
 ) {
   const studentData = computed(() => getStudentData(getPrimaryStudentId(toValue(student).Id)));
-  const isPassiveEnhanced = computed(() => (studentData.value?.gradeLevels?.current ?? 0) >= GEAR_UNLOCK_PASSIVE_SKILL);
-  const isBasicEnhanced   = computed(() => (studentData.value?.exclusiveGearLevel?.current ?? 0) >= GEAR_UNLOCK_PUBLIC_SKILL);
+  const isPassiveEnhanced = computed(
+    () => (studentData.value?.gradeLevels?.current ?? 0) >= GEAR_UNLOCK_PASSIVE_SKILL,
+  );
+  const isBasicEnhanced = computed(
+    () => (studentData.value?.exclusiveGearLevel?.current ?? 0) >= GEAR_UNLOCK_PUBLIC_SKILL,
+  );
   const skillLabels: Record<SkillType, string> = {
     Ex: 'EX',
     Public: 'Basic',
     Passive: 'Passive',
-    ExtraPassive: 'Sub'
+    ExtraPassive: 'Sub',
   };
 
   // ExtraEx toggle state: owned here so both Info and Upgrade tabs share the same logic
@@ -42,7 +46,9 @@ export function useStudentSkillDisplay(
   // Reset toggle when the student changes
   watch(
     () => toValue(student),
-    () => { useExtraExSkill.value = false; }
+    () => {
+      useExtraExSkill.value = false;
+    },
   );
 
   function getSkillIcon(skillType: SkillType): string {
@@ -64,9 +70,11 @@ export function useStudentSkillDisplay(
   function getMaxLevel(skillType: SkillType): number {
     const s = toValue(student);
     if (skillType === 'Ex') {
-      return s?.Skills?.Ex?.Parameters?.[0]?.length
-        || s?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length
-        || MAX_EX_SKILL_LEVEL;
+      return (
+        s?.Skills?.Ex?.Parameters?.[0]?.length ||
+        s?.Skills?.Ex?.ExtraSkills?.[0]?.Parameters?.[0]?.length ||
+        MAX_EX_SKILL_LEVEL
+      );
     }
     return s?.Skills?.[skillType]?.Parameters?.[0]?.length || MAX_SKILL_LEVEL;
   }
@@ -85,7 +93,7 @@ export function useStudentSkillDisplay(
       current,
       target,
       isMax: current === maxLevel && target === maxLevel,
-      isSame: current === target
+      isSame: current === target,
     };
   }
 
@@ -126,6 +134,6 @@ export function useStudentSkillDisplay(
     getSkillData,
     getSkillDescription,
     getSkillCostDisplay,
-    getSkillIconUrl
+    getSkillIconUrl,
   };
 }

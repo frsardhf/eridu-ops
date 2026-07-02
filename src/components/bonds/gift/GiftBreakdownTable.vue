@@ -21,11 +21,7 @@ const cols = computed<[BreakdownRow[], BreakdownRow[]]>(() => {
 
 <template>
   <div class="breakdown-grid">
-    <table
-      v-for="(col, idx) in cols"
-      :key="idx"
-      class="breakdown-table"
-    >
+    <table v-for="(col, idx) in cols" :key="idx" class="breakdown-table">
       <tbody>
         <tr v-for="row in col" :key="row.id">
           <td class="breakdown-name">{{ row.name }}</td>

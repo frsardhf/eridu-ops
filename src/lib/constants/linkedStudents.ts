@@ -18,23 +18,21 @@ interface LinkedStudentPair {
  * All linked student pairs.
  * To add a future pair, just add an entry here.
  */
-const LINKED_STUDENT_PAIRS: LinkedStudentPair[] = [
-  { primaryId: 10098, secondaryId: 10099 },
-];
+const LINKED_STUDENT_PAIRS: LinkedStudentPair[] = [{ primaryId: 10098, secondaryId: 10099 }];
 
 /** Set of all secondary IDs for O(1) lookup */
 const SECONDARY_STUDENT_IDS: Set<number> = new Set(
-  LINKED_STUDENT_PAIRS.map(pair => pair.secondaryId)
+  LINKED_STUDENT_PAIRS.map((pair) => pair.secondaryId),
 );
 
 /** Map from secondary ID -> primary ID */
 const SECONDARY_TO_PRIMARY: Map<number, number> = new Map(
-  LINKED_STUDENT_PAIRS.map(pair => [pair.secondaryId, pair.primaryId])
+  LINKED_STUDENT_PAIRS.map((pair) => [pair.secondaryId, pair.primaryId]),
 );
 
 /** Map from primary ID -> secondary ID */
 const PRIMARY_TO_SECONDARY: Map<number, number> = new Map(
-  LINKED_STUDENT_PAIRS.map(pair => [pair.primaryId, pair.secondaryId])
+  LINKED_STUDENT_PAIRS.map((pair) => [pair.primaryId, pair.secondaryId]),
 );
 
 /** Check if a student ID is a secondary (hidden) linked student. */
@@ -68,5 +66,5 @@ export function hasLinkedPartner(id: number): boolean {
  * Used at the display layer to show only one card per linked pair.
  */
 export function filterSecondaryStudents<T extends { Id: number }>(students: T[]): T[] {
-  return students.filter(student => !isSecondaryStudent(student.Id));
+  return students.filter((student) => !isSecondaryStudent(student.Id));
 }

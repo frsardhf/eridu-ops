@@ -36,7 +36,9 @@ function git(args) {
 
 const lastCommit = findLatestToCommit();
 if (!lastCommit) {
-  console.error('No `toCommit` found in changelog.ts — bootstrapping needs at least one entry with a toCommit field.');
+  console.error(
+    'No `toCommit` found in changelog.ts — bootstrapping needs at least one entry with a toCommit field.',
+  );
   process.exit(1);
 }
 
@@ -44,7 +46,9 @@ if (!lastCommit) {
 try {
   git(`cat-file -e ${lastCommit}`);
 } catch {
-  console.error(`Commit ${lastCommit} not found in this repo. Either fetch more history or update changelog.ts.`);
+  console.error(
+    `Commit ${lastCommit} not found in this repo. Either fetch more history or update changelog.ts.`,
+  );
   process.exit(1);
 }
 
@@ -53,9 +57,7 @@ const range = `${lastCommit}..HEAD`;
 
 // One line per commit: "<short-sha>\t<subject>"
 // --no-merges drops the noisy "Merge branch ..." commits from the sync workflow.
-const log = git(
-  `log ${range} --no-merges --date=short --pretty=format:%h%x09%s`,
-);
+const log = git(`log ${range} --no-merges --date=short --pretty=format:%h%x09%s`);
 
 if (!log) {
   console.log(`No new commits since ${lastCommit}. Nothing to draft.`);

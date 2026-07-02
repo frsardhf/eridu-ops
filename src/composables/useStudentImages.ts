@@ -19,9 +19,7 @@ export function useStudentImages(student: MaybeRefOrGetter<StudentProps>) {
   const backgroundLoaded = ref(false);
   let shimmerTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const portraitSrc = computed(() =>
-    getStudentPortraitUrl(toValue(student).Id)
-  );
+  const portraitSrc = computed(() => getStudentPortraitUrl(toValue(student).Id));
 
   const backgroundSrc = computed(() => {
     const bg = toValue(student).CollectionBG;
@@ -29,17 +27,20 @@ export function useStudentImages(student: MaybeRefOrGetter<StudentProps>) {
     return getBackgroundUrl(bg);
   });
 
-  watch(() => toValue(student).Id, () => {
-    portraitLoaded.value = false;
-    backgroundLoaded.value = false;
-    backgroundLoadFailed.value = false;
+  watch(
+    () => toValue(student).Id,
+    () => {
+      portraitLoaded.value = false;
+      backgroundLoaded.value = false;
+      backgroundLoadFailed.value = false;
 
-    if (shimmerTimer) clearTimeout(shimmerTimer);
-    shimmerTimer = setTimeout(() => {
-      shimmerTimer = null;
-      if (!portraitLoaded.value) imageLoading.value = true;
-    }, 80);
-  });
+      if (shimmerTimer) clearTimeout(shimmerTimer);
+      shimmerTimer = setTimeout(() => {
+        shimmerTimer = null;
+        if (!portraitLoaded.value) imageLoading.value = true;
+      }, 80);
+    },
+  );
 
   onBeforeUnmount(() => {
     if (shimmerTimer) clearTimeout(shimmerTimer);
@@ -48,14 +49,26 @@ export function useStudentImages(student: MaybeRefOrGetter<StudentProps>) {
   function checkAllLoaded() {
     const bgDone = !backgroundSrc.value || backgroundLoaded.value;
     if (portraitLoaded.value && bgDone) {
-      if (shimmerTimer) { clearTimeout(shimmerTimer); shimmerTimer = null; }
+      if (shimmerTimer) {
+        clearTimeout(shimmerTimer);
+        shimmerTimer = null;
+      }
       imageLoading.value = false;
     }
   }
 
-  function handlePortraitLoad()    { portraitLoaded.value = true; checkAllLoaded(); }
-  function handlePortraitError()   { portraitLoaded.value = true; checkAllLoaded(); }
-  function handleBackgroundLoad()  { backgroundLoaded.value = true; checkAllLoaded(); }
+  function handlePortraitLoad() {
+    portraitLoaded.value = true;
+    checkAllLoaded();
+  }
+  function handlePortraitError() {
+    portraitLoaded.value = true;
+    checkAllLoaded();
+  }
+  function handleBackgroundLoad() {
+    backgroundLoaded.value = true;
+    checkAllLoaded();
+  }
   function handleBackgroundError() {
     backgroundLoadFailed.value = true;
     backgroundLoaded.value = true;

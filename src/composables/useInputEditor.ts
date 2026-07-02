@@ -37,15 +37,19 @@ export function useLevelEditor(
   const targetEditorRef = ref<HTMLInputElement | null>(null);
 
   // Sync local state when the prop changes externally; cancel any in-progress edit.
-  watch(getLevels, (newVal) => {
-    if (!newVal) return;
-    levelState.value.current = newVal.current;
-    levelState.value.target = newVal.target;
-    if (editingField.value) {
-      editingField.value = null;
-      editValue.value = '';
-    }
-  }, { deep: true, immediate: true });
+  watch(
+    getLevels,
+    (newVal) => {
+      if (!newVal) return;
+      levelState.value.current = newVal.current;
+      levelState.value.target = newVal.target;
+      if (editingField.value) {
+        editingField.value = null;
+        editValue.value = '';
+      }
+    },
+    { deep: true, immediate: true },
+  );
 
   const processLevelUpdate = (value: number, isTarget: boolean) => {
     const other = isTarget ? levelState.value.current : levelState.value.target;
@@ -58,9 +62,9 @@ export function useLevelEditor(
 
   const startEdit = async (field: 'current' | 'target') => {
     editingField.value = field;
-    editValue.value = (field === 'current'
-      ? levelState.value.current
-      : levelState.value.target).toString();
+    editValue.value = (
+      field === 'current' ? levelState.value.current : levelState.value.target
+    ).toString();
     await nextTick();
     const editor = field === 'current' ? currentEditorRef.value : targetEditorRef.value;
     editor?.focus();
@@ -109,23 +113,24 @@ const MIN_BOND = MIN_BOND_LEVEL;
  * Generic action names (startEdit, commitEdit, editValue, isEditing) match
  * useLevelEditor's style; domain names used only for state/refs.
  */
-export function useBondEditor(
-  getBond: () => number,
-  onUpdate: (value: number) => void,
-) {
+export function useBondEditor(getBond: () => number, onUpdate: (value: number) => void) {
   const bondState = ref(getBond());
   const isEditing = ref(false);
   const editValue = ref('');
   const bondEditorRef = ref<HTMLInputElement | null>(null);
 
   // Sync local state when the prop changes externally; cancel any in-progress edit.
-  watch(getBond, (newVal) => {
-    bondState.value = newVal;
-    if (isEditing.value) {
-      isEditing.value = false;
-      editValue.value = '';
-    }
-  }, { immediate: true });
+  watch(
+    getBond,
+    (newVal) => {
+      bondState.value = newVal;
+      if (isEditing.value) {
+        isEditing.value = false;
+        editValue.value = '';
+      }
+    },
+    { immediate: true },
+  );
 
   const isMaxBond = computed(() => bondState.value >= MAX_BOND);
 
@@ -182,9 +187,15 @@ export function useFocusInput() {
   const isInputFocused = ref(false);
   const inputEl = ref<HTMLInputElement | null>(null);
 
-  function handleFocus() { isInputFocused.value = true; }
-  function handleBlur() { isInputFocused.value = false; }
-  function forceInputFocus() { inputEl.value?.focus(); }
+  function handleFocus() {
+    isInputFocused.value = true;
+  }
+  function handleBlur() {
+    isInputFocused.value = false;
+  }
+  function forceInputFocus() {
+    inputEl.value?.focus();
+  }
 
   return { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus };
 }
@@ -208,16 +219,20 @@ export function useGradeInfoEditor(
     purchasable: getGradeInfos()?.purchasable ?? 20,
   });
 
-  watch(getGradeInfos, (newVal) => {
-    if (!newVal) return;
-    gradeState.value.owned = newVal.owned ?? 0;
-    gradeState.value.price = newVal.price ?? 1;
-    gradeState.value.purchasable = newVal.purchasable ?? 20;
-  }, { deep: true, immediate: true });
+  watch(
+    getGradeInfos,
+    (newVal) => {
+      if (!newVal) return;
+      gradeState.value.owned = newVal.owned ?? 0;
+      gradeState.value.price = newVal.price ?? 1;
+      gradeState.value.purchasable = newVal.purchasable ?? 20;
+    },
+    { deep: true, immediate: true },
+  );
 
   const limits = {
-    owned:       { min: 0,                  max: MAX_ELEPH_OWNED       },
-    price:       { min: MIN_ELEPH_PRICE,    max: MAX_ELEPH_PRICE       },
+    owned: { min: 0, max: MAX_ELEPH_OWNED },
+    price: { min: MIN_ELEPH_PRICE, max: MAX_ELEPH_PRICE },
     purchasable: { min: MIN_ELEPH_PURCHASABLE, max: MAX_ELEPH_PURCHASABLE },
   } as const;
 

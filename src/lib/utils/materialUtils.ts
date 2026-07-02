@@ -5,7 +5,7 @@ import {
   DEFAULT_SKILL_LEVELS,
   DEFAULT_POTENTIAL_LEVELS,
   DEFAULT_CHARACTER_LEVELS,
-  ELIGMAS_ID
+  ELIGMAS_ID,
 } from '../../types/upgrade';
 import { CREDITS_ID } from '../constants/syntheticEntities';
 import { updateMaterialsData } from '../stores/materialsStore';
@@ -23,7 +23,7 @@ import type { FormRecord } from '../db/database';
  */
 export function buildMaterialMap(materials: Material[]): Map<number, Material> {
   const materialMap = new Map<number, Material>();
-  materials.forEach(item => {
+  materials.forEach((item) => {
     const materialId = item.material?.Id;
     if (!materialId) return;
     if (materialMap.has(materialId)) {
@@ -105,9 +105,12 @@ export function preloadAllStudentsData(
       const gradeInfos = formData.gradeInfos ?? {};
       const exclusiveGearLevel = formData.exclusiveGearLevel ?? {};
 
-      const hasAnyUpgrades = hasTargetUpgrades(characterLevels) ||
-        hasTargetUpgrades(skillLevels) || hasTargetUpgrades(potentialLevels) ||
-        hasTargetUpgrades(equipmentLevels) || hasTargetUpgrades(gradeLevels) ||
+      const hasAnyUpgrades =
+        hasTargetUpgrades(characterLevels) ||
+        hasTargetUpgrades(skillLevels) ||
+        hasTargetUpgrades(potentialLevels) ||
+        hasTargetUpgrades(equipmentLevels) ||
+        hasTargetUpgrades(gradeLevels) ||
         hasTargetUpgrades(exclusiveGearLevel);
 
       if (hasAnyUpgrades) {
@@ -115,7 +118,7 @@ export function preloadAllStudentsData(
           student,
           characterLevels,
           skillLevels,
-          potentialLevels
+          potentialLevels,
         );
 
         if (materials.length > 0) {
@@ -127,7 +130,7 @@ export function preloadAllStudentsData(
           equipmentLevels,
           gradeLevels,
           gradeInfos,
-          exclusiveGearLevel
+          exclusiveGearLevel,
         );
 
         if (gears.length > 0) {
@@ -144,8 +147,9 @@ export function preloadAllStudentsData(
  * Helper function to check if a student has any target upgrades
  */
 function hasTargetUpgrades(
-  levels: { current?: number; target?: number } |
-  { [key: string]: { current?: number; target?: number } }
+  levels:
+    | { current?: number; target?: number }
+    | { [key: string]: { current?: number; target?: number } },
 ): boolean {
   // Handle single level object (like CharacterLevels or ExclusiveGearLevel)
   if ('current' in levels && 'target' in levels) {
@@ -154,13 +158,13 @@ function hasTargetUpgrades(
     return target > current;
   }
   // Handle record of levels (like SkillLevels, PotentialLevels, EquipmentLevels)
-  return Object.values(levels).some(level => {
+  return Object.values(levels).some((level) => {
     if (level && typeof level === 'object' && 'current' in level && 'target' in level) {
       return (level.target ?? 0) > (level.current ?? 0);
     }
     return false;
   });
-} 
+}
 
 /** Base number formatter: K/M suffixes above 10k/1M, with an optional prefix. */
 function formatNumber(quantity: number, prefix: string = ''): string {
@@ -170,8 +174,8 @@ function formatNumber(quantity: number, prefix: string = ''): string {
     return `${prefix}${Math.floor(quantity / 1000000)}M`;
   } else if (quantity >= 10000) {
     return `${prefix}${Math.floor(quantity / 1000)}K`;
-  } 
-  
+  }
+
   return `${prefix}${quantity}`;
 }
 
@@ -201,7 +205,7 @@ export function formatItemQuantity(value: number | string | null | undefined): s
 }
 
 const EXP_REPORT_IDS = new Set([10, 11, 12, 13]);
-const EXP_BALL_IDS   = new Set([1, 2, 3, 4]);
+const EXP_BALL_IDS = new Set([1, 2, 3, 4]);
 
 /**
  * Helper function to check if a material ID is an EXP report
@@ -233,10 +237,7 @@ export function getMaterialName(item: { material?: { Id?: number; Name?: string 
  * - Artifact items (SubCategory === 'Artifact') use item icons
  * - Equipment blueprints use equipment icons with _piece suffix
  */
-function isItemIconMaterial(
-  material: Partial<ResourceProps> | undefined
-): boolean {
-
+function isItemIconMaterial(material: Partial<ResourceProps> | undefined): boolean {
   if (!material?.Id) return false;
   // Credits and Eligma always use item icons
   if (material.Id === CREDITS_ID || material.Id === ELIGMAS_ID) return true;
@@ -254,7 +255,7 @@ export function getMaterialIconSrc(
   item: any,
   isEquipmentTab?: boolean,
   currentExpIcon?: number,
-  currentExpBall?: number
+  currentExpBall?: number,
 ): string {
   if (!item.material?.Icon) return '';
 
@@ -287,13 +288,13 @@ export function calculateMissingItems(
   items: any[],
   getStorage: () => Record<string, any>,
   isSpecialItem: (id: number) => boolean,
-  getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number }
+  getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number },
 ): MaterialWithRemaining[] {
   const storage = getStorage();
   const specialNeeds = getSpecialItemNeeds();
 
   return items
-    .filter(item => {
+    .filter((item) => {
       const materialId = item.material?.Id;
       if (!materialId) return false;
 
@@ -315,7 +316,7 @@ export function calculateMissingItems(
           material: item.material,
           materialQuantity: specialNeeds.totalXpNeeded,
           remaining: specialNeeds.ownedXp - specialNeeds.totalXpNeeded,
-          type: 'xp'
+          type: 'xp',
         };
       }
 
@@ -325,7 +326,7 @@ export function calculateMissingItems(
         material: item.material,
         materialQuantity: item.materialQuantity,
         remaining: owned - item.materialQuantity,
-        type: (item.type ?? 'materials') as MaterialType
+        type: (item.type ?? 'materials') as MaterialType,
       };
     })
     .sort((a, b) => a.remaining - b.remaining);
@@ -342,7 +343,7 @@ export function calculateLeftoverItems(
   getNeeded: (id: number) => number,
   defaultType: MaterialType,
   isSpecialItem: (id: number) => boolean,
-  getSpecialRemaining: () => number
+  getSpecialRemaining: () => number,
 ): MaterialWithRemaining[] {
   return catalog
     .map((item): MaterialWithRemaining => {
@@ -354,9 +355,9 @@ export function calculateLeftoverItems(
         material: item,
         materialQuantity: remaining,
         remaining,
-        type: isSpecial ? 'xp' : defaultType
+        type: isSpecial ? 'xp' : defaultType,
       };
     })
-    .filter(item => item.remaining > 0)
+    .filter((item) => item.remaining > 0)
     .sort(sortMaterials);
 }

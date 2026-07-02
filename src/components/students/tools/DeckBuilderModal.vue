@@ -16,7 +16,18 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const { decks, initDecks, setUnit, moveUnit, swapUnits, addTeam, removeTeam, renameDeck, copyTeamToPreset, reorderTeam } = useDeckBuilder();
+const {
+  decks,
+  initDecks,
+  setUnit,
+  moveUnit,
+  swapUnits,
+  addTeam,
+  removeTeam,
+  renameDeck,
+  copyTeamToPreset,
+  reorderTeam,
+} = useDeckBuilder();
 onMounted(() => initDecks());
 
 // --- State ---
@@ -27,7 +38,7 @@ const pickerFilter = ref('');
 const PRESET_LABELS = ['I', 'II', 'III', 'IV', 'V'];
 
 // --- Computed ---
-const activeDeck = computed(() => decks.value.find(d => d.id === activeTab.value));
+const activeDeck = computed(() => decks.value.find((d) => d.id === activeTab.value));
 
 // Track which specific slot is the "assist" (second occurrence of a student across the preset)
 const assistSlots = computed<Set<string>>(() => {
@@ -50,7 +61,7 @@ function isAssistSlot(tIdx: number, slotIdx: number): boolean {
 function canPick(studentId: number): boolean {
   if (!pickerSlot.value) return false;
   const { tIdx, slotIdx } = pickerSlot.value;
-  const deck = decks.value.find(d => d.id === activeTab.value);
+  const deck = decks.value.find((d) => d.id === activeTab.value);
   if (!deck) return false;
 
   let occurrences = 0;
@@ -70,10 +81,10 @@ const pickerStudents = computed(() => {
   const squadType = pickerSlot.value.slotIdx < 4 ? 'Main' : 'Support';
   const filter = pickerFilter.value.toLowerCase();
   return props.students
-    .filter(s => s.SquadType === squadType)
-    .filter(s => studentDataStore.value[s.Id]?.isOwned !== false) // exclude unowned
-    .filter(s => canPick(s.Id))
-    .filter(s => filter === '' || s.Name.toLowerCase().includes(filter));
+    .filter((s) => s.SquadType === squadType)
+    .filter((s) => studentDataStore.value[s.Id]?.isOwned !== false) // exclude unowned
+    .filter((s) => canPick(s.Id))
+    .filter((s) => filter === '' || s.Name.toLowerCase().includes(filter));
 });
 
 // --- Picker ---
@@ -126,7 +137,7 @@ function handleRename(event: Event) {
 
 function getStudentById(id: number | null): StudentProps | undefined {
   if (id === null) return undefined;
-  return props.students.find(s => s.Id === id);
+  return props.students.find((s) => s.Id === id);
 }
 
 function closeIfBackdrop(event: MouseEvent) {
@@ -144,7 +155,11 @@ async function exportDeckImage() {
   const el = teamsAreaRef.value;
   if (!el || isExporting.value) return;
 
-  const prev = { overflow: el.style.overflow, height: el.style.height, maxHeight: el.style.maxHeight };
+  const prev = {
+    overflow: el.style.overflow,
+    height: el.style.height,
+    maxHeight: el.style.maxHeight,
+  };
   el.style.overflow = 'visible';
   el.style.height = `${el.scrollHeight}px`;
   el.style.maxHeight = 'none';
@@ -159,23 +174,31 @@ async function exportDeckImage() {
 
 // --- Drag & drop ---
 // Slot drag-drop: key format: "${tIdx}-${slotIdx}"
-const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isDropTarget, isRejected } =
-  useDragReorder<string>(
-    (from, to) => {
-      const [ft, fs] = from.split('-').map(Number);
-      const [tt, ts] = to.split('-').map(Number);
-      if (ft === tt) {
-        moveUnit(activeTab.value, ft, fs, ts);
-      } else {
-        swapUnits(activeTab.value, ft, fs, tt, ts);
-      }
-    },
-    (from, to) => {
-      const [, fs] = from.split('-').map(Number);
-      const [, ts] = to.split('-').map(Number);
-      return (fs < 4) === (ts < 4);
-    },
-  );
+const {
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  isDragging,
+  isDropTarget,
+  isRejected,
+} = useDragReorder<string>(
+  (from, to) => {
+    const [ft, fs] = from.split('-').map(Number);
+    const [tt, ts] = to.split('-').map(Number);
+    if (ft === tt) {
+      moveUnit(activeTab.value, ft, fs, ts);
+    } else {
+      swapUnits(activeTab.value, ft, fs, tt, ts);
+    }
+  },
+  (from, to) => {
+    const [, fs] = from.split('-').map(Number);
+    const [, ts] = to.split('-').map(Number);
+    return fs < 4 === ts < 4;
+  },
+);
 
 // Team drag-to-reorder: uses dataTransfer type tag to avoid interfering with slot drags
 const teamDragFrom = ref<number | null>(null);
@@ -211,7 +234,9 @@ function onTeamDragEnd() {
   teamDragOver.value = null;
 }
 
-function isTeamDragging(tIdx: number) { return teamDragFrom.value === tIdx; }
+function isTeamDragging(tIdx: number) {
+  return teamDragFrom.value === tIdx;
+}
 function isTeamDropTarget(tIdx: number) {
   return teamDragOver.value === tIdx && teamDragFrom.value !== null && teamDragFrom.value !== tIdx;
 }
@@ -226,14 +251,15 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   copyMenuTeam.value = null;
   if (copyToastTimer !== null) clearTimeout(copyToastTimer);
   copyToastMsg.value = `${$t('deckBuilder.copiedTo')} ${PRESET_LABELS[targetDeckId - 1]}`;
-  copyToastTimer = setTimeout(() => { copyToastMsg.value = ''; }, 1500);
+  copyToastTimer = setTimeout(() => {
+    copyToastMsg.value = '';
+  }, 1500);
 }
 </script>
 
 <template>
   <div class="deck-backdrop" @click="closeIfBackdrop">
     <div class="deck-modal">
-
       <!-- Header (includes preset tabs) -->
       <div class="deck-header">
         <h2 class="deck-title">{{ $t('deckBuilder.title') }}</h2>
@@ -250,7 +276,12 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
               {{ label }}
             </button>
           </div>
-          <button class="deck-close-btn" type="button" @click="emit('close')" :aria-label="$t('close')">
+          <button
+            class="deck-close-btn"
+            type="button"
+            @click="emit('close')"
+            :aria-label="$t('close')"
+          >
             ×
           </button>
         </div>
@@ -292,14 +323,18 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
             @click="handleRemoveTeam(tIdx)"
             :disabled="(activeDeck?.teams.length ?? 1) <= 1"
             :aria-label="$t('deckBuilder.removeTeam')"
-          >×</button>
+          >
+            ×
+          </button>
 
           <button
             class="team-copy-btn"
             type="button"
             @click.stop="copyMenuTeam = copyMenuTeam === tIdx ? null : tIdx"
             :aria-label="$t('deckBuilder.copyTeamToPreset')"
-          >⧉</button>
+          >
+            ⧉
+          </button>
 
           <div v-if="copyMenuTeam === tIdx" class="copy-menu" @click.stop>
             <template v-for="(label, i) in PRESET_LABELS" :key="i">
@@ -308,7 +343,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                 class="copy-menu-item"
                 type="button"
                 @click="handleCopyTeam(tIdx, i + 1)"
-              >→ {{ label }}</button>
+              >
+                → {{ label }}
+              </button>
             </template>
           </div>
 
@@ -319,18 +356,21 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
             @dragstart="onTeamDragStart(tIdx, $event)"
             @dragend="onTeamDragEnd"
             :aria-label="$t('deckBuilder.dragToReorder')"
-          >⠿</button>
+          >
+            ⠿
+          </button>
 
           <!-- Slot groups: tinted background identifies striker vs special -->
           <div class="team-rows">
-
             <!-- Striker slots (0–3) -->
             <div class="slots-group striker-slots">
               <div
                 v-for="idx in [0, 1, 2, 3]"
                 :key="idx"
                 class="slot-wrapper"
-                :class="{ 'slot-selected': pickerSlot?.tIdx === tIdx && pickerSlot?.slotIdx === idx }"
+                :class="{
+                  'slot-selected': pickerSlot?.tIdx === tIdx && pickerSlot?.slotIdx === idx,
+                }"
                 :draggable="team.units[idx] !== null"
                 @dragstart="team.units[idx] !== null && onDragStart(`${tIdx}-${idx}`, $event)"
                 @dragover="onDragOver(`${tIdx}-${idx}`, $event)"
@@ -345,7 +385,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                       'is-dragging': isDragging(`${tIdx}-${idx}`),
                       'is-drop-target': isDropTarget(`${tIdx}-${idx}`),
                       'is-rejected': isRejected(`${tIdx}-${idx}`),
-                      'is-assist': isAssistSlot(tIdx, idx)
+                      'is-assist': isAssistSlot(tIdx, idx),
                     }"
                   >
                     <StudentCard
@@ -354,7 +394,14 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                       @click="() => openPicker(tIdx, idx)"
                     />
                     <span v-if="isAssistSlot(tIdx, idx)" class="assist-badge">A</span>
-                    <button class="slot-clear-btn" type="button" @click.stop="clearSlotIn(tIdx, idx)" :aria-label="$t('deckBuilder.removeStudent')">×</button>
+                    <button
+                      class="slot-clear-btn"
+                      type="button"
+                      @click.stop="clearSlotIn(tIdx, idx)"
+                      :aria-label="$t('deckBuilder.removeStudent')"
+                    >
+                      ×
+                    </button>
                   </div>
                 </template>
                 <template v-else>
@@ -362,7 +409,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                     class="slot-empty"
                     :class="{
                       'is-drop-target': isDropTarget(`${tIdx}-${idx}`),
-                      'is-rejected': isRejected(`${tIdx}-${idx}`)
+                      'is-rejected': isRejected(`${tIdx}-${idx}`),
                     }"
                     @click="openPicker(tIdx, idx)"
                   >
@@ -378,7 +425,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                 v-for="idx in [4, 5]"
                 :key="idx"
                 class="slot-wrapper"
-                :class="{ 'slot-selected': pickerSlot?.tIdx === tIdx && pickerSlot?.slotIdx === idx }"
+                :class="{
+                  'slot-selected': pickerSlot?.tIdx === tIdx && pickerSlot?.slotIdx === idx,
+                }"
                 :draggable="team.units[idx] !== null"
                 @dragstart="team.units[idx] !== null && onDragStart(`${tIdx}-${idx}`, $event)"
                 @dragover="onDragOver(`${tIdx}-${idx}`, $event)"
@@ -393,7 +442,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                       'is-dragging': isDragging(`${tIdx}-${idx}`),
                       'is-drop-target': isDropTarget(`${tIdx}-${idx}`),
                       'is-rejected': isRejected(`${tIdx}-${idx}`),
-                      'is-assist': isAssistSlot(tIdx, idx)
+                      'is-assist': isAssistSlot(tIdx, idx),
                     }"
                   >
                     <StudentCard
@@ -402,7 +451,14 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                       @click="() => openPicker(tIdx, idx)"
                     />
                     <span v-if="isAssistSlot(tIdx, idx)" class="assist-badge">A</span>
-                    <button class="slot-clear-btn" type="button" @click.stop="clearSlotIn(tIdx, idx)" :aria-label="$t('deckBuilder.removeStudent')">×</button>
+                    <button
+                      class="slot-clear-btn"
+                      type="button"
+                      @click.stop="clearSlotIn(tIdx, idx)"
+                      :aria-label="$t('deckBuilder.removeStudent')"
+                    >
+                      ×
+                    </button>
                   </div>
                 </template>
                 <template v-else>
@@ -410,7 +466,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                     class="slot-empty"
                     :class="{
                       'is-drop-target': isDropTarget(`${tIdx}-${idx}`),
-                      'is-rejected': isRejected(`${tIdx}-${idx}`)
+                      'is-rejected': isRejected(`${tIdx}-${idx}`),
                     }"
                     @click="openPicker(tIdx, idx)"
                   >
@@ -419,10 +475,8 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
                 </template>
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
 
       <!-- Footer: add team + export (outside teamsAreaRef so it's excluded from export) -->
@@ -440,7 +494,11 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
       <div class="picker-section" v-if="pickerSlot !== null">
         <div class="picker-header">
           <span class="picker-role-label">
-            {{ pickerSlot.slotIdx < 4 ? $t('deckBuilder.selectStriker') : $t('deckBuilder.selectSpecial') }}
+            {{
+              pickerSlot.slotIdx < 4
+                ? $t('deckBuilder.selectStriker')
+                : $t('deckBuilder.selectSpecial')
+            }}
           </span>
           <input
             class="picker-filter"
@@ -449,7 +507,14 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
             :placeholder="$t('deckBuilder.filterByName')"
             autofocus
           />
-          <button class="picker-close-btn" type="button" @click="pickerSlot = null" :aria-label="$t('close')">×</button>
+          <button
+            class="picker-close-btn"
+            type="button"
+            @click="pickerSlot = null"
+            :aria-label="$t('close')"
+          >
+            ×
+          </button>
         </div>
         <div v-if="assistSlots.size >= 1" class="assist-limit-banner">
           {{ $t('deckBuilder.assistLimitReached') }}
@@ -467,7 +532,6 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -533,7 +597,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
 }
 
@@ -557,7 +623,10 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .preset-tab:hover:not(.active) {
@@ -610,10 +679,19 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
 .teams-area:hover {
   scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
 }
-.teams-area::-webkit-scrollbar { width: 4px; }
-.teams-area::-webkit-scrollbar-track { background: transparent; }
-.teams-area::-webkit-scrollbar-thumb { background: transparent; border-radius: 2px; }
-.teams-area:hover::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); }
+.teams-area::-webkit-scrollbar {
+  width: 4px;
+}
+.teams-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.teams-area::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+.teams-area:hover::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.4);
+}
 
 .team-block {
   display: flex;
@@ -640,7 +718,10 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   line-height: 1;
   opacity: 0;
   pointer-events: none;
-  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
   z-index: 5;
 }
 
@@ -672,7 +753,10 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   line-height: 1;
   opacity: 0;
   pointer-events: none;
-  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
   z-index: 5;
 }
 
@@ -740,7 +824,10 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   line-height: 1;
   opacity: 0;
   pointer-events: none;
-  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
   z-index: 5;
   user-select: none;
 }
@@ -788,10 +875,19 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
 .slots-group:hover {
   scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
 }
-.slots-group::-webkit-scrollbar { height: 4px; }
-.slots-group::-webkit-scrollbar-track { background: transparent; }
-.slots-group::-webkit-scrollbar-thumb { background: transparent; border-radius: 2px; }
-.slots-group:hover::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); }
+.slots-group::-webkit-scrollbar {
+  height: 4px;
+}
+.slots-group::-webkit-scrollbar-track {
+  background: transparent;
+}
+.slots-group::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+.slots-group:hover::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.4);
+}
 
 .striker-slots {
   background: color-mix(in srgb, #e06c75 80%, var(--background-primary));
@@ -838,9 +934,16 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
 }
 
 @keyframes shake-slot {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 .slot-card-inner.is-rejected {
@@ -991,7 +1094,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .add-team-btn:hover {
@@ -1007,7 +1112,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   color: var(--accent-color);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .export-btn:hover:not(:disabled) {
@@ -1079,7 +1186,9 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .picker-close-btn:hover {

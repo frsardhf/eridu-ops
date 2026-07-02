@@ -47,7 +47,7 @@ export const availableSchools = computed(() => {
     if (s.School) schools.add(s.School);
   }
   return [...schools].sort((a, b) =>
-    resolveLocalized('School', a).localeCompare(resolveLocalized('School', b))
+    resolveLocalized('School', a).localeCompare(resolveLocalized('School', b)),
   );
 });
 

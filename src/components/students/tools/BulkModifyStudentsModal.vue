@@ -14,8 +14,14 @@ import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { isQuotaExceededError, clearImageCacheStorage } from '@/lib/utils/storageQuota';
 import StarIcon from '@/components/shared/StarIcon.vue';
 import {
-  MAX_LEVEL, MAX_BOND_LEVEL, MIN_BOND_LEVEL, MAX_GRADE, WEAPON_STAR_THRESHOLD,
-  MAX_EX_SKILL_LEVEL, MAX_SKILL_LEVEL, MAX_POTENTIAL_LEVEL,
+  MAX_LEVEL,
+  MAX_BOND_LEVEL,
+  MIN_BOND_LEVEL,
+  MAX_GRADE,
+  WEAPON_STAR_THRESHOLD,
+  MAX_EX_SKILL_LEVEL,
+  MAX_SKILL_LEVEL,
+  MAX_POTENTIAL_LEVEL,
 } from '@/lib/constants/gameConstants';
 
 type OwnershipFilter = 'all' | 'owned' | 'unowned';
@@ -89,7 +95,7 @@ const fieldValues = ref<BulkFieldValues>({
   equipmentTierSlot3: '',
   equipmentTargetSlot3: '',
   gradeLevel: '',
-  potentialLevel: ''
+  potentialLevel: '',
 });
 
 // --- Computed ---
@@ -98,11 +104,14 @@ const selectedIdSet = computed(() => new Set(selectedStudentIds.value));
 const filteredStudents = computed<StudentProps[]>(() => {
   const charLevelRaw = String(debouncedCharLevelFilter.value ?? '');
   const parsedCharLevel = charLevelRaw ? Number(charLevelRaw) : null;
-  const hasCharFilter = parsedCharLevel !== null && Number.isFinite(parsedCharLevel) && parsedCharLevel > 0;
+  const hasCharFilter =
+    parsedCharLevel !== null && Number.isFinite(parsedCharLevel) && parsedCharLevel > 0;
 
-  return props.students.filter(student => {
+  return props.students.filter((student) => {
     const availability = classifyStudentAvailability(student);
-    const matchStar = selectedStarFilters.value.length === 0 || selectedStarFilters.value.includes(student.StarGrade);
+    const matchStar =
+      selectedStarFilters.value.length === 0 ||
+      selectedStarFilters.value.includes(student.StarGrade);
     const matchAvailability =
       selectedAvailabilityFilters.value.length === 0 ||
       selectedAvailabilityFilters.value.includes(availability);
@@ -132,17 +141,20 @@ const filteredStudents = computed<StudentProps[]>(() => {
   });
 });
 
-const filteredStudentIds = computed(() => filteredStudents.value.map(student => student.Id));
+const filteredStudentIds = computed(() => filteredStudents.value.map((student) => student.Id));
 
 const selectedCount = computed(() => selectedStudentIds.value.length);
 const totalStudentsCount = computed(() => props.students.length);
 
 const selectedVisibleCount = computed(() => {
-  return filteredStudentIds.value.filter(studentId => selectedIdSet.value.has(studentId)).length;
+  return filteredStudentIds.value.filter((studentId) => selectedIdSet.value.has(studentId)).length;
 });
 
 const isAllFilteredSelected = computed(() => {
-  return filteredStudentIds.value.length > 0 && selectedVisibleCount.value === filteredStudentIds.value.length;
+  return (
+    filteredStudentIds.value.length > 0 &&
+    selectedVisibleCount.value === filteredStudentIds.value.length
+  );
 });
 
 const isPartiallyFilteredSelected = computed(() => {
@@ -150,7 +162,8 @@ const isPartiallyFilteredSelected = computed(() => {
 });
 
 const overwriteCount = computed(() => {
-  return selectedStudentIds.value.filter(studentId => nonDefaultPersistedIds.value.has(studentId)).length;
+  return selectedStudentIds.value.filter((studentId) => nonDefaultPersistedIds.value.has(studentId))
+    .length;
 });
 
 function buildPatchFromFields(): BulkFormPatch {
@@ -166,9 +179,13 @@ function buildPatchFromFields(): BulkFormPatch {
     skillPublic: parseOptionalInt(fv.skillPublic, 1, MAX_SKILL_LEVEL),
     skillPublicTarget: targets ? parseOptionalInt(fv.skillPublicTarget, 1, MAX_SKILL_LEVEL) : null,
     skillPassive: parseOptionalInt(fv.skillPassive, 1, MAX_SKILL_LEVEL),
-    skillPassiveTarget: targets ? parseOptionalInt(fv.skillPassiveTarget, 1, MAX_SKILL_LEVEL) : null,
+    skillPassiveTarget: targets
+      ? parseOptionalInt(fv.skillPassiveTarget, 1, MAX_SKILL_LEVEL)
+      : null,
     skillExtraPassive: parseOptionalInt(fv.skillExtraPassive, 1, MAX_SKILL_LEVEL),
-    skillExtraPassiveTarget: targets ? parseOptionalInt(fv.skillExtraPassiveTarget, 1, MAX_SKILL_LEVEL) : null,
+    skillExtraPassiveTarget: targets
+      ? parseOptionalInt(fv.skillExtraPassiveTarget, 1, MAX_SKILL_LEVEL)
+      : null,
     equipmentTierSlot1: parseOptionalInt(fv.equipmentTierSlot1, 1, 10),
     equipmentTargetSlot1: targets ? parseOptionalInt(fv.equipmentTargetSlot1, 1, 10) : null,
     equipmentTierSlot2: parseOptionalInt(fv.equipmentTierSlot2, 1, 10),
@@ -176,13 +193,13 @@ function buildPatchFromFields(): BulkFormPatch {
     equipmentTierSlot3: parseOptionalInt(fv.equipmentTierSlot3, 1, 10),
     equipmentTargetSlot3: targets ? parseOptionalInt(fv.equipmentTargetSlot3, 1, 10) : null,
     gradeLevel: parseOptionalInt(fv.gradeLevel, 1, MAX_GRADE),
-    potentialLevel: parseOptionalInt(fv.potentialLevel, 0, MAX_POTENTIAL_LEVEL)
+    potentialLevel: parseOptionalInt(fv.potentialLevel, 0, MAX_POTENTIAL_LEVEL),
   };
 }
 
 const hasAnyPatchValue = computed(() => {
   const patch = buildPatchFromFields();
-  return Object.values(patch).some(value => value !== null);
+  return Object.values(patch).some((value) => value !== null);
 });
 
 const isSubmitDisabled = computed(() => {
@@ -216,7 +233,6 @@ watch([isAllFilteredSelected, isPartiallyFilteredSelected], () => {
   selectAllInput.value.indeterminate = isPartiallyFilteredSelected.value;
 });
 
-
 onMounted(async () => {
   const { nonDefaultIds, formData } = await getBulkFilterData(props.students);
   nonDefaultPersistedIds.value = nonDefaultIds;
@@ -244,11 +260,15 @@ function parseOptionalInt(value: string, min: number, max: number): number | nul
 
 function getAvailabilityLabel(filter: AvailabilityFilter): string {
   switch (filter) {
-    case 'fest':   return $t('bulkModify.availability.fest');
-    case 'unique': return $t('bulkModify.availability.unique');
-    case 'event':  return $t('bulkModify.availability.event');
+    case 'fest':
+      return $t('bulkModify.availability.fest');
+    case 'unique':
+      return $t('bulkModify.availability.unique');
+    case 'event':
+      return $t('bulkModify.availability.event');
     case 'regular':
-    default:       return $t('bulkModify.availability.regular');
+    default:
+      return $t('bulkModify.availability.regular');
   }
 }
 
@@ -256,7 +276,7 @@ function getAvailabilityLabel(filter: AvailabilityFilter): string {
 function toggleStudentSelection(studentId: number) {
   const selected = selectedIdSet.value;
   if (selected.has(studentId)) {
-    selectedStudentIds.value = selectedStudentIds.value.filter(id => id !== studentId);
+    selectedStudentIds.value = selectedStudentIds.value.filter((id) => id !== studentId);
     return;
   }
   selectedStudentIds.value = [...selectedStudentIds.value, studentId];
@@ -266,18 +286,18 @@ function toggleAllFilteredSelection(checked: boolean) {
   const filteredIds = filteredStudentIds.value;
   if (checked) {
     const next = new Set(selectedStudentIds.value);
-    filteredIds.forEach(id => next.add(id));
+    filteredIds.forEach((id) => next.add(id));
     selectedStudentIds.value = Array.from(next);
     return;
   }
 
   const filteredSet = new Set(filteredIds);
-  selectedStudentIds.value = selectedStudentIds.value.filter(id => !filteredSet.has(id));
+  selectedStudentIds.value = selectedStudentIds.value.filter((id) => !filteredSet.has(id));
 }
 
 function toggleArrayItem<T>(arr: Ref<T[]>, item: T) {
   if (arr.value.includes(item)) {
-    arr.value = arr.value.filter(v => v !== item);
+    arr.value = arr.value.filter((v) => v !== item);
     return;
   }
   arr.value = [...arr.value, item];
@@ -299,7 +319,7 @@ async function bulkSetOwnership(owned: boolean) {
   if (ids.length > BULK_CONFIRM_THRESHOLD) {
     const label = owned ? 'recruited' : 'not recruited';
     const confirmed = window.confirm(
-      `You are about to mark ${ids.length} students as ${label}. Continue?`
+      `You are about to mark ${ids.length} students as ${label}. Continue?`,
     );
     if (!confirmed) return;
   }
@@ -313,7 +333,7 @@ async function bulkSetOwnership(owned: boolean) {
     // The schaledb image cache can fill the origin's storage budget, after
     // which even tiny IndexedDB writes throw QuotaExceededError. Free that
     // cache and retry once before giving up.
-    if (isQuotaExceededError(error) && await clearImageCacheStorage()) {
+    if (isQuotaExceededError(error) && (await clearImageCacheStorage())) {
       try {
         const updates = await applyOwnershipBulk(ids, owned, allFormData.value);
         Object.assign(allFormData.value, updates);
@@ -327,8 +347,8 @@ async function bulkSetOwnership(owned: boolean) {
     if (isQuotaExceededError(error)) {
       window.alert(
         'Your browser storage is full, so the change could not be saved. ' +
-        'Clearing the cached images did not free enough space. Try removing ' +
-        'other site data for this browser, then reload and try again.'
+          'Clearing the cached images did not free enough space. Try removing ' +
+          'other site data for this browser, then reload and try again.',
       );
     }
   } finally {
@@ -341,7 +361,7 @@ async function submitBulkModify() {
 
   if (selectedStudentIds.value.length > BULK_CONFIRM_THRESHOLD) {
     const confirmed = window.confirm(
-      `You are about to update ${selectedStudentIds.value.length} students. Continue?`
+      `You are about to update ${selectedStudentIds.value.length} students. Continue?`,
     );
     if (!confirmed) return;
   }
@@ -366,9 +386,17 @@ async function submitBulkModify() {
     <div class="bulk-modal">
       <div class="bulk-modal-header">
         <h2 class="bulk-modal-title">{{ $t('bulkModify.title') }}</h2>
-        <button class="bulk-close-btn" type="button" @click="emit('close')" :aria-label="$t('close')">
+        <button
+          class="bulk-close-btn"
+          type="button"
+          @click="emit('close')"
+          :aria-label="$t('close')"
+        >
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12 5.7 16.89a1 1 0 0 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.88a1 1 0 0 0 0-1.41Z"/>
+            <path
+              fill="currentColor"
+              d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12 5.7 16.89a1 1 0 0 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.88a1 1 0 0 0 0-1.41Z"
+            />
           </svg>
         </button>
       </div>
@@ -377,7 +405,9 @@ async function submitBulkModify() {
         <section class="bulk-section">
           <div class="selection-header">
             <h3 class="section-title">{{ $t('bulkModify.studentSelection') }}</h3>
-            <span class="selection-count">{{ $t('bulkModify.selected') }}: {{ selectedCount }} / {{ totalStudentsCount }}</span>
+            <span class="selection-count"
+              >{{ $t('bulkModify.selected') }}: {{ selectedCount }} / {{ totalStudentsCount }}</span
+            >
           </div>
 
           <div class="filters-grid">
@@ -405,7 +435,9 @@ async function submitBulkModify() {
                   :key="`limited-${filter}`"
                   type="button"
                   class="filter-pill"
-                  :class="{ active: selectedAvailabilityFilters.includes(filter as AvailabilityFilter) }"
+                  :class="{
+                    active: selectedAvailabilityFilters.includes(filter as AvailabilityFilter),
+                  }"
                   @click="toggleAvailabilityFilter(filter as AvailabilityFilter)"
                 >
                   {{ getAvailabilityLabel(filter as AvailabilityFilter) }}
@@ -445,14 +477,20 @@ async function submitBulkModify() {
               <span class="filter-label">{{ $t('ownership.ownershipFilter') }}</span>
               <div class="filter-pills-wrap">
                 <button
-                  v-for="opt in (['all', 'owned', 'unowned'] as OwnershipFilter[])"
+                  v-for="opt in ['all', 'owned', 'unowned'] as OwnershipFilter[]"
                   :key="`ownership-${opt}`"
                   type="button"
                   class="filter-pill"
                   :class="{ active: ownershipFilter === opt }"
                   @click="ownershipFilter = opt"
                 >
-                  {{ opt === 'all' ? $t('ownership.filterAll') : opt === 'owned' ? $t('ownership.filterOwned') : $t('ownership.filterUnowned') }}
+                  {{
+                    opt === 'all'
+                      ? $t('ownership.filterAll')
+                      : opt === 'owned'
+                        ? $t('ownership.filterOwned')
+                        : $t('ownership.filterUnowned')
+                  }}
                 </button>
               </div>
             </div>
@@ -466,7 +504,9 @@ async function submitBulkModify() {
               @change="toggleAllFilteredSelection(($event.target as HTMLInputElement).checked)"
             />
             <span>{{ $t('bulkModify.selectAllFiltered') }}</span>
-            <span class="visible-count">{{ $t('bulkModify.visible') }}: {{ filteredStudents.length }}</span>
+            <span class="visible-count"
+              >{{ $t('bulkModify.visible') }}: {{ filteredStudents.length }}</span
+            >
           </label>
 
           <div class="student-selection-grid">
@@ -526,7 +566,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.bond') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.bond" type="number" min="1" max="100" placeholder="1-100" />
+                <input
+                  v-model="fieldValues.bond"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="1-100"
+                />
               </div>
             </div>
 
@@ -534,7 +580,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.characterLevel') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.characterLevel" type="number" min="1" max="90" placeholder="1-90" />
+                <input
+                  v-model="fieldValues.characterLevel"
+                  type="number"
+                  min="1"
+                  max="90"
+                  placeholder="1-90"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -552,7 +604,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.skillEx') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.skillEx" type="number" min="1" max="5" placeholder="1-5" />
+                <input
+                  v-model="fieldValues.skillEx"
+                  type="number"
+                  min="1"
+                  max="5"
+                  placeholder="1-5"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -570,7 +628,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.skillPublic') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.skillPublic" type="number" min="1" max="10" placeholder="1-10" />
+                <input
+                  v-model="fieldValues.skillPublic"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1-10"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -588,7 +652,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.skillPassive') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.skillPassive" type="number" min="1" max="10" placeholder="1-10" />
+                <input
+                  v-model="fieldValues.skillPassive"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1-10"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -606,7 +676,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.skillExtraPassive') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.skillExtraPassive" type="number" min="1" max="10" placeholder="1-10" />
+                <input
+                  v-model="fieldValues.skillExtraPassive"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1-10"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -624,7 +700,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.equipmentSlot1') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.equipmentTierSlot1" type="number" min="1" max="10" placeholder="1-10" />
+                <input
+                  v-model="fieldValues.equipmentTierSlot1"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1-10"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -642,7 +724,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.equipmentSlot2') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.equipmentTierSlot2" type="number" min="1" max="10" placeholder="1-10" />
+                <input
+                  v-model="fieldValues.equipmentTierSlot2"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1-10"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -660,7 +748,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.equipmentSlot3') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.equipmentTierSlot3" type="number" min="1" max="10" placeholder="1-10" />
+                <input
+                  v-model="fieldValues.equipmentTierSlot3"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="1-10"
+                />
                 <span v-if="enableTargets" class="field-arrow">→</span>
                 <input
                   v-if="enableTargets"
@@ -678,8 +772,18 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.gradeLevel') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.gradeLevel" type="number" min="1" max="9" placeholder="1-9" />
-                <span v-if="gradeStarDisplay" class="grade-star-badge" :class="{ gold: gradeStarDisplay.isGold, blue: !gradeStarDisplay.isGold }">
+                <input
+                  v-model="fieldValues.gradeLevel"
+                  type="number"
+                  min="1"
+                  max="9"
+                  placeholder="1-9"
+                />
+                <span
+                  v-if="gradeStarDisplay"
+                  class="grade-star-badge"
+                  :class="{ gold: gradeStarDisplay.isGold, blue: !gradeStarDisplay.isGold }"
+                >
                   <StarIcon width="16" height="16" />
                   <span class="grade-star-count">{{ gradeStarDisplay.starCount }}</span>
                 </span>
@@ -690,7 +794,13 @@ async function submitBulkModify() {
             <div class="field-group">
               <span class="field-label">{{ $t('bulkModify.fields.potentialLevel') }}</span>
               <div class="field-inputs">
-                <input v-model="fieldValues.potentialLevel" type="number" min="0" max="25" placeholder="0-25" />
+                <input
+                  v-model="fieldValues.potentialLevel"
+                  type="number"
+                  min="0"
+                  max="25"
+                  placeholder="0-25"
+                />
               </div>
             </div>
           </div>
@@ -699,7 +809,8 @@ async function submitBulkModify() {
 
       <div class="bulk-modal-footer">
         <p v-if="overwriteCount > 0" class="overwrite-warning">
-          {{ $t('bulkModify.overwriteWarningPrefix') }}{{ overwriteCount }}{{ $t('bulkModify.overwriteWarningSuffix') }}
+          {{ $t('bulkModify.overwriteWarningPrefix') }}{{ overwriteCount
+          }}{{ $t('bulkModify.overwriteWarningSuffix') }}
         </p>
 
         <div class="footer-actions">
@@ -878,7 +989,6 @@ async function submitBulkModify() {
   outline: 2px solid var(--accent-color);
   outline-offset: 1px;
 }
-
 
 .select-all-row {
   margin-top: 12px;
@@ -1116,7 +1226,9 @@ async function submitBulkModify() {
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 500;
-  transition: opacity 0.15s, border-color 0.15s;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s;
 }
 
 .ownership-btn:disabled {

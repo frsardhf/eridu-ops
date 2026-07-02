@@ -7,12 +7,9 @@ import type {
   EquipmentRecord,
   FormRecord,
   ItemsInventoryRecord,
-  EquipmentInventoryRecord
+  EquipmentInventoryRecord,
 } from '../db/database';
-import {
-  isMigrationCompleted,
-  setMetadata
-} from '../services/dbService';
+import { isMigrationCompleted, setMetadata } from '../services/dbService';
 import { saveSettings, getSettings, DEFAULT_SETTINGS, type AppSettings } from './settingsStorage';
 import { normalizeTheme } from './themeUtils';
 
@@ -29,7 +26,7 @@ const LEGACY_KEYS = [
   'sort-option',
   'sort-direction',
   'language',
-  'forms_migration_version'
+  'forms_migration_version',
 ];
 
 /**
@@ -46,7 +43,7 @@ export async function migrateFromLocalStorageToIndexedDB(): Promise<boolean> {
 
     console.log('Starting migration from localStorage to IndexedDB...');
 
-    const hasLegacyData = LEGACY_KEYS.some(key => localStorage.getItem(key) !== null);
+    const hasLegacyData = LEGACY_KEYS.some((key) => localStorage.getItem(key) !== null);
 
     if (!hasLegacyData) {
       console.log('No legacy data found, marking as fresh install...');
@@ -140,8 +137,8 @@ async function migrateResourceInventories(): Promise<void> {
     const inventories: ItemsInventoryRecord[] = Object.entries(resourcesData).map(
       ([id, data]: [string, any]) => ({
         Id: Number(id),
-        QuantityOwned: data.QuantityOwned || 0
-      })
+        QuantityOwned: data.QuantityOwned || 0,
+      }),
     );
 
     if (inventories.length > 0) {
@@ -173,8 +170,8 @@ async function migrateEquipmentInventories(): Promise<void> {
     const inventories: EquipmentInventoryRecord[] = Object.entries(equipmentsData).map(
       ([id, data]: [string, any]) => ({
         Id: Number(id),
-        QuantityOwned: data.QuantityOwned || 0
-      })
+        QuantityOwned: data.QuantityOwned || 0,
+      }),
     );
 
     if (inventories.length > 0) {
@@ -207,7 +204,7 @@ async function migrateForms(): Promise<void> {
       ([studentId, data]: [string, any]) => {
         const { id, ...rest } = data as any;
         return { studentId: Number(studentId), ...rest };
-      }
+      },
     );
 
     if (formsArray.length > 0) {
@@ -248,7 +245,7 @@ function consolidateSettings(): void {
       language: language as 'en' | 'jp',
       sort: {
         option: sortOption as any,
-        direction: sortDirection as any
+        direction: sortDirection as any,
       },
       pinnedStudents,
       isPinnedMode: false,
@@ -269,7 +266,7 @@ function cleanupLegacyStorage(): void {
   try {
     console.log('Cleaning up legacy localStorage keys...');
 
-    LEGACY_KEYS.forEach(key => {
+    LEGACY_KEYS.forEach((key) => {
       localStorage.removeItem(key);
     });
 

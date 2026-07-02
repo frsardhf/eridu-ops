@@ -21,19 +21,27 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'updateFilter': [key: keyof StudentFilters, value: StudentFilterValue];
-  'clearAll': [];
+  updateFilter: [key: keyof StudentFilters, value: StudentFilterValue];
+  clearAll: [];
 }>();
 
-const { getSquadLabel, getBulletLabel, getArmorLabel, getSchoolLabel, getSquadColor, getBulletColor, getArmorColor } = useFilterLabels();
+const {
+  getSquadLabel,
+  getBulletLabel,
+  getArmorLabel,
+  getSchoolLabel,
+  getSquadColor,
+  getBulletColor,
+  getArmorColor,
+} = useFilterLabels();
 
 // Schools shown as individual chips (excludes the "Other" group)
-const mainSchools = computed(() => props.availableSchools.filter(s => !isOtherSchool(s)));
+const mainSchools = computed(() => props.availableSchools.filter((s) => !isOtherSchool(s)));
 // "Other" chip is shown only when at least one of the grouped schools is present in the data
 const hasOtherSchools = computed(() => props.availableSchools.some(isOtherSchool));
 
 const isOtherActive = computed(() =>
-  OTHER_SCHOOL_KEYS.some(k => props.filters.school.includes(k))
+  OTHER_SCHOOL_KEYS.some((k) => props.filters.school.includes(k)),
 );
 
 function toggle(key: keyof StudentFilters, value: string | number) {
@@ -50,11 +58,11 @@ function isActive(key: keyof StudentFilters, value: string | number): boolean {
 }
 
 function toggleOtherSchools() {
-  const current = props.filters.school.filter(k => !isOtherSchool(k));
+  const current = props.filters.school.filter((k) => !isOtherSchool(k));
   if (isOtherActive.value) {
     emit('updateFilter', 'school', current);
   } else {
-    const toAdd = OTHER_SCHOOL_KEYS.filter(k => props.availableSchools.includes(k));
+    const toAdd = OTHER_SCHOOL_KEYS.filter((k) => props.availableSchools.includes(k));
     emit('updateFilter', 'school', [...current, ...toAdd]);
   }
 }
@@ -79,18 +87,28 @@ function toggleOtherSchools() {
             :key="key"
             class="filter-chip filter-chip--squad font-nexon"
             :class="{ active: isActive('squadType', key) }"
-            :style="isActive('squadType', key)
-              ? { backgroundColor: getSquadColor(key), borderColor: getSquadColor(key), color: 'white' }
-              : { borderColor: getSquadColor(key), color: getSquadColor(key) }"
+            :style="
+              isActive('squadType', key)
+                ? {
+                    backgroundColor: getSquadColor(key),
+                    borderColor: getSquadColor(key),
+                    color: 'white',
+                  }
+                : { borderColor: getSquadColor(key), color: getSquadColor(key) }
+            "
             type="button"
             @click="toggle('squadType', key)"
-          ><span class="squad-label">{{ getSquadLabel(key) }}</span></button>
+          >
+            <span class="squad-label">{{ getSquadLabel(key) }}</span>
+          </button>
         </div>
       </div>
 
       <!-- Rarity & Availability -->
       <div class="filter-section">
-        <div class="filter-section-label">{{ $t('filter.rarity') }} / {{ $t('filter.availability') }}</div>
+        <div class="filter-section-label">
+          {{ $t('filter.rarity') }} / {{ $t('filter.availability') }}
+        </div>
         <div class="filter-chips">
           <button
             v-for="grade in STAR_GRADE_VALUES"
@@ -99,7 +117,9 @@ function toggleOtherSchools() {
             :class="{ active: isActive('starGrade', grade) }"
             type="button"
             @click="toggle('starGrade', grade)"
-          >{{ '★'.repeat(grade) }}</button>
+          >
+            {{ '★'.repeat(grade) }}
+          </button>
           <span class="filter-chip-divider"></span>
           <button
             v-for="opt in AVAILABILITY_OPTIONS"
@@ -108,7 +128,9 @@ function toggleOtherSchools() {
             :class="{ active: isActive('availability', opt.value) }"
             type="button"
             @click="toggle('availability', opt.value)"
-          >{{ $t(opt.key) }}</button>
+          >
+            {{ $t(opt.key) }}
+          </button>
         </div>
       </div>
 
@@ -121,12 +143,20 @@ function toggleOtherSchools() {
             :key="key"
             class="filter-chip filter-chip--typed"
             :class="{ active: isActive('bulletType', key) }"
-            :style="isActive('bulletType', key)
-              ? { backgroundColor: getBulletColor(key), borderColor: getBulletColor(key), color: 'white' }
-              : { borderColor: getBulletColor(key), color: getBulletColor(key) }"
+            :style="
+              isActive('bulletType', key)
+                ? {
+                    backgroundColor: getBulletColor(key),
+                    borderColor: getBulletColor(key),
+                    color: 'white',
+                  }
+                : { borderColor: getBulletColor(key), color: getBulletColor(key) }
+            "
             type="button"
             @click="toggle('bulletType', key)"
-          >{{ getBulletLabel(key) }}</button>
+          >
+            {{ getBulletLabel(key) }}
+          </button>
         </div>
       </div>
 
@@ -139,12 +169,20 @@ function toggleOtherSchools() {
             :key="key"
             class="filter-chip filter-chip--typed"
             :class="{ active: isActive('armorType', key) }"
-            :style="isActive('armorType', key)
-              ? { backgroundColor: getArmorColor(key), borderColor: getArmorColor(key), color: 'white' }
-              : { borderColor: getArmorColor(key), color: getArmorColor(key) }"
+            :style="
+              isActive('armorType', key)
+                ? {
+                    backgroundColor: getArmorColor(key),
+                    borderColor: getArmorColor(key),
+                    color: 'white',
+                  }
+                : { borderColor: getArmorColor(key), color: getArmorColor(key) }
+            "
             type="button"
             @click="toggle('armorType', key)"
-          >{{ getArmorLabel(key) }}</button>
+          >
+            {{ getArmorLabel(key) }}
+          </button>
         </div>
       </div>
 
@@ -205,7 +243,6 @@ function toggleOtherSchools() {
           </button>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -299,7 +336,10 @@ function toggleOtherSchools() {
   color: var(--text-secondary);
   font-size: 0.82rem;
   cursor: pointer;
-  transition: border-color 0.12s, background-color 0.12s, color 0.12s;
+  transition:
+    border-color 0.12s,
+    background-color 0.12s,
+    color 0.12s;
   white-space: nowrap;
   line-height: 1.5;
 }

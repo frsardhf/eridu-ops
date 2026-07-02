@@ -38,20 +38,20 @@ const ARMOR_TYPE_COLORS: Record<string, string> = {
  * School brand color mapping (approximate, based on in-game visual identity)
  */
 const SCHOOL_COLORS: Record<string, string> = {
-  Abydos:      '#33c0b4',
-  Trinity:     '#f5c011',
-  Gehenna:     '#cc2233',
-  Millennium:  '#00a0d2',
-  Hyakkiyako:  '#ff5495',
+  Abydos: '#33c0b4',
+  Trinity: '#f5c011',
+  Gehenna: '#cc2233',
+  Millennium: '#00a0d2',
+  Hyakkiyako: '#ff5495',
   Shanhaijing: '#1cb488',
-  Arius:       '#939295',
-  Valkyrie:    '#1a3a6b',
-  Tokiwadai:   '#5599cc',
-  WildHunt:    '#9b2335',
-  Highlander:  '#a0522d',
-  SRT:         '#555e6e',
-  ETC:         '#6b7280',
-  Sakugawa:    '#6b7280',
+  Arius: '#939295',
+  Valkyrie: '#1a3a6b',
+  Tokiwadai: '#5599cc',
+  WildHunt: '#9b2335',
+  Highlander: '#a0522d',
+  SRT: '#555e6e',
+  ETC: '#6b7280',
+  Sakugawa: '#6b7280',
 };
 
 /**
@@ -68,11 +68,11 @@ const SQUAD_TYPE_COLORS: Record<string, string> = {
  * One distinct hue per region: used for server pills in the Hall entries modal.
  */
 const BOND100_SERVER_COLORS: Record<string, string> = {
-  global_na:   'rgb(59, 130, 246)',   // blue
-  global_eu:   'rgb(245, 158, 11)',   // amber  (was cyan: too close to TW/HK)
-  global_asia: 'rgb(139, 92, 246)',   // violet
-  global_tw:   'rgb(16, 185, 129)',   // emerald
-  global_kr:   'rgb(236, 72, 153)',   // rose
+  global_na: 'rgb(59, 130, 246)', // blue
+  global_eu: 'rgb(245, 158, 11)', // amber  (was cyan: too close to TW/HK)
+  global_asia: 'rgb(139, 92, 246)', // violet
+  global_tw: 'rgb(16, 185, 129)', // emerald
+  global_kr: 'rgb(236, 72, 153)', // rose
 };
 
 const FALLBACK_COLOR = 'var(--text-secondary)';
@@ -91,7 +91,9 @@ export function getResourceQuantityClass(value: number): 'positive' | 'negative'
  * CSS class for a resource quantity overlay based on ResourceSummary view mode.
  * missing -> negative (red), leftover -> positive (green), needed -> neutral.
  */
-export function getModeQuantityClass(mode: 'needed' | 'missing' | 'leftover'): 'positive' | 'negative' | '' {
+export function getModeQuantityClass(
+  mode: 'needed' | 'missing' | 'leftover',
+): 'positive' | 'negative' | '' {
   if (mode === 'missing') return 'negative';
   if (mode === 'leftover') return 'positive';
   return '';

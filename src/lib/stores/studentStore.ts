@@ -12,7 +12,6 @@ export function getStudentData(studentId: string | number): FormRecord | undefin
   return studentDataStore.value[numericId];
 }
 
-
 /**
  * Reactive accessor for a single student's form data.
  */
@@ -29,7 +28,7 @@ export function useStudentFormData(studentId: Ref<number> | number) {
 export function setStudentDataDirect(studentId: number, data: FormRecord) {
   studentDataStore.value = {
     ...studentDataStore.value,
-    [studentId]: data
+    [studentId]: data,
   };
 }
 
@@ -39,6 +38,6 @@ export function setStudentDataDirect(studentId: number, data: FormRecord) {
 export function batchSetStudentData(records: Record<number, FormRecord>) {
   studentDataStore.value = {
     ...studentDataStore.value,
-    ...records
+    ...records,
   };
 }

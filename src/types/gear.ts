@@ -1,6 +1,6 @@
 // Define equipment types
-export type EquipmentType = 'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' |
-  'Hairpin' | 'Charm' | 'Watch' | 'Necklace';
+export type EquipmentType =
+  'Hat' | 'Gloves' | 'Shoes' | 'Bag' | 'Badge' | 'Hairpin' | 'Charm' | 'Watch' | 'Necklace';
 
 interface EquipmentLevel {
   current: number;
@@ -23,17 +23,17 @@ export interface GradeInfos {
 }
 
 export interface ExclusiveGearLevel {
-  current?: number;  // 0 = locked, 1 = T1, 2 = T2
+  current?: number; // 0 = locked, 1 = T1, 2 = T2
   target?: number;
 }
 
 export interface StudentGear {
-  Released: number[];        // [0] = JP release, [1] = Global release
-  StatType: string[];        // e.g., ["AttackPower", "MaxHP"]
-  StatValue: number[][];     // Stats per tier [[T1 values], [T2 values]]
-  TierUpMaterial: number[][];        // [[materialId1, materialId2, ...], ...]
-  TierUpMaterialAmount: number[][];  // [[qty1, qty2, ...], ...]
-  Name: string;              // Gear name
-  Desc: string;              // Gear description
-  Icon: string;              // Icon name
+  Released: number[]; // [0] = JP release, [1] = Global release
+  StatType: string[]; // e.g., ["AttackPower", "MaxHP"]
+  StatValue: number[][]; // Stats per tier [[T1 values], [T2 values]]
+  TierUpMaterial: number[][]; // [[materialId1, materialId2, ...], ...]
+  TierUpMaterialAmount: number[][]; // [[qty1, qty2, ...], ...]
+  Name: string; // Gear name
+  Desc: string; // Gear description
+  Icon: string; // Icon name
 }

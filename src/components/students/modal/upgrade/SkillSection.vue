@@ -10,8 +10,8 @@ import { SkillType, SKILL_TYPES } from '@/types/upgrade';
 import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
-  student: StudentProps,
-  skillLevels: Record<string, { current: number; target: number; }>,
+  student: StudentProps;
+  skillLevels: Record<string, { current: number; target: number }>;
   allSkillsMaxed: boolean;
   targetSkillsMaxed: boolean;
 }>();
@@ -37,7 +37,7 @@ const {
   getMaxLevel,
   getSkillDescription,
   getSkillCostDisplay,
-  getSkillIconUrl
+  getSkillIconUrl,
 } = useStudentSkillDisplay(
   studentRef,
   toRef(() => props.skillLevels),
@@ -47,17 +47,17 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
   useTooltip<SkillType>();
 
 const skillStates = computed(() =>
-  SKILL_TYPES.map(type => ({
+  SKILL_TYPES.map((type) => ({
     type,
     current: props.skillLevels[type]?.current ?? 1,
-    target:  props.skillLevels[type]?.target  ?? 1,
-    max:     getMaxLevel(type),
-  }))
+    target: props.skillLevels[type]?.target ?? 1,
+    max: getMaxLevel(type),
+  })),
 );
 
 // One current/target pair per skill type (SKILL_TYPES is static: Ex, Public, Passive, ExtraPassive)
 const skillPairs = Object.fromEntries(
-  SKILL_TYPES.map(type => [
+  SKILL_TYPES.map((type) => [
     type,
     makeCurrentTargetPair(
       () => props.skillLevels[type] ?? { current: 1, target: 1 },
@@ -65,7 +65,7 @@ const skillPairs = Object.fromEntries(
       1,
       () => getMaxLevel(type),
     ),
-  ])
+  ]),
 ) as Record<SkillType, { updateCurrent: (v: number) => void; updateTarget: (v: number) => void }>;
 </script>
 
@@ -98,15 +98,13 @@ const skillPairs = Object.fromEntries(
     </div>
 
     <div class="skill-grid">
-      <div
-        v-for="state in skillStates"
-        :key="state.type"
-        class="modal-grid-item"
-      >
+      <div v-for="state in skillStates" :key="state.type" class="modal-grid-item">
         <!-- Current Level Control -->
         <div class="level-control">
           <NumberStepper
-            :value="state.current" :min="1" :max="state.max"
+            :value="state.current"
+            :min="1"
+            :max="state.max"
             :name="`skill-current-${state.type}`"
             :aria-label="`${$t('current')} ${getSkillName(state.type)}`"
             @change="skillPairs[state.type].updateCurrent($event)"
@@ -159,7 +157,11 @@ const skillPairs = Object.fromEntries(
               class="ex-toggle-btn"
               :class="{ active: useExtraExSkill }"
               :title="useExtraExSkill ? $t('skillToggle.normal') : $t('skillToggle.enhanced')"
-              :style="{ borderColor: bulletTypeColor, color: useExtraExSkill ? 'white' : bulletTypeColor, backgroundColor: useExtraExSkill ? bulletTypeColor : 'transparent' }"
+              :style="{
+                borderColor: bulletTypeColor,
+                color: useExtraExSkill ? 'white' : bulletTypeColor,
+                backgroundColor: useExtraExSkill ? bulletTypeColor : 'transparent',
+              }"
               @click="toggleExtraExSkill"
               type="button"
             >
@@ -171,7 +173,9 @@ const skillPairs = Object.fromEntries(
         <!-- Target Level Control -->
         <div class="level-control">
           <NumberStepper
-            :value="state.target" :min="1" :max="state.max"
+            :value="state.target"
+            :min="1"
+            :max="state.max"
             variant="target"
             :name="`skill-target-${state.type}`"
             :aria-label="`${$t('target')} ${getSkillName(state.type)}`"
@@ -227,7 +231,9 @@ const skillPairs = Object.fromEntries(
   border-radius: 4px;
   border: 1.5px solid;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   line-height: 1.4;
   letter-spacing: 0.5px;
   z-index: 3;

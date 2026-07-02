@@ -3,16 +3,8 @@ import { computed, ref } from 'vue';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
 import { $t } from '@/locales';
-import {
-  CAFE_TAP_EXP,
-  MAX_CAFE_TAPS_PER_DAY,
-} from '@/lib/constants/gameConstants';
-import {
-  computeCafeDays,
-  computeCafeExp,
-  isoToDate,
-  dateToIso,
-} from '@/lib/utils/bondExpUtils';
+import { CAFE_TAP_EXP, MAX_CAFE_TAPS_PER_DAY } from '@/lib/constants/gameConstants';
+import { computeCafeDays, computeCafeExp, isoToDate, dateToIso } from '@/lib/utils/bondExpUtils';
 import type { OtherExpDataProps } from '@/types/gift';
 import '@/styles/modalActions.css';
 
@@ -98,8 +90,8 @@ const showLessonRates = ref(false);
 
 const lessonRates = [
   { rank: '1–10', exp: 15, bonus: '10–25%' },
-  { rank: '11',   exp: 20, bonus: '25%' },
-  { rank: '12',   exp: 25, bonus: '25%' },
+  { rank: '11', exp: 20, bonus: '25%' },
+  { rank: '12', exp: 25, bonus: '25%' },
 ];
 </script>
 
@@ -214,7 +206,9 @@ const lessonRates = [
                   class="oe-inline-clear"
                   :title="$t('clear')"
                   @click="onClearBonus"
-                >✕</button>
+                >
+                  ✕
+                </button>
               </div>
             </div>
           </div>

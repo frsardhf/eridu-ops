@@ -5,7 +5,7 @@ import {
   formatLargeNumber,
   getMaterialIconSrc,
   buildMaterialMap,
-  sortMaterials
+  sortMaterials,
 } from '@/lib/utils/materialUtils';
 import { Material } from '@/types/upgrade';
 import '@/styles/resourceDisplay.css';

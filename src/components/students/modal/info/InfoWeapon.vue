@@ -12,21 +12,18 @@ const props = defineProps<{
   exclusiveGearLevel: { current?: number; target?: number };
 }>();
 
-const {
-  isWeaponLocked, blueStars,
-  getWeaponIconUrl
-} = useStudentGearDisplay(
+const { isWeaponLocked, blueStars, getWeaponIconUrl } = useStudentGearDisplay(
   toRef(() => props.student),
   toRef(() => props.gradeLevels),
   toRef(() => props.equipmentLevels),
-  toRef(() => props.exclusiveGearLevel)
+  toRef(() => props.exclusiveGearLevel),
 );
 </script>
 
 <template>
   <div class="info-gear-weapon">
     <div class="weapon-showcase">
-      <div class="weapon-preview" :class="{ 'locked': isWeaponLocked }">
+      <div class="weapon-preview" :class="{ locked: isWeaponLocked }">
         <img
           v-if="student?.WeaponImg"
           :src="getWeaponIconUrl()"
@@ -37,7 +34,10 @@ const {
 
         <div v-if="isWeaponLocked" class="weapon-lock-overlay">
           <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-            <path fill="currentColor" d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
+            <path
+              fill="currentColor"
+              d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"
+            />
           </svg>
         </div>
       </div>

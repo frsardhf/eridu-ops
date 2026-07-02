@@ -16,7 +16,7 @@ export function useStudentGearDisplay(
   student: MaybeRefOrGetter<StudentProps>,
   gradeLevels: MaybeRefOrGetter<{ current?: number; target?: number }>,
   equipmentLevels: MaybeRefOrGetter<Record<string, { current: number; target: number }>>,
-  exclusiveGearLevel: MaybeRefOrGetter<{ current?: number; target?: number }>
+  exclusiveGearLevel: MaybeRefOrGetter<{ current?: number; target?: number }>,
 ) {
   const currentGrade = computed(() => toValue(gradeLevels)?.current ?? 1);
   const targetGrade = computed(() => toValue(gradeLevels)?.target ?? 1);
@@ -72,6 +72,6 @@ export function useStudentGearDisplay(
     getEquipmentIconUrl,
     getEquipmentDisplay,
     getExclusiveGearIconUrl,
-    getExclusiveGearDisplay
+    getExclusiveGearDisplay,
   };
 }

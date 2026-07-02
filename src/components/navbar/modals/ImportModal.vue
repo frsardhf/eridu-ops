@@ -4,7 +4,7 @@ import { importLocalStorageData, importFromOtherSite } from '@/lib/services/impo
 import { $t } from '@/locales';
 
 const emit = defineEmits<{
-  'close': [];
+  close: [];
   'import-success': [];
 }>();
 
@@ -27,7 +27,7 @@ function handleDragLeave() {
 function handleDrop(event: DragEvent) {
   event.preventDefault();
   isDragging.value = false;
-  
+
   if (event.dataTransfer?.files.length) {
     handleFiles(event.dataTransfer.files);
   }
@@ -42,24 +42,24 @@ function handleFileSelect(event: Event) {
 
 async function handleFiles(files: FileList) {
   if (files.length === 0) return;
-  
+
   const file = files[0];
   if (!file.name.endsWith('.txt') && !file.name.endsWith('.json')) {
     showImportError($t('importErrorFileType'));
     return;
   }
-  
+
   try {
     isLoading.value = true;
     showStatus.value = true;
     importStatus.value = $t('importingData');
-    
+
     const success = await importLocalStorageData(file);
-    
+
     if (success) {
       importStatus.value = $t('importSuccessful');
       emit('import-success');
-      
+
       // Reload page after short delay
       setTimeout(() => {
         window.location.reload();
@@ -85,13 +85,13 @@ async function handleTextImport() {
     isLoading.value = true;
     showStatus.value = true;
     importStatus.value = $t('importingData');
-    
+
     const success = await importFromOtherSite(importText.value);
-    
+
     if (success) {
       importStatus.value = $t('importSuccessful');
       emit('import-success');
-      
+
       // Reload page after short delay
       setTimeout(() => {
         window.location.reload();
@@ -133,24 +133,32 @@ function closeModal(event: MouseEvent) {
       <div class="modal-header">
         <h2 class="modal-title">{{ $t('importData') }}</h2>
         <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
-      
+
       <div class="import-modal-content">
         <div class="import-method-toggle">
-          <button 
-            class="method-button" 
+          <button
+            class="method-button"
             :class="{ active: !showTextInput }"
             @click="toggleImportMethod"
           >
             {{ $t('importFromFile') }}
           </button>
-          <button 
-            class="method-button" 
+          <button
+            class="method-button"
             :class="{ active: showTextInput }"
             @click="toggleImportMethod"
           >
@@ -165,7 +173,7 @@ function closeModal(event: MouseEvent) {
             :placeholder="$t('pasteImportData')"
             rows="6"
           ></textarea>
-          <button 
+          <button
             class="import-button"
             @click="handleTextImport"
             :disabled="isLoading || !importText.trim()"
@@ -174,10 +182,10 @@ function closeModal(event: MouseEvent) {
           </button>
         </div>
 
-        <div 
+        <div
           v-else
-          class="dropzone" 
-          :class="{ 'dragging': isDragging, 'has-status': showStatus }"
+          class="dropzone"
+          :class="{ dragging: isDragging, 'has-status': showStatus }"
           @dragover="handleDragOver"
           @dragleave="handleDragLeave"
           @drop="handleDrop"
@@ -194,12 +202,20 @@ function closeModal(event: MouseEvent) {
             <span class="loader" v-if="isLoading"></span>
             <p>{{ importStatus }}</p>
           </div>
-          
+
           <div v-else class="dropzone-content">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             <p class="dropzone-text">{{ $t('dragDropFile') }}</p>
             <p class="dropzone-subtext">{{ $t('or') }}</p>
@@ -244,8 +260,14 @@ function closeModal(event: MouseEvent) {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -463,14 +485,14 @@ function closeModal(event: MouseEvent) {
   .modal-container {
     width: 95%;
   }
-  
+
   .dropzone {
     padding: 16px 12px;
     min-height: 140px;
   }
-  
+
   .dropzone-text {
     font-size: 0.95rem;
   }
 }
-</style> 
+</style>

@@ -1,9 +1,5 @@
 export type Bond100ServerRegion =
-  | 'global_na'
-  | 'global_asia'
-  | 'global_eu'
-  | 'global_kr'
-  | 'global_tw';
+  'global_na' | 'global_asia' | 'global_eu' | 'global_kr' | 'global_tw';
 
 export type Bond100ServerFilter = Bond100ServerRegion | 'all';
 /** School filter: a raw SchaleDB School value, or 'all' for no filter. */

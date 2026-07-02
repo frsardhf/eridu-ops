@@ -20,17 +20,19 @@ const emit = defineEmits<{
 
 const selection = ref<Record<number, number>>({});
 
-const totalSelected = computed(() =>
-  Object.values(selection.value).reduce((s, q) => s + q, 0)
-);
+const totalSelected = computed(() => Object.values(selection.value).reduce((s, q) => s + q, 0));
 
 const isReady = computed(() => totalSelected.value === props.neededCount);
 
 // Only SR gifts can be used as conversion materials in-game
 const giftEntries = computed(() =>
   Object.entries(props.nonFavorGiftsMap)
-    .map(([id, qty]) => ({ id: Number(id), available: qty, resource: getResourceDataByIdSync(Number(id)) }))
-    .filter(e => e.resource && e.resource.Rarity === 'SR')
+    .map(([id, qty]) => ({
+      id: Number(id),
+      available: qty,
+      resource: getResourceDataByIdSync(Number(id)),
+    }))
+    .filter((e) => e.resource && e.resource.Rarity === 'SR'),
 );
 
 // Per-row max respects both per-gift availability and the remaining global budget
@@ -62,11 +64,7 @@ function confirm() {
         <p class="convert-desc">{{ $t('convertMaterialDesc', { needed: neededCount }) }}</p>
 
         <div class="convert-gift-grid">
-          <div
-            v-for="entry in giftEntries"
-            :key="entry.id"
-            class="convert-gift-card"
-          >
+          <div v-for="entry in giftEntries" :key="entry.id" class="convert-gift-card">
             <div class="gift-header" :title="entry.resource!.Name">
               <div class="gift-icon-container">
                 <img
@@ -97,7 +95,9 @@ function confirm() {
         <p class="convert-inventory-note">{{ $t('convertMaterialInventoryNote') }}</p>
 
         <div class="convert-footer">
-          <button class="modal-btn modal-btn-cancel" @click="emit('cancel')">{{ $t('cancel') }}</button>
+          <button class="modal-btn modal-btn-cancel" @click="emit('cancel')">
+            {{ $t('cancel') }}
+          </button>
           <button class="modal-btn modal-btn-convert" :disabled="!isReady" @click="confirm">
             {{ $t('convertMaterialConfirm') }}
           </button>

@@ -5,10 +5,7 @@ import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { CHANGELOG } from '@/lib/constants/changelog';
-import {
-  getLastSeenChangelogId,
-  setLastSeenChangelogId,
-} from '@/lib/utils/settingsStorage';
+import { getLastSeenChangelogId, setLastSeenChangelogId } from '@/lib/utils/settingsStorage';
 import GlobalControls from './GlobalControls.vue';
 import ContactModal from './modals/ContactModal.vue';
 import CreditsModal from './modals/CreditsModal.vue';
@@ -18,7 +15,9 @@ import '@/styles/navbar.css';
 // their own chunks on first open. Contact/Credits stay eager: they're small
 // and the landing page also imports them statically.
 const ImportModal = defineAsyncComponent(() => import('./modals/ImportModal.vue'));
-const InventoryScreenshotModal = defineAsyncComponent(() => import('./modals/InventoryScreenshotModal.vue'));
+const InventoryScreenshotModal = defineAsyncComponent(
+  () => import('./modals/InventoryScreenshotModal.vue'),
+);
 const WhatsNewModal = defineAsyncComponent(() => import('./modals/WhatsNewModal.vue'));
 
 defineProps<{
@@ -99,8 +98,10 @@ function handleClickOutside(event: MouseEvent) {
   if (!mobileMenuOpen.value) return;
   const target = event.target as Node;
   if (
-    menuEl.value && !menuEl.value.contains(target) &&
-    menuToggleEl.value && !menuToggleEl.value.contains(target)
+    menuEl.value &&
+    !menuEl.value.contains(target) &&
+    menuToggleEl.value &&
+    !menuToggleEl.value.contains(target)
   ) {
     mobileMenuOpen.value = false;
   }
@@ -115,9 +116,19 @@ useClickOutside(handleClickOutside);
       <!-- Left: home icon + page nav links -->
       <div class="an-left" :class="{ 'an-left--compact': compact }">
         <RouterLink to="/" class="app-navbar-home-btn" aria-label="Home">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
         </RouterLink>
         <nav class="an-nav">
@@ -169,26 +180,53 @@ useClickOutside(handleClickOutside);
           <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
           <div class="mobile-menu-options">
             <button class="mobile-menu-option" type="button" @click="handleExportData">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="option-icon"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               {{ $t('exportData') }}
             </button>
             <button class="mobile-menu-option" type="button" @click="openImportModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="option-icon"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
               {{ $t('importData') }}
             </button>
             <button class="mobile-menu-option" type="button" @click="openScreenshotModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="option-icon">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="option-icon"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
               </svg>
               {{ $t('scanInventory') }}
             </button>
@@ -199,34 +237,89 @@ useClickOutside(handleClickOutside);
           <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
           <div class="mobile-menu-options">
             <button class="mobile-menu-option" type="button" @click="openWhatsNewModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="option-icon"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
               {{ $t('whatsNew') }}
             </button>
             <!-- compact-only: shown once the matching top-bar control collapses
                  (Contact/Credits <=960, Language <=480) -->
             <button class="mobile-menu-option compact-only" type="button" @click="openContactModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="option-icon"
+              >
+                <path
+                  d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                />
               </svg>
               {{ $t('contact') }}
             </button>
             <button class="mobile-menu-option compact-only" type="button" @click="openCreditsModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"/>
-                <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="option-icon"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path
+                  d="M12 14v-0.5c0-1.2 0.8-2 1.7-2.8 0.7-0.6 1.3-1.2 1.3-2.2 0-1.4-1.2-2.5-2.7-2.5-1.5 0-2.6 0.9-2.9 2.4"
+                />
+                <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor" />
               </svg>
               {{ $t('credits') }}
             </button>
-            <button class="mobile-menu-option compact-only-sm" type="button" :aria-label="`Language: ${langLabel}`" @click="toggleLanguage">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="2" y1="12" x2="22" y2="12"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <button
+              class="mobile-menu-option compact-only-sm"
+              type="button"
+              :aria-label="`Language: ${langLabel}`"
+              @click="toggleLanguage"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="option-icon"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path
+                  d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                />
               </svg>
               {{ langLabel }}
             </button>
@@ -242,14 +335,8 @@ useClickOutside(handleClickOutside);
     @import-success="reinitializeData"
   />
   <!-- No reinit on inventory updates: the modal syncs resourceCacheStore per id. -->
-  <InventoryScreenshotModal
-    v-if="showScreenshotModal"
-    @close="showScreenshotModal = false"
-  />
-  <WhatsNewModal
-    v-if="showWhatsNewModal"
-    @close="closeWhatsNewModal"
-  />
+  <InventoryScreenshotModal v-if="showScreenshotModal" @close="showScreenshotModal = false" />
+  <WhatsNewModal v-if="showWhatsNewModal" @close="closeWhatsNewModal" />
   <ContactModal v-if="showContactModal" @close="showContactModal = false" />
   <CreditsModal v-if="showCreditsModal" @close="showCreditsModal = false" />
 </template>

@@ -6,19 +6,24 @@ import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import ResourceGrid from './ResourceGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
 
-const props = withDefaults(defineProps<{
-  initialTab?: InventoryTab,
-}>(), {
-  initialTab: 'items',
-});
+const props = withDefaults(
+  defineProps<{
+    initialTab?: InventoryTab;
+  }>(),
+  {
+    initialTab: 'items',
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'close'): void,
+  (e: 'close'): void;
 }>();
 
 // Modal mounts only when visible (v-if), so isVisible is always true here.
 const { itemFormData, handleItemInput, loadItems } = useStudentItems({ isVisible: true });
-const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment({ isVisible: true });
+const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment({
+  isVisible: true,
+});
 
 onMounted(async () => {
   await Promise.all([loadItems(), loadEquipments()]);
@@ -30,19 +35,19 @@ type SummaryViewMode = 'needed' | 'missing' | 'leftover';
 
 const INVENTORY_TAB_ORDER: Record<InventoryTab, number> = {
   items: 0,
-  equipment: 1
+  equipment: 1,
 };
 
 const SUMMARY_TAB_ORDER: Record<SummaryTab, number> = {
   materials: 0,
   equipment: 1,
-  gifts: 2
+  gifts: 2,
 };
 
 const SUMMARY_MODE_ORDER: Record<SummaryViewMode, number> = {
   needed: 0,
   missing: 1,
-  leftover: 2
+  leftover: 2,
 };
 
 const activeTab = ref<InventoryTab>(props.initialTab);
@@ -53,7 +58,7 @@ const contentDirection = ref<'forward' | 'backward'>('forward');
 const viewType = ref<'aggregate' | 'per-student'>('aggregate');
 
 const contentTransitionName = computed(() =>
-  contentDirection.value === 'forward' ? 'inventory-pane-forward' : 'inventory-pane-backward'
+  contentDirection.value === 'forward' ? 'inventory-pane-forward' : 'inventory-pane-backward',
 );
 
 const contentTransitionKey = computed(() => {
@@ -65,25 +70,24 @@ const contentTransitionKey = computed(() => {
 
 function setInventoryTab(nextTab: InventoryTab) {
   if (nextTab === activeTab.value) return;
-  contentDirection.value = INVENTORY_TAB_ORDER[nextTab] >= INVENTORY_TAB_ORDER[activeTab.value]
-    ? 'forward'
-    : 'backward';
+  contentDirection.value =
+    INVENTORY_TAB_ORDER[nextTab] >= INVENTORY_TAB_ORDER[activeTab.value] ? 'forward' : 'backward';
   activeTab.value = nextTab;
 }
 
 function setSummaryTab(nextTab: SummaryTab) {
   if (nextTab === summaryTab.value) return;
-  contentDirection.value = SUMMARY_TAB_ORDER[nextTab] >= SUMMARY_TAB_ORDER[summaryTab.value]
-    ? 'forward'
-    : 'backward';
+  contentDirection.value =
+    SUMMARY_TAB_ORDER[nextTab] >= SUMMARY_TAB_ORDER[summaryTab.value] ? 'forward' : 'backward';
   summaryTab.value = nextTab;
 }
 
 function setSummaryViewMode(nextMode: SummaryViewMode) {
   if (nextMode === summaryViewMode.value) return;
-  contentDirection.value = SUMMARY_MODE_ORDER[nextMode] >= SUMMARY_MODE_ORDER[summaryViewMode.value]
-    ? 'forward'
-    : 'backward';
+  contentDirection.value =
+    SUMMARY_MODE_ORDER[nextMode] >= SUMMARY_MODE_ORDER[summaryViewMode.value]
+      ? 'forward'
+      : 'backward';
   summaryViewMode.value = nextMode;
 }
 
@@ -123,14 +127,25 @@ const toggleSummaryMode = () => {
             :aria-pressed="viewType === 'per-student'"
           >
             <!-- Person icon: shown when switching TO per-student -->
-            <svg v-if="viewType === 'aggregate'" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            <svg
+              v-if="viewType === 'aggregate'"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+              />
             </svg>
             <!-- Grid icon: shown when switching back TO aggregate -->
             <svg v-else viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/>
+              <path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" />
             </svg>
-            <span>{{ viewType === 'per-student' ? $t('aggregateView') : $t('perStudentView') }}</span>
+            <span>{{
+              viewType === 'per-student' ? $t('aggregateView') : $t('perStudentView')
+            }}</span>
           </button>
           <button
             class="inventory-summary-toggle"
@@ -140,13 +155,16 @@ const toggleSummaryMode = () => {
             :aria-pressed="summaryMode"
           >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path fill="currentColor" d="M4 19h4V9H4v10zm6 0h4V5h-4v14zm6 0h4v-7h-4v7z"/>
+              <path fill="currentColor" d="M4 19h4V9H4v10zm6 0h4V5h-4v14zm6 0h4v-7h-4v7z" />
             </svg>
             <span>{{ $t('summary') }}</span>
           </button>
           <button class="inventory-close" @click="emit('close')" :title="$t('close')">
             <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              <path
+                fill="currentColor"
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              />
             </svg>
           </button>
         </div>
@@ -192,21 +210,33 @@ const toggleSummaryMode = () => {
         <div class="inventory-mode-segmented" role="tablist" :aria-label="$t('summary')">
           <button
             type="button"
-            :class="['inventory-mode-btn', 'inventory-mode-needed', { active: summaryViewMode === 'needed' }]"
+            :class="[
+              'inventory-mode-btn',
+              'inventory-mode-needed',
+              { active: summaryViewMode === 'needed' },
+            ]"
             @click="setSummaryViewMode('needed')"
           >
             {{ $t('needed') }}
           </button>
           <button
             type="button"
-            :class="['inventory-mode-btn', 'inventory-mode-missing', { active: summaryViewMode === 'missing' }]"
+            :class="[
+              'inventory-mode-btn',
+              'inventory-mode-missing',
+              { active: summaryViewMode === 'missing' },
+            ]"
             @click="setSummaryViewMode('missing')"
           >
             {{ $t('missing') }}
           </button>
           <button
             type="button"
-            :class="['inventory-mode-btn', 'inventory-mode-leftover', { active: summaryViewMode === 'leftover' }]"
+            :class="[
+              'inventory-mode-btn',
+              'inventory-mode-leftover',
+              { active: summaryViewMode === 'leftover' },
+            ]"
             @click="setSummaryViewMode('leftover')"
           >
             {{ $t('leftover') }}
@@ -471,7 +501,8 @@ const toggleSummaryMode = () => {
 
 :global(.inventory-modal-shell-enter-active) .inventory-modal,
 :global(.inventory-modal-shell-leave-active) .inventory-modal {
-  transition: transform var(--motion-duration-medium) var(--motion-ease-standard),
+  transition:
+    transform var(--motion-duration-medium) var(--motion-ease-standard),
     opacity var(--motion-duration-fast) var(--motion-ease-standard);
   will-change: transform, opacity;
 }
@@ -490,7 +521,8 @@ const toggleSummaryMode = () => {
 .inventory-pane-forward-leave-active,
 .inventory-pane-backward-enter-active,
 .inventory-pane-backward-leave-active {
-  transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
     opacity var(--motion-duration-fast) var(--motion-ease-standard);
   will-change: transform, opacity;
 }

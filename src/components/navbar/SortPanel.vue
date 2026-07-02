@@ -8,15 +8,18 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'updateSort': [option: SortOption];
-  'toggleDirection': [];
+  updateSort: [option: SortOption];
+  toggleDirection: [];
 }>();
 
 // Two side-by-side groups: inherent SchaleDB attributes vs user progression
 // (form-backed investment keys; see toComparableValue in sortUtils).
 const SORT_SECTIONS: Array<{ labelKey: string; options: SortOption[] }> = [
   { labelKey: 'sort.sectionInfo', options: ['id', 'name', 'default', 'school', 'club'] },
-  { labelKey: 'sort.sectionProgress', options: ['bond', 'level', 'grade', 'equipment', 'skill', 'potential'] },
+  {
+    labelKey: 'sort.sectionProgress',
+    options: ['bond', 'level', 'grade', 'equipment', 'skill', 'potential'],
+  },
 ];
 </script>
 
@@ -24,13 +27,13 @@ const SORT_SECTIONS: Array<{ labelKey: string; options: SortOption[] }> = [
   <div class="sort-panel" role="menu">
     <div class="sort-panel-header">
       <span class="sort-panel-title">{{ $t('sort.method') }}</span>
-      <button
-        type="button"
-        class="sort-direction-btn"
-        @click="emit('toggleDirection')"
-      >
-        <span class="sort-direction-arrow" aria-hidden="true">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
-        <span>{{ sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending') }}</span>
+      <button type="button" class="sort-direction-btn" @click="emit('toggleDirection')">
+        <span class="sort-direction-arrow" aria-hidden="true">{{
+          sortDirection === 'asc' ? '↑' : '↓'
+        }}</span>
+        <span>{{
+          sortDirection === 'asc' ? $t('direction.ascending') : $t('direction.descending')
+        }}</span>
       </button>
     </div>
 
@@ -54,7 +57,18 @@ const SORT_SECTIONS: Array<{ labelKey: string; options: SortOption[] }> = [
           @click="emit('updateSort', option)"
         >
           <span>{{ $t(`sort.${option}`) }}</span>
-          <svg v-if="option === currentSort" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg
+            v-if="option === currentSort"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </button>

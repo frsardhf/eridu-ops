@@ -45,7 +45,7 @@ export function togglePinned(studentId: string | number): boolean {
   const id = String(studentId);
   const wasPinned = pinnedIdSet.value.has(id);
   const next = wasPinned
-    ? pinnedStudentIds.value.filter(sid => sid !== id)
+    ? pinnedStudentIds.value.filter((sid) => sid !== id)
     : [...pinnedStudentIds.value, id];
   pinnedStudentIds.value = next;
   updateSetting('pinnedStudents', [...next]);

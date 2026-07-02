@@ -113,47 +113,53 @@ class EriduOpsDatabase extends Dexie {
       metadata: 'key',
       forms: 'studentId',
       resources: 'id',
-      equipments_inventory: 'id'
+      equipments_inventory: 'id',
     });
 
     // Version 2: Rename stores and fix primary key casing
-    this.version(2).stores({
-      items_inventory: 'Id',
-      equipment_inventory: 'Id',
-      resources: null,
-      equipments_inventory: null
-    }).upgrade(async (tx) => {
-      // Migrate resources -> items_inventory with id -> Id transform
-      const resourceRows = await tx.table('resources').toArray();
-      if (resourceRows.length > 0) {
-        await tx.table('items_inventory').bulkAdd(
-          resourceRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned }))
-        );
-      }
+    this.version(2)
+      .stores({
+        items_inventory: 'Id',
+        equipment_inventory: 'Id',
+        resources: null,
+        equipments_inventory: null,
+      })
+      .upgrade(async (tx) => {
+        // Migrate resources -> items_inventory with id -> Id transform
+        const resourceRows = await tx.table('resources').toArray();
+        if (resourceRows.length > 0) {
+          await tx
+            .table('items_inventory')
+            .bulkAdd(
+              resourceRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned })),
+            );
+        }
 
-      // Migrate equipments_inventory -> equipment_inventory with id -> Id transform
-      const equipmentRows = await tx.table('equipments_inventory').toArray();
-      if (equipmentRows.length > 0) {
-        await tx.table('equipment_inventory').bulkAdd(
-          equipmentRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned }))
-        );
-      }
+        // Migrate equipments_inventory -> equipment_inventory with id -> Id transform
+        const equipmentRows = await tx.table('equipments_inventory').toArray();
+        if (equipmentRows.length > 0) {
+          await tx
+            .table('equipment_inventory')
+            .bulkAdd(
+              equipmentRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned })),
+            );
+        }
 
-      // Clean ghost 'id' property from forms records
-      const formRows = await tx.table('forms').toArray();
-      const dirtyForms = formRows.filter((row: any) => 'id' in row);
-      if (dirtyForms.length > 0) {
-        const cleaned = dirtyForms.map((row: any) => {
-          const { id, ...rest } = row;
-          return rest;
-        });
-        await tx.table('forms').bulkPut(cleaned);
-      }
-    });
+        // Clean ghost 'id' property from forms records
+        const formRows = await tx.table('forms').toArray();
+        const dirtyForms = formRows.filter((row: any) => 'id' in row);
+        if (dirtyForms.length > 0) {
+          const cleaned = dirtyForms.map((row: any) => {
+            const { id, ...rest } = row;
+            return rest;
+          });
+          await tx.table('forms').bulkPut(cleaned);
+        }
+      });
 
     // Version 3: Add decks table
     this.version(3).stores({
-      decks: 'id, updatedAt'
+      decks: 'id, updatedAt',
     });
   }
 }
@@ -162,11 +168,12 @@ class EriduOpsDatabase extends Dexie {
 export const db = new EriduOpsDatabase();
 
 // Helper function to convert array to record keyed by Id
-export function arrayToRecord<T extends { Id: number }>(
-  array: T[]
-): Record<number, T> {
-  return array.reduce((acc, item) => {
-    acc[item.Id] = item;
-    return acc;
-  }, {} as Record<number, T>);
+export function arrayToRecord<T extends { Id: number }>(array: T[]): Record<number, T> {
+  return array.reduce(
+    (acc, item) => {
+      acc[item.Id] = item;
+      return acc;
+    },
+    {} as Record<number, T>,
+  );
 }

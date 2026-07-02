@@ -14,10 +14,7 @@ export function parseEditValue(rawValue: string, fallback: number): number {
  * Creates a keydown handler for number editor inputs.
  * Blocks invalid keys (e, E, +, -, .) and handles Enter (commit) / Escape (cancel).
  */
-export function createEditorKeydownHandler(
-  onCommit: () => void,
-  onCancel: () => void
-) {
+export function createEditorKeydownHandler(onCommit: () => void, onCancel: () => void) {
   return (event: KeyboardEvent) => {
     if (['e', 'E', '+', '-', '.'].includes(event.key)) {
       event.preventDefault();
@@ -44,7 +41,7 @@ export function clampLevelPair(
   otherValue: number,
   min: number,
   max: number,
-  isTarget: boolean
+  isTarget: boolean,
 ): { current: number; target: number } | null {
   if (newValue < min || newValue > max) return null;
 
@@ -111,7 +108,7 @@ export function deductXpItems(
 ): void {
   if (xpNeeded <= 0) return;
   let remaining = xpNeeded;
-  const remainingOwned = items.map(item => item.owned);
+  const remainingOwned = items.map((item) => item.owned);
 
   // Phase 1: floor-deduct highest-value items first
   for (let i = 0; i < items.length; i++) {
@@ -149,7 +146,7 @@ export function simulateXpDeduction(
   const consumed = items.map(() => 0);
   if (xpNeeded <= 0) return consumed;
 
-  const remainingOwned = items.map(i => i.owned);
+  const remainingOwned = items.map((i) => i.owned);
   let remaining = xpNeeded;
 
   for (let i = 0; i < items.length; i++) {
@@ -182,7 +179,6 @@ export function formatSkillCost(cost: number[], current: number, target: number)
   if (!cost?.length) return '';
   const currentValue = cost[current - 1] || cost[0];
   const targetValue = cost[target - 1] || cost[0];
-  
+
   return formatValueWithTarget(currentValue, targetValue);
 }
-

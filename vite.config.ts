@@ -1,15 +1,15 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import type { PreRenderedAsset } from 'rollup'
-import path from 'node:path'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import type { PreRenderedAsset } from 'rollup';
+import path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
-    }
+      '@': path.resolve(__dirname, 'src'),
+    },
   },
   // Pre-bundle three + its addon entry points up front. Without this, the lazy
   // /chibi3d route's deep imports (GLTFLoader) get discovered mid-session and
@@ -18,24 +18,24 @@ export default defineConfig({
     include: [
       'three',
       'three/examples/jsm/loaders/GLTFLoader.js',
-      'three/examples/jsm/controls/OrbitControls.js'
-    ]
+      'three/examples/jsm/controls/OrbitControls.js',
+    ],
   },
   base: '/',
   server: {
     headers: {
-      'X-Content-Type-Options': 'nosniff'
+      'X-Content-Type-Options': 'nosniff',
     },
     proxy: {
       '/api/inventory': {
         target: 'http://localhost:5001',
-        rewrite: (path: string) => path.replace(/^\/api/, '')
+        rewrite: (path: string) => path.replace(/^\/api/, ''),
       },
       '/api/bond100': {
         target: 'http://localhost:5002',
-        rewrite: (path: string) => path.replace(/^\/api/, '')
-      }
-    }
+        rewrite: (path: string) => path.replace(/^\/api/, ''),
+      },
+    },
   },
   build: {
     rollupOptions: {
@@ -55,5 +55,5 @@ export default defineConfig({
         entryFileNames: 'assets/js/[name]-[hash].js',
       },
     },
-  }
-})
+  },
+});

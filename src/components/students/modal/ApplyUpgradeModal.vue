@@ -29,21 +29,33 @@ const emit = defineEmits<{
 }>();
 
 const {
-  pendingSkills, pendingPotentials, pendingEquipment,
-  hasLevelPending, hasSkillsPending, hasPotentialPending,
-  hasEquipmentPending, hasGradePending, hasExclusivePending,
-  availableSections, GRADE_THRESHOLD,
+  pendingSkills,
+  pendingPotentials,
+  pendingEquipment,
+  hasLevelPending,
+  hasSkillsPending,
+  hasPotentialPending,
+  hasEquipmentPending,
+  hasGradePending,
+  hasExclusivePending,
+  availableSections,
+  GRADE_THRESHOLD,
 } = useApplyUpgrade(props);
 
 const selectedIds = ref<Set<SectionId>>(new Set());
 
-watch(availableSections, (sections) => {
-  selectedIds.value = new Set(sections);
-}, { immediate: true });
+watch(
+  availableSections,
+  (sections) => {
+    selectedIds.value = new Set(sections);
+  },
+  { immediate: true },
+);
 
-const allSelected = computed(() =>
-  availableSections.value.length > 0 &&
-  availableSections.value.every(id => selectedIds.value.has(id))
+const allSelected = computed(
+  () =>
+    availableSections.value.length > 0 &&
+    availableSections.value.every((id) => selectedIds.value.has(id)),
 );
 
 function toggleSelectAll() {
@@ -85,7 +97,6 @@ function getIconUrl(item: MaterialPreviewItem): string {
   <Teleport to="body">
     <div class="upgrade-backdrop" @click.self="emit('close')">
       <div class="upgrade-modal">
-
         <!-- Header -->
         <div class="upgrade-header">
           <span class="upgrade-title">{{ $t('confirmApplyUpgrade') }}</span>
@@ -94,12 +105,16 @@ function getIconUrl(item: MaterialPreviewItem): string {
               class="toggle-btn toggle-used"
               :class="{ active: viewMode === 'consumed' }"
               @click="viewMode = 'consumed'"
-            >{{ $t('used') }}</button>
+            >
+              {{ $t('used') }}
+            </button>
             <button
               class="toggle-btn toggle-leftover"
               :class="{ active: viewMode === 'remaining' }"
               @click="viewMode = 'remaining'"
-            >{{ $t('leftover') }}</button>
+            >
+              {{ $t('leftover') }}
+            </button>
           </div>
         </div>
 
@@ -133,38 +148,69 @@ function getIconUrl(item: MaterialPreviewItem): string {
             class="simple-pills-row"
           >
             <div v-if="hasLevelPending" class="pill-item">
-              <input id="pill-level" type="checkbox" :checked="selectedIds.has('level')" @change="toggleSection('level')" />
+              <input
+                id="pill-level"
+                type="checkbox"
+                :checked="selectedIds.has('level')"
+                @change="toggleSection('level')"
+              />
               <label for="pill-level" class="section-pill pill--simple">
                 <span class="pill-name">{{ $t('characterLevel') }}</span>
-                <span class="pill-value">{{ characterLevels.current }}→{{ characterLevels.target }}</span>
+                <span class="pill-value"
+                  >{{ characterLevels.current }}→{{ characterLevels.target }}</span
+                >
               </label>
             </div>
 
             <div v-if="hasGradePending" class="pill-item">
-              <input id="pill-grade" type="checkbox" :checked="selectedIds.has('grade')" @change="toggleSection('grade')" />
+              <input
+                id="pill-grade"
+                type="checkbox"
+                :checked="selectedIds.has('grade')"
+                @change="toggleSection('grade')"
+              />
               <label for="pill-grade" class="section-pill pill--simple">
                 <span class="pill-name">{{ $t('sort.grade') }}</span>
                 <span class="pill-grade-value">
-                  <span class="grade-pip" :class="(gradeLevels.current ?? 1) <= GRADE_THRESHOLD ? 'gold' : 'blue'">
-                    {{ (gradeLevels.current ?? 1) <= GRADE_THRESHOLD
+                  <span
+                    class="grade-pip"
+                    :class="(gradeLevels.current ?? 1) <= GRADE_THRESHOLD ? 'gold' : 'blue'"
+                  >
+                    {{
+                      (gradeLevels.current ?? 1) <= GRADE_THRESHOLD
                         ? (gradeLevels.current ?? 1)
-                        : (gradeLevels.current ?? 1) - GRADE_THRESHOLD }}★
+                        : (gradeLevels.current ?? 1) - GRADE_THRESHOLD
+                    }}★
                   </span>
                   <span class="grade-arrow">→</span>
-                  <span class="grade-pip" :class="(gradeLevels.target ?? 1) <= GRADE_THRESHOLD ? 'gold' : 'blue'">
-                    {{ (gradeLevels.target ?? 1) <= GRADE_THRESHOLD
+                  <span
+                    class="grade-pip"
+                    :class="(gradeLevels.target ?? 1) <= GRADE_THRESHOLD ? 'gold' : 'blue'"
+                  >
+                    {{
+                      (gradeLevels.target ?? 1) <= GRADE_THRESHOLD
                         ? (gradeLevels.target ?? 1)
-                        : (gradeLevels.target ?? 1) - GRADE_THRESHOLD }}★
+                        : (gradeLevels.target ?? 1) - GRADE_THRESHOLD
+                    }}★
                   </span>
                 </span>
               </label>
             </div>
 
             <div v-if="hasExclusivePending" class="pill-item">
-              <input id="pill-exclusive" type="checkbox" :checked="selectedIds.has('exclusive')" @change="toggleSection('exclusive')" />
+              <input
+                id="pill-exclusive"
+                type="checkbox"
+                :checked="selectedIds.has('exclusive')"
+                @change="toggleSection('exclusive')"
+              />
               <label for="pill-exclusive" class="section-pill pill--simple">
                 <span class="pill-name">{{ $t('exclusiveWeapon') }}</span>
-                <span class="pill-value">UE {{ exclusiveGearLevel.current ?? 0 }}→{{ exclusiveGearLevel.target ?? 0 }}</span>
+                <span class="pill-value"
+                  >UE {{ exclusiveGearLevel.current ?? 0 }}→{{
+                    exclusiveGearLevel.target ?? 0
+                  }}</span
+                >
               </label>
             </div>
           </div>
@@ -174,7 +220,12 @@ function getIconUrl(item: MaterialPreviewItem): string {
             class="complex-pills-grid"
           >
             <div v-if="hasSkillsPending" class="pill-item pill-item--grid">
-              <input id="pill-skills" type="checkbox" :checked="selectedIds.has('skills')" @change="toggleSection('skills')" />
+              <input
+                id="pill-skills"
+                type="checkbox"
+                :checked="selectedIds.has('skills')"
+                @change="toggleSection('skills')"
+              />
               <label for="pill-skills" class="section-pill pill--complex">
                 <span class="pill-name">{{ $t('skills') }}</span>
                 <span class="pill-chips">
@@ -187,7 +238,12 @@ function getIconUrl(item: MaterialPreviewItem): string {
             </div>
 
             <div v-if="hasPotentialPending" class="pill-item pill-item--grid">
-              <input id="pill-potential" type="checkbox" :checked="selectedIds.has('potential')" @change="toggleSection('potential')" />
+              <input
+                id="pill-potential"
+                type="checkbox"
+                :checked="selectedIds.has('potential')"
+                @change="toggleSection('potential')"
+              />
               <label for="pill-potential" class="section-pill pill--complex">
                 <span class="pill-name">{{ $t('talent') }}</span>
                 <span class="pill-chips">
@@ -200,7 +256,12 @@ function getIconUrl(item: MaterialPreviewItem): string {
             </div>
 
             <div v-if="hasEquipmentPending" class="pill-item pill-item--grid">
-              <input id="pill-equipment" type="checkbox" :checked="selectedIds.has('equipment')" @change="toggleSection('equipment')" />
+              <input
+                id="pill-equipment"
+                type="checkbox"
+                :checked="selectedIds.has('equipment')"
+                @change="toggleSection('equipment')"
+              />
               <label for="pill-equipment" class="section-pill pill--complex">
                 <span class="pill-name">{{ $t('gears') }}</span>
                 <span class="pill-chips">
@@ -213,13 +274,29 @@ function getIconUrl(item: MaterialPreviewItem): string {
             </div>
           </div>
 
-          <div v-if="!hasSufficientMaterials && insufficientList.length > 0" class="insufficient-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          <div
+            v-if="!hasSufficientMaterials && insufficientList.length > 0"
+            class="insufficient-warning"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            <span>{{ $t('notEnough') }}: {{ insufficientList.slice(0, 3).join(', ') }}{{ insufficientList.length > 3 ? ` +${insufficientList.length - 3}` : '' }}</span>
+            <span
+              >{{ $t('notEnough') }}: {{ insufficientList.slice(0, 3).join(', ')
+              }}{{ insufficientList.length > 3 ? ` +${insufficientList.length - 3}` : '' }}</span
+            >
           </div>
         </div>
 
@@ -238,19 +315,13 @@ function getIconUrl(item: MaterialPreviewItem): string {
               :title="item.material.Name"
             >
               <div class="resource-content">
-                <img
-                  :src="getIconUrl(item)"
-                  :alt="item.material.Name"
-                  class="resource-icon"
-                />
-                <span
-                  v-if="viewMode === 'consumed'"
-                  class="resource-quantity quantity-consumed"
-                >{{ formatLargeNumber(item.needed) }}</span>
-                <span
-                  v-else
-                  class="resource-quantity positive"
-                >{{ formatLargeNumber(item.remaining) }}</span>
+                <img :src="getIconUrl(item)" :alt="item.material.Name" class="resource-icon" />
+                <span v-if="viewMode === 'consumed'" class="resource-quantity quantity-consumed">{{
+                  formatLargeNumber(item.needed)
+                }}</span>
+                <span v-else class="resource-quantity positive">{{
+                  formatLargeNumber(item.remaining)
+                }}</span>
               </div>
             </div>
           </div>
@@ -258,12 +329,18 @@ function getIconUrl(item: MaterialPreviewItem): string {
 
         <!-- Footer -->
         <div class="upgrade-footer">
-          <button class="modal-btn modal-btn-cancel" type="button" @click="emit('close')">{{ $t('cancel') }}</button>
-          <button class="modal-btn modal-btn-primary" type="button" :disabled="!canApply" @click="handleApply">
+          <button class="modal-btn modal-btn-cancel" type="button" @click="emit('close')">
+            {{ $t('cancel') }}
+          </button>
+          <button
+            class="modal-btn modal-btn-primary"
+            type="button"
+            :disabled="!canApply"
+            @click="handleApply"
+          >
             {{ $t('apply') }}
           </button>
         </div>
-
       </div>
     </div>
   </Teleport>
@@ -296,8 +373,14 @@ function getIconUrl(item: MaterialPreviewItem): string {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Header --- */
@@ -334,11 +417,19 @@ function getIconUrl(item: MaterialPreviewItem): string {
   letter-spacing: 0.02em;
   cursor: pointer;
   border-radius: 6px;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
-.toggle-btn + .toggle-btn { border-left: 1px solid var(--border-color); }
-.toggle-btn:hover { color: var(--text-primary); }
-.toggle-btn.active { border-left-color: transparent; }
+.toggle-btn + .toggle-btn {
+  border-left: 1px solid var(--border-color);
+}
+.toggle-btn:hover {
+  color: var(--text-primary);
+}
+.toggle-btn.active {
+  border-left-color: transparent;
+}
 .toggle-used.active {
   color: #1f4fd6;
   background: color-mix(in srgb, #1f4fd6 18%, var(--card-background));
@@ -377,7 +468,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   padding: 2px 8px;
 }
 
-.pill-item input[type="checkbox"] {
+.pill-item input[type='checkbox'] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -398,7 +489,10 @@ function getIconUrl(item: MaterialPreviewItem): string {
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
   box-sizing: border-box;
 }
 
@@ -407,13 +501,13 @@ function getIconUrl(item: MaterialPreviewItem): string {
   color: var(--text-primary);
 }
 
-.pill-item input[type="checkbox"]:checked + .section-pill {
+.pill-item input[type='checkbox']:checked + .section-pill {
   border-color: var(--accent-color);
   color: var(--text-primary);
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
 }
 
-.pill-item input[type="checkbox"]:focus-visible + .section-pill {
+.pill-item input[type='checkbox']:focus-visible + .section-pill {
   outline: 2px solid var(--accent-color);
   outline-offset: 1px;
 }
@@ -424,7 +518,9 @@ function getIconUrl(item: MaterialPreviewItem): string {
   line-height: 1;
 }
 
-.pill--select-all { border-color: transparent; }
+.pill--select-all {
+  border-color: transparent;
+}
 .pill--select-all .pill-name {
   font-size: 0.9em;
   font-weight: 700;
@@ -478,13 +574,13 @@ function getIconUrl(item: MaterialPreviewItem): string {
   font-weight: bold;
   line-height: 1;
   text-shadow:
-     0.6px  0px   0 var(--accent-color),
-    -0.6px  0px   0 var(--accent-color),
-     0px    0.6px 0 var(--accent-color),
-     0px   -0.6px 0 var(--accent-color),
-     0.6px  0.6px 0 var(--accent-color),
-    -0.6px  0.6px 0 var(--accent-color),
-     0.6px -0.6px 0 var(--accent-color),
+    0.6px 0px 0 var(--accent-color),
+    -0.6px 0px 0 var(--accent-color),
+    0px 0.6px 0 var(--accent-color),
+    0px -0.6px 0 var(--accent-color),
+    0.6px 0.6px 0 var(--accent-color),
+    -0.6px 0.6px 0 var(--accent-color),
+    0.6px -0.6px 0 var(--accent-color),
     -0.6px -0.6px 0 var(--accent-color);
 }
 
@@ -513,7 +609,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   padding: 0;
 }
 
-.pill-item--grid input[type="checkbox"] {
+.pill-item--grid input[type='checkbox'] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -555,7 +651,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   transition: background 0.15s;
 }
 
-.pill-item input[type="checkbox"]:checked + .pill--complex .pill-chip {
+.pill-item input[type='checkbox']:checked + .pill--complex .pill-chip {
   background: color-mix(in srgb, var(--accent-color) 14%, var(--background-secondary));
 }
 
@@ -584,7 +680,10 @@ function getIconUrl(item: MaterialPreviewItem): string {
   color: #d97706;
   line-height: 1.4;
 }
-.insufficient-warning svg { flex-shrink: 0; margin-top: 1px; }
+.insufficient-warning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
 
 /* --- Preview section --- */
 .preview-section {

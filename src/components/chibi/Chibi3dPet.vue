@@ -7,34 +7,37 @@ import { useChibiVoice } from '@/composables/useChibiVoice';
 // Roaming-pet shell: click-to-walk, drag-to-pick-up, and gacha-on-release behaviour,
 // driving a fixed-camera three.js canvas via useChibi3dScene (clip playback + model yaw
 // for facing) plus useChibiVoice for the pickup/battle voice lines.
-const props = withDefaults(defineProps<{
-  charId: string;
-  /** Rendered canvas size in px (square). */
-  size?: number;
-  /** Unarmed (Cafe_Walk) ground speed in px/sec. */
-  speed?: number;
-  /** Armed-walk (Move_Ing) speed multiplier over `speed`. Strikers jog faster than they
-   *  stroll; tune so her feet plant (no sliding) against Move_Ing's run cadence. */
-  armedSpeedMult?: number;
-  /** Clip looped while standing still. */
-  idleClip?: string;
-  /** Apparent size: camera dolly factor (1 = base framing; >1 fills more of the canvas). */
-  zoom?: number;
-  /** Inspection orbit mode: drag to spin the camera; pet gestures (walk/pickup) suspend. */
-  orbit?: boolean;
-  /** Starting position in stage-local px (top-left of the sprite). */
-  startX?: number;
-  startY?: number;
-}>(), {
-  size: 180,
-  speed: 150,
-  armedSpeedMult: 1.7,
-  idleClip: 'Cafe_Idle',
-  zoom: 1,
-  orbit: false,
-  startX: 40,
-  startY: 40,
-});
+const props = withDefaults(
+  defineProps<{
+    charId: string;
+    /** Rendered canvas size in px (square). */
+    size?: number;
+    /** Unarmed (Cafe_Walk) ground speed in px/sec. */
+    speed?: number;
+    /** Armed-walk (Move_Ing) speed multiplier over `speed`. Strikers jog faster than they
+     *  stroll; tune so her feet plant (no sliding) against Move_Ing's run cadence. */
+    armedSpeedMult?: number;
+    /** Clip looped while standing still. */
+    idleClip?: string;
+    /** Apparent size: camera dolly factor (1 = base framing; >1 fills more of the canvas). */
+    zoom?: number;
+    /** Inspection orbit mode: drag to spin the camera; pet gestures (walk/pickup) suspend. */
+    orbit?: boolean;
+    /** Starting position in stage-local px (top-left of the sprite). */
+    startX?: number;
+    startY?: number;
+  }>(),
+  {
+    size: 180,
+    speed: 150,
+    armedSpeedMult: 1.7,
+    idleClip: 'Cafe_Idle',
+    zoom: 1,
+    orbit: false,
+    startX: 40,
+    startY: 40,
+  },
+);
 
 // Clip vocabulary (resolved against the loaded GLB; absent clips just no-op).
 // Weapon state is the governing constraint: Cafe_* is unarmed, Formation_*/Move_* are
@@ -57,8 +60,13 @@ const JUMP_RANDOM_CHANCE = 1 / 3; // when jumping: Move_Jump : Move_Jump_random 
 
 // SchaleDB R2 voice: pickup line on grab, gacha'd battle line on an armed-walk start.
 // Preloaded; only available lines play (some characters lack the battle lines).
-const { status: voiceStatus, playPickup, playArmedMove, playIdleMonolog, loadBattleLines } =
-  useChibiVoice(props.charId);
+const {
+  status: voiceStatus,
+  playPickup,
+  playArmedMove,
+  playIdleMonolog,
+  loadBattleLines,
+} = useChibiVoice(props.charId);
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 const {
@@ -380,7 +388,10 @@ watch(
 );
 
 // Live zoom (apparent size). Applies when not orbiting.
-watch(() => props.zoom, (z) => setZoom(z));
+watch(
+  () => props.zoom,
+  (z) => setZoom(z),
+);
 
 // Idle chatter: gacha a cafe monolog on a randomized 20–40s cadence (avg ~30s), but only
 // while genuinely idle and the tab is visible. Any interaction resets the clock (via the

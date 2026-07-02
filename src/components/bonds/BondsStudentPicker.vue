@@ -20,11 +20,11 @@ const query = ref('');
 
 // Owned students only: picker is about planning bonds for students you have
 const ownedStudents = computed<StudentProps[]>(() =>
-  sortedStudentsArray.value.filter(s => studentDataStore.value[s.Id]?.isOwned !== false)
+  sortedStudentsArray.value.filter((s) => studentDataStore.value[s.Id]?.isOwned !== false),
 );
 
 const matched = computed<StudentProps[]>(() =>
-  ownedStudents.value.filter(s => studentMatchesQuery(s, query.value))
+  ownedStudents.value.filter((s) => studentMatchesQuery(s, query.value)),
 );
 
 // Sections: Tracking -> Suggested -> Bond maxed -> All owned
@@ -36,27 +36,27 @@ function isBondMaxed(studentId: number): boolean {
 // Hoisted ID sets: rebuilt only when their sources change, not per section.
 const trackedSet = computed(() => new Set(trackedIds.value));
 const suggestedIdSet = computed(
-  () => new Set(getStudentsWithGifts('needed').map(u => u.student.Id))
+  () => new Set(getStudentsWithGifts('needed').map((u) => u.student.Id)),
 );
 
 const trackedStudents = computed<StudentProps[]>(() =>
-  matched.value.filter(s => trackedSet.value.has(s.Id))
+  matched.value.filter((s) => trackedSet.value.has(s.Id)),
 );
 
 const suggestedStudents = computed<StudentProps[]>(() =>
-  matched.value.filter(s =>
-    suggestedIdSet.value.has(s.Id) && !trackedSet.value.has(s.Id) && !isBondMaxed(s.Id)
-  )
+  matched.value.filter(
+    (s) => suggestedIdSet.value.has(s.Id) && !trackedSet.value.has(s.Id) && !isBondMaxed(s.Id),
+  ),
 );
 
 const bondMaxedStudents = computed<StudentProps[]>(() =>
-  matched.value.filter(s => !trackedSet.value.has(s.Id) && isBondMaxed(s.Id))
+  matched.value.filter((s) => !trackedSet.value.has(s.Id) && isBondMaxed(s.Id)),
 );
 
 const restStudents = computed<StudentProps[]>(() =>
-  matched.value.filter(s =>
-    !trackedSet.value.has(s.Id) && !suggestedIdSet.value.has(s.Id) && !isBondMaxed(s.Id)
-  )
+  matched.value.filter(
+    (s) => !trackedSet.value.has(s.Id) && !suggestedIdSet.value.has(s.Id) && !isBondMaxed(s.Id),
+  ),
 );
 </script>
 
@@ -65,7 +65,14 @@ const restStudents = computed<StudentProps[]>(() =>
     <div class="picker-modal" role="dialog" aria-modal="true">
       <header class="picker-header">
         <h2>{{ $t('addStudent') }}</h2>
-        <button class="picker-close" type="button" :aria-label="$t('cancel') ?? 'Close'" @click="emit('close')">×</button>
+        <button
+          class="picker-close"
+          type="button"
+          :aria-label="$t('cancel') ?? 'Close'"
+          @click="emit('close')"
+        >
+          ×
+        </button>
       </header>
 
       <div class="picker-search">
@@ -80,10 +87,17 @@ const restStudents = computed<StudentProps[]>(() =>
 
       <div class="picker-body">
         <section v-if="trackedStudents.length">
-          <h3 class="picker-section-label">{{ $t('alreadyTracked') }} ({{ trackedStudents.length }})</h3>
+          <h3 class="picker-section-label">
+            {{ $t('alreadyTracked') }} ({{ trackedStudents.length }})
+          </h3>
           <ul class="picker-list">
             <li v-for="s in trackedStudents" :key="s.Id" class="picker-row tracked">
-              <img :src="getStudentIconUrl(s.Id)" :alt="s.Name" class="picker-icon" loading="lazy" />
+              <img
+                :src="getStudentIconUrl(s.Id)"
+                :alt="s.Name"
+                class="picker-icon"
+                loading="lazy"
+              />
               <span class="picker-name">{{ s.Name }}</span>
               <button type="button" class="picker-action remove" @click="toggleTracked(s.Id)">
                 {{ $t('untrack') }}
@@ -93,34 +107,61 @@ const restStudents = computed<StudentProps[]>(() =>
         </section>
 
         <section v-if="suggestedStudents.length">
-          <h3 class="picker-section-label">{{ $t('suggestedStudents') }} ({{ suggestedStudents.length }})</h3>
+          <h3 class="picker-section-label">
+            {{ $t('suggestedStudents') }} ({{ suggestedStudents.length }})
+          </h3>
           <ul class="picker-list">
             <li v-for="s in suggestedStudents" :key="s.Id" class="picker-row">
-              <img :src="getStudentIconUrl(s.Id)" :alt="s.Name" class="picker-icon" loading="lazy" />
+              <img
+                :src="getStudentIconUrl(s.Id)"
+                :alt="s.Name"
+                class="picker-icon"
+                loading="lazy"
+              />
               <span class="picker-name">{{ s.Name }}</span>
-              <button type="button" class="picker-action add" @click="toggleTracked(s.Id)">+</button>
+              <button type="button" class="picker-action add" @click="toggleTracked(s.Id)">
+                +
+              </button>
             </li>
           </ul>
         </section>
 
         <section v-if="bondMaxedStudents.length">
-          <h3 class="picker-section-label">{{ $t('bondMaxed') }} ({{ bondMaxedStudents.length }})</h3>
+          <h3 class="picker-section-label">
+            {{ $t('bondMaxed') }} ({{ bondMaxedStudents.length }})
+          </h3>
           <ul class="picker-list">
             <li v-for="s in bondMaxedStudents" :key="s.Id" class="picker-row bond-maxed">
-              <img :src="getStudentIconUrl(s.Id)" :alt="s.Name" class="picker-icon" loading="lazy" />
+              <img
+                :src="getStudentIconUrl(s.Id)"
+                :alt="s.Name"
+                class="picker-icon"
+                loading="lazy"
+              />
               <span class="picker-name">{{ s.Name }}</span>
-              <button type="button" class="picker-action add" disabled aria-disabled="true">+</button>
+              <button type="button" class="picker-action add" disabled aria-disabled="true">
+                +
+              </button>
             </li>
           </ul>
         </section>
 
         <section v-if="restStudents.length">
-          <h3 class="picker-section-label">{{ $t('allOwnedStudents') }} ({{ restStudents.length }})</h3>
+          <h3 class="picker-section-label">
+            {{ $t('allOwnedStudents') }} ({{ restStudents.length }})
+          </h3>
           <ul class="picker-list">
             <li v-for="s in restStudents" :key="s.Id" class="picker-row">
-              <img :src="getStudentIconUrl(s.Id)" :alt="s.Name" class="picker-icon" loading="lazy" />
+              <img
+                :src="getStudentIconUrl(s.Id)"
+                :alt="s.Name"
+                class="picker-icon"
+                loading="lazy"
+              />
               <span class="picker-name">{{ s.Name }}</span>
-              <button type="button" class="picker-action add" @click="toggleTracked(s.Id)">+</button>
+              <button type="button" class="picker-action add" @click="toggleTracked(s.Id)">
+                +
+              </button>
             </li>
           </ul>
         </section>

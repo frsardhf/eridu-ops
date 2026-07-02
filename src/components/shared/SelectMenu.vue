@@ -2,7 +2,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 
-interface SelectOption { value: T; label: string }
+interface SelectOption {
+  value: T;
+  label: string;
+}
 
 const props = defineProps<{
   modelValue: T;
@@ -25,7 +28,7 @@ const popoverEl = ref<HTMLElement | null>(null);
 // positioned `fixed` from the trigger's rect.
 const popoverStyle = ref<Record<string, string>>({});
 
-const selected = computed(() => props.options.find(o => o.value === props.modelValue));
+const selected = computed(() => props.options.find((o) => o.value === props.modelValue));
 const triggerLabel = computed(() => selected.value?.label ?? props.placeholder ?? '');
 const isPlaceholder = computed(() => !selected.value);
 
@@ -111,7 +114,18 @@ onUnmounted(() => {
         @click="toggle"
       >
         <span>{{ triggerLabel }}</span>
-        <svg class="select-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          class="select-chev"
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
@@ -132,7 +146,18 @@ onUnmounted(() => {
           @click.stop="pick(o.value)"
         >
           <span>{{ o.label }}</span>
-          <svg v-if="o.value === modelValue" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg
+            v-if="o.value === modelValue"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </button>
@@ -166,7 +191,9 @@ onUnmounted(() => {
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 /* Full-width, form-field proportions for the block variant. */

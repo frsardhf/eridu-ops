@@ -11,7 +11,7 @@ import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue'
 
 const props = defineProps<{
   student: StudentProps;
-  equipmentLevels: Record<string, { current: number; target: number; }>;
+  equipmentLevels: Record<string, { current: number; target: number }>;
   exclusiveGearLevel: { current?: number; target?: number };
   hasExclusiveGear: boolean;
   maxUnlockableGearTier: number;
@@ -26,31 +26,28 @@ const emit = defineEmits<{
   (e: 'toggle-max-target-gears', checked: boolean): void;
 }>();
 
-const { 
-  getEquipmentIconUrl, 
-  getExclusiveGearIconUrl, 
-  getExclusiveGearDisplay 
-} = useStudentGearDisplay(
-  toRef(() => props.student),
-  () => ({}),
-  toRef(() => props.equipmentLevels),
-  toRef(() => props.exclusiveGearLevel)
-);
+const { getEquipmentIconUrl, getExclusiveGearIconUrl, getExclusiveGearDisplay } =
+  useStudentGearDisplay(
+    toRef(() => props.student),
+    () => ({}),
+    toRef(() => props.equipmentLevels),
+    toRef(() => props.exclusiveGearLevel),
+  );
 
 const equipmentStates = computed(() =>
-  (props.student?.Equipment || []).map(type => ({
+  (props.student?.Equipment || []).map((type) => ({
     type,
     current: props.equipmentLevels[type]?.current || 1,
-    target:  props.equipmentLevels[type]?.target  || 1,
-    max:     getMaxTierForTypeSync(type),
-  }))
+    target: props.equipmentLevels[type]?.target || 1,
+    max: getMaxTierForTypeSync(type),
+  })),
 );
 
 const exclusiveGearState = computed(() => {
   const d = getExclusiveGearDisplay();
   return {
-    current:    d.current,
-    target:     d.target,
+    current: d.current,
+    target: d.target,
     maxCurrent: props.maxUnlockableGearTier,
   };
 });
@@ -116,10 +113,16 @@ function updateExclusiveGearTarget(value: number) {
 
     <div class="equipment-grid">
       <!-- Regular Equipment Items -->
-      <div v-for="state in equipmentStates" :key="state.type" class="modal-grid-item equipment-item">
+      <div
+        v-for="state in equipmentStates"
+        :key="state.type"
+        class="modal-grid-item equipment-item"
+      >
         <div class="level-control">
           <NumberStepper
-            :value="state.current" :min="1" :max="state.max"
+            :value="state.current"
+            :min="1"
+            :max="state.max"
             :name="`${state.type.toLowerCase()}-current`"
             :aria-label="`${$t('currentEquipment')} ${getEquipmentTypeName(state.type)}`"
             @change="updateEquipmentCurrent(state.type, $event)"
@@ -137,7 +140,9 @@ function updateExclusiveGearTarget(value: number) {
 
         <div class="level-control">
           <NumberStepper
-            :value="state.target" :min="1" :max="state.max"
+            :value="state.target"
+            :min="1"
+            :max="state.max"
             variant="target"
             :name="`${state.type.toLowerCase()}-target`"
             :aria-label="`${$t('targetEquipment')} ${getEquipmentTypeName(state.type)}`"
@@ -147,11 +152,16 @@ function updateExclusiveGearTarget(value: number) {
       </div>
 
       <!-- Exclusive Gear -->
-      <div class="modal-grid-item equipment-item" :class="{ 'placeholder-item': !hasExclusiveGear }">
+      <div
+        class="modal-grid-item equipment-item"
+        :class="{ 'placeholder-item': !hasExclusiveGear }"
+      >
         <!-- Current Level Control -->
         <div class="level-control" :class="{ 'placeholder-control': !hasExclusiveGear }">
           <NumberStepper
-            :value="exclusiveGearState.current" :min="0" :max="exclusiveGearState.maxCurrent"
+            :value="exclusiveGearState.current"
+            :min="0"
+            :max="exclusiveGearState.maxCurrent"
             name="exclusive-gear-current"
             :disabled="!hasExclusiveGear || exclusiveGearState.maxCurrent === 0"
             @change="updateExclusiveGearCurrent($event)"
@@ -160,7 +170,6 @@ function updateExclusiveGearTarget(value: number) {
 
         <!-- Gear Icon -->
         <div class="modal-item-icon" :class="{ 'placeholder-icon': !hasExclusiveGear }">
-
           <!-- Show gear image if student has gear -->
           <template v-if="hasExclusiveGear">
             <img
@@ -171,9 +180,15 @@ function updateExclusiveGearTarget(value: number) {
             />
             <!-- Lock overlay when bond too low -->
             <div v-if="maxUnlockableGearTier === 0" class="gear-lock-overlay">
-              <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <svg
+                class="lock-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
               <span class="lock-text">{{ $t('bondRequired') }}</span>
             </div>
@@ -181,18 +196,25 @@ function updateExclusiveGearTarget(value: number) {
 
           <!-- Empty placeholder if no gear data -->
           <template v-else>
-            <svg class="lock-icon-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <svg
+              class="lock-icon-placeholder"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </template>
-
         </div>
 
         <!-- Target Level Control -->
         <div class="level-control" :class="{ 'placeholder-control': !hasExclusiveGear }">
           <NumberStepper
-            :value="exclusiveGearState.target" :min="0" :max="MAX_EXCLUSIVE_GEAR_LEVEL"
+            :value="exclusiveGearState.target"
+            :min="0"
+            :max="MAX_EXCLUSIVE_GEAR_LEVEL"
             variant="target"
             name="exclusive-gear-target"
             :disabled="!hasExclusiveGear"

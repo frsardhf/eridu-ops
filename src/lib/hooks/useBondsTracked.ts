@@ -29,7 +29,7 @@ function hasNonZeroEntries(rec: Record<string, number> | undefined): boolean {
 
 function materialsContainFavor(materials: Material[] | undefined): boolean {
   if (!materials?.length) return false;
-  return materials.some(m => m.material?.Category === 'Favor');
+  return materials.some((m) => m.material?.Category === 'Favor');
 }
 
 /**
@@ -95,7 +95,7 @@ function computeAutoSeed(): number[] {
   });
 
   // Strip any secondary IDs (defensive: getPrimaryStudentId should already handle this)
-  return [...seed].filter(id => !isSecondaryStudent(id)).sort((a, b) => a - b);
+  return [...seed].filter((id) => !isSecondaryStudent(id)).sort((a, b) => a - b);
 }
 
 // --- Settings-backed ID set factory (keyed by primary student ID) ---
@@ -141,13 +141,16 @@ function createSettingsBackedSet(key: keyof AppSettings): SettingsBackedSet {
   const remove = (studentId: number) => {
     const id = getPrimaryStudentId(studentId);
     if (!idSet.value.has(id)) return;
-    const next = raw.value.filter(x => x !== id);
+    const next = raw.value.filter((x) => x !== id);
     raw.value = next;
     persist(next);
   };
 
   const toggle = (studentId: number) => {
-    if (has(studentId)) { remove(studentId); return false; }
+    if (has(studentId)) {
+      remove(studentId);
+      return false;
+    }
     add(studentId);
     return true;
   };

@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { StudentProps } from '@/types/student'
-import { ref, onUnmounted, computed } from 'vue'
-import { useStudentCard } from '@/lib/hooks/useStudentCard'
-import { useWindowResize } from '@/composables/dom/useWindowResize'
-import { getStudentCollectionUrl, getBondIconUrl } from '@/lib/utils/iconUtils'
-import { getMaxTierForTypeSync } from '@/lib/utils/gearMaterialUtils'
-import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs'
-import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade'
-import { EquipmentType } from '@/types/gear'
+import { StudentProps } from '@/types/student';
+import { ref, onUnmounted, computed } from 'vue';
+import { useStudentCard } from '@/lib/hooks/useStudentCard';
+import { useWindowResize } from '@/composables/dom/useWindowResize';
+import { getStudentCollectionUrl, getBondIconUrl } from '@/lib/utils/iconUtils';
+import { getMaxTierForTypeSync } from '@/lib/utils/gearMaterialUtils';
+import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs';
+import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade';
+import { EquipmentType } from '@/types/gear';
 import { ModalOriginRect } from '@/types/modal';
-import StarIcon from '@/components/shared/StarIcon.vue'
+import StarIcon from '@/components/shared/StarIcon.vue';
 import {
-  WEAPON_STAR_THRESHOLD, MAX_LEVEL, MAX_GRADE, MAX_EX_SKILL_LEVEL, MAX_SKILL_LEVEL, MAX_POTENTIAL_LEVEL,
-} from '@/lib/constants/gameConstants'
+  WEAPON_STAR_THRESHOLD,
+  MAX_LEVEL,
+  MAX_GRADE,
+  MAX_EX_SKILL_LEVEL,
+  MAX_SKILL_LEVEL,
+  MAX_POTENTIAL_LEVEL,
+} from '@/lib/constants/gameConstants';
 
 const props = defineProps<{
   student: StudentProps;
@@ -27,7 +32,7 @@ const emit = defineEmits<{
 // --- State ---
 const isMobile = ref(false);
 const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
-  computed(() => props.student.Id)
+  computed(() => props.student.Id),
 );
 
 // Which overlays the user pinned to always-display (eye menu); the rest stay
@@ -63,7 +68,7 @@ function getFontSizeClass(name: string): string {
   if (isMobile.value) {
     return name.length < 10 ? 'text-lg' : 'text-sm';
   }
-  
+
   // Language-specific font sizing
   if (currentLanguage.value === 'jp') {
     // Japanese uses different thresholds
@@ -89,16 +94,12 @@ function getFontSizeClass(name: string): string {
   }
 }
 
-function shouldShowTarget(
-  current: number | undefined, target: number | undefined
-): boolean {
+function shouldShowTarget(current: number | undefined, target: number | undefined): boolean {
   if (!current || !target) return false;
   return current !== target;
 }
 
-function formatSkillValue(
-  value: number | undefined, isEx: boolean
-): string {
+function formatSkillValue(value: number | undefined, isEx: boolean): string {
   if (!value) return '1';
   if (isEx && value === MAX_EX_SKILL_LEVEL) return 'M';
   if (!isEx && value === MAX_SKILL_LEVEL) return 'M';
@@ -114,13 +115,13 @@ function formatPotentialValue(value: number | undefined): string {
 const hasAnyPotentialData = computed(() => {
   const p = studentData.value?.potentialLevels;
   if (!p) return false;
-  return potentialTypes.some(t => (p[t]?.current ?? 0) > 0 || (p[t]?.target ?? 0) > 0);
+  return potentialTypes.some((t) => (p[t]?.current ?? 0) > 0 || (p[t]?.target ?? 0) > 0);
 });
 
 const hasAnyPotentialDifference = computed(() => {
   const p = studentData.value?.potentialLevels;
   if (!p) return false;
-  return potentialTypes.some(t => (p[t]?.current ?? 0) !== (p[t]?.target ?? 0));
+  return potentialTypes.some((t) => (p[t]?.current ?? 0) !== (p[t]?.target ?? 0));
 });
 
 const pinPop = ref(false);
@@ -128,9 +129,9 @@ let pinPopTimer: ReturnType<typeof setTimeout> | null = null;
 
 const hasAnySkillDifference = computed(() => {
   if (!studentData.value?.skillLevels) return false;
-  
+
   const skills = studentData.value.skillLevels;
-  
+
   return (
     isDifferent(skills.Ex) ||
     isDifferent(skills.Public) ||
@@ -139,9 +140,7 @@ const hasAnySkillDifference = computed(() => {
   );
 });
 
-function isDifferent(
-  skill: { current?: number, target?: number } | undefined
-): boolean {
+function isDifferent(skill: { current?: number; target?: number } | undefined): boolean {
   if (!skill?.current || !skill?.target) return false;
   return skill.current !== skill.target;
 }
@@ -157,18 +156,20 @@ function formatEquipmentTier(value: number | undefined): string {
 
 const hasAnyEquipmentDifference = computed(() => {
   if (!studentData.value?.equipmentLevels) return false;
-  
+
   const equipmentLevels = studentData.value.equipmentLevels;
-  
+
   for (const type of studentEquipment.value) {
     const equipment = equipmentLevels[type as EquipmentType];
-    if (equipment?.current !== equipment?.target && 
-        equipment?.current !== undefined && 
-        equipment?.target !== undefined) {
+    if (
+      equipment?.current !== equipment?.target &&
+      equipment?.current !== undefined &&
+      equipment?.target !== undefined
+    ) {
       return true;
     }
   }
-  
+
   return false;
 });
 
@@ -177,8 +178,9 @@ const displayEquipment = computed(() => {
 });
 
 const hasEquipmentData = computed(() => {
-  return studentData.value?.equipmentLevels && 
-    Object.keys(studentData.value.equipmentLevels).length > 0;
+  return (
+    studentData.value?.equipmentLevels && Object.keys(studentData.value.equipmentLevels).length > 0
+  );
 });
 
 // Ownership: undefined / true = owned (backward-compat), false = not recruited
@@ -212,22 +214,35 @@ const investmentPercent = computed(() => {
   const d = studentData.value;
   if (!d || d.isOwned === false) return 0;
 
-  const skill = d.skillLevels ? avgRatio(skillTypes.map(t => {
-    const cur = d.skillLevels![t]?.current ?? 1;
-    const max = t === 'Ex' ? MAX_EX_SKILL_LEVEL : MAX_SKILL_LEVEL;
-    return clamp01((cur - 1) / (max - 1));
-  })) : null;
+  const skill = d.skillLevels
+    ? avgRatio(
+        skillTypes.map((t) => {
+          const cur = d.skillLevels![t]?.current ?? 1;
+          const max = t === 'Ex' ? MAX_EX_SKILL_LEVEL : MAX_SKILL_LEVEL;
+          return clamp01((cur - 1) / (max - 1));
+        }),
+      )
+    : null;
 
-  const potential = d.potentialLevels ? avgRatio(potentialTypes.map(t =>
-    clamp01((d.potentialLevels![t]?.current ?? 0) / MAX_POTENTIAL_LEVEL)
-  )) : null;
+  const potential = d.potentialLevels
+    ? avgRatio(
+        potentialTypes.map((t) =>
+          clamp01((d.potentialLevels![t]?.current ?? 0) / MAX_POTENTIAL_LEVEL),
+        ),
+      )
+    : null;
 
   const slots = studentEquipment.value;
-  const equipment = (d.equipmentLevels && slots.length) ? avgRatio(slots.map(type => {
-    const max = getMaxTierForTypeSync(type);
-    const cur = d.equipmentLevels![type as EquipmentType]?.current ?? 1;
-    return max > 1 ? clamp01((cur - 1) / (max - 1)) : 0;
-  })) : null;
+  const equipment =
+    d.equipmentLevels && slots.length
+      ? avgRatio(
+          slots.map((type) => {
+            const max = getMaxTierForTypeSync(type);
+            const cur = d.equipmentLevels![type as EquipmentType]?.current ?? 1;
+            return max > 1 ? clamp01((cur - 1) / (max - 1)) : 0;
+          }),
+        )
+      : null;
 
   const level = d.characterLevels
     ? clamp01(((d.characterLevels.current ?? 1) - 1) / (MAX_LEVEL - 1))
@@ -235,11 +250,13 @@ const investmentPercent = computed(() => {
 
   // Grade is measured from the unit's base StarGrade (free) up to max, so base
   // rarity isn't counted as investment.
-  const grade = d.gradeLevels ? (() => {
-    const base = props.student.StarGrade ?? 1;
-    const den = MAX_GRADE - base;
-    return den > 0 ? clamp01(((d.gradeLevels.current ?? base) - base) / den) : 1;
-  })() : null;
+  const grade = d.gradeLevels
+    ? (() => {
+        const base = props.student.StarGrade ?? 1;
+        const den = MAX_GRADE - base;
+        return den > 0 ? clamp01(((d.gradeLevels.current ?? base) - base) / den) : 1;
+      })()
+    : null;
 
   const cats = [level, grade, skill, potential, equipment].filter((x): x is number => x !== null);
   if (!cats.length) return 0;
@@ -274,7 +291,7 @@ function handleCardClick(event: MouseEvent) {
       left: rect.left,
       top: rect.top,
       width: rect.width,
-      height: rect.height
+      height: rect.height,
     };
   }
 
@@ -283,20 +300,20 @@ function handleCardClick(event: MouseEvent) {
 </script>
 
 <template>
-  <div
-    class="student-card"
-    :class="overlayClasses"
-    :key="`card-${student.Id}-${isPinned}`">
+  <div class="student-card" :class="overlayClasses" :key="`card-${student.Id}-${isPinned}`">
     <!-- Pin icon -->
-    <div :class="['pin-icon', { 'pinned': isPinned }]" @click.stop="handlePinToggle"
-      :key="`pin-${student.Id}-${isPinned}`">
+    <div
+      :class="['pin-icon', { pinned: isPinned }]"
+      @click.stop="handlePinToggle"
+      :key="`pin-${student.Id}-${isPinned}`"
+    >
       <img
         :src="isPinned ? '/assets/thumbtacks-active.png' : '/assets/thumbtacks.png'"
-        :class="['pin-img', { 'pinned': isPinned, 'pin-pop': pinPop }]"
+        :class="['pin-img', { pinned: isPinned, 'pin-pop': pinPop }]"
         alt="Pin icon"
       />
     </div>
-    
+
     <a class="selection-grid-card" @click="handleCardClick">
       <div class="card-img">
         <!-- lazy: only viewport-near portraits load, instead of all ~260 at once -->
@@ -306,17 +323,13 @@ function handleCardClick(event: MouseEvent) {
           :class="{ 'img--unowned': !isOwned }"
           loading="lazy"
           decoding="async"
-        >
+        />
         <!-- Stats overlay -->
         <div class="stats-overlay">
           <!-- Bond Level -->
           <div class="bond-container" v-if="bondLevel > 0 && isOwned">
             <div class="bond-icon-container">
-              <img 
-                :src="getBondIconUrl()"
-                alt="Bond Level"
-                class="bond-icon"
-              />
+              <img :src="getBondIconUrl()" alt="Bond Level" class="bond-icon" />
               <span class="bond-number">{{ bondLevel }}</span>
             </div>
           </div>
@@ -326,33 +339,37 @@ function handleCardClick(event: MouseEvent) {
             <div class="grade-stars-row">
               <!-- Gold stars for grades 1–5, blue for 6–9 (subtract threshold) -->
               <StarIcon
-                v-for="i in (gradeLevel <= WEAPON_STAR_THRESHOLD ? gradeLevel : gradeLevel - WEAPON_STAR_THRESHOLD)"
+                v-for="i in gradeLevel <= WEAPON_STAR_THRESHOLD
+                  ? gradeLevel
+                  : gradeLevel - WEAPON_STAR_THRESHOLD"
                 :key="`star-${i}`"
                 class="small-star"
                 :class="gradeLevel <= WEAPON_STAR_THRESHOLD ? 'gold-star' : 'blue-star'"
               />
             </div>
           </div>
-          
+
           <!-- Character Level -->
-          <div class="level-container"
-          v-if="characterCurrentLevel > 0 && isOwned">
+          <div class="level-container" v-if="characterCurrentLevel > 0 && isOwned">
             <span class="level-number">{{ characterCurrentLevel }}</span>
-            <span class="level-max" 
-              v-if="shouldShowTarget(characterCurrentLevel,
-              characterTargetLevel
-            )">/{{ characterTargetLevel }}</span>
+            <span
+              class="level-max"
+              v-if="shouldShowTarget(characterCurrentLevel, characterTargetLevel)"
+              >/{{ characterTargetLevel }}</span
+            >
           </div>
-          
+
           <!-- Bottom overlays container -->
           <div class="bottom-overlays">
             <!-- Equipment Levels -->
-            <div class="equipment-levels"
-              v-if="hasEquipmentData && displayEquipment.length > 0 && isOwned">
+            <div
+              class="equipment-levels"
+              v-if="hasEquipmentData && displayEquipment.length > 0 && isOwned"
+            >
               <div class="equipment-row">
-                <span 
-                  v-for="type in displayEquipment" 
-                  :key="type" 
+                <span
+                  v-for="type in displayEquipment"
+                  :key="type"
                   class="equipment-value"
                   :title="type + ' Equipment Level'"
                 >
@@ -370,7 +387,7 @@ function handleCardClick(event: MouseEvent) {
                 </span>
               </div>
             </div>
-            
+
             <!-- Right column: potential + skill stacked -->
             <div class="right-overlays">
               <!-- Potential Levels -->
@@ -406,10 +423,12 @@ function handleCardClick(event: MouseEvent) {
                     class="skill-value"
                     :title="skillTypeNames[idx] + ' Skill Level'"
                   >
-                    {{ formatSkillValue(
-                      studentData.skillLevels[skillType]?.current,
-                      skillType === 'Ex'
-                    ) }}
+                    {{
+                      formatSkillValue(
+                        studentData.skillLevels[skillType]?.current,
+                        skillType === 'Ex',
+                      )
+                    }}
                   </span>
                 </div>
                 <div class="skill-row" v-if="hasAnySkillDifference">
@@ -419,10 +438,12 @@ function handleCardClick(event: MouseEvent) {
                     class="skill-value"
                     :title="'Target ' + skillTypeNames[idx] + ' Skill Level'"
                   >
-                    {{ formatSkillValue(
-                      studentData.skillLevels[skillType]?.target,
-                      skillType === 'Ex'
-                    ) }}
+                    {{
+                      formatSkillValue(
+                        studentData.skillLevels[skillType]?.target,
+                        skillType === 'Ex',
+                      )
+                    }}
                   </span>
                 </div>
               </div>
@@ -466,23 +487,27 @@ function handleCardClick(event: MouseEvent) {
   overflow: hidden;
   background: var(--card-background);
   box-shadow: 0 2px 4px var(--box-shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   cursor: pointer;
 }
 
 .selection-grid-card:focus {
-  box-shadow: 0 0 0 3px #4fc3f7, 0 2px 8px var(--box-shadow);
+  box-shadow:
+    0 0 0 3px #4fc3f7,
+    0 2px 8px var(--box-shadow);
   z-index: 2;
 }
 
 .selection-grid-card:hover {
   transform: scale(1.04);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 .selection-grid-card:active {
   transform: scale(0.98);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .card-img {
@@ -502,10 +527,10 @@ function handleCardClick(event: MouseEvent) {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-areas: 
-    "grade bond"
-    "empty level"
-    "bottom bottom";
+  grid-template-areas:
+    'grade bond'
+    'empty level'
+    'bottom bottom';
   grid-template-rows: auto 1fr;
   grid-template-columns: 1fr auto;
   padding: 4px;
@@ -635,7 +660,6 @@ function handleCardClick(event: MouseEvent) {
   font-size: 12px;
 }
 
-
 .skill-levels,
 .equipment-levels {
   align-self: end;
@@ -703,21 +727,22 @@ function handleCardClick(event: MouseEvent) {
   justify-content: flex-start;
 }
 
-.skill-value, 
+.skill-value,
 .equipment-value {
   color: white;
   font-size: 12px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 2px;
-  min-width: 20px; 
-  width: 20px; 
+  min-width: 20px;
+  width: 20px;
   text-align: center;
-  display: inline-block; 
+  display: inline-block;
   box-sizing: border-box;
   transition: background 0.15s;
 }
 
-.skill-value[title]:hover, .equipment-value[title]:hover {
+.skill-value[title]:hover,
+.equipment-value[title]:hover {
   background: rgba(80, 180, 255, 0.5);
 }
 
@@ -725,7 +750,6 @@ function handleCardClick(event: MouseEvent) {
 .img--unowned {
   filter: brightness(0.35) grayscale(0.25);
 }
-
 
 .investment-bar {
   height: 3px;

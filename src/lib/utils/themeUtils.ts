@@ -15,7 +15,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'forest', label: 'Forest', colors: ['#9fe2b2', '#16b364'] },
   { id: 'sunset', label: 'Sunset', colors: ['#ffbf98', '#ff6a00'] },
   { id: 'rose', label: 'Rose', colors: ['#ffb5ce', '#e61b72'] },
-  { id: 'violet', label: 'Violet', colors: ['#ccb8ff', '#7c3aed'] }
+  { id: 'violet', label: 'Violet', colors: ['#ccb8ff', '#7c3aed'] },
 ];
 
 function isThemeId(value: string): value is ThemeId {

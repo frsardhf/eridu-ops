@@ -28,8 +28,9 @@ describe('filterByProperty', () => {
   });
 
   it('filters by subcategory, skipping items without one', () => {
-    expect(Object.keys(filterByProperty(items, 'subcategory', ['Artifact', 'BookItem'])).sort())
-      .toEqual(['100', '23']);
+    expect(
+      Object.keys(filterByProperty(items, 'subcategory', ['Artifact', 'BookItem'])).sort(),
+    ).toEqual(['100', '23']);
   });
 
   it('matches ids numerically even when passed as strings', () => {

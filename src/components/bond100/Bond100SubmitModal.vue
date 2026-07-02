@@ -25,7 +25,7 @@ const showFallback = ref(false);
 const ARONA_ADD_URL = 'https://arona.icu/searchFriendDetail';
 
 const serverChoices = computed(() =>
-  props.serverOptions.map(o => ({ value: o.code, label: $t(o.labelKey) }))
+  props.serverOptions.map((o) => ({ value: o.code, label: $t(o.labelKey) })),
 );
 
 async function doSubmit() {
@@ -59,7 +59,9 @@ useDocumentListener('keydown', onKeydown);
     <section class="bsm-modal" role="dialog" aria-modal="true" :aria-label="$t('bond100.submit')">
       <header class="bsm-head">
         <h2>{{ $t('bond100.submit') }}</h2>
-        <button type="button" class="bsm-close" :aria-label="$t('close')" @click="emit('close')">×</button>
+        <button type="button" class="bsm-close" :aria-label="$t('close')" @click="emit('close')">
+          ×
+        </button>
       </header>
 
       <div class="bsm-body">
@@ -75,10 +77,22 @@ useDocumentListener('keydown', onKeydown);
           <h3>{{ $t('bond100.form.fallbackTitle') }}</h3>
           <p>{{ $t('bond100.form.fallbackBody') }}</p>
           <p class="bsm-fallback-steps">{{ $t('bond100.form.fallbackSteps') }}</p>
-          <a class="bsm-fallback-link" :href="ARONA_ADD_URL" target="_blank" rel="noopener noreferrer">
+          <a
+            class="bsm-fallback-link"
+            :href="ARONA_ADD_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <span>arona.icu/searchFriendDetail</span>
             <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/>
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M7 17 17 7M9 7h8v8"
+              />
             </svg>
           </a>
         </div>
@@ -98,7 +112,13 @@ useDocumentListener('keydown', onKeydown);
             </div>
             <label class="bsm-field">
               <span>{{ $t('bond100.form.friendCode') }}</span>
-              <input v-model="subFriendCode" type="text" maxlength="20" autocomplete="off" required />
+              <input
+                v-model="subFriendCode"
+                type="text"
+                maxlength="20"
+                autocomplete="off"
+                required
+              />
             </label>
           </div>
           <p class="bsm-note">{{ $t('bond100.form.assistHint') }}</p>
@@ -107,15 +127,28 @@ useDocumentListener('keydown', onKeydown);
 
       <footer class="bsm-footer">
         <template v-if="done">
-          <button type="button" class="bsm-btn" @click="emit('close')">{{ $t('bond100.form.back') }}</button>
+          <button type="button" class="bsm-btn" @click="emit('close')">
+            {{ $t('bond100.form.back') }}
+          </button>
         </template>
         <template v-else-if="showFallback">
-          <button type="button" class="bsm-btn ghost" @click="backToForm">{{ $t('bond100.form.tryAgain') }}</button>
-          <button type="button" class="bsm-btn" @click="emit('close')">{{ $t('bond100.form.back') }}</button>
+          <button type="button" class="bsm-btn ghost" @click="backToForm">
+            {{ $t('bond100.form.tryAgain') }}
+          </button>
+          <button type="button" class="bsm-btn" @click="emit('close')">
+            {{ $t('bond100.form.back') }}
+          </button>
         </template>
         <template v-else>
-          <button type="button" class="bsm-btn ghost" @click="emit('close')">{{ $t('bond100.form.cancel') }}</button>
-          <button type="submit" form="bsm-form" class="bsm-btn" :disabled="submitting || !subServer || !subFriendCode.trim()">
+          <button type="button" class="bsm-btn ghost" @click="emit('close')">
+            {{ $t('bond100.form.cancel') }}
+          </button>
+          <button
+            type="submit"
+            form="bsm-form"
+            class="bsm-btn"
+            :disabled="submitting || !subServer || !subFriendCode.trim()"
+          >
             {{ submitting ? $t('bond100.form.sending') : $t('bond100.form.send') }}
           </button>
         </template>

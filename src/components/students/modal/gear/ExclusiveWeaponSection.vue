@@ -2,31 +2,27 @@
 import { computed, toRef } from 'vue';
 import { useStudentGearDisplay } from '@/composables/useStudentGearDisplay';
 import { makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
-import {
-  MAX_GRADE,
-  WEAPON_STAR_THRESHOLD as TRESHOLD
-} from '@/lib/constants/gameConstants';
+import { MAX_GRADE, WEAPON_STAR_THRESHOLD as TRESHOLD } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import StarRatingGroup from '@/components/students/modal/shared/StarRatingGroup.vue';
 
 const props = defineProps<{
   student: StudentProps;
-  gradeLevels: { current?: number; target?: number; };
+  gradeLevels: { current?: number; target?: number };
 }>();
 
 const emit = defineEmits<{
   (e: 'update-grade', current: number, target: number): void;
 }>();
 
-const { 
-  isMaxGrade, isWeaponLocked, currentGrade, targetGrade, getWeaponIconUrl
-} = useStudentGearDisplay(
-  toRef(() => props.student),
-  toRef(() => props.gradeLevels),
-  () => ({}),
-  () => ({})
-);
+const { isMaxGrade, isWeaponLocked, currentGrade, targetGrade, getWeaponIconUrl } =
+  useStudentGearDisplay(
+    toRef(() => props.student),
+    toRef(() => props.gradeLevels),
+    () => ({}),
+    () => ({}),
+  );
 
 const currentStars = computed(() => {
   const current = props.gradeLevels?.current ?? 1;
@@ -46,15 +42,13 @@ const targetStars = computed(() => {
   }));
 });
 
-const { 
-  updateCurrent: updateCurrentGrade, 
-  updateTarget: updateTargetGrade 
-} = makeCurrentTargetPair(
-  () => ({ current: props.gradeLevels?.current ?? 1, target: props.gradeLevels?.target ?? 1 }),
-  (c, t) => emit('update-grade', c, t),
-  1,
-  () => MAX_GRADE,
-);
+const { updateCurrent: updateCurrentGrade, updateTarget: updateTargetGrade } =
+  makeCurrentTargetPair(
+    () => ({ current: props.gradeLevels?.current ?? 1, target: props.gradeLevels?.target ?? 1 }),
+    (c, t) => emit('update-grade', c, t),
+    1,
+    () => MAX_GRADE,
+  );
 </script>
 
 <template>
@@ -62,15 +56,15 @@ const {
     <h3 class="sr-only">{{ $t('exclusiveWeapon') }}</h3>
 
     <div class="weapon-showcase">
-      <div class="weapon-preview" :class="{ 'locked': isWeaponLocked }">
+      <div class="weapon-preview" :class="{ locked: isWeaponLocked }">
         <div class="grade-overlay">
           <div class="grade-indicators" v-if="!isMaxGrade">
             <div class="grade-pill" :class="currentGrade <= TRESHOLD ? 'gold-grade' : 'blue-grade'">
-              {{ currentGrade <= TRESHOLD ? currentGrade : (currentGrade - TRESHOLD) }}★
+              {{ currentGrade <= TRESHOLD ? currentGrade : currentGrade - TRESHOLD }}★
             </div>
             <div class="grade-arrow">→</div>
             <div class="grade-pill" :class="targetGrade <= TRESHOLD ? 'gold-grade' : 'blue-grade'">
-              {{ targetGrade <= TRESHOLD ? targetGrade : (targetGrade - TRESHOLD) }}★
+              {{ targetGrade <= TRESHOLD ? targetGrade : targetGrade - TRESHOLD }}★
             </div>
           </div>
           <div class="grade-max-pill" v-else>{{ $t('maxGrade') }}</div>
@@ -84,7 +78,10 @@ const {
         />
         <div class="weapon-icon placeholder" v-else>?</div>
 
-        <div class="grade-inputs-overlay" :class="{ 'max-state': isMaxGrade, 'locked-state': isWeaponLocked }">
+        <div
+          class="grade-inputs-overlay"
+          :class="{ 'max-state': isMaxGrade, 'locked-state': isWeaponLocked }"
+        >
           <StarRatingGroup
             class="current-group"
             :stars="currentStars"
@@ -144,7 +141,11 @@ const {
 }
 
 .grade-max-pill {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-grade-gold) 32%, transparent), color-mix(in srgb, var(--color-grade-blue) 28%, transparent));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-grade-gold) 32%, transparent),
+    color-mix(in srgb, var(--color-grade-blue) 28%, transparent)
+  );
   padding: 4px 12px;
   border-radius: 10px;
   font-size: 0.8em;

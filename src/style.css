@@ -2,8 +2,9 @@
 
 @font-face {
   font-family: 'NEXON Football Gothic';
-  src: url('https://schaledb.com/font/NEXONFootballGothicBA1.woff2') format('woff2'),
-       url('https://schaledb.com/font/NEXONFootballGothicBA1.woff') format('woff');
+  src:
+    url('https://schaledb.com/font/NEXONFootballGothicBA1.woff2') format('woff2'),
+    url('https://schaledb.com/font/NEXONFootballGothicBA1.woff') format('woff');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -55,10 +56,10 @@
   --color-positive: #43a047;
   --color-negative: #e53935;
   --color-pin-active: #ffd972;
-  --color-grade-gold: rgb(255, 201, 51);   /* gold ★ / grade pill */
+  --color-grade-gold: rgb(255, 201, 51); /* gold ★ / grade pill */
   --color-grade-blue: hsl(192, 100%, 60%); /* blue ★ / grade pill */
-  --color-warning: #f59e0b;                /* advisory / OCR low-confidence */
-  --color-convert: #f7ac4a;                /* gift convert-to-credits accent */
+  --color-warning: #f59e0b; /* advisory / OCR low-confidence */
+  --color-convert: #f7ac4a; /* gift convert-to-credits accent */
 
   /* Shared motion tokens */
   --motion-duration-fast: 180ms;
@@ -374,14 +375,25 @@ button:focus-visible {
 }
 
 /* --- Icon filter utilities --- */
-.icon-white  { filter: brightness(0) invert(1); }
-.icon-dimmed { filter: brightness(0) invert(0.4); }
-.icon-locked { filter: grayscale(100%) brightness(50%); }
+.icon-white {
+  filter: brightness(0) invert(1);
+}
+.icon-dimmed {
+  filter: brightness(0) invert(0.4);
+}
+.icon-locked {
+  filter: grayscale(100%) brightness(50%);
+}
 
 /* Applies the white-stroke outline used on quantity badges */
 .text-outline-white {
   text-shadow:
-    -0.8px -0.8px 0 #fff,  0px -0.8px 0 #fff, 0.8px -0.8px 0 #fff,
-    -0.8px  0px   0 #fff,                      0.8px  0px   0 #fff,
-    -0.8px  0.8px 0 #fff,  0px  0.8px 0 #fff, 0.8px  0.8px 0 #fff;
+    -0.8px -0.8px 0 #fff,
+    0px -0.8px 0 #fff,
+    0.8px -0.8px 0 #fff,
+    -0.8px 0px 0 #fff,
+    0.8px 0px 0 #fff,
+    -0.8px 0.8px 0 #fff,
+    0px 0.8px 0 #fff,
+    0.8px 0.8px 0 #fff;
 }

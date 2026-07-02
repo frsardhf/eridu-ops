@@ -25,7 +25,11 @@ function cycleStudentIcon() {
   const students = sortedStudentsArray.value;
   if (!students.length) return;
   let url = studentIconUrl.value;
-  for (let attempt = 0; attempt < 5 && (url === studentIconUrl.value || !studentIconUrl.value); attempt++) {
+  for (
+    let attempt = 0;
+    attempt < 5 && (url === studentIconUrl.value || !studentIconUrl.value);
+    attempt++
+  ) {
     const pick = students[Math.floor(Math.random() * students.length)];
     url = getStudentIconUrl(pick.Id);
     if (students.length === 1) break;
@@ -34,9 +38,13 @@ function cycleStudentIcon() {
   studentsImgError.value = false;
 }
 
-watch(sortedStudentsArray, (students) => {
-  if (students.length && !studentIconUrl.value) cycleStudentIcon();
-}, { immediate: true });
+watch(
+  sortedStudentsArray,
+  (students) => {
+    if (students.length && !studentIconUrl.value) cycleStudentIcon();
+  },
+  { immediate: true },
+);
 
 let studentIconInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -85,11 +93,21 @@ onUnmounted(() => {
                 @error="studentsImgError = true"
               />
               <div v-else class="landing-card-img-fallback">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </div>
             </Transition>
@@ -111,8 +129,17 @@ onUnmounted(() => {
               @error="bondsImgError = true"
             />
             <div v-else class="landing-card-img-fallback">
-              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="var(--color-negative)" stroke="none">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="36"
+                height="36"
+                viewBox="0 0 24 24"
+                fill="var(--color-negative)"
+                stroke="none"
+              >
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                />
               </svg>
             </div>
           </div>
@@ -140,8 +167,8 @@ onUnmounted(() => {
       <p class="landing-footer-disclaimer">
         Eridu Ops is an unofficial fan project, not affiliated with Nexon, Nexon Games, or Yostar.
         Game data and images are provided via
-        <a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a>;
-        all artwork, information, and assets remain the property of their respective owners.
+        <a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a>; all
+        artwork, information, and assets remain the property of their respective owners.
       </p>
     </footer>
 
@@ -236,7 +263,10 @@ onUnmounted(() => {
   color: var(--text-primary);
   text-decoration: none;
   cursor: pointer;
-  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  transition:
+    transform 0.18s,
+    border-color 0.18s,
+    box-shadow 0.18s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -294,7 +324,11 @@ onUnmounted(() => {
 
 .landing-card-art--bond100 {
   background:
-    radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent-color) 34%, transparent), transparent 48%),
+    radial-gradient(
+      circle at 35% 30%,
+      color-mix(in srgb, var(--accent-color) 34%, transparent),
+      transparent 48%
+    ),
     color-mix(in srgb, var(--color-negative) 12%, var(--background-primary));
 }
 
@@ -328,7 +362,9 @@ onUnmounted(() => {
   font-size: 1.1rem;
   color: var(--text-secondary);
   flex-shrink: 0;
-  transition: transform 0.18s, color 0.18s;
+  transition:
+    transform 0.18s,
+    color 0.18s;
 }
 
 /* --- Footer --- */

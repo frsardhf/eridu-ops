@@ -24,7 +24,7 @@ export interface AppSettings {
   craftingFodder?: {
     thresholds: Record<string, Record<string, number>>; // thresholds[subcat][rarity]
     rarityFilter: string[]; // user's chip selection for Stage 1
-    markedIds: number[];    // material IDs the user has marked as "used"
+    markedIds: number[]; // material IDs the user has marked as "used"
   };
   studentFilters?: StudentFilters;
   bondsTrackedStudents?: number[];
@@ -47,7 +47,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
   sort: {
     option: 'id',
-    direction: 'asc'
+    direction: 'asc',
   },
   pinnedStudents: [],
   isPinnedMode: false,
@@ -58,10 +58,21 @@ export const DEFAULT_SETTINGS: AppSettings = {
 // leftover from an older version (e.g. bond100Layout, sortDirectionsByOption)
 // and is pruned on load. Keep this in sync with the AppSettings interface.
 const ALLOWED_KEYS: (keyof AppSettings)[] = [
-  'theme', 'language', 'sort', 'pinnedStudents', 'isPinnedMode',
-  'craftingFodder', 'studentFilters', 'bondsTrackedStudents', 'bondsLayout',
-  'bondsGiftPlanningEnabled', 'bond100Sort', 'bond100School', 'bond100HideEmpty',
-  'lastSeenChangelogId', 'cardOverlays',
+  'theme',
+  'language',
+  'sort',
+  'pinnedStudents',
+  'isPinnedMode',
+  'craftingFodder',
+  'studentFilters',
+  'bondsTrackedStudents',
+  'bondsLayout',
+  'bondsGiftPlanningEnabled',
+  'bond100Sort',
+  'bond100School',
+  'bond100HideEmpty',
+  'lastSeenChangelogId',
+  'cardOverlays',
 ];
 
 /**
@@ -103,7 +114,9 @@ export function getSettings(): AppSettings {
 
     // If the stored blob actually had stale keys, rewrite it once so they're
     // gone from localStorage, not just ignored in memory.
-    const hadStale = Object.keys(parsed).some(k => !ALLOWED_KEYS.includes(k as keyof AppSettings));
+    const hadStale = Object.keys(parsed).some(
+      (k) => !ALLOWED_KEYS.includes(k as keyof AppSettings),
+    );
     if (hadStale) saveSettings(clean);
 
     return clean;
@@ -126,10 +139,7 @@ export function saveSettings(settings: AppSettings): boolean {
 }
 
 /** Update a single setting field. */
-export function updateSetting<K extends keyof AppSettings>(
-  key: K,
-  value: AppSettings[K]
-): boolean {
+export function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]): boolean {
   try {
     const currentSettings = getSettings();
     currentSettings[key] = value;
@@ -141,10 +151,7 @@ export function updateSetting<K extends keyof AppSettings>(
 }
 
 /** Update the sort option + direction. */
-export function updateSortSettings(
-  option: SortOption,
-  direction: SortDirection
-): boolean {
+export function updateSortSettings(option: SortOption, direction: SortDirection): boolean {
   try {
     const currentSettings = getSettings();
     currentSettings.sort = { option, direction };

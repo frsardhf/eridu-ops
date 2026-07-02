@@ -1,11 +1,11 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
-import router from './router'
+import { createApp } from 'vue';
+import './style.css';
+import App from './App.vue';
+import router from './router';
 
-const app = createApp(App)
-app.use(router)
-app.mount('#app')
+const app = createApp(App);
+app.use(router);
+app.mount('#app');
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/image-cache-sw.js').catch(() => {});
@@ -13,7 +13,8 @@ if ('serviceWorker' in navigator) {
 
 // Request persistent storage to reduce IndexedDB eviction.
 if (navigator.storage?.persist) {
-  navigator.storage.persisted()
+  navigator.storage
+    .persisted()
     .then((already) => (already ? true : navigator.storage.persist()))
     .catch(() => {});
 }

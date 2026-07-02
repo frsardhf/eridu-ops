@@ -10,10 +10,18 @@ const props = defineProps<{
   flat?: boolean;
 }>();
 
-const emit = defineEmits(['toggle-convert', 'sync-gifts', 'reset-gifts', 'undo-changes', 'redo-changes', 'open-other-exp']);
+const emit = defineEmits([
+  'toggle-convert',
+  'sync-gifts',
+  'reset-gifts',
+  'undo-changes',
+  'redo-changes',
+  'open-other-exp',
+]);
 
-const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
-  useTooltip<'convert' | 'sync' | 'reset' | 'undo' | 'redo' | 'otherExp'>();
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<
+  'convert' | 'sync' | 'reset' | 'undo' | 'redo' | 'otherExp'
+>();
 </script>
 
 <template>
@@ -197,6 +205,4 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
   border: 1px solid var(--disabled-border, #ccc);
   opacity: 0.8;
 }
-
-
 </style>

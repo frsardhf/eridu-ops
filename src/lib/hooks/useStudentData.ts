@@ -4,12 +4,9 @@
 // This hook owns orchestration only (init, refresh, language switch, retry)
 // and returns one combined API so components keep a single entry point.
 
-import { watch } from 'vue'
+import { watch } from 'vue';
 import { StudentProps } from '../../types/student';
-import {
-  ResourceProps,
-  GIFT_BOX_IDS
-} from '../../types/resource';
+import { ResourceProps, GIFT_BOX_IDS } from '../../types/resource';
 import {
   searchQuery,
   currentTheme,
@@ -49,22 +46,27 @@ import {
   saveItems,
   saveEquipment,
   needsRefresh,
-  updateCacheMetadata
+  updateCacheMetadata,
 } from '../services/dbService';
 import { migrateFromLocalStorageToIndexedDB } from '../utils/migration';
 import { batchSetStudentData, studentDataStore } from '../stores/studentStore';
 import { initializeAllCaches } from '../stores/resourceCacheStore';
-import { currentLanguage, initializeLocalizationData, localizationData } from '../stores/localizationStore';
-import { fetchAllData, loadLocalizationData, refreshLocalizationData } from '../services/schaleDbFetchService';
+import {
+  currentLanguage,
+  initializeLocalizationData,
+  localizationData,
+} from '../stores/localizationStore';
+import {
+  fetchAllData,
+  loadLocalizationData,
+  refreshLocalizationData,
+} from '../services/schaleDbFetchService';
 import { filterByProperty } from '../utils/filterUtils';
 import { SchaleLocalization } from '@/types/schaledb';
 import { isSecondaryStudent } from '../constants/linkedStudents';
 import { buildGiftsByStudent } from '../utils/giftUtils';
 import { preloadAllStudentsData } from '../utils/materialUtils';
-import {
-  attachElephIcons,
-  toRecordById
-} from '../utils/studentDataHydrationUtils';
+import { attachElephIcons, toRecordById } from '../utils/studentDataHydrationUtils';
 
 // --- One-shot lifecycle guards (shared across all hook calls) ---
 let _langChangeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -80,10 +82,7 @@ async function loadFromCache() {
   try {
     // Equipment isn't read here: processAndPopulateData only needs students +
     // items (gift derivations), and initializeAllCaches loads equipment itself.
-    const [students, items] = await Promise.all([
-      getAllStudents(),
-      getAllItems()
-    ]);
+    const [students, items] = await Promise.all([getAllStudents(), getAllItems()]);
 
     await processAndPopulateData(toRecordById(students), toRecordById(items));
   } catch (error) {
@@ -109,7 +108,7 @@ async function refreshSchaleDBData() {
     await Promise.all([
       saveStudents(Object.values(students)),
       saveItems(Object.values(items)),
-      saveEquipment(Object.values(equipment))
+      saveEquipment(Object.values(equipment)),
     ]);
 
     await updateCacheMetadata();
@@ -134,7 +133,7 @@ function markLoadErrorIfEmpty() {
 async function processAndPopulateData(
   students: Record<string, StudentProps>,
   items: Record<string, ResourceProps>,
-  localization?: SchaleLocalization
+  localization?: SchaleLocalization,
 ) {
   // Single item/equipment source: resourceCacheStore reads both tables merged
   // with inventory quantities here, and per-id updates keep it current after
@@ -157,7 +156,7 @@ async function processAndPopulateData(
   });
   giftBoxData.value = buildGiftsByStudent(studentData.value, boxes, {
     isGiftBox: true,
-    favoredGiftByStudent: favoredGift.value
+    favoredGiftByStudent: favoredGift.value,
   });
 
   await preloadStudentStore();
@@ -189,10 +188,7 @@ async function initializeData() {
     isLoading.value = true;
     loadError.value = false;
 
-    await Promise.all([
-      migrateFromLocalStorageToIndexedDB(),
-      initializeLocalizationData()
-    ]);
+    await Promise.all([migrateFromLocalStorageToIndexedDB(), initializeLocalizationData()]);
 
     loadUiPrefs();
     await loadFromCache();
@@ -287,7 +283,7 @@ export function useStudentData() {
           _langChangeTimer = null;
           applyLanguage();
         }, 200);
-      }
+      },
     );
 
     // Initialize data only once
@@ -327,5 +323,5 @@ export function useStudentData() {
     setStudentFilters,
     clearStudentFilters,
     isFiltersEmpty: areFiltersEmpty,
-  }
+  };
 }

@@ -18,15 +18,17 @@ const props = defineProps<{
 }>();
 
 const students = computed(() => props.summary?.students ?? []);
-const total = computed(() => props.summary?.total ?? students.value.reduce((s, x) => s + x.count, 0));
-const represented = computed(() => students.value.filter(x => x.count > 0).length);
+const total = computed(
+  () => props.summary?.total ?? students.value.reduce((s, x) => s + x.count, 0),
+);
+const represented = computed(() => students.value.filter((x) => x.count > 0).length);
 const rosterCount = computed(() => props.roster.length);
 const coveragePct = computed(() =>
-  rosterCount.value ? Math.round((represented.value / rosterCount.value) * 100) : 0
+  rosterCount.value ? Math.round((represented.value / rosterCount.value) * 100) : 0,
 );
 
 const studentName = computed(() => {
-  const map = new Map<number, string>(props.roster.map(s => [s.Id, s.Name]));
+  const map = new Map<number, string>(props.roster.map((s) => [s.Id, s.Name]));
   return (id: number) => map.get(id) ?? `#${id}`;
 });
 
@@ -37,7 +39,9 @@ const serverRows = computed(() => {
       if (n) totals.set(region, (totals.get(region) ?? 0) + n);
     }
   }
-  const labels = new Map(props.serverOptions.map(o => [o.code, { label: $t(o.labelKey), short: o.shortLabel }]));
+  const labels = new Map(
+    props.serverOptions.map((o) => [o.code, { label: $t(o.labelKey), short: o.shortLabel }]),
+  );
   const max = Math.max(1, ...totals.values());
   return [...totals.entries()]
     .map(([region, count]) => ({
@@ -55,7 +59,7 @@ const serverRows = computed(() => {
 // Bond-100 totals grouped by the student's School (joined from the roster).
 // Icon-only chips (colored per school) keep ~10-12 rows compact.
 const schoolRows = computed(() => {
-  const schoolOf = new Map<number, string>(props.roster.map(s => [s.Id, s.School]));
+  const schoolOf = new Map<number, string>(props.roster.map((s) => [s.Id, s.School]));
   const totals = new Map<string, number>();
   for (const s of students.value) {
     const school = schoolOf.get(s.studentId);
@@ -79,7 +83,7 @@ const topStudents = computed(() =>
   [...students.value]
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
-    .map(s => ({ id: s.studentId, name: studentName.value(s.studentId), count: s.count }))
+    .map((s) => ({ id: s.studentId, name: studentName.value(s.studentId), count: s.count })),
 );
 
 // Freshest per-student fetch (the rolling sweep updates students independently),
@@ -94,14 +98,22 @@ const snapshotLabel = computed(() => {
   if (!iso) return '';
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(d);
 });
 
 function barStyle(color: string, pct: number) {
   return { width: `${pct}%`, background: color };
 }
 function chipStyle(color: string) {
-  return { color, background: colorWithOpacity(color, 0.14), borderColor: colorWithOpacity(color, 0.4) };
+  return {
+    color,
+    background: colorWithOpacity(color, 0.14),
+    borderColor: colorWithOpacity(color, 0.4),
+  };
 }
 // School emblems are white silhouettes, so the chip is a solid school-color pill.
 function schoolChipStyle(color: string) {
@@ -116,67 +128,79 @@ function schoolChipStyle(color: string) {
     <p v-if="!total" class="bond100-stats-empty">{{ $t('bond100.stats.empty') }}</p>
 
     <template v-else>
-    <p class="bond100-stats-headline">
-      <strong>{{ total }}</strong> {{ $t('bond100.atBond100') }}
-      <span class="sep">·</span>
-      <strong>{{ represented }}</strong> {{ $t('bond100.studentsRepresented').toLowerCase() }}
-    </p>
-
-    <!-- By server -->
-    <section class="bond100-stats-section">
-      <p class="bond100-stats-label">{{ $t('bond100.stats.byServer') }}</p>
-      <div v-for="row in serverRows" :key="row.region" class="bond100-stats-srv">
-        <span class="bond100-stats-srv-chip" :style="chipStyle(row.color)">{{ row.short }}</span>
-        <span class="bond100-stats-bar-track">
-          <span class="bond100-stats-bar" :style="barStyle(row.color, row.barPct)"></span>
-        </span>
-        <span class="bond100-stats-srv-count">{{ row.count }}</span>
-        <span class="bond100-stats-srv-pct">{{ row.sharePct }}%</span>
-      </div>
-    </section>
-
-    <!-- By school -->
-    <section v-if="schoolRows.length" class="bond100-stats-section">
-      <p class="bond100-stats-label">{{ $t('bond100.stats.bySchool') }}</p>
-      <div v-for="row in schoolRows" :key="row.school" class="bond100-stats-srv">
-        <span class="bond100-stats-school-chip" :style="schoolChipStyle(row.color)" :title="row.name">
-          <img :src="row.icon" :alt="row.name" />
-        </span>
-        <span class="bond100-stats-bar-track">
-          <span class="bond100-stats-bar" :style="barStyle(row.color, row.barPct)"></span>
-        </span>
-        <span class="bond100-stats-srv-count">{{ row.count }}</span>
-        <span class="bond100-stats-srv-pct">{{ row.sharePct }}%</span>
-      </div>
-    </section>
-
-    <!-- Top students -->
-    <section class="bond100-stats-section">
-      <p class="bond100-stats-label">{{ $t('bond100.stats.topStudents') }}</p>
-      <div v-for="s in topStudents" :key="s.id" class="bond100-stats-top">
-        <img class="bond100-stats-top-icon" :src="getStudentIconUrl(s.id)" :alt="s.name" loading="lazy" />
-        <span class="bond100-stats-top-name">{{ s.name }}</span>
-        <span class="bond100-stats-top-count">{{ s.count }}</span>
-      </div>
-    </section>
-
-    <!-- Coverage -->
-    <section class="bond100-stats-section">
-      <p class="bond100-stats-label">{{ $t('bond100.stats.coverage') }}</p>
-      <p class="bond100-stats-coverage">
-        <strong>{{ represented }}</strong>
-        {{ $t('bond100.stats.ofStudents', { total: rosterCount }) }}
+      <p class="bond100-stats-headline">
+        <strong>{{ total }}</strong> {{ $t('bond100.atBond100') }}
         <span class="sep">·</span>
-        <strong>{{ coveragePct }}%</strong>
+        <strong>{{ represented }}</strong> {{ $t('bond100.studentsRepresented').toLowerCase() }}
       </p>
-      <span class="bond100-stats-bar-track wide">
-        <span class="bond100-stats-bar" :style="{ width: `${coveragePct}%`, background: 'var(--accent-color)' }"></span>
-      </span>
-    </section>
 
-    <p v-if="snapshotLabel" class="bond100-stats-footer">
-      {{ $t('bond100.stats.updated') }} · {{ snapshotLabel }}
-    </p>
+      <!-- By server -->
+      <section class="bond100-stats-section">
+        <p class="bond100-stats-label">{{ $t('bond100.stats.byServer') }}</p>
+        <div v-for="row in serverRows" :key="row.region" class="bond100-stats-srv">
+          <span class="bond100-stats-srv-chip" :style="chipStyle(row.color)">{{ row.short }}</span>
+          <span class="bond100-stats-bar-track">
+            <span class="bond100-stats-bar" :style="barStyle(row.color, row.barPct)"></span>
+          </span>
+          <span class="bond100-stats-srv-count">{{ row.count }}</span>
+          <span class="bond100-stats-srv-pct">{{ row.sharePct }}%</span>
+        </div>
+      </section>
+
+      <!-- By school -->
+      <section v-if="schoolRows.length" class="bond100-stats-section">
+        <p class="bond100-stats-label">{{ $t('bond100.stats.bySchool') }}</p>
+        <div v-for="row in schoolRows" :key="row.school" class="bond100-stats-srv">
+          <span
+            class="bond100-stats-school-chip"
+            :style="schoolChipStyle(row.color)"
+            :title="row.name"
+          >
+            <img :src="row.icon" :alt="row.name" />
+          </span>
+          <span class="bond100-stats-bar-track">
+            <span class="bond100-stats-bar" :style="barStyle(row.color, row.barPct)"></span>
+          </span>
+          <span class="bond100-stats-srv-count">{{ row.count }}</span>
+          <span class="bond100-stats-srv-pct">{{ row.sharePct }}%</span>
+        </div>
+      </section>
+
+      <!-- Top students -->
+      <section class="bond100-stats-section">
+        <p class="bond100-stats-label">{{ $t('bond100.stats.topStudents') }}</p>
+        <div v-for="s in topStudents" :key="s.id" class="bond100-stats-top">
+          <img
+            class="bond100-stats-top-icon"
+            :src="getStudentIconUrl(s.id)"
+            :alt="s.name"
+            loading="lazy"
+          />
+          <span class="bond100-stats-top-name">{{ s.name }}</span>
+          <span class="bond100-stats-top-count">{{ s.count }}</span>
+        </div>
+      </section>
+
+      <!-- Coverage -->
+      <section class="bond100-stats-section">
+        <p class="bond100-stats-label">{{ $t('bond100.stats.coverage') }}</p>
+        <p class="bond100-stats-coverage">
+          <strong>{{ represented }}</strong>
+          {{ $t('bond100.stats.ofStudents', { total: rosterCount }) }}
+          <span class="sep">·</span>
+          <strong>{{ coveragePct }}%</strong>
+        </p>
+        <span class="bond100-stats-bar-track wide">
+          <span
+            class="bond100-stats-bar"
+            :style="{ width: `${coveragePct}%`, background: 'var(--accent-color)' }"
+          ></span>
+        </span>
+      </section>
+
+      <p v-if="snapshotLabel" class="bond100-stats-footer">
+        {{ $t('bond100.stats.updated') }} · {{ snapshotLabel }}
+      </p>
     </template>
   </div>
 </template>
@@ -252,9 +276,9 @@ function schoolChipStyle(color: string) {
 }
 
 .bond100-stats-srv-chip {
-  flex: 0 0 52px;   /* fixed: wide enough for TW/HK, the longest label */
+  flex: 0 0 52px; /* fixed: wide enough for TW/HK, the longest label */
   width: 52px;
-  height: 22px;     /* pinned so it matches the school chip exactly (not font-drift) */
+  height: 22px; /* pinned so it matches the school chip exactly (not font-drift) */
   display: inline-flex;
   align-items: center;
   justify-content: center;

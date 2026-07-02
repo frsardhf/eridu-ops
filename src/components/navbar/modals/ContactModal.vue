@@ -16,27 +16,45 @@ function closeModal(event: MouseEvent) {
       <div class="modal-header">
         <h2 class="modal-title">{{ $t('contact') }}</h2>
         <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
-      
+
       <div class="contact-modal-content">
         <div class="contact-section">
           <p>{{ $t('contactModal.body') }}</p>
-          
+
           <div class="contact-card">
             <div class="contact-icon">
               <img src="/profile.jpg" alt="" class="contact-avatar" />
             </div>
             <div class="contact-handles">
-              <a href="https://discord.com/users/idxyllic" target="_blank" rel="noopener noreferrer" class="contact-handle">
+              <a
+                href="https://discord.com/users/idxyllic"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="contact-handle"
+              >
                 <span class="contact-handle-platform">Discord</span>
                 <span class="contact-handle-name">idxyllic</span>
               </a>
-              <a href="https://x.com/idxyllune" target="_blank" rel="noopener noreferrer" class="contact-handle">
+              <a
+                href="https://x.com/idxyllune"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="contact-handle"
+              >
                 <span class="contact-handle-platform">Twitter</span>
                 <span class="contact-handle-name">idxyllune</span>
               </a>
@@ -81,8 +99,14 @@ function closeModal(event: MouseEvent) {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -201,7 +225,7 @@ function closeModal(event: MouseEvent) {
     width: 95%;
     max-height: 80vh;
   }
-  
+
   .contact-modal-content {
     padding: 12px;
   }

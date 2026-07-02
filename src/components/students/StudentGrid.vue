@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { StudentProps } from '@/types/student'
+import { StudentProps } from '@/types/student';
 import { ModalOriginRect } from '@/types/modal';
 import StudentCard from './StudentCard.vue';
 import { $t } from '@/locales';
@@ -10,8 +10,8 @@ defineProps<{
 }>();
 
 type EmitEvents = {
-  'openModal': [payload: { student: StudentProps; originRect: ModalOriginRect | null }];
-}
+  openModal: [payload: { student: StudentProps; originRect: ModalOriginRect | null }];
+};
 
 const emit = defineEmits<EmitEvents>();
 
@@ -23,28 +23,14 @@ function handleOpenModal(payload: { student: StudentProps; originRect: ModalOrig
 <template>
   <div class="student-grid-wrapper">
     <div class="student-grid">
-      <div
-        v-for="student in studentsArray"
-        :key="student.Id"
-        class="student-card-slot"
-      >
-        <StudentCard
-          :student="student"
-          @click="handleOpenModal"
-        />
+      <div v-for="student in studentsArray" :key="student.Id" class="student-card-slot">
+        <StudentCard :student="student" @click="handleOpenModal" />
       </div>
 
       <template v-if="unownedStudentsArray?.length">
         <div class="not-recruited-banner">{{ $t('ownership.notRecruited') }}</div>
-        <div
-          v-for="student in unownedStudentsArray"
-          :key="student.Id"
-          class="student-card-slot"
-        >
-          <StudentCard
-            :student="student"
-            @click="handleOpenModal"
-          />
+        <div v-for="student in unownedStudentsArray" :key="student.Id" class="student-card-slot">
+          <StudentCard :student="student" @click="handleOpenModal" />
         </div>
       </template>
     </div>

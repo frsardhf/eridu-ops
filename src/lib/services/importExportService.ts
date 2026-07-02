@@ -7,7 +7,7 @@ import {
   getAllItemsInventories,
   getAllEquipmentInventories,
   getAllFormData,
-  getAllStudentsAsRecord
+  getAllStudentsAsRecord,
 } from './dbService';
 import type { ItemsInventoryRecord, FormRecord } from '../db/database';
 import { getSettings, saveSettings } from '../utils/settingsStorage';
@@ -61,9 +61,9 @@ async function exportLocalStorageData(): Promise<string> {
   try {
     // Export ONLY user data (v3.0 format)
     const [forms, resources, equipments] = await Promise.all([
-      getAllFormData(),              // User progression
-      getAllItemsInventories(),      // Item quantities
-      getAllEquipmentInventories()   // Equipment quantities
+      getAllFormData(), // User progression
+      getAllItemsInventories(), // Item quantities
+      getAllEquipmentInventories(), // Equipment quantities
     ]);
 
     const settings = getSettings();
@@ -75,8 +75,8 @@ async function exportLocalStorageData(): Promise<string> {
       userData: {
         forms,
         resources,
-        equipments
-      }
+        equipments,
+      },
     };
 
     const exportString = JSON.stringify(exportData, null, 2);
@@ -133,23 +133,27 @@ async function importV3Format(importData: any): Promise<void> {
     await Promise.all([
       db.forms.clear(),
       db.items_inventory.clear(),
-      db.equipment_inventory.clear()
+      db.equipment_inventory.clear(),
     ]);
 
     await Promise.all([
       formsArray.length > 0 ? db.forms.bulkPut(formsArray) : Promise.resolve(),
-      itemsSource ? db.items_inventory.bulkPut(
-        Object.entries(itemsSource).map(([id, quantity]) => ({
-          Id: Number(id),
-          QuantityOwned: quantity as number
-        }))
-      ) : Promise.resolve(),
-      userData.equipments ? db.equipment_inventory.bulkPut(
-        Object.entries(userData.equipments).map(([id, quantity]) => ({
-          Id: Number(id),
-          QuantityOwned: quantity as number
-        }))
-      ) : Promise.resolve()
+      itemsSource
+        ? db.items_inventory.bulkPut(
+            Object.entries(itemsSource).map(([id, quantity]) => ({
+              Id: Number(id),
+              QuantityOwned: quantity as number,
+            })),
+          )
+        : Promise.resolve(),
+      userData.equipments
+        ? db.equipment_inventory.bulkPut(
+            Object.entries(userData.equipments).map(([id, quantity]) => ({
+              Id: Number(id),
+              QuantityOwned: quantity as number,
+            })),
+          )
+        : Promise.resolve(),
     ]);
   });
 
@@ -157,7 +161,7 @@ async function importV3Format(importData: any): Promise<void> {
   if (settings) {
     saveSettings({
       ...getSettings(),
-      ...settings
+      ...settings,
     });
   }
 }
@@ -173,7 +177,7 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
 
     const [existingForms, students] = await Promise.all([
       getAllFormData(),
-      getAllStudentsAsRecord()
+      getAllStudentsAsRecord(),
     ]);
 
     const formDataArray: FormRecord[] = [];
@@ -192,7 +196,7 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       const importedGearValues = [
         { current: parseIntOr(char.current.gear1, 1), target: parseIntOr(char.target.gear1, 1) },
         { current: parseIntOr(char.current.gear2, 1), target: parseIntOr(char.target.gear2, 1) },
-        { current: parseIntOr(char.current.gear3, 1), target: parseIntOr(char.target.gear3, 1) }
+        { current: parseIntOr(char.current.gear3, 1), target: parseIntOr(char.target.gear3, 1) },
       ];
       equipmentTypes.forEach((type, idx) => {
         const imported = importedGearValues[idx];
@@ -209,42 +213,60 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
         // planning targets via the Bulk Modify tool.
         isOwned: true,
         bondDetailData: {
-          currentBond: parseIntOr(char.current.bond, 1)
+          currentBond: parseIntOr(char.current.bond, 1),
         },
         boxFormData: {},
         characterLevels: {
           current: parseIntOr(char.current.level, 1),
-          target: parseIntOr(char.target.level, 1)
+          target: parseIntOr(char.target.level, 1),
         },
         equipmentLevels,
         // exclusiveGearLevel = bond gear (unlocked at bond 15)
         exclusiveGearLevel: {
           current: parseIntOr(char.current.bond_gear, 0),
-          target: parseIntOr(char.target.bond_gear, 0)
+          target: parseIntOr(char.target.bond_gear, 0),
         },
         giftFormData: {},
         // gradeLevels = star grade + UE additions (e.g. ★5 + UE3 -> 8)
         gradeLevels: {
           current: parseIntOr(char.current.star, starData) + parseIntOr(char.current.ue, 0),
-          target:  parseIntOr(char.target.star,  starData) + parseIntOr(char.target.ue,  0)
+          target: parseIntOr(char.target.star, starData) + parseIntOr(char.target.ue, 0),
         },
         // book_atk -> attack, book_hp -> maxhp, book_heal -> healpower
         potentialLevels: {
-          attack:    { current: parseIntOr(char.current.book_atk,  0), target: parseIntOr(char.target.book_atk,  0) },
-          maxhp:     { current: parseIntOr(char.current.book_hp,   0), target: parseIntOr(char.target.book_hp,   0) },
-          healpower: { current: parseIntOr(char.current.book_heal, 0), target: parseIntOr(char.target.book_heal, 0) }
+          attack: {
+            current: parseIntOr(char.current.book_atk, 0),
+            target: parseIntOr(char.target.book_atk, 0),
+          },
+          maxhp: {
+            current: parseIntOr(char.current.book_hp, 0),
+            target: parseIntOr(char.target.book_hp, 0),
+          },
+          healpower: {
+            current: parseIntOr(char.current.book_heal, 0),
+            target: parseIntOr(char.target.book_heal, 0),
+          },
         },
         skillLevels: {
-          Ex:           { current: parseIntOr(char.current.ex,      1), target: parseIntOr(char.target.ex,      1) },
-          Public:       { current: parseIntOr(char.current.basic,   1), target: parseIntOr(char.target.basic,   1) },
-          Passive:      { current: parseIntOr(char.current.passive, 1), target: parseIntOr(char.target.passive, 1) },
-          ExtraPassive: { current: parseIntOr(char.current.sub,     1), target: parseIntOr(char.target.sub,     1) }
+          Ex: { current: parseIntOr(char.current.ex, 1), target: parseIntOr(char.target.ex, 1) },
+          Public: {
+            current: parseIntOr(char.current.basic, 1),
+            target: parseIntOr(char.target.basic, 1),
+          },
+          Passive: {
+            current: parseIntOr(char.current.passive, 1),
+            target: parseIntOr(char.target.passive, 1),
+          },
+          ExtraPassive: {
+            current: parseIntOr(char.current.sub, 1),
+            target: parseIntOr(char.target.sub, 1),
+          },
         },
         gradeInfos: {
-          owned:       parseIntOr(char.eleph?.owned,       0),
-          price:       parseIntOr(char.eleph?.cost,        1),
-          purchasable: parseIntOr(char.eleph?.purchasable, 20)
-        }
+          owned: parseIntOr(char.eleph?.owned, 0),
+          price: parseIntOr(char.eleph?.cost, 1),
+          purchasable: parseIntOr(char.eleph?.purchasable, 20),
+        },
       };
 
       // Merge with existing data (strip any ghost numeric 'id' key)

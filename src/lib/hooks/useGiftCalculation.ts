@@ -25,7 +25,7 @@ function buildGiftNeededMap() {
     giftNeededMap.set(giftId, (giftNeededMap.get(giftId) ?? 0) + quantity);
   };
 
-  Object.values(studentDataStore.value).forEach(form => {
+  Object.values(studentDataStore.value).forEach((form) => {
     if (!form) return;
     if (form.isOwned === false) return; // skip unowned
 
@@ -47,7 +47,7 @@ function buildGiftNeededMap() {
 
   Object.entries(allGearsData).forEach(([studentId, materials]) => {
     if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
-    (materials as Material[]).forEach(material => {
+    (materials as Material[]).forEach((material) => {
       const materialId = material.material?.Id;
       const category = material.material?.Category;
       if (!materialId || category !== 'Favor') return;
@@ -64,7 +64,7 @@ function buildGiftNeededMap() {
 // full-store scans.
 const _bondAllocated = computed(() => {
   const map = new Map<number, number>();
-  Object.values(studentDataStore.value).forEach(form => {
+  Object.values(studentDataStore.value).forEach((form) => {
     if (!form || form.isOwned === false) return;
     const giftFormData = form.giftFormData ?? {};
     const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
@@ -184,7 +184,7 @@ export function useGiftCalculation() {
         studentGiftsMap.set(studentId, {
           student,
           totalGifts,
-          gifts
+          gifts,
         });
       }
     });
@@ -206,7 +206,7 @@ export function useGiftCalculation() {
       if (!student) return;
       if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
-      (materials as Material[]).forEach(material => {
+      (materials as Material[]).forEach((material) => {
         const materialId = material.material?.Id;
         const category = material.material?.Category;
         // Only process gift materials (Category === 'Favor')
@@ -237,14 +237,13 @@ export function useGiftCalculation() {
           studentGiftsMap.set(studentId, {
             student,
             totalGifts: displayQuantity,
-            gifts: [{ gift, quantity: displayQuantity }]
+            gifts: [{ gift, quantity: displayQuantity }],
           });
         }
       });
     });
 
-    return Array.from(studentGiftsMap.values())
-      .sort((a, b) => b.totalGifts - a.totalGifts);
+    return Array.from(studentGiftsMap.values()).sort((a, b) => b.totalGifts - a.totalGifts);
   };
 
   const getGiftsForStudent = (studentId: number, viewMode: GiftViewMode = 'needed') => {
@@ -298,11 +297,12 @@ export function useGiftCalculation() {
 
     // Process exclusive gear gift materials (Category === 'Favor') from gears store
     // For missing mode, use the cached bondAllocated map (O(1): no store scan).
-    const bondAllocatedForGear = viewMode === 'missing' ? _bondAllocated.value : new Map<number, number>();
+    const bondAllocatedForGear =
+      viewMode === 'missing' ? _bondAllocated.value : new Map<number, number>();
 
     const allGearsData = getAllGearsData();
     const studentGearMaterials = allGearsData[studentId] || [];
-    (studentGearMaterials as Material[]).forEach(material => {
+    (studentGearMaterials as Material[]).forEach((material) => {
       const materialId = material.material?.Id;
       const category = material.material?.Category;
       // Only process gift materials (Category === 'Favor')
@@ -346,7 +346,7 @@ export function useGiftCalculation() {
       leftovers.push({
         gift,
         quantity: remaining,
-        remaining
+        remaining,
       });
     });
 
@@ -367,6 +367,6 @@ export function useGiftCalculation() {
     getGiftsForStudent,
     getGiftLeftovers,
     getGiftNeededById,
-    getAllocatedGifts
+    getAllocatedGifts,
   };
 }

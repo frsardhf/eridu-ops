@@ -89,7 +89,7 @@ function sortBy(
     isPinnedMode: false,
     studentStore: store,
     ...extra,
-  }).map(s => s.Name);
+  }).map((s) => s.Name);
 }
 
 describe('sortStudentsWithPins', () => {
@@ -155,7 +155,7 @@ describe('sortStudentsWithPins', () => {
       sortDirection: 'asc',
       isPinnedMode: true,
       studentStore: store,
-    }).map(s => s.Name);
+    }).map((s) => s.Name);
     // pinned: Aru(bond 5) > Hina(0); unpinned: Eimi
     expect(names).toEqual(['Aru', 'Hina', 'Eimi']);
   });
@@ -174,8 +174,8 @@ describe('splitAndSortStudents', () => {
 
   it('splits owned and unowned (isOwned === false) groups', () => {
     const split = splitAndSortStudents(baseParams);
-    expect(split.owned.map(s => s.Name)).toEqual(['Aru', 'Hina']);
-    expect(split.unowned.map(s => s.Name)).toEqual(['Eimi']);
+    expect(split.owned.map((s) => s.Name)).toEqual(['Aru', 'Hina']);
+    expect(split.unowned.map((s) => s.Name)).toEqual(['Eimi']);
   });
 
   it('applies star-grade filters before splitting', () => {
@@ -183,7 +183,7 @@ describe('splitAndSortStudents', () => {
       ...baseParams,
       filters: { ...EMPTY_FILTERS, starGrade: [3] },
     });
-    expect(split.owned.map(s => s.Name)).toEqual(['Aru', 'Hina']);
+    expect(split.owned.map((s) => s.Name)).toEqual(['Aru', 'Hina']);
     expect(split.unowned).toEqual([]);
   });
 
@@ -195,6 +195,6 @@ describe('splitAndSortStudents', () => {
       students: [aru, unarmed, special],
       filters: { ...EMPTY_FILTERS, armorType: ['Unarmed'] },
     });
-    expect(split.owned.map(s => s.Name)).toEqual(['Unarmed-kun', 'Special-chan']);
+    expect(split.owned.map((s) => s.Name)).toEqual(['Unarmed-kun', 'Special-chan']);
   });
 });

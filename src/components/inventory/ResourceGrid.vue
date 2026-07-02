@@ -13,8 +13,8 @@ import '@/styles/resourceDisplay.css';
  * filter category, card item-type, and page plan).
  */
 const props = defineProps<{
-  variant: 'items' | 'equipment',
-  formData: Record<string, number>,
+  variant: 'items' | 'equipment';
+  formData: Record<string, number>;
 }>();
 
 const emit = defineEmits<{
@@ -42,8 +42,8 @@ const resources = computed(() => {
 
 const pagedResources = computed(() => {
   const all = resources.value;
-  if (all.length === 0) return [] as typeof all[];
-  const pages: typeof all[] = [];
+  if (all.length === 0) return [] as (typeof all)[];
+  const pages: (typeof all)[] = [];
 
   if (props.variant === 'equipment') {
     for (let i = 0; i < all.length; i += EQUIPMENT_PER_PAGE) {
@@ -69,10 +69,7 @@ const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBounda
 <template>
   <div class="resources-tab">
     <div class="resources-container">
-      <div
-        class="resources-slider"
-        :style="sliderStyle"
-      >
+      <div class="resources-slider" :style="sliderStyle">
         <div
           v-for="(pageItems, pageIndex) in pagedResources"
           :key="`page-${pageIndex}`"

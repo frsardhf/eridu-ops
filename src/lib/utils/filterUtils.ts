@@ -19,7 +19,7 @@ const STRING_FIELD = { category: 'Category', subcategory: 'SubCategory' } as con
 export function filterByProperty(
   items: Record<string, ResourceProps>,
   type: FilterProperty,
-  value: string | string[]
+  value: string | string[],
 ): Record<string, ResourceProps> {
   const rawValues = Array.isArray(value) ? value : [value];
   const filtered: Record<string, ResourceProps> = {};
@@ -49,7 +49,7 @@ export function filterByProperty(
  */
 export function applyFilters(
   items: Record<string, ResourceProps>,
-  filterObj: Partial<Record<FilterProperty, string[]>>
+  filterObj: Partial<Record<FilterProperty, string[]>>,
 ): Record<string, ResourceProps> {
   const merged: Record<string, ResourceProps> = {};
   for (const [type, value] of Object.entries(filterObj)) {

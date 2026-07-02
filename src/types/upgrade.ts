@@ -2,23 +2,23 @@ import type { ResourceProps } from './resource';
 
 export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
 
-export const SKILL_TYPES = [
-  'Ex',
-  'Public',
-  'Passive',
-  'ExtraPassive',
-] as const;
+export const SKILL_TYPES = ['Ex', 'Public', 'Passive', 'ExtraPassive'] as const;
 
 export type SkillTypeName = 'Ex' | 'Basic' | 'Enhanced' | 'Sub';
 
 export type PotentialType = 'attack' | 'maxhp' | 'healpower';
 
 export const SKILL_LABELS: Record<SkillType, string> = {
-  Ex: 'EX', Public: 'Basic', Passive: 'Passive', ExtraPassive: 'Sub',
+  Ex: 'EX',
+  Public: 'Basic',
+  Passive: 'Passive',
+  ExtraPassive: 'Sub',
 };
 
 export const POTENTIAL_LABELS: Record<PotentialType, string> = {
-  attack: 'ATK', maxhp: 'HP', healpower: 'Heal',
+  attack: 'ATK',
+  maxhp: 'HP',
+  healpower: 'Heal',
 };
 
 export type SectionId = 'level' | 'skills' | 'potential' | 'equipment' | 'grade' | 'exclusive';
@@ -100,12 +100,12 @@ export const DEFAULT_CHARACTER_LEVELS: CharacterLevels = {
 export const DEFAULT_POTENTIAL_LEVELS: PotentialLevels = {
   attack: { current: 0, target: 0 },
   maxhp: { current: 0, target: 0 },
-  healpower: { current: 0, target: 0 }
+  healpower: { current: 0, target: 0 },
 };
 
 export const DEFAULT_SKILL_LEVELS: SkillLevels = {
   Ex: { current: 1, target: 1 },
   Public: { current: 1, target: 1 },
   Passive: { current: 1, target: 1 },
-  ExtraPassive: { current: 1, target: 1 }
+  ExtraPassive: { current: 1, target: 1 },
 };

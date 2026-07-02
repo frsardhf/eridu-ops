@@ -31,13 +31,13 @@ const BULK_WRITE_CHUNK_SIZE = 200;
 
 function hasAnyQuantity(data?: Record<string, number>): boolean {
   if (!data) return false;
-  return Object.values(data).some(value => Number(value) > 0);
+  return Object.values(data).some((value) => Number(value) > 0);
 }
 
 function isDifferentPair(
   value: { current?: number; target?: number } | undefined,
   expectedCurrent: number,
-  expectedTarget: number
+  expectedTarget: number,
 ): boolean {
   const current = value?.current ?? expectedCurrent;
   const target = value?.target ?? expectedTarget;
@@ -61,10 +61,7 @@ export function classifyStudentAvailability(student: StudentProps): Availability
   }
 }
 
-function isNonDefaultPersistedForm(
-  student: StudentProps,
-  form: FormRecord | undefined
-): boolean {
+function isNonDefaultPersistedForm(student: StudentProps, form: FormRecord | undefined): boolean {
   if (!form) return false;
 
   const defaultForm = buildDefaultFormData(student);
@@ -78,21 +75,74 @@ function isNonDefaultPersistedForm(
     return true;
   }
 
-  if (isDifferentPair(form.skillLevels?.Ex, DEFAULT_SKILL_LEVELS.Ex.current, DEFAULT_SKILL_LEVELS.Ex.target)) return true;
-  if (isDifferentPair(form.skillLevels?.Public, DEFAULT_SKILL_LEVELS.Public.current, DEFAULT_SKILL_LEVELS.Public.target)) return true;
-  if (isDifferentPair(form.skillLevels?.Passive, DEFAULT_SKILL_LEVELS.Passive.current, DEFAULT_SKILL_LEVELS.Passive.target)) return true;
-  if (isDifferentPair(form.skillLevels?.ExtraPassive, DEFAULT_SKILL_LEVELS.ExtraPassive.current, DEFAULT_SKILL_LEVELS.ExtraPassive.target)) return true;
+  if (
+    isDifferentPair(
+      form.skillLevels?.Ex,
+      DEFAULT_SKILL_LEVELS.Ex.current,
+      DEFAULT_SKILL_LEVELS.Ex.target,
+    )
+  )
+    return true;
+  if (
+    isDifferentPair(
+      form.skillLevels?.Public,
+      DEFAULT_SKILL_LEVELS.Public.current,
+      DEFAULT_SKILL_LEVELS.Public.target,
+    )
+  )
+    return true;
+  if (
+    isDifferentPair(
+      form.skillLevels?.Passive,
+      DEFAULT_SKILL_LEVELS.Passive.current,
+      DEFAULT_SKILL_LEVELS.Passive.target,
+    )
+  )
+    return true;
+  if (
+    isDifferentPair(
+      form.skillLevels?.ExtraPassive,
+      DEFAULT_SKILL_LEVELS.ExtraPassive.current,
+      DEFAULT_SKILL_LEVELS.ExtraPassive.target,
+    )
+  )
+    return true;
 
-  if (isDifferentPair(form.potentialLevels?.attack, DEFAULT_POTENTIAL_LEVELS.attack.current, DEFAULT_POTENTIAL_LEVELS.attack.target)) return true;
-  if (isDifferentPair(form.potentialLevels?.maxhp, DEFAULT_POTENTIAL_LEVELS.maxhp.current, DEFAULT_POTENTIAL_LEVELS.maxhp.target)) return true;
-  if (isDifferentPair(form.potentialLevels?.healpower, DEFAULT_POTENTIAL_LEVELS.healpower.current, DEFAULT_POTENTIAL_LEVELS.healpower.target)) return true;
+  if (
+    isDifferentPair(
+      form.potentialLevels?.attack,
+      DEFAULT_POTENTIAL_LEVELS.attack.current,
+      DEFAULT_POTENTIAL_LEVELS.attack.target,
+    )
+  )
+    return true;
+  if (
+    isDifferentPair(
+      form.potentialLevels?.maxhp,
+      DEFAULT_POTENTIAL_LEVELS.maxhp.current,
+      DEFAULT_POTENTIAL_LEVELS.maxhp.target,
+    )
+  )
+    return true;
+  if (
+    isDifferentPair(
+      form.potentialLevels?.healpower,
+      DEFAULT_POTENTIAL_LEVELS.healpower.current,
+      DEFAULT_POTENTIAL_LEVELS.healpower.target,
+    )
+  )
+    return true;
 
   if (isDifferentPair(form.gradeLevels, starGrade, starGrade)) {
     return true;
   }
 
   const gradeInfo = form.gradeInfos;
-  if ((gradeInfo?.owned ?? 0) !== 0 || (gradeInfo?.price ?? 1) !== 1 || (gradeInfo?.purchasable ?? 20) !== 20) {
+  if (
+    (gradeInfo?.owned ?? 0) !== 0 ||
+    (gradeInfo?.price ?? 1) !== 1 ||
+    (gradeInfo?.purchasable ?? 20) !== 20
+  ) {
     return true;
   }
 
@@ -103,7 +153,11 @@ function isNonDefaultPersistedForm(
     }
   }
 
-  if (hasAnyQuantity(form.giftFormData) || hasAnyQuantity(form.boxFormData) || hasAnyQuantity(form.nonFavorGiftsMap)) {
+  if (
+    hasAnyQuantity(form.giftFormData) ||
+    hasAnyQuantity(form.boxFormData) ||
+    hasAnyQuantity(form.nonFavorGiftsMap)
+  ) {
     return true;
   }
 
@@ -116,14 +170,14 @@ function isNonDefaultPersistedForm(
 }
 
 export async function getBulkFilterData(
-  students: StudentProps[]
+  students: StudentProps[],
 ): Promise<{ nonDefaultIds: Set<number>; formData: Record<number, FormRecord> }> {
-  const studentMap = new Map<number, StudentProps>(students.map(s => [s.Id, s]));
+  const studentMap = new Map<number, StudentProps>(students.map((s) => [s.Id, s]));
   const forms = await db.forms.toArray();
   const nonDefaultIds = new Set<number>();
   const formData: Record<number, FormRecord> = {};
 
-  forms.forEach(form => {
+  forms.forEach((form) => {
     formData[form.studentId] = form;
     const student = studentMap.get(form.studentId);
     if (student && isNonDefaultPersistedForm(student, form)) {
@@ -137,7 +191,7 @@ export async function getBulkFilterData(
 function applyPatchToForm(
   student: StudentProps,
   base: FormRecord,
-  patch: BulkFormPatch
+  patch: BulkFormPatch,
 ): FormRecord {
   const next: FormRecord = {
     ...base,
@@ -149,27 +203,27 @@ function applyPatchToForm(
           Ex: { ...base.skillLevels.Ex },
           Public: { ...base.skillLevels.Public },
           Passive: { ...base.skillLevels.Passive },
-          ExtraPassive: { ...base.skillLevels.ExtraPassive }
+          ExtraPassive: { ...base.skillLevels.ExtraPassive },
         }
       : undefined,
     potentialLevels: base.potentialLevels
       ? {
           attack: { ...base.potentialLevels.attack },
           maxhp: { ...base.potentialLevels.maxhp },
-          healpower: { ...base.potentialLevels.healpower }
+          healpower: { ...base.potentialLevels.healpower },
         }
       : undefined,
     equipmentLevels: base.equipmentLevels
       ? Object.fromEntries(
-          Object.entries(base.equipmentLevels).map(([type, level]) => [type, { ...level }])
+          Object.entries(base.equipmentLevels).map(([type, level]) => [type, { ...level }]),
         )
       : undefined,
-    gradeLevels: base.gradeLevels ? { ...base.gradeLevels } : undefined
+    gradeLevels: base.gradeLevels ? { ...base.gradeLevels } : undefined,
   };
 
   if (patch.bondLevel !== null) {
     next.bondDetailData = {
-      currentBond: patch.bondLevel
+      currentBond: patch.bondLevel,
     };
   }
 
@@ -182,7 +236,7 @@ function applyPatchToForm(
     Ex: { ...DEFAULT_SKILL_LEVELS.Ex },
     Public: { ...DEFAULT_SKILL_LEVELS.Public },
     Passive: { ...DEFAULT_SKILL_LEVELS.Passive },
-    ExtraPassive: { ...DEFAULT_SKILL_LEVELS.ExtraPassive }
+    ExtraPassive: { ...DEFAULT_SKILL_LEVELS.ExtraPassive },
   };
 
   if (patch.skillEx !== null) {
@@ -207,7 +261,7 @@ function applyPatchToForm(
     next.potentialLevels = {
       attack: { current: patch.potentialLevel, target: patch.potentialLevel },
       maxhp: { current: patch.potentialLevel, target: patch.potentialLevel },
-      healpower: { current: patch.potentialLevel, target: patch.potentialLevel }
+      healpower: { current: patch.potentialLevel, target: patch.potentialLevel },
     };
   }
 
@@ -223,7 +277,7 @@ function applyPatchToForm(
     if (slot.current !== null && equipmentTypes[index]) {
       equipmentLevels[equipmentTypes[index]] = {
         current: slot.current,
-        target: slot.target ?? slot.current
+        target: slot.target ?? slot.current,
       };
     }
   });
@@ -232,7 +286,7 @@ function applyPatchToForm(
   if (patch.gradeLevel !== null) {
     next.gradeLevels = {
       current: patch.gradeLevel,
-      target: patch.gradeLevel
+      target: patch.gradeLevel,
     };
   }
 
@@ -244,11 +298,11 @@ function applyPatchToForm(
  * Reads existing FormRecord, merges only currentBond, batch-writes to IndexedDB.
  */
 export async function applyBondUpdates(
-  updates: Array<{ studentId: number; bond: number }>
+  updates: Array<{ studentId: number; bond: number }>,
 ): Promise<Record<number, FormRecord>> {
   if (updates.length === 0) return {};
 
-  const ids = updates.map(u => u.studentId);
+  const ids = updates.map((u) => u.studentId);
   const existingForms = await db.forms.bulkGet(ids);
 
   const updatedRows: FormRecord[] = [];
@@ -273,12 +327,14 @@ export async function applyBondUpdates(
 export async function applyBulkStudentFormPatch(
   students: StudentProps[],
   selectedIds: number[],
-  patch: BulkFormPatch
+  patch: BulkFormPatch,
 ): Promise<Record<number, FormRecord>> {
   const uniqueIds = Array.from(new Set(selectedIds));
   if (uniqueIds.length === 0) return {};
 
-  const studentsById = new Map<number, StudentProps>(students.map(student => [student.Id, student]));
+  const studentsById = new Map<number, StudentProps>(
+    students.map((student) => [student.Id, student]),
+  );
   const existingForms = await db.forms.bulkGet(uniqueIds);
 
   const updatedRows: FormRecord[] = [];

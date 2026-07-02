@@ -21,11 +21,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
-  'updateSort': [option: SortOption];
-  'toggleDirection': [];
-  'togglePinned': [];
-  'updateFilter': [key: keyof StudentFilters, value: StudentFilterValue];
-  'clearFilters': [];
+  updateSort: [option: SortOption];
+  toggleDirection: [];
+  togglePinned: [];
+  updateFilter: [key: keyof StudentFilters, value: StudentFilterValue];
+  clearFilters: [];
 }>();
 
 const showFilterPanel = ref(false);
@@ -37,13 +37,16 @@ const sortWrapEl = ref<HTMLElement | null>(null);
 // Card-overlay visibility checklist ("eye" menu).
 const showOverlayMenu = ref(false);
 const overlayWrapEl = ref<HTMLElement | null>(null);
-const { ids: overlayIds, isShown: isOverlayShown, toggle: toggleOverlay, setAll: setOverlayAll } = useCardOverlayPrefs();
-const overlayAllShown = computed(() => overlayIds.every(id => isOverlayShown(id)));
-const overlaySomeShown = computed(() => overlayIds.some(id => isOverlayShown(id)));
+const {
+  ids: overlayIds,
+  isShown: isOverlayShown,
+  toggle: toggleOverlay,
+  setAll: setOverlayAll,
+} = useCardOverlayPrefs();
+const overlayAllShown = computed(() => overlayIds.every((id) => isOverlayShown(id)));
+const overlaySomeShown = computed(() => overlayIds.some((id) => isOverlayShown(id)));
 
-const activeFilterCount = computed(() =>
-  props.filters ? countActiveFilters(props.filters) : 0
-);
+const activeFilterCount = computed(() => (props.filters ? countActiveFilters(props.filters) : 0));
 
 // Every SortOption's label lives under the `sort.` locale namespace.
 const currentSortLabel = computed(() => $t(`sort.${props.currentSort ?? 'default'}`));
@@ -65,8 +68,7 @@ function onDirectionToggle() {
 // ON, and re-shown with a shake when a sort change is attempted while pinned.
 // Reuses the shared .modal-tooltip, anchored to the pin button (not the
 // cursor: sort attempts happen over the sort panel) with an auto-hide.
-const { activeTooltip, tooltipStyle, tooltipRef, hideTooltip } =
-  useTooltip<'pinPaused'>();
+const { activeTooltip, tooltipStyle, tooltipRef, hideTooltip } = useTooltip<'pinPaused'>();
 const pinBtnEl = ref<HTMLElement | null>(null);
 const pinHintShake = ref(false);
 // :key bump recreates the tooltip node so the shake animation restarts on
@@ -164,19 +166,36 @@ useClickOutside(handleClickOutside);
     <!-- Mobile-only home button: nav links are hidden <=768 on the compact navbar,
          so this lets phone users reach the landing page to switch routes. -->
     <RouterLink to="/" class="app-navbar-home-btn mobile-home-btn" aria-label="Home">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     </RouterLink>
 
     <div class="search-section">
       <div class="search-container">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <svg
+          class="search-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
           id="search-input"
@@ -201,7 +220,11 @@ useClickOutside(handleClickOutside);
           @click.stop="onPinClick"
         >
           <span class="vc-pin-chip" :class="{ active: isPinnedMode }">
-            <img :src="isPinnedMode ? '/assets/thumbtacks-active.png' : '/assets/thumbtacks.png'" class="vc-pin-icon" aria-hidden="true" />
+            <img
+              :src="isPinnedMode ? '/assets/thumbtacks-active.png' : '/assets/thumbtacks.png'"
+              class="vc-pin-icon"
+              aria-hidden="true"
+            />
           </span>
         </button>
         <div
@@ -227,7 +250,7 @@ useClickOutside(handleClickOutside);
           @click="toggleFilterPanel"
         >
           <svg width="26" height="20" viewBox="0 0 24 24" aria-hidden="true">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" fill="currentColor"/>
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" fill="currentColor" />
           </svg>
           <span v-if="activeFilterCount > 0" class="vc-badge">{{ activeFilterCount }}</span>
         </button>
@@ -251,7 +274,10 @@ useClickOutside(handleClickOutside);
           @click="toggleSortPanel"
         >
           <svg width="26" height="20" viewBox="0 0 576 512" aria-hidden="true">
-            <path fill="currentColor" d="M450.7 38c8.3 6 13.3 15.7 13.3 26v96h16c17.7 0 32 14.3 32 32s-14.3 32-32 32H432 384c-17.7 0-32-14.3-32-32s14.3-32 32-32h16V108.4l-5.9 2c-16.8 5.6-34.9-3.5-40.5-20.2s3.5-34.9 20.2-40.5l48-16c9.8-3.3 20.5-1.6 28.8 4.4zM160 32c9 0 17.5 3.8 23.6 10.4l88 96c11.9 13 11.1 33.3-2 45.2s-33.3 11.1-45.2-2L192 146.3V448c0 17.7-14.3 32-32 32s-32-14.3-32-32V146.3L95.6 181.6c-11.9 13-32.2 13.9-45.2 2s-13.9-32.2-2-45.2l88-96C142.5 35.8 151 32 160 32zM445.7 364.9A32 32 0 1 0 418.3 307a32 32 0 1 0 27.4 57.9zm-40.7 54.9C369.6 408.4 344 375.2 344 336c0-48.6 39.4-88 88-88s88 39.4 88 88c0 23.5-7.5 46.3-21.5 65.2L449.7 467c-10.5 14.2-30.6 17.2-44.8 6.7s-17.2-30.6-6.7-44.8l6.8-9.2z"/>
+            <path
+              fill="currentColor"
+              d="M450.7 38c8.3 6 13.3 15.7 13.3 26v96h16c17.7 0 32 14.3 32 32s-14.3 32-32 32H432 384c-17.7 0-32-14.3-32-32s14.3-32 32-32h16V108.4l-5.9 2c-16.8 5.6-34.9-3.5-40.5-20.2s3.5-34.9 20.2-40.5l48-16c9.8-3.3 20.5-1.6 28.8 4.4zM160 32c9 0 17.5 3.8 23.6 10.4l88 96c11.9 13 11.1 33.3-2 45.2s-33.3 11.1-45.2-2L192 146.3V448c0 17.7-14.3 32-32 32s-32-14.3-32-32V146.3L95.6 181.6c-11.9 13-32.2 13.9-45.2 2s-13.9-32.2-2-45.2l88-96C142.5 35.8 151 32 160 32zM445.7 364.9A32 32 0 1 0 418.3 307a32 32 0 1 0 27.4 57.9zm-40.7 54.9C369.6 408.4 344 375.2 344 336c0-48.6 39.4-88 88-88s88 39.4 88 88c0 23.5-7.5 46.3-21.5 65.2L449.7 467c-10.5 14.2-30.6 17.2-44.8 6.7s-17.2-30.6-6.7-44.8l6.8-9.2z"
+            />
           </svg>
         </button>
         <SortPanel
@@ -276,9 +302,19 @@ useClickOutside(handleClickOutside);
           :title="$t('overlays.title')"
           @click="toggleOverlayMenu"
         >
-          <svg width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
-            <circle cx="12" cy="12" r="3"/>
+          <svg
+            width="24"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
         </button>
         <div v-if="showOverlayMenu" class="overlay-popover vc-popover" role="menu">
@@ -288,14 +324,37 @@ useClickOutside(handleClickOutside);
             class="overlay-option"
             :class="{ active: overlayAllShown }"
             role="menuitemcheckbox"
-            :aria-checked="overlayAllShown ? 'true' : (overlaySomeShown ? 'mixed' : 'false')"
+            :aria-checked="overlayAllShown ? 'true' : overlaySomeShown ? 'mixed' : 'false'"
             @click.stop="setOverlayAll(!overlayAllShown)"
           >
-            <span class="overlay-check" :class="{ partial: overlaySomeShown && !overlayAllShown }" aria-hidden="true">
-              <svg v-if="overlayAllShown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <span
+              class="overlay-check"
+              :class="{ partial: overlaySomeShown && !overlayAllShown }"
+              aria-hidden="true"
+            >
+              <svg
+                v-if="overlayAllShown"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              <svg v-else-if="overlaySomeShown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <svg
+                v-else-if="overlaySomeShown"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+              >
                 <line x1="6" y1="12" x2="18" y2="12" />
               </svg>
             </span>
@@ -313,7 +372,17 @@ useClickOutside(handleClickOutside);
             @click.stop="toggleOverlay(id)"
           >
             <span class="overlay-check" aria-hidden="true">
-              <svg v-if="isOverlayShown(id)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                v-if="isOverlayShown(id)"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </span>
@@ -366,7 +435,9 @@ useClickOutside(handleClickOutside);
   font-size: 0.9rem;
   color: var(--text-primary);
   background: var(--input-background);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .search-input:focus {
@@ -426,11 +497,22 @@ useClickOutside(handleClickOutside);
 }
 
 @keyframes pin-hint-shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 /* Pin keeps the round chip style (grey idle, yellow active) from student cards. */
@@ -563,5 +645,4 @@ useClickOutside(handleClickOutside);
   background: var(--border-color);
   margin: 4px 0;
 }
-
 </style>

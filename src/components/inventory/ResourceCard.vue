@@ -6,10 +6,10 @@ import { formatLargeNumber } from '@/lib/utils/materialUtils';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
-  item: ResourceProps,
-  value?: number | string,
-  itemType?: 'resource' | 'equipment',
-  inputTabIndex?: number
+  item: ResourceProps;
+  value?: number | string;
+  itemType?: 'resource' | 'equipment';
+  inputTabIndex?: number;
 }>();
 
 const emit = defineEmits<{
@@ -24,15 +24,17 @@ const { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus } = us
   <div class="resource-item" @click="forceInputFocus">
     <div class="resource-content">
       <img
-        :src="getItemIconUrl(props.item.Icon, 
-          props.itemType === 'equipment' ? 'equipment' : 'item', props.item.Tier)"
+        :src="
+          getItemIconUrl(
+            props.item.Icon,
+            props.itemType === 'equipment' ? 'equipment' : 'item',
+            props.item.Tier,
+          )
+        "
         :alt="props.item.Name"
         class="resource-icon"
       />
-      <div
-        class="resource-quantity"
-        v-if="!isInputFocused"
-      >
+      <div class="resource-quantity" v-if="!isInputFocused">
         {{ formatLargeNumber(Number(props.value)) }}
       </div>
       <input

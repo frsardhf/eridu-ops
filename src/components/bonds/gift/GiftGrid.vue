@@ -9,27 +9,27 @@ import { GiftProps } from '@/types/gift';
 import { $t } from '@/locales';
 
 const props = defineProps<{
-  student: StudentProps,
-  giftFormData: Record<string, number>,
-  boxFormData: Record<string, number>,
-  convertBox?: boolean,
-  shouldShowGiftGrade: (id: number) => boolean,
+  student: StudentProps;
+  giftFormData: Record<string, number>;
+  boxFormData: Record<string, number>;
+  convertBox?: boolean;
+  shouldShowGiftGrade: (id: number) => boolean;
   // Optional: when provided (BondsPage), renders a second "Other gifts" section
   // below the favored gifts. Empty/omitted renders nothing.
-  nonFavorGifts?: GiftProps[],
+  nonFavorGifts?: GiftProps[];
   // Per-gift quantity source for the non-favored section (nonFavorGiftsMap from
   // useStudentForm) so the cards reflect the actual tracked individual values
   // rather than 0 from giftFormData.
-  nonFavorValues?: Record<number, number>,
+  nonFavorValues?: Record<number, number>;
   // When true, renders a "Favored gifts" section header above the main grid
   // for visual parity with the "Other gifts" section. BondsPage sets this true.
-  showFavoredLabel?: boolean,
+  showFavoredLabel?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update-gift', id: number, event: Event): void,
-  (e: 'update-box', id: number, event: Event): void,
-  (e: 'update-nonfavor', id: number, event: Event): void,
+  (e: 'update-gift', id: number, event: Event): void;
+  (e: 'update-box', id: number, event: Event): void;
+  (e: 'update-nonfavor', id: number, event: Event): void;
 }>();
 
 const hasGifts = computed(() => (props.student.Gifts?.length ?? 0) > 0);
@@ -79,13 +79,9 @@ const otherBreakdown = computed<BreakdownRow[]>(() =>
   buildBreakdown(props.nonFavorGifts, props.nonFavorValues),
 );
 
-const favoredTotalExp = computed(() =>
-  favoredBreakdown.value.reduce((s, r) => s + r.total, 0),
-);
+const favoredTotalExp = computed(() => favoredBreakdown.value.reduce((s, r) => s + r.total, 0));
 
-const otherTotalExp = computed(() =>
-  otherBreakdown.value.reduce((s, r) => s + r.total, 0),
-);
+const otherTotalExp = computed(() => otherBreakdown.value.reduce((s, r) => s + r.total, 0));
 
 // Breakdown collapse state: default closed so the editor stays compact;
 // users click the total chip to expand the per-gift contributions.
@@ -117,7 +113,7 @@ const convertBox = computed(() => !!props.convertBox);
     <div v-if="hasGifts || hasBoxes" class="gifts-grid">
       <template v-if="hasGifts">
         <GiftCard
-          v-for="(item) in student.Gifts"
+          v-for="item in student.Gifts"
           :key="`gift-${item.gift.Id}`"
           :name="`gift-${item.gift.Id}`"
           :item="item"
@@ -129,7 +125,7 @@ const convertBox = computed(() => !!props.convertBox);
 
       <template v-if="hasBoxes">
         <GiftCard
-          v-for="(item) in student.Boxes"
+          v-for="item in student.Boxes"
           :key="`box-${item.gift.Id}`"
           :name="`box-${item.gift.Id}`"
           :item="item"
@@ -152,8 +148,12 @@ const convertBox = computed(() => !!props.convertBox);
       <div class="gifts-section-label gifts-section-label--row">
         <span>{{ $t('otherGifts') }}</span>
         <span class="gifts-section-totals">
-          <span>{{ $t('totalSr') }}: <strong>{{ nonFavorTotals.sr }}</strong></span>
-          <span>{{ $t('totalSsr') }}: <strong>{{ nonFavorTotals.ssr }}</strong></span>
+          <span
+            >{{ $t('totalSr') }}: <strong>{{ nonFavorTotals.sr }}</strong></span
+          >
+          <span
+            >{{ $t('totalSsr') }}: <strong>{{ nonFavorTotals.ssr }}</strong></span
+          >
           <button
             v-if="otherTotalExp > 0"
             type="button"
@@ -261,5 +261,4 @@ const convertBox = computed(() => !!props.convertBox);
 .gifts-breakdown-arrow.is-open {
   transform: rotate(90deg);
 }
-
 </style>

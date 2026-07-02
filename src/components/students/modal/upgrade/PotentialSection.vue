@@ -22,33 +22,33 @@ const emit = defineEmits<{
 const POTENTIAL_ICONS: Record<PotentialType, string> = {
   attack: 'item_icon_workbook_potentialattack',
   maxhp: 'item_icon_workbook_potentialmaxhp',
-  healpower: 'item_icon_workbook_potentialhealpower'
+  healpower: 'item_icon_workbook_potentialhealpower',
 };
 
 // One pair per potential type (static: attack, maxhp, healpower)
 const POTENTIAL_TYPES: PotentialType[] = ['attack', 'maxhp', 'healpower'];
 
 const potentialStates = computed(() =>
-  POTENTIAL_TYPES.map(type => ({
+  POTENTIAL_TYPES.map((type) => ({
     type,
     current: props.potentialLevels[type]?.current ?? 0,
-    target:  props.potentialLevels[type]?.target  ?? 0,
-    icon:    POTENTIAL_ICONS[type],
-    name:    getPotentialName(type),
-  }))
+    target: props.potentialLevels[type]?.target ?? 0,
+    icon: POTENTIAL_ICONS[type],
+    name: getPotentialName(type),
+  })),
 );
 
 function getPotentialName(potType: PotentialType): string {
   const names: Record<PotentialType, string> = {
     attack: $t('attack'),
     maxhp: $t('maxHp'),
-    healpower: $t('healPower')
+    healpower: $t('healPower'),
   };
   return names[potType];
 }
 
 const potentialPairs = Object.fromEntries(
-  POTENTIAL_TYPES.map(type => [
+  POTENTIAL_TYPES.map((type) => [
     type,
     makeCurrentTargetPair(
       () => props.potentialLevels[type] ?? { current: 0, target: 0 },
@@ -56,8 +56,11 @@ const potentialPairs = Object.fromEntries(
       0,
       () => MAX_POTENTIAL_LEVEL,
     ),
-  ])
-) as Record<PotentialType, { updateCurrent: (v: number) => void; updateTarget: (v: number) => void }>;
+  ]),
+) as Record<
+  PotentialType,
+  { updateCurrent: (v: number) => void; updateTarget: (v: number) => void }
+>;
 </script>
 
 <template>
@@ -82,22 +85,22 @@ const potentialPairs = Object.fromEntries(
           name="max-target-potentials"
           :checked="props.targetPotentialsMaxed"
           :disabled="props.allPotentialsMaxed"
-          @change="(e) => emit('toggle-max-target-potentials', (e.target as HTMLInputElement).checked)"
+          @change="
+            (e) => emit('toggle-max-target-potentials', (e.target as HTMLInputElement).checked)
+          "
         />
         <label for="max-target-potentials">{{ $t('maxTarget') }}</label>
       </div>
     </div>
 
     <div class="potential-grid">
-      <div
-        v-for="state in potentialStates"
-        :key="state.type"
-        class="modal-grid-item"
-      >
+      <div v-for="state in potentialStates" :key="state.type" class="modal-grid-item">
         <!-- Current Level Control -->
         <div class="level-control">
           <NumberStepper
-            :value="state.current" :min="0" :max="MAX_POTENTIAL_LEVEL"
+            :value="state.current"
+            :min="0"
+            :max="MAX_POTENTIAL_LEVEL"
             :name="`potential-current-${state.type}`"
             :aria-label="`${$t('current')} ${state.name}`"
             @change="potentialPairs[state.type].updateCurrent($event)"
@@ -118,7 +121,9 @@ const potentialPairs = Object.fromEntries(
         <!-- Target Level Control -->
         <div class="level-control">
           <NumberStepper
-            :value="state.target" :min="0" :max="MAX_POTENTIAL_LEVEL"
+            :value="state.target"
+            :min="0"
+            :max="MAX_POTENTIAL_LEVEL"
             variant="target"
             :name="`potential-target-${state.type}`"
             :aria-label="`${$t('target')} ${state.name}`"

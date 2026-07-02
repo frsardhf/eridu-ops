@@ -47,7 +47,12 @@ useDocumentListener('keydown', onKeydown);
 
 <template>
   <div class="efm-backdrop" @click.self="emit('close')">
-    <section class="efm-modal" role="dialog" aria-modal="true" :aria-label="$t('equipmentFarming.title')">
+    <section
+      class="efm-modal"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="$t('equipmentFarming.title')"
+    >
       <header class="efm-head">
         <div class="efm-head-text">
           <h2>{{ $t('equipmentFarming.title') }}</h2>
@@ -62,11 +67,16 @@ useDocumentListener('keydown', onKeydown);
               class="efm-mult-btn"
               :class="{ active: multiplier === m }"
               @click="multiplier = m"
-            >{{ m }}×</button>
+            >
+              {{ m }}×
+            </button>
           </div>
           <button type="button" class="efm-inventory-btn" @click="emit('open-inventory')">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+              <path
+                fill="currentColor"
+                d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"
+              />
             </svg>
             <span>{{ $t('inventory') }}</span>
           </button>
@@ -76,7 +86,9 @@ useDocumentListener('keydown', onKeydown);
       <!-- Totals + expand/collapse-all (sticky, above the scroll area) -->
       <div v-if="hasMissing" class="efm-summary">
         <div class="efm-summary-stats">
-          <span class="efm-summary-runs">{{ $t('equipmentFarming.runs', { n: totals.runs.toLocaleString() }) }}</span>
+          <span class="efm-summary-runs">{{
+            $t('equipmentFarming.runs', { n: totals.runs.toLocaleString() })
+          }}</span>
           <span class="efm-dot">·</span>
           <span>{{ totals.ap.toLocaleString() }} AP</span>
           <span class="efm-dot">·</span>
@@ -106,12 +118,24 @@ useDocumentListener('keydown', onKeydown);
               <span class="efm-missing-title">{{ $t('equipmentFarming.missingTitle') }}</span>
               <span class="efm-missing-count">{{ missingList.length }}</span>
               <svg class="efm-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path
+                  d="M6 9l6 6 6-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </button>
             <ul v-if="showMissing" class="efm-missing-list">
               <li v-for="m in missingList" :key="m.equipId" class="efm-cover">
-                <img :src="getItemIconUrl(m.icon, 'equipment', m.tier)" :alt="m.name" class="efm-cover-icon" loading="lazy" />
+                <img
+                  :src="getItemIconUrl(m.icon, 'equipment', m.tier)"
+                  :alt="m.name"
+                  class="efm-cover-icon"
+                  loading="lazy"
+                />
                 <span class="efm-cover-name">{{ m.name }}</span>
                 <span class="efm-cover-tier">T{{ m.tier }}</span>
                 <span class="efm-missing-qty">×{{ m.qty }}</span>
@@ -121,29 +145,48 @@ useDocumentListener('keydown', onKeydown);
 
           <!-- Suggestions, grouped by stage; breakdown collapsed by default -->
           <div class="efm-stages">
-          <article v-for="s in plan" :key="s.id" class="efm-stage" :class="{ 'is-open': expanded[s.id] }">
-            <button
-              type="button"
-              class="efm-stage-head"
-              :aria-expanded="!!expanded[s.id]"
-              @click="toggleStage(s.id)"
+            <article
+              v-for="s in plan"
+              :key="s.id"
+              class="efm-stage"
+              :class="{ 'is-open': expanded[s.id] }"
             >
-              <span class="efm-stage-num">{{ s.area }}-{{ s.stage }}</span>
-              <span class="efm-stage-runs">{{ $t('equipmentFarming.runs', { n: s.runs }) }}</span>
-              <span class="efm-stage-ap">{{ (s.runs * s.ap).toLocaleString() }} AP</span>
-              <svg class="efm-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-            <ul v-if="expanded[s.id]" class="efm-covers">
-              <li v-for="c in s.covers" :key="c.equipId" class="efm-cover">
-                <img :src="getItemIconUrl(c.icon, 'equipment', c.tier)" :alt="c.name" class="efm-cover-icon" loading="lazy" />
-                <span class="efm-cover-name">{{ c.name }}</span>
-                <span class="efm-cover-tier">T{{ c.tier }}</span>
-                <span class="efm-cover-qty"><strong>≈{{ c.expected }}</strong> / {{ c.need }}</span>
-              </li>
-            </ul>
-          </article>
+              <button
+                type="button"
+                class="efm-stage-head"
+                :aria-expanded="!!expanded[s.id]"
+                @click="toggleStage(s.id)"
+              >
+                <span class="efm-stage-num">{{ s.area }}-{{ s.stage }}</span>
+                <span class="efm-stage-runs">{{ $t('equipmentFarming.runs', { n: s.runs }) }}</span>
+                <span class="efm-stage-ap">{{ (s.runs * s.ap).toLocaleString() }} AP</span>
+                <svg class="efm-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M6 9l6 6 6-6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <ul v-if="expanded[s.id]" class="efm-covers">
+                <li v-for="c in s.covers" :key="c.equipId" class="efm-cover">
+                  <img
+                    :src="getItemIconUrl(c.icon, 'equipment', c.tier)"
+                    :alt="c.name"
+                    class="efm-cover-icon"
+                    loading="lazy"
+                  />
+                  <span class="efm-cover-name">{{ c.name }}</span>
+                  <span class="efm-cover-tier">T{{ c.tier }}</span>
+                  <span class="efm-cover-qty"
+                    ><strong>≈{{ c.expected }}</strong> / {{ c.need }}</span
+                  >
+                </li>
+              </ul>
+            </article>
           </div>
         </template>
       </div>

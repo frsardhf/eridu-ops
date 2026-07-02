@@ -53,16 +53,16 @@ const MOCK_ENTRIES: Record<number, Bond100StudentEntriesResponse> = {
     isMock: true,
     fetchedAt: '2026-05-26',
     entries: [
-      { serverRegion: 'global_na',   playerName: 'DemoSensei' },
-      { serverRegion: 'global_na',   playerName: 'ArchiveRunner' },
-      { serverRegion: 'global_eu',   playerName: 'Eunere' },
-      { serverRegion: 'global_eu',   playerName: 'Ryzaki' },
+      { serverRegion: 'global_na', playerName: 'DemoSensei' },
+      { serverRegion: 'global_na', playerName: 'ArchiveRunner' },
+      { serverRegion: 'global_eu', playerName: 'Eunere' },
+      { serverRegion: 'global_eu', playerName: 'Ryzaki' },
       { serverRegion: 'global_asia', playerName: 'ミドクニ' },
       { serverRegion: 'global_asia', playerName: '先生の夢' },
-      { serverRegion: 'global_tw',   playerName: '三遇還素琴' },
-      { serverRegion: 'global_tw',   playerName: '全陽奈百羈絆' },
-      { serverRegion: 'global_kr',   playerName: '히나머리냄새디퓨저' },
-      { serverRegion: 'global_kr',   playerName: '선도부팬' },
+      { serverRegion: 'global_tw', playerName: '三遇還素琴' },
+      { serverRegion: 'global_tw', playerName: '全陽奈百羈絆' },
+      { serverRegion: 'global_kr', playerName: '히나머리냄새디퓨저' },
+      { serverRegion: 'global_kr', playerName: '선도부팬' },
     ],
   },
   10098: {
@@ -71,8 +71,8 @@ const MOCK_ENTRIES: Record<number, Bond100StudentEntriesResponse> = {
     fetchedAt: '2026-05-24',
     entries: [
       { serverRegion: 'global_asia', playerName: 'SleepyVeteran' },
-      { serverRegion: 'global_kr',   playerName: '악한선물' },
-      { serverRegion: 'global_tw',   playerName: '我真的好喜欢hoshino啊' },
+      { serverRegion: 'global_kr', playerName: '악한선물' },
+      { serverRegion: 'global_tw', playerName: '我真的好喜欢hoshino啊' },
     ],
   },
 };
@@ -107,17 +107,23 @@ export async function getBond100Summary(): Promise<Bond100SummaryResponse> {
   }
 }
 
-export async function getBond100StudentEntries(studentId: number): Promise<Bond100StudentEntriesResponse> {
+export async function getBond100StudentEntries(
+  studentId: number,
+): Promise<Bond100StudentEntriesResponse> {
   const primaryId = getPrimaryStudentId(studentId);
   try {
-    const raw = await fetchJson<Bond100StudentEntriesResponse>(`/bond100/students/${primaryId}/entries`);
+    const raw = await fetchJson<Bond100StudentEntriesResponse>(
+      `/bond100/students/${primaryId}/entries`,
+    );
     return { ...raw, studentId: primaryId, entries: raw.entries ?? [] };
   } catch {
-    return MOCK_ENTRIES[primaryId] ?? {
-      studentId: primaryId,
-      entries: [],
-      isMock: true,
-    };
+    return (
+      MOCK_ENTRIES[primaryId] ?? {
+        studentId: primaryId,
+        entries: [],
+        isMock: true,
+      }
+    );
   }
 }
 
@@ -135,7 +141,9 @@ function normalizeSummary(response: Bond100SummaryResponse): Bond100SummaryRespo
       continue;
     }
     existing.count += item.count;
-    for (const [region, count] of Object.entries(item.byServer) as Array<[Bond100ServerRegion, number | undefined]>) {
+    for (const [region, count] of Object.entries(item.byServer) as Array<
+      [Bond100ServerRegion, number | undefined]
+    >) {
       if (!count) continue;
       existing.byServer[region] = (existing.byServer[region] ?? 0) + count;
     }

@@ -17,19 +17,22 @@ import { getModeQuantityClass, getResourceQuantityClass } from '@/lib/utils/colo
 import { getStudentIconUrl, getItemIconUrl } from '@/lib/utils/iconUtils';
 import '@/styles/resourceDisplay.css';
 
-const props = withDefaults(defineProps<{
-  activeTabExternal?: ViewTab | null;
-  activeModeExternal?: ViewMode | null;
-  showCategoryTabs?: boolean;
-  showModeTabs?: boolean;
-  viewType?: 'aggregate' | 'per-student';
-}>(), {
-  activeTabExternal: null,
-  activeModeExternal: null,
-  showCategoryTabs: true,
-  showModeTabs: true,
-  viewType: 'aggregate',
-});
+const props = withDefaults(
+  defineProps<{
+    activeTabExternal?: ViewTab | null;
+    activeModeExternal?: ViewMode | null;
+    showCategoryTabs?: boolean;
+    showModeTabs?: boolean;
+    viewType?: 'aggregate' | 'per-student';
+  }>(),
+  {
+    activeTabExternal: null,
+    activeModeExternal: null,
+    showCategoryTabs: true,
+    showModeTabs: true,
+    viewType: 'aggregate',
+  },
+);
 
 // UI state
 const activeTab = ref<ViewTab>('materials');
@@ -37,22 +40,38 @@ const activeMode = ref<ViewMode>('needed');
 
 // Animation state (exp-report and exp-ball icon cycling)
 const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
-const currentExpBall = ref(1);  // Start with Novice exp ball (ID: 1)
+const currentExpBall = ref(1); // Start with Novice exp ball (ID: 1)
 
 const {
-  studentsWithGifts, pagedLeftoverResources,
-  displayResources, hasDisplayResources, noResourcesText, allStudentMaterialRows,
+  studentsWithGifts,
+  pagedLeftoverResources,
+  displayResources,
+  hasDisplayResources,
+  noResourcesText,
+  allStudentMaterialRows,
 } = useResourceSummary(activeTab, activeMode);
 
 const {
-  hoveredItemId, hoveredStudentId, tooltipPosition,
-  studentUsageForMaterial, giftsForHoveredStudent,
-  tooltipGridColumns, giftTooltipGridColumns,
-  creditOwned, creditNeeded, creditRemaining,
-  expInfo, expBallInfo,
-  showTooltip, hideTooltip, handleTooltipMouseEnter, handleTooltipMouseLeave,
-  showStudentTooltip, hideStudentTooltip,
-  getMaterialLeftover, clearHoverState,
+  hoveredItemId,
+  hoveredStudentId,
+  tooltipPosition,
+  studentUsageForMaterial,
+  giftsForHoveredStudent,
+  tooltipGridColumns,
+  giftTooltipGridColumns,
+  creditOwned,
+  creditNeeded,
+  creditRemaining,
+  expInfo,
+  expBallInfo,
+  showTooltip,
+  hideTooltip,
+  handleTooltipMouseEnter,
+  handleTooltipMouseLeave,
+  showStudentTooltip,
+  hideStudentTooltip,
+  getMaterialLeftover,
+  clearHoverState,
 } = useResourceTooltip(activeTab, activeMode);
 
 const {
@@ -60,7 +79,7 @@ const {
   totalPages: leftoverTotalPages,
   sliderStyle: leftoverSliderStyle,
   setPageRef: setLeftoverPageRef,
-  goToPage: goToLeftoverPage
+  goToPage: goToLeftoverPage,
 } = usePaginatedGrid(pagedLeftoverResources);
 
 let expReportInterval: ReturnType<typeof setInterval> | null = null;
@@ -81,7 +100,6 @@ onUnmounted(() => {
   if (expBallInterval) clearInterval(expBallInterval);
 });
 
-
 // Per-student chip tooltip (XP items + credits)
 const chipTooltipData = ref<{ quantity: number; label: string } | null>(null);
 const chipTooltipPos = ref({ left: '0px', top: '0px' });
@@ -90,9 +108,8 @@ function showChipTooltip(e: MouseEvent, quantity: number, label: string) {
   chipTooltipData.value = { quantity, label };
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const tipWidth = 140;
-  const left = rect.right + 6 + tipWidth > window.innerWidth
-    ? rect.left - tipWidth - 6
-    : rect.right + 6;
+  const left =
+    rect.right + 6 + tipWidth > window.innerWidth ? rect.left - tipWidth - 6 : rect.right + 6;
   chipTooltipPos.value = { left: `${left}px`, top: `${rect.top}px` };
 }
 
@@ -105,36 +122,37 @@ const getMaterialIconSrcAndAlt = (item: any): { src: string; alt: string } => {
   const isEquipmentTab = activeTab.value === 'equipment';
   return {
     src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon.value, currentExpBall.value),
-    alt: getMaterialName(item)
+    alt: getMaterialName(item),
   };
 };
 
 // Pre-compute icon src/alt and quantity text per item for needed and missing mode
 const displayResourceStates = computed(() =>
-  displayResources.value.map(item => {
+  displayResources.value.map((item) => {
     const { src, alt } = getMaterialIconSrcAndAlt(item);
     const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
-    const quantity = isExp ? 0
-      : activeMode.value === 'needed'  ? (item.materialQuantity || 0)
-      : activeMode.value === 'missing' ? Math.abs(item.remaining || 0)
-      : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
+    const quantity = isExp
+      ? 0
+      : activeMode.value === 'needed'
+        ? item.materialQuantity || 0
+        : activeMode.value === 'missing'
+          ? Math.abs(item.remaining || 0)
+          : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
     return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
-  })
+  }),
 );
 
 // Pre-compute icon src/alt and quantity text per item for leftover mode
 const pagedLeftoverResourceStates = computed(() =>
-  pagedLeftoverResources.value.map(page =>
-    page.map(item => {
+  pagedLeftoverResources.value.map((page) =>
+    page.map((item) => {
       const { src, alt } = getMaterialIconSrcAndAlt(item);
       const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
       const quantity = isExp ? 0 : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
       return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
-    })
-  )
+    }),
+  ),
 );
-
-
 
 const setTab = (tab: ViewTab) => {
   if (activeTab.value !== tab) {
@@ -149,13 +167,10 @@ const setMode = (mode: ViewMode) => {
   clearHoverState();
 };
 
-watch(
-  [activeTab, activeMode],
-  () => {
-    if (activeMode.value !== 'leftover') return;
-    void goToLeftoverPage(0, undefined, true);
-  }
-);
+watch([activeTab, activeMode], () => {
+  if (activeMode.value !== 'leftover') return;
+  void goToLeftoverPage(0, undefined, true);
+});
 
 watch(
   () => props.activeTabExternal,
@@ -164,7 +179,7 @@ watch(
     clearHoverState();
     activeTab.value = tab;
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -174,14 +189,19 @@ watch(
     clearHoverState();
     activeMode.value = mode;
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 
 <template>
   <div class="resource-summary">
     <div class="summary-toolbar">
-      <div v-if="showCategoryTabs" class="view-segmented" role="tablist" aria-label="Summary category">
+      <div
+        v-if="showCategoryTabs"
+        class="view-segmented"
+        role="tablist"
+        aria-label="Summary category"
+      >
         <button
           type="button"
           class="view-segment-btn"
@@ -234,16 +254,12 @@ watch(
         </button>
       </div>
     </div>
-    
+
     <div class="resources-content">
       <!-- Per-student view -->
       <template v-if="props.viewType === 'per-student'">
         <div class="per-student-list">
-          <div
-            v-for="row in allStudentMaterialRows"
-            :key="row.student.Id"
-            class="student-row"
-          >
+          <div v-for="row in allStudentMaterialRows" :key="row.student.Id" class="student-row">
             <div class="student-info">
               <img
                 :src="getStudentIconUrl(row.student.Id)"
@@ -257,21 +273,34 @@ watch(
                 v-for="mat in row.materials"
                 :key="mat.material?.Id"
                 class="resource-item per-student-mat-item"
-                :title="mat.type !== 'xp' && mat.material?.Id !== 5 ? mat.material?.Name : undefined"
-                @mouseenter="mat.type === 'xp' || mat.material?.Id === 5
-                  ? showChipTooltip($event, mat.materialQuantity, $t('needed'))
-                  : undefined"
-                @mouseleave="mat.type === 'xp' || mat.material?.Id === 5
-                  ? hideChipTooltip()
-                  : undefined"
+                :title="
+                  mat.type !== 'xp' && mat.material?.Id !== 5 ? mat.material?.Name : undefined
+                "
+                @mouseenter="
+                  mat.type === 'xp' || mat.material?.Id === 5
+                    ? showChipTooltip($event, mat.materialQuantity, $t('needed'))
+                    : undefined
+                "
+                @mouseleave="
+                  mat.type === 'xp' || mat.material?.Id === 5 ? hideChipTooltip() : undefined
+                "
               >
                 <div class="resource-content">
                   <img
-                    :src="getMaterialIconSrc(mat, mat.type === 'equipments', currentExpIcon, currentExpBall)"
+                    :src="
+                      getMaterialIconSrc(
+                        mat,
+                        mat.type === 'equipments',
+                        currentExpIcon,
+                        currentExpBall,
+                      )
+                    "
                     class="resource-icon"
                     :alt="mat.material?.Name"
                   />
-                  <span v-if="mat.type !== 'xp'" class="resource-quantity">{{ formatLargeNumber(mat.materialQuantity) }}</span>
+                  <span v-if="mat.type !== 'xp'" class="resource-quantity">{{
+                    formatLargeNumber(mat.materialQuantity)
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -300,316 +329,334 @@ watch(
 
       <!-- Aggregate view -->
       <template v-else>
-      <div v-if="!hasDisplayResources" class="no-resources">
-        <span>{{ noResourcesText }}</span>
-      </div>
+        <div v-if="!hasDisplayResources" class="no-resources">
+          <span>{{ noResourcesText }}</span>
+        </div>
 
-      <!-- Leftover mode: show full paginated catalog-style grids -->
-      <div v-else-if="activeMode === 'leftover'" class="resources-tab">
-        <div class="resources-container">
-          <div class="resources-slider" :style="leftoverSliderStyle">
-            <div
-              v-for="(pageItems, pageIndex) in pagedLeftoverResourceStates"
-              :key="`leftover-page-${pageIndex}`"
-              :ref="(el) => setLeftoverPageRef(el, pageIndex)"
-              class="resources-page"
-              :aria-hidden="leftoverCurrentPage !== pageIndex"
-            >
-              <div class="resources-grid">
-                <div
-                  v-for="(item, itemIndex) in pageItems"
-                  :key="`resource-${item.material?.Id || pageIndex}-${itemIndex}`"
-                  class="resource-item"
-                  :title="getMaterialName(item)"
-                  @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
-                  @mouseleave="hideTooltip()"
-                >
-                  <div class="resource-content">
-                    <img
-                      v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-                      :src="item.iconSrc"
-                      :alt="item.iconAlt"
-                      class="resource-icon"
-                    />
-                    <div
-                      v-else
-                      class="resource-icon missing-icon"
-                    >?</div>
+        <!-- Leftover mode: show full paginated catalog-style grids -->
+        <div v-else-if="activeMode === 'leftover'" class="resources-tab">
+          <div class="resources-container">
+            <div class="resources-slider" :style="leftoverSliderStyle">
+              <div
+                v-for="(pageItems, pageIndex) in pagedLeftoverResourceStates"
+                :key="`leftover-page-${pageIndex}`"
+                :ref="(el) => setLeftoverPageRef(el, pageIndex)"
+                class="resources-page"
+                :aria-hidden="leftoverCurrentPage !== pageIndex"
+              >
+                <div class="resources-grid">
+                  <div
+                    v-for="(item, itemIndex) in pageItems"
+                    :key="`resource-${item.material?.Id || pageIndex}-${itemIndex}`"
+                    class="resource-item"
+                    :title="getMaterialName(item)"
+                    @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
+                    @mouseleave="hideTooltip()"
+                  >
+                    <div class="resource-content">
+                      <img
+                        v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
+                        :src="item.iconSrc"
+                        :alt="item.iconAlt"
+                        class="resource-icon"
+                      />
+                      <div v-else class="resource-icon missing-icon">?</div>
 
-                    <div
-                      class="resource-quantity"
-                      :class="getModeQuantityClass(activeMode)"
-                    >
-                      {{ item.quantityText }}
+                      <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
+                        {{ item.quantityText }}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div v-if="leftoverTotalPages > 1" class="resources-pagination">
-          <div class="page-indicator">
-            <button
-              v-for="page in leftoverTotalPages"
-              :key="`leftover-dot-${page}`"
-              type="button"
-              class="page-dot"
-              :class="{ active: leftoverCurrentPage === page - 1 }"
-              :aria-label="`Go to page ${page}`"
-              :aria-current="leftoverCurrentPage === page - 1 ? 'page' : undefined"
-              @click="goToLeftoverPage(page - 1)"
-            ></button>
+          <div v-if="leftoverTotalPages > 1" class="resources-pagination">
+            <div class="page-indicator">
+              <button
+                v-for="page in leftoverTotalPages"
+                :key="`leftover-dot-${page}`"
+                type="button"
+                class="page-dot"
+                :class="{ active: leftoverCurrentPage === page - 1 }"
+                :aria-label="`Go to page ${page}`"
+                :aria-current="leftoverCurrentPage === page - 1 ? 'page' : undefined"
+                @click="goToLeftoverPage(page - 1)"
+              ></button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Needed/Missing materials and equipment -->
-      <div v-else-if="activeTab !== 'gifts'" class="resources-grid-wrap">
-        <div class="resources-grid">
-          <div
-            v-for="(item, index) in displayResourceStates"
-            :key="`resource-${item.material?.Id || index}`"
-            class="resource-item"
-            :title="getMaterialName(item)"
-            @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
-            @mouseleave="hideTooltip()"
-          >
-            <div class="resource-content">
-              <img
-                v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-                :src="item.iconSrc"
-                :alt="item.iconAlt"
-                class="resource-icon"
-              />
-              <div
-                v-else
-                class="resource-icon missing-icon"
-              >?</div>
+        <!-- Needed/Missing materials and equipment -->
+        <div v-else-if="activeTab !== 'gifts'" class="resources-grid-wrap">
+          <div class="resources-grid">
+            <div
+              v-for="(item, index) in displayResourceStates"
+              :key="`resource-${item.material?.Id || index}`"
+              class="resource-item"
+              :title="getMaterialName(item)"
+              @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
+              @mouseleave="hideTooltip()"
+            >
+              <div class="resource-content">
+                <img
+                  v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
+                  :src="item.iconSrc"
+                  :alt="item.iconAlt"
+                  class="resource-icon"
+                />
+                <div v-else class="resource-icon missing-icon">?</div>
 
-              <div
-                class="resource-quantity"
-                :class="getModeQuantityClass(activeMode)"
-              >
-                {{ item.quantityText }}
+                <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
+                  {{ item.quantityText }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Gifts tab: Show student icons (Student -> Gifts pattern) -->
-      <div v-else class="resources-grid-wrap">
-        <div class="resources-grid">
-          <div
-            v-for="studentGift in studentsWithGifts"
-            :key="`student-${studentGift.student.Id}`"
-            class="resource-item student-gift-item"
-            :title="studentGift.student.Name"
-            @mousemove="showStudentTooltip($event, studentGift.student.Id)"
-            @mouseleave="hideStudentTooltip()"
-          >
-            <div class="resource-content">
-              <img
-                :src="getStudentIconUrl(studentGift.student.Id)"
-                :alt="studentGift.student.Name"
-                class="resource-icon student-icon-gift"
-              />
-              <div
-                class="resource-quantity"
-                :class="getModeQuantityClass(activeMode)"
-              >
-                {{ formatLargeNumber(studentGift.totalGifts) }}
+        <!-- Gifts tab: Show student icons (Student -> Gifts pattern) -->
+        <div v-else class="resources-grid-wrap">
+          <div class="resources-grid">
+            <div
+              v-for="studentGift in studentsWithGifts"
+              :key="`student-${studentGift.student.Id}`"
+              class="resource-item student-gift-item"
+              :title="studentGift.student.Name"
+              @mousemove="showStudentTooltip($event, studentGift.student.Id)"
+              @mouseleave="hideStudentTooltip()"
+            >
+              <div class="resource-content">
+                <img
+                  :src="getStudentIconUrl(studentGift.student.Id)"
+                  :alt="studentGift.student.Name"
+                  class="resource-icon student-icon-gift"
+                />
+                <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
+                  {{ formatLargeNumber(studentGift.totalGifts) }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Material Usage Tooltip -->
-      <div
-        v-if="hoveredItemId !== null && (
-          (activeMode === 'leftover' && (hoveredItemId === 5 || isExpReport(hoveredItemId) || isExpBall(hoveredItemId))) ||
-          (activeMode !== 'leftover' && studentUsageForMaterial.length > 0)
-        )"
-        class="material-tooltip"
-        :style="{
-          left: tooltipPosition.left,
-          top: tooltipPosition.top,
-          '--grid-columns': tooltipGridColumns
-        }"
-        @mouseenter="handleTooltipMouseEnter"
-        @mouseleave="handleTooltipMouseLeave"
-      >
-        <!-- Leftover mode: Credits -->
-        <div v-if="activeMode === 'leftover' && hoveredItemId === 5" class="credit-info" style="margin-bottom: 0">
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('owned') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(creditOwned) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('leftover') }}</span>
-              <span class="value positive">{{ formatLargeNumberAmount(creditRemaining) }}</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- Leftover mode: EXP Reports -->
-        <div v-if="activeMode === 'leftover' && hoveredItemId !== null && isExpReport(hoveredItemId)" class="credit-info" style="margin-bottom: 0">
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('owned') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(expInfo.owned) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('leftover') }}</span>
-              <span class="value positive">{{ formatLargeNumberAmount(expInfo.remaining) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Leftover mode: EXP Balls -->
-        <div v-if="activeMode === 'leftover' && hoveredItemId !== null && isExpBall(hoveredItemId)" class="credit-info" style="margin-bottom: 0">
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('owned') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(expBallInfo.owned) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('leftover') }}</span>
-              <span class="value positive">{{ formatLargeNumberAmount(expBallInfo.remaining) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Credit Information Section -->
-        <div v-if="activeMode !== 'leftover' && hoveredItemId === 5" class="credit-info">
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('owned') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(creditOwned) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('needed') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(creditNeeded) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="getResourceQuantityClass(creditRemaining)">
-                {{ formatLargeNumberAmount(creditRemaining) }}
-              </span>
-            </div>
-          </div>
-          <div class="separator"></div>
-        </div>
-
-        <!-- EXP Information Section -->
-        <div v-if="activeMode !== 'leftover' && hoveredItemId !== null && isExpReport(hoveredItemId)" class="credit-info">
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('owned') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(expInfo.owned) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('needed') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(expInfo.needed) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="getResourceQuantityClass(expInfo.remaining)">
-                {{ formatLargeNumberAmount(expInfo.remaining) }}
-              </span>
-            </div>
-          </div>
-          <div class="separator"></div>
-        </div>
-
-        <!-- EXP Balls Information Section -->
-        <div v-if="activeMode !== 'leftover' && hoveredItemId !== null && isExpBall(hoveredItemId)" class="credit-info">
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('owned') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(expBallInfo.owned) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('needed') }}</span>
-              <span class="value">{{ formatLargeNumberAmount(expBallInfo.needed) }}</span>
-            </div>
-            <div class="stat">
-              <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="getResourceQuantityClass(expBallInfo.remaining)">
-                {{ formatLargeNumberAmount(expBallInfo.remaining) }}
-              </span>
-            </div>
-          </div>
-          <div class="separator"></div>
-        </div>
-
-        <!-- Material Information Section -->
+        <!-- Material Usage Tooltip -->
         <div
-          v-if="activeMode !== 'leftover' && hoveredItemId !== null && !isExpReport(hoveredItemId)
-            && hoveredItemId !== 5 && !isExpBall(hoveredItemId)"
-          class="credit-info"
+          v-if="
+            hoveredItemId !== null &&
+            ((activeMode === 'leftover' &&
+              (hoveredItemId === 5 || isExpReport(hoveredItemId) || isExpBall(hoveredItemId))) ||
+              (activeMode !== 'leftover' && studentUsageForMaterial.length > 0))
+          "
+          class="material-tooltip"
+          :style="{
+            left: tooltipPosition.left,
+            top: tooltipPosition.top,
+            '--grid-columns': tooltipGridColumns,
+          }"
+          @mouseenter="handleTooltipMouseEnter"
+          @mouseleave="handleTooltipMouseLeave"
         >
-          <div class="credit-stats">
-            <div class="stat">
-              <span class="label">{{ $t('remaining') }}</span>
-              <span class="value" :class="getResourceQuantityClass(getMaterialLeftover(hoveredItemId))">
-                {{ formatLargeNumberAmount(Math.abs(getMaterialLeftover(hoveredItemId))) }}
+          <!-- Leftover mode: Credits -->
+          <div
+            v-if="activeMode === 'leftover' && hoveredItemId === 5"
+            class="credit-info"
+            style="margin-bottom: 0"
+          >
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('owned') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(creditOwned) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('leftover') }}</span>
+                <span class="value positive">{{ formatLargeNumberAmount(creditRemaining) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Leftover mode: EXP Reports -->
+          <div
+            v-if="activeMode === 'leftover' && hoveredItemId !== null && isExpReport(hoveredItemId)"
+            class="credit-info"
+            style="margin-bottom: 0"
+          >
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('owned') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(expInfo.owned) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('leftover') }}</span>
+                <span class="value positive">{{ formatLargeNumberAmount(expInfo.remaining) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Leftover mode: EXP Balls -->
+          <div
+            v-if="activeMode === 'leftover' && hoveredItemId !== null && isExpBall(hoveredItemId)"
+            class="credit-info"
+            style="margin-bottom: 0"
+          >
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('owned') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(expBallInfo.owned) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('leftover') }}</span>
+                <span class="value positive">{{
+                  formatLargeNumberAmount(expBallInfo.remaining)
+                }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Credit Information Section -->
+          <div v-if="activeMode !== 'leftover' && hoveredItemId === 5" class="credit-info">
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('owned') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(creditOwned) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('needed') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(creditNeeded) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('remaining') }}</span>
+                <span class="value" :class="getResourceQuantityClass(creditRemaining)">
+                  {{ formatLargeNumberAmount(creditRemaining) }}
+                </span>
+              </div>
+            </div>
+            <div class="separator"></div>
+          </div>
+
+          <!-- EXP Information Section -->
+          <div
+            v-if="activeMode !== 'leftover' && hoveredItemId !== null && isExpReport(hoveredItemId)"
+            class="credit-info"
+          >
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('owned') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(expInfo.owned) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('needed') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(expInfo.needed) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('remaining') }}</span>
+                <span class="value" :class="getResourceQuantityClass(expInfo.remaining)">
+                  {{ formatLargeNumberAmount(expInfo.remaining) }}
+                </span>
+              </div>
+            </div>
+            <div class="separator"></div>
+          </div>
+
+          <!-- EXP Balls Information Section -->
+          <div
+            v-if="activeMode !== 'leftover' && hoveredItemId !== null && isExpBall(hoveredItemId)"
+            class="credit-info"
+          >
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('owned') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(expBallInfo.owned) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('needed') }}</span>
+                <span class="value">{{ formatLargeNumberAmount(expBallInfo.needed) }}</span>
+              </div>
+              <div class="stat">
+                <span class="label">{{ $t('remaining') }}</span>
+                <span class="value" :class="getResourceQuantityClass(expBallInfo.remaining)">
+                  {{ formatLargeNumberAmount(expBallInfo.remaining) }}
+                </span>
+              </div>
+            </div>
+            <div class="separator"></div>
+          </div>
+
+          <!-- Material Information Section -->
+          <div
+            v-if="
+              activeMode !== 'leftover' &&
+              hoveredItemId !== null &&
+              !isExpReport(hoveredItemId) &&
+              hoveredItemId !== 5 &&
+              !isExpBall(hoveredItemId)
+            "
+            class="credit-info"
+          >
+            <div class="credit-stats">
+              <div class="stat">
+                <span class="label">{{ $t('remaining') }}</span>
+                <span
+                  class="value"
+                  :class="getResourceQuantityClass(getMaterialLeftover(hoveredItemId))"
+                >
+                  {{ formatLargeNumberAmount(Math.abs(getMaterialLeftover(hoveredItemId))) }}
+                </span>
+              </div>
+            </div>
+            <div class="separator"></div>
+          </div>
+
+          <div
+            v-if="activeMode !== 'leftover' && studentUsageForMaterial.length > 0"
+            class="student-icons-grid"
+          >
+            <div
+              v-for="(usage, i) in studentUsageForMaterial"
+              :key="`usage-${i}`"
+              class="student-usage-item"
+            >
+              <img
+                :src="getStudentIconUrl(usage.student.Id)"
+                :alt="usage.student.Name"
+                class="student-icon"
+              />
+              <span class="usage-quantity">
+                {{ formatUsageQuantity(usage.quantity, hoveredItemId) }}
               </span>
             </div>
           </div>
-          <div class="separator"></div>
         </div>
 
-        <div v-if="activeMode !== 'leftover' && studentUsageForMaterial.length > 0" class="student-icons-grid">
-          <div
-            v-for="(usage, i) in studentUsageForMaterial"
-            :key="`usage-${i}`"
-            class="student-usage-item"
-          >
-            <img
-              :src="getStudentIconUrl(usage.student.Id)"
-              :alt="usage.student.Name"
-              class="student-icon"
-            />
-            <span class="usage-quantity">
-              {{ formatUsageQuantity(usage.quantity, hoveredItemId) }}
-            </span>
+        <!-- Student -> Gifts Tooltip (for Gifts tab) -->
+        <div
+          v-if="hoveredStudentId !== null && giftsForHoveredStudent.length > 0"
+          class="material-tooltip"
+          :style="{
+            left: tooltipPosition.left,
+            top: tooltipPosition.top,
+            '--grid-columns': giftTooltipGridColumns,
+            pointerEvents: 'none',
+          }"
+        >
+          <div class="gift-icons-grid">
+            <div
+              v-for="(giftItem, i) in giftsForHoveredStudent"
+              :key="`gift-${i}`"
+              class="gift-usage-item"
+            >
+              <img
+                :src="getItemIconUrl(giftItem.gift?.Icon ?? '', 'item')"
+                :alt="giftItem.gift?.Name || 'Gift'"
+                class="gift-icon"
+              />
+              <span class="usage-quantity">
+                {{ formatLargeNumber(giftItem.quantity) }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- Student -> Gifts Tooltip (for Gifts tab) -->
-      <div
-        v-if="hoveredStudentId !== null && giftsForHoveredStudent.length > 0"
-        class="material-tooltip"
-        :style="{
-          left: tooltipPosition.left,
-          top: tooltipPosition.top,
-          '--grid-columns': giftTooltipGridColumns,
-          pointerEvents: 'none'
-        }"
-      >
-        <div class="gift-icons-grid">
-          <div
-            v-for="(giftItem, i) in giftsForHoveredStudent"
-            :key="`gift-${i}`"
-            class="gift-usage-item"
-          >
-            <img
-              :src="getItemIconUrl(giftItem.gift?.Icon ?? '', 'item')"
-              :alt="giftItem.gift?.Name || 'Gift'"
-              class="gift-icon"
-            />
-            <span class="usage-quantity">
-              {{ formatLargeNumber(giftItem.quantity) }}
-            </span>
-          </div>
-        </div>
-      </div>
       </template>
     </div>
   </div>
@@ -933,11 +980,11 @@ watch(
   .toolbar-divider {
     display: none;
   }
-  
+
   .student-icons-grid {
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   }
-  
+
   .student-icon {
     width: 30px;
     height: 30px;

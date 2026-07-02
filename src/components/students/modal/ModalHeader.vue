@@ -4,12 +4,17 @@ import { useStudentImages } from '@/composables/useStudentImages';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
-  student: StudentProps
+  student: StudentProps;
 }>();
 
 const {
-  portraitSrc, backgroundSrc, imageLoading,
-  handlePortraitLoad, handlePortraitError, handleBackgroundLoad, handleBackgroundError,
+  portraitSrc,
+  backgroundSrc,
+  imageLoading,
+  handlePortraitLoad,
+  handlePortraitError,
+  handleBackgroundLoad,
+  handleBackgroundError,
 } = useStudentImages(toRef(() => props.student));
 </script>
 
@@ -131,7 +136,11 @@ const {
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 </style>

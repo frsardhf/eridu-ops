@@ -8,7 +8,7 @@ import type {
   EquipmentRecord,
   FormRecord,
   ItemsInventoryRecord,
-  EquipmentInventoryRecord
+  EquipmentInventoryRecord,
 } from '../db/database';
 
 /**
@@ -22,7 +22,7 @@ async function withQuotaRetry<T>(write: () => Promise<T>, label: string, fallbac
   try {
     return await write();
   } catch (error) {
-    if (isQuotaExceededError(error) && await clearImageCacheStorage()) {
+    if (isQuotaExceededError(error) && (await clearImageCacheStorage())) {
       try {
         return await write();
       } catch (retryError) {
@@ -88,10 +88,7 @@ async function getDataSource(): Promise<'api' | 'migration' | undefined> {
 
 /** Whether cached data needs a refresh (older than maxAgeDays, default 7). */
 export async function needsRefresh(maxAgeDays: number = 7): Promise<boolean> {
-  const [lastFetched, dataSource] = await Promise.all([
-    getLastFetched(),
-    getDataSource()
-  ]);
+  const [lastFetched, dataSource] = await Promise.all([getLastFetched(), getDataSource()]);
 
   // Always refresh if data came from migration
   if (dataSource === 'migration') {
@@ -111,10 +108,7 @@ export async function needsRefresh(maxAgeDays: number = 7): Promise<boolean> {
  * Update cache metadata after successful API fetch
  */
 export async function updateCacheMetadata(): Promise<void> {
-  await Promise.all([
-    setMetadata('lastFetched', Date.now()),
-    setMetadata('dataSource', 'api')
-  ]);
+  await Promise.all([setMetadata('lastFetched', Date.now()), setMetadata('dataSource', 'api')]);
 }
 
 // --- Student Operations ---
@@ -257,7 +251,7 @@ function sanitizeFormData(data: any): any {
 
   // Handle arrays
   if (Array.isArray(data)) {
-    return data.map(item => sanitizeFormData(item));
+    return data.map((item) => sanitizeFormData(item));
   }
 
   // Handle plain objects and Vue Proxies - recursively sanitize
@@ -304,21 +298,25 @@ function sanitizeFormData(data: any): any {
  *
  * Returns the merged sanitized data on success for immediate store updates.
  */
-export async function saveFormData(studentId: number, formData: Partial<FormRecord>): Promise<FormRecord | null> {
+export async function saveFormData(
+  studentId: number,
+  formData: Partial<FormRecord>,
+): Promise<FormRecord | null> {
   // Sanitize outside the transaction: pure CPU work, no DB I/O needed.
   const sanitizedFormData = sanitizeFormData(formData);
 
   return withQuotaRetry(
-    () => db.transaction('rw', db.forms, async () => {
-      const existing = await db.forms.get(studentId);
-      const merged: FormRecord = {
-        studentId,
-        ...(existing ?? {}),
-        ...sanitizedFormData,
-      };
-      await db.forms.put(merged);
-      return merged;
-    }),
+    () =>
+      db.transaction('rw', db.forms, async () => {
+        const existing = await db.forms.get(studentId);
+        const merged: FormRecord = {
+          studentId,
+          ...(existing ?? {}),
+          ...sanitizedFormData,
+        };
+        await db.forms.put(merged);
+        return merged;
+      }),
     `Error saving form data for student ${studentId}`,
     null,
   );
@@ -330,10 +328,13 @@ export async function saveFormData(studentId: number, formData: Partial<FormReco
 export async function getAllFormData(): Promise<Record<number, FormRecord>> {
   try {
     const forms = await db.forms.toArray();
-    return forms.reduce((acc, form) => {
-      acc[form.studentId] = form;
-      return acc;
-    }, {} as Record<number, FormRecord>);
+    return forms.reduce(
+      (acc, form) => {
+        acc[form.studentId] = form;
+        return acc;
+      },
+      {} as Record<number, FormRecord>,
+    );
   } catch (error) {
     console.error('Error getting all form data:', error);
     return {};
@@ -348,10 +349,13 @@ export async function getAllFormData(): Promise<Record<number, FormRecord>> {
 export async function getAllItemsInventories(): Promise<Record<number, number>> {
   try {
     const records = await db.items_inventory.toArray();
-    return records.reduce((acc, record) => {
-      acc[record.Id] = record.QuantityOwned;
-      return acc;
-    }, {} as Record<number, number>);
+    return records.reduce(
+      (acc, record) => {
+        acc[record.Id] = record.QuantityOwned;
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
   } catch (error) {
     console.error('Error getting all items inventories:', error);
     return {};
@@ -363,7 +367,10 @@ export async function getAllItemsInventories(): Promise<Record<number, number>> 
  */
 export async function saveItemsInventories(inventories: ItemsInventoryRecord[]): Promise<boolean> {
   return withQuotaRetry(
-    async () => { await db.items_inventory.bulkPut(inventories); return true; },
+    async () => {
+      await db.items_inventory.bulkPut(inventories);
+      return true;
+    },
     'Error saving items inventories',
     false,
   );
@@ -377,10 +384,13 @@ export async function saveItemsInventories(inventories: ItemsInventoryRecord[]):
 export async function getAllEquipmentInventories(): Promise<Record<number, number>> {
   try {
     const records = await db.equipment_inventory.toArray();
-    return records.reduce((acc, record) => {
-      acc[record.Id] = record.QuantityOwned;
-      return acc;
-    }, {} as Record<number, number>);
+    return records.reduce(
+      (acc, record) => {
+        acc[record.Id] = record.QuantityOwned;
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
   } catch (error) {
     console.error('Error getting all equipment inventories:', error);
     return {};
@@ -390,9 +400,14 @@ export async function getAllEquipmentInventories(): Promise<Record<number, numbe
 /**
  * Save multiple equipment inventories (bulk upsert)
  */
-export async function saveEquipmentInventories(inventories: EquipmentInventoryRecord[]): Promise<boolean> {
+export async function saveEquipmentInventories(
+  inventories: EquipmentInventoryRecord[],
+): Promise<boolean> {
   return withQuotaRetry(
-    async () => { await db.equipment_inventory.bulkPut(inventories); return true; },
+    async () => {
+      await db.equipment_inventory.bulkPut(inventories);
+      return true;
+    },
     'Error saving equipment inventories',
     false,
   );

@@ -33,15 +33,16 @@ export function positionAtCursor(
   event: MouseEvent,
   element: HTMLElement | null = null,
   offsetX = 20,
-  offsetY = 20
+  offsetY = 20,
 ): { top: string; left: string } {
   let x = event.clientX + offsetX;
   let y = event.clientY + offsetY;
 
   if (element) {
     const rect = element.getBoundingClientRect();
-    if (rect.right  > window.innerWidth  - 20) x = Math.max(20, event.clientX - rect.width  - offsetX);
-    if (rect.bottom > window.innerHeight - 20) y = Math.max(20, event.clientY - rect.height - offsetY);
+    if (rect.right > window.innerWidth - 20) x = Math.max(20, event.clientX - rect.width - offsetX);
+    if (rect.bottom > window.innerHeight - 20)
+      y = Math.max(20, event.clientY - rect.height - offsetY);
   }
 
   return { top: `${y}px`, left: `${x}px` };

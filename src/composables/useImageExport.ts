@@ -13,7 +13,7 @@ async function imgToDataUrl(src: string): Promise<string | null> {
   try {
     const res = await fetch(src, { mode: 'cors', credentials: 'omit', cache: 'reload' });
     const blob = await res.blob();
-    return await new Promise(resolve => {
+    return await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => resolve(null);
@@ -24,7 +24,10 @@ async function imgToDataUrl(src: string): Promise<string | null> {
   }
 }
 
-async function inlineImages(imgs: HTMLImageElement[], concurrency = 16): Promise<Map<HTMLImageElement, string>> {
+async function inlineImages(
+  imgs: HTMLImageElement[],
+  concurrency = 16,
+): Promise<Map<HTMLImageElement, string>> {
   const restore = new Map<HTMLImageElement, string>();
   let i = 0;
   async function worker() {
@@ -59,7 +62,7 @@ export function useImageExport() {
     let restore = new Map<HTMLImageElement, string>();
     try {
       restore = await inlineImages(imgs);
-      await new Promise(r => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
 
       const dataUrl = await domToPng(el, {
         scale: opts.scale ?? 2,
@@ -67,7 +70,7 @@ export function useImageExport() {
       });
 
       if (opts.output === 'open') {
-        const blob = await fetch(dataUrl).then(r => r.blob());
+        const blob = await fetch(dataUrl).then((r) => r.blob());
         const blobUrl = URL.createObjectURL(blob);
         window.open(blobUrl, '_blank');
         setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);

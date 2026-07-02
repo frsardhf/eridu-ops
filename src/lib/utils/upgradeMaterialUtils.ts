@@ -14,7 +14,7 @@ import dataTable from '../../data/data.json';
 
 export function calculateLevelMaterials(
   student: StudentProps,
-  characterLevels: CharacterLevels
+  characterLevels: CharacterLevels,
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
@@ -36,10 +36,10 @@ export function calculateLevelMaterials(
     let creditsCost = 0;
 
     if (characterXpCreditsTable.length > 0) {
-      const currentLevelCreditCost = characterLevels.current > 0 ?
-        characterXpCreditsTable[characterLevels.current - 1] : 0;
-      const targetLevelCreditCost = characterLevels.target > 0 ?
-        characterXpCreditsTable[characterLevels.target - 1] : 0;
+      const currentLevelCreditCost =
+        characterLevels.current > 0 ? characterXpCreditsTable[characterLevels.current - 1] : 0;
+      const targetLevelCreditCost =
+        characterLevels.target > 0 ? characterXpCreditsTable[characterLevels.target - 1] : 0;
 
       creditsCost = targetLevelCreditCost - currentLevelCreditCost;
     }
@@ -48,7 +48,7 @@ export function calculateLevelMaterials(
       materialsNeeded.push({
         material: creditsData,
         materialQuantity: creditsCost,
-        type: 'credits'
+        type: 'credits',
       });
     }
   }
@@ -74,7 +74,7 @@ export function computeCharacterXpCost(current: number, target: number): number 
 export function getCharXpItems(
   getOwned: (id: number) => number,
 ): Array<{ id: number; xpValue: number; owned: number }> {
-  return ([13, 12, 11, 10] as const).map(id => ({
+  return ([13, 12, 11, 10] as const).map((id) => ({
     id,
     xpValue: getResourceDataByIdSync(id)?.ExpValue ?? 0,
     owned: getOwned(id),
@@ -83,7 +83,7 @@ export function getCharXpItems(
 
 export function calculateSkillMaterials(
   student: StudentProps,
-  skillLevels: SkillLevels
+  skillLevels: SkillLevels,
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
@@ -100,16 +100,17 @@ export function calculateSkillMaterials(
 
     const isExSkill = type === 'Ex';
     const materialIds = isExSkill ? student.SkillExMaterial : student.SkillMaterial;
-    const materialQuantities = isExSkill ? student.SkillExMaterialAmount : student.SkillMaterialAmount;
+    const materialQuantities = isExSkill
+      ? student.SkillExMaterialAmount
+      : student.SkillMaterialAmount;
     const creditsQuantities = isExSkill ? exskillCreditsTable : skillCreditsTable;
 
     if (!materialIds || !materialQuantities || !creditsQuantities) continue;
 
     for (let level = current; level < target; level++) {
-
-      const levelMaterialIds = materialIds[level-1];
-      const levelMaterialQuantities = materialQuantities[level-1];
-      const levelCreditsQuantities = creditsQuantities[level-1];
+      const levelMaterialIds = materialIds[level - 1];
+      const levelMaterialQuantities = materialQuantities[level - 1];
+      const levelCreditsQuantities = creditsQuantities[level - 1];
 
       // Special case: ADD SECRET_TECH_NOTE for level 9 to 10 for non-Ex skills
       if (level === 9 && type !== 'Ex') {
@@ -118,7 +119,7 @@ export function calculateSkillMaterials(
           materialsNeeded.push({
             material: secretTechData,
             materialQuantity: 1,
-            type: 'special'
+            type: 'special',
           });
         }
 
@@ -126,7 +127,7 @@ export function calculateSkillMaterials(
           materialsNeeded.push({
             material: creditsData,
             materialQuantity: 4000000,
-            type: 'credits'
+            type: 'credits',
           });
         }
       }
@@ -148,7 +149,7 @@ export function calculateSkillMaterials(
         materialsNeeded.push({
           material: materialData,
           materialQuantity: quantity,
-          type: 'materials'
+          type: 'materials',
         });
       }
 
@@ -156,7 +157,7 @@ export function calculateSkillMaterials(
         materialsNeeded.push({
           material: creditsData,
           materialQuantity: levelCreditsQuantities,
-          type: 'credits'
+          type: 'credits',
         });
       }
     }
@@ -167,7 +168,7 @@ export function calculateSkillMaterials(
 
 export function calculatePotentialMaterials(
   student: StudentProps,
-  potentialLevels: PotentialLevels
+  potentialLevels: PotentialLevels,
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
@@ -180,7 +181,7 @@ export function calculatePotentialMaterials(
     type: string,
     block: number,
     current: number,
-    target: number
+    target: number,
   ): Material[] {
     const result: Material[] = [];
     if (block >= potentialMaterials.length) return result;
@@ -221,13 +222,25 @@ export function calculatePotentialMaterials(
     const scaledCreditsQuantity = Math.ceil(creditsQuantity * levelsInBlock);
 
     if (materialData) {
-      result.push({ material: materialData, materialQuantity: scaledMaterialQuantity, type: 'materials' });
+      result.push({
+        material: materialData,
+        materialQuantity: scaledMaterialQuantity,
+        type: 'materials',
+      });
     }
     if (workbookData) {
-      result.push({ material: workbookData, materialQuantity: scaledWorkbookQuantity, type: 'materials' });
+      result.push({
+        material: workbookData,
+        materialQuantity: scaledWorkbookQuantity,
+        type: 'materials',
+      });
     }
     if (creditsData) {
-      result.push({ material: creditsData, materialQuantity: scaledCreditsQuantity, type: 'credits' });
+      result.push({
+        material: creditsData,
+        materialQuantity: scaledCreditsQuantity,
+        type: 'credits',
+      });
     }
     return result;
   }

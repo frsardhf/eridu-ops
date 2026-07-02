@@ -19,7 +19,7 @@ async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(digest))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
@@ -29,21 +29,25 @@ async function resolveOwner(): Promise<void> {
     const url = new URL(window.location.href);
     const param = url.searchParams.get('owner');
     if (param !== null) {
-      if (await sha256Hex(param) === OWNER_TOKEN_HASH) {
+      if ((await sha256Hex(param)) === OWNER_TOKEN_HASH) {
         localStorage.setItem(STORAGE_KEY, param);
       }
       url.searchParams.delete('owner');
       window.history.replaceState({}, '', url.pathname + url.search + url.hash);
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   // 2) Validate the stored token by hash (a forged value won't match).
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && await sha256Hex(stored) === OWNER_TOKEN_HASH) {
+    if (stored && (await sha256Hex(stored)) === OWNER_TOKEN_HASH) {
       isOwner.value = true;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function useOwnerMode() {

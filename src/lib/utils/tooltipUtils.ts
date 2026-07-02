@@ -15,10 +15,7 @@ export function getTooltipGridColumns(count: number): string {
  * Formats a per-student usage quantity for display inside a resource tooltip.
  * EXP reports and EXP balls show raw numbers; everything else uses the abbreviated format.
  */
-export function formatUsageQuantity(
-  quantity: number,
-  materialId?: number | null
-): string {
+export function formatUsageQuantity(quantity: number, materialId?: number | null): string {
   if (materialId && (isExpReport(materialId) || isExpBall(materialId))) {
     return quantity.toString();
   }

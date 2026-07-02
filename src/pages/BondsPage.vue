@@ -17,7 +17,9 @@ import type { StudentProps } from '@/types/student';
 
 // Lazy in every importer (here, StudentsPage, StudentModal) so the inventory
 // modal + ResourceGrid subtree split into one shared on-demand chunk.
-const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
+const GlobalInventoryModal = defineAsyncComponent(
+  () => import('@/components/inventory/GlobalInventoryModal.vue'),
+);
 
 const route = useRoute();
 const router = useRouter();
@@ -55,12 +57,12 @@ function toggleCollapsed(id: number): void {
 // to be added in that utility: sort updates automatically.
 const trackedStudents = computed<StudentProps[]>(() => {
   const enriched = trackedIds.value
-    .map(id => studentData.value[id])
+    .map((id) => studentData.value[id])
     .filter((s): s is StudentProps => !!s && studentDataStore.value[s.Id]?.isOwned !== false)
-    .map(s => enrichStudentWithGifts(s, favoredGift.value, giftBoxData.value));
+    .map((s) => enrichStudentWithGifts(s, favoredGift.value, giftBoxData.value));
 
   return enriched
-    .map(s => {
+    .map((s) => {
       const form = studentDataStore.value[s.Id];
       const exp = computeStudentBondExpTotal({
         favoredGifts: s.Gifts,
@@ -76,7 +78,7 @@ const trackedStudents = computed<StudentProps[]>(() => {
       if (a.exp !== b.exp) return b.exp - a.exp;
       return b.bond - a.bond;
     })
-    .map(x => x.student);
+    .map((x) => x.student);
 });
 
 // --- Active tab (tabs layout) ---
@@ -86,9 +88,7 @@ const activeStudent = computed<StudentProps | null>(() => {
   if (layout.value !== 'tabs') return null;
   const list = trackedStudents.value;
   if (!list.length) return null;
-  const found = activeStudentId.value
-    ? list.find(s => s.Id === activeStudentId.value)
-    : null;
+  const found = activeStudentId.value ? list.find((s) => s.Id === activeStudentId.value) : null;
   return found ?? list[0];
 });
 
@@ -97,7 +97,7 @@ watch(trackedStudents, (list) => {
     activeStudentId.value = null;
     return;
   }
-  if (!activeStudentId.value || !list.some(s => s.Id === activeStudentId.value)) {
+  if (!activeStudentId.value || !list.some((s) => s.Id === activeStudentId.value)) {
     activeStudentId.value = list[0].Id;
   }
 });
@@ -105,7 +105,7 @@ watch(trackedStudents, (list) => {
 // --- Deep-link support: /bonds?focus=<id> ---
 onMounted(async () => {
   if (!isReady.value) {
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       const stop = watch(isReady, (v) => {
         if (v) {
           stop();
@@ -130,7 +130,7 @@ onMounted(async () => {
       // (looks like "scrolled to the previous student"). Instant scroll
       // after the settle delay sidesteps that race entirely.
       await nextTick();
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       const el = document.getElementById(`bonds-card-${focusId}`);
       if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
@@ -166,7 +166,10 @@ function onRemoveStudent(id: number) {
 
         <button type="button" class="bonds-btn inventory-btn" @click="showInventory = true">
           <svg viewBox="0 0 24 24" width="16" height="16">
-            <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+            <path
+              fill="currentColor"
+              d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"
+            />
           </svg>
           {{ $t('inventory') }}
         </button>
@@ -212,10 +215,7 @@ function onRemoveStudent(id: number) {
         />
 
         <div v-if="activeStudent" :key="activeStudent.Id" class="bonds-active">
-          <BondsStudentEditor
-            :student="activeStudent"
-            :collapsed="isCollapsed(activeStudent.Id)"
-          />
+          <BondsStudentEditor :student="activeStudent" :collapsed="isCollapsed(activeStudent.Id)" />
           <div class="bonds-actions">
             <button
               type="button"
@@ -247,11 +247,7 @@ function onRemoveStudent(id: number) {
           >
             <BondsStudentEditor :student="s" :collapsed="isCollapsed(s.Id)" />
             <div class="bonds-actions">
-              <button
-                type="button"
-                class="bonds-btn ghost"
-                @click="toggleCollapsed(s.Id)"
-              >
+              <button type="button" class="bonds-btn ghost" @click="toggleCollapsed(s.Id)">
                 {{ isCollapsed(s.Id) ? $t('showEditor') : $t('hideEditor') }}
               </button>
               <button
@@ -311,7 +307,10 @@ function onRemoveStudent(id: number) {
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .bonds-btn.primary {
@@ -350,7 +349,9 @@ function onRemoveStudent(id: number) {
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .bonds-layout-btn.active {

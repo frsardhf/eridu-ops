@@ -25,7 +25,7 @@ export function useCardOverlayPrefs() {
     if (next.has(id)) next.delete(id);
     else next.add(id);
     // Persist in canonical order so the stored array is stable.
-    persist(CARD_OVERLAY_IDS.filter(o => next.has(o)));
+    persist(CARD_OVERLAY_IDS.filter((o) => next.has(o)));
   }
 
   function setAll(value: boolean) {

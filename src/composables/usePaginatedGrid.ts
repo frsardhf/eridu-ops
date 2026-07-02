@@ -1,4 +1,11 @@
-import { ref, computed, nextTick, watch, type ComputedRef, type ComponentPublicInstance } from 'vue';
+import {
+  ref,
+  computed,
+  nextTick,
+  watch,
+  type ComputedRef,
+  type ComponentPublicInstance,
+} from 'vue';
 
 export function usePaginatedGrid<T>(pages: ComputedRef<T[][]>) {
   const currentPage = ref(0);
@@ -9,7 +16,7 @@ export function usePaginatedGrid<T>(pages: ComputedRef<T[][]>) {
 
   const sliderStyle = computed(() => ({
     transform: `translate3d(${-currentPage.value * 100}%, 0, 0)`,
-    transition: disableTransition.value ? 'none' : 'transform 0.3s ease'
+    transition: disableTransition.value ? 'none' : 'transform 0.3s ease',
   }));
 
   watch(totalPages, (nextTotal) => {
@@ -61,7 +68,12 @@ export function usePaginatedGrid<T>(pages: ComputedRef<T[][]>) {
     }
   }
 
-  function handleBoundaryTab(event: KeyboardEvent, pageIndex: number, itemIndex: number, pageLength: number) {
+  function handleBoundaryTab(
+    event: KeyboardEvent,
+    pageIndex: number,
+    itemIndex: number,
+    pageLength: number,
+  ) {
     if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
     if (pageIndex !== currentPage.value) return;
 
@@ -76,5 +88,13 @@ export function usePaginatedGrid<T>(pages: ComputedRef<T[][]>) {
     }
   }
 
-  return { currentPage, totalPages, sliderStyle, setPageRef, focusPageBoundaryInput, goToPage, handleBoundaryTab };
+  return {
+    currentPage,
+    totalPages,
+    sliderStyle,
+    setPageRef,
+    focusPageBoundaryInput,
+    goToPage,
+    handleBoundaryTab,
+  };
 }

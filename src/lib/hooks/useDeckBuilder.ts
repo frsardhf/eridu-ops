@@ -13,7 +13,7 @@ function defaultDecks(): DeckRecord[] {
     id: i + 1,
     name: DEFAULT_DECK_NAMES[i],
     teams: [emptyTeam()],
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
   }));
 }
 
@@ -46,7 +46,7 @@ export function useDeckBuilder() {
     }
 
     deckIndex.clear();
-    decks.value.forEach(d => deckIndex.set(d.id, d));
+    decks.value.forEach((d) => deckIndex.set(d.id, d));
 
     watch(decks, scheduleSave, { deep: true });
   }
@@ -96,7 +96,13 @@ export function useDeckBuilder() {
     deck.updatedAt = Date.now();
   }
 
-  function swapUnits(deckId: number, fromTeam: number, fromSlot: number, toTeam: number, toSlot: number) {
+  function swapUnits(
+    deckId: number,
+    fromTeam: number,
+    fromSlot: number,
+    toTeam: number,
+    toSlot: number,
+  ) {
     const deck = deckIndex.get(deckId);
     if (!deck || !deck.teams[fromTeam] || !deck.teams[toTeam]) return;
     const a = deck.teams[fromTeam].units[fromSlot];
@@ -121,5 +127,17 @@ export function useDeckBuilder() {
     deck.updatedAt = Date.now();
   }
 
-  return { decks, initDecks, setUnit, moveUnit, swapUnits, addTeam, removeTeam, renameDeck, clearTeam, copyTeamToPreset, reorderTeam };
+  return {
+    decks,
+    initDecks,
+    setUnit,
+    moveUnit,
+    swapUnits,
+    addTeam,
+    removeTeam,
+    renameDeck,
+    clearTeam,
+    copyTeamToPreset,
+    reorderTeam,
+  };
 }

@@ -17,8 +17,10 @@ import { toNumericId } from '../utils/idCoercion';
 import { SYNTHETIC_ENTITIES } from '../constants/syntheticEntities';
 
 /** Saves a student's form data to IndexedDB (id coerced to numeric). */
-export async function saveFormData(studentId: string | number, data: Record<string, any>)
-  : Promise<any | null> {
+export async function saveFormData(
+  studentId: string | number,
+  data: Record<string, any>,
+): Promise<any | null> {
   if (!studentId) return null;
 
   try {
@@ -33,13 +35,13 @@ export async function saveFormData(studentId: string | number, data: Record<stri
 /** Merges item records with inventory quantities, adding QuantityOwned to each. */
 function mergeWithInventory<T extends Record<string, any>>(
   items: Record<string, T>,
-  inventories: Record<number, number>
+  inventories: Record<number, number>,
 ): Record<string, T & { QuantityOwned: number }> {
   const result: Record<string, T & { QuantityOwned: number }> = {};
   for (const [id, item] of Object.entries(items)) {
     result[id] = {
       ...item,
-      QuantityOwned: inventories[Number(id)] || 0
+      QuantityOwned: inventories[Number(id)] || 0,
     };
   }
   return result;
@@ -54,7 +56,7 @@ export async function getItems(): Promise<Record<string, any> | null> {
   try {
     const [items, inventories] = await Promise.all([
       getAllItemsAsRecord(),
-      getAllItemsInventories()
+      getAllItemsInventories(),
     ]);
 
     const merged = mergeWithInventory(items, inventories) as Record<string, any>;
@@ -81,7 +83,7 @@ export async function getEquipment(): Promise<Record<string, any> | null> {
   try {
     const [equipment, inventories] = await Promise.all([
       getAllEquipmentAsRecord(),
-      getAllEquipmentInventories()
+      getAllEquipmentInventories(),
     ]);
 
     return mergeWithInventory(equipment, inventories);
@@ -112,7 +114,7 @@ async function getFormData(studentId: string | number): Promise<Record<string, a
 export async function loadFormDataToRefs(
   studentId: string | number,
   refs: Record<string, { value: unknown }>,
-  defaultValues: Record<string, unknown> = {}
+  defaultValues: Record<string, unknown> = {},
 ): Promise<boolean> {
   if (!studentId) return false;
 
@@ -150,7 +152,7 @@ export async function loadFormDataToRefs(
               ) {
                 base[nestedKey] = {
                   ...(baseVal as Record<string, unknown>),
-                  ...(storedVal as Record<string, unknown>)
+                  ...(storedVal as Record<string, unknown>),
                 };
               } else {
                 base[nestedKey] = storedVal;
@@ -191,15 +193,13 @@ export async function loadFormDataToRefs(
  * or a full item record map with QuantityOwned.
  */
 export async function saveItemsInventory(
-  data: Record<string, number> | Record<string, any>
+  data: Record<string, number> | Record<string, any>,
 ): Promise<boolean> {
   try {
-    const inventories: ItemsInventoryRecord[] = Object.entries(data).map(
-      ([id, value]) => ({
-        Id: Number(id),
-        QuantityOwned: (typeof value === 'number' ? value : value?.QuantityOwned) || 0
-      })
-    );
+    const inventories: ItemsInventoryRecord[] = Object.entries(data).map(([id, value]) => ({
+      Id: Number(id),
+      QuantityOwned: (typeof value === 'number' ? value : value?.QuantityOwned) || 0,
+    }));
 
     return await saveItemsInventories(inventories);
   } catch (error) {
@@ -213,15 +213,13 @@ export async function saveItemsInventory(
  * map or a full equipment record map with QuantityOwned.
  */
 export async function saveEquipmentInventory(
-  data: Record<string, number> | Record<string, any>
+  data: Record<string, number> | Record<string, any>,
 ): Promise<boolean> {
   try {
-    const inventories: EquipmentInventoryRecord[] = Object.entries(data).map(
-      ([id, value]) => ({
-        Id: Number(id),
-        QuantityOwned: (typeof value === 'number' ? value : value?.QuantityOwned) || 0
-      })
-    );
+    const inventories: EquipmentInventoryRecord[] = Object.entries(data).map(([id, value]) => ({
+      Id: Number(id),
+      QuantityOwned: (typeof value === 'number' ? value : value?.QuantityOwned) || 0,
+    }));
 
     return await saveEquipmentInventories(inventories);
   } catch (error) {

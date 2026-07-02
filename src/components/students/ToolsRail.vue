@@ -76,20 +76,26 @@ useDocumentListener('keydown', handleEscape);
         <span class="future-chip"></span>
         <span class="future-chip"></span>
         <span class="future-chip"></span>
-        <svg class="trigger-chevron" :class="{ open: isExpanded }" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
-          <path fill="currentColor" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.18l3.71-3.95a.75.75 0 0 1 1.1 1.02l-4.25 4.52a.75.75 0 0 1-1.1 0L5.2 8.25a.75.75 0 0 1 .02-1.04Z" />
+        <svg
+          class="trigger-chevron"
+          :class="{ open: isExpanded }"
+          viewBox="0 0 20 20"
+          width="16"
+          height="16"
+          aria-hidden="true"
+        >
+          <path
+            fill="currentColor"
+            d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.18l3.71-3.95a.75.75 0 0 1 1.1 1.02l-4.25 4.52a.75.75 0 0 1-1.1 0L5.2 8.25a.75.75 0 0 1 .02-1.04Z"
+          />
         </svg>
       </span>
     </button>
 
-    <div
-      id="tools-rail-panel"
-      class="tools-rail-panel"
-      v-show="isExpanded"
-    >
+    <div id="tools-rail-panel" class="tools-rail-panel" v-show="isExpanded">
       <button
         class="tools-action-btn"
-        style="--i: 0;"
+        style="--i: 0"
         type="button"
         @click="emit('open-bulk-modify')"
         :title="$t('bulkModify.title')"
@@ -125,20 +131,23 @@ useDocumentListener('keydown', handleEscape);
 
       <button
         class="tools-action-btn"
-        style="--i: 1;"
+        style="--i: 1"
         type="button"
         @click="emit('open-inventory')"
         :title="$t('inventory')"
         :aria-label="$t('inventory')"
       >
         <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+          <path
+            fill="currentColor"
+            d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"
+          />
         </svg>
       </button>
 
       <button
         class="tools-action-btn"
-        style="--i: 2;"
+        style="--i: 2"
         type="button"
         @click="emit('open-bond-update')"
         :title="$t('bondUpdate.title')"
@@ -158,15 +167,15 @@ useDocumentListener('keydown', handleEscape);
 
       <button
         class="tools-action-btn"
-        style="--i: 3;"
+        style="--i: 3"
         type="button"
         @click="emit('open-equipment-farming')"
         :title="$t('equipmentFarming.title')"
         :aria-label="$t('equipmentFarming.title')"
       >
         <svg class="tools-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-          <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" />
+          <circle cx="12" cy="12" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8" />
           <path
             fill="none"
             stroke="currentColor"
@@ -179,7 +188,7 @@ useDocumentListener('keydown', handleEscape);
 
       <button
         class="tools-action-btn"
-        style="--i: 4;"
+        style="--i: 4"
         type="button"
         @click="emit('open-deck-builder')"
         title="Deck Builder"
@@ -194,7 +203,7 @@ useDocumentListener('keydown', handleEscape);
             stroke-linejoin="round"
             d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
           />
-          <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8" />
           <path
             fill="none"
             stroke="currentColor"
@@ -208,7 +217,7 @@ useDocumentListener('keydown', handleEscape);
 
       <button
         class="tools-action-btn"
-        style="--i: 5;"
+        style="--i: 5"
         type="button"
         @click="emit('open-crafting-fodder')"
         :title="$t('craftingFodder.title')"
@@ -268,11 +277,14 @@ useDocumentListener('keydown', handleEscape);
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-    backdrop-filter: blur(8px);
-    box-shadow:
-      0 18px 34px rgba(0, 0, 0, 0.14),
-      0 8px 16px rgba(0, 0, 0, 0.14);
-  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.14),
+    0 8px 16px rgba(0, 0, 0, 0.14);
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .tools-rail-trigger:hover {
@@ -356,7 +368,9 @@ useDocumentListener('keydown', handleEscape);
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.18s ease, color 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .tools-action-btn:hover {

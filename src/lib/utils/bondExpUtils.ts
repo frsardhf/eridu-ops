@@ -88,7 +88,11 @@ export function computeCafeDays(
   if (!endDateIso) return 0;
   const start = startDateIso
     ? new Date(`${startDateIso}T00:00:00`)
-    : (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
+    : (() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+      })();
   if (Number.isNaN(start.getTime())) return 0;
   const end = new Date(`${endDateIso}T00:00:00`);
   if (Number.isNaN(end.getTime())) return 0;

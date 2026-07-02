@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
@@ -7,16 +7,28 @@ import ToolsRail from '@/components/students/ToolsRail.vue';
 import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
 import StudentGrid from '@/components/students/StudentGrid.vue';
 import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
-import StudentModal from '@/components/students/modal/StudentModal.vue'
+import StudentModal from '@/components/students/modal/StudentModal.vue';
 
 // Tool modals are user-triggered and behind v-if, so each loads as its own
 // chunk on first open instead of weighing down the page bundle.
-const BulkModifyStudentsModal = defineAsyncComponent(() => import('@/components/students/tools/BulkModifyStudentsModal.vue'));
-const BondUpdateModal = defineAsyncComponent(() => import('@/components/students/tools/BondUpdateModal.vue'));
-const CraftingFodderModal = defineAsyncComponent(() => import('@/components/students/tools/CraftingFodderModal.vue'));
-const DeckBuilderModal = defineAsyncComponent(() => import('@/components/students/tools/DeckBuilderModal.vue'));
-const EquipmentFarmingModal = defineAsyncComponent(() => import('@/components/students/tools/EquipmentFarmingModal.vue'));
-const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
+const BulkModifyStudentsModal = defineAsyncComponent(
+  () => import('@/components/students/tools/BulkModifyStudentsModal.vue'),
+);
+const BondUpdateModal = defineAsyncComponent(
+  () => import('@/components/students/tools/BondUpdateModal.vue'),
+);
+const CraftingFodderModal = defineAsyncComponent(
+  () => import('@/components/students/tools/CraftingFodderModal.vue'),
+);
+const DeckBuilderModal = defineAsyncComponent(
+  () => import('@/components/students/tools/DeckBuilderModal.vue'),
+);
+const EquipmentFarmingModal = defineAsyncComponent(
+  () => import('@/components/students/tools/EquipmentFarmingModal.vue'),
+);
+const GlobalInventoryModal = defineAsyncComponent(
+  () => import('@/components/inventory/GlobalInventoryModal.vue'),
+);
 import { SortOption } from '@/types/header';
 import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';
@@ -43,10 +55,10 @@ const {
   setStudentFilters,
   clearStudentFilters,
   isReady,
-} = useStudentData()
+} = useStudentData();
 
-const selectedStudent = ref<StudentProps | null>(null)
-const isModalVisible = ref(false)
+const selectedStudent = ref<StudentProps | null>(null);
+const isModalVisible = ref(false);
 const isBulkModifyModalVisible = ref(false);
 const isBondUpdateVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
@@ -63,9 +75,9 @@ function openInventoryFromFarming() {
 
 const modalOriginRect = ref<ModalOriginRect | null>(null);
 const allStudentsArray = computed<StudentProps[]>(() => {
-  return filterSecondaryStudents(
-    Object.values(studentData.value)
-  ).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
+  return filterSecondaryStudents(Object.values(studentData.value)).sort(
+    (a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id),
+  );
 });
 
 // Prepare student for modal: attach favored Gifts/Boxes from the per-student maps.
@@ -195,7 +207,10 @@ function handleClearFilters() {
     <GlobalInventoryModal
       v-if="isInventoryModalVisible"
       :initial-tab="inventoryInitialTab"
-      @close="isInventoryModalVisible = false; inventoryInitialTab = 'items'"
+      @close="
+        isInventoryModalVisible = false;
+        inventoryInitialTab = 'items';
+      "
     />
 
     <BulkModifyStudentsModal
@@ -216,10 +231,7 @@ function handleClearFilters() {
       @close="isDeckBuilderVisible = false"
     />
 
-    <CraftingFodderModal
-      v-if="isCraftingFodderVisible"
-      @close="isCraftingFodderVisible = false"
-    />
+    <CraftingFodderModal v-if="isCraftingFodderVisible" @close="isCraftingFodderVisible = false" />
 
     <EquipmentFarmingModal
       v-if="isEquipmentFarmingVisible"

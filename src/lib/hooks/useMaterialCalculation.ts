@@ -19,18 +19,18 @@ let _allGearsData: ComputedRef<Record<string, Material[]>>;
 const getStudentCredits = (studentId: string, materials: Material[], gears: Material[]) => {
   let quantity = 0;
 
-  materials.forEach(material => {
+  materials.forEach((material) => {
     if (material.type === 'credits') {
       quantity += material.materialQuantity;
     }
   });
 
-  gears.forEach(gear => {
+  gears.forEach((gear) => {
     if (gear.type === 'credits') {
       quantity += gear.materialQuantity;
     }
   });
-  
+
   return quantity;
 };
 
@@ -42,15 +42,15 @@ export function useMaterialCalculation() {
       studentId: string;
       xpNeeded: number;
       remainingXp: number;
-      name: string
+      name: string;
     }[] = [];
 
     // Union of student IDs that have either material or gear calc entries.
     const allStudentIds = new Set<string>();
-    Object.keys(getAllMaterialsData()).forEach(studentId => allStudentIds.add(studentId));
-    Object.keys(getAllGearsData()).forEach(studentId => allStudentIds.add(studentId));
+    Object.keys(getAllMaterialsData()).forEach((studentId) => allStudentIds.add(studentId));
+    Object.keys(getAllGearsData()).forEach((studentId) => allStudentIds.add(studentId));
 
-    allStudentIds.forEach(studentId => {
+    allStudentIds.forEach((studentId) => {
       const form = studentDataStore.value[toNumericId(studentId)];
       if (!form || !form.characterLevels) return;
       if (form.isOwned === false) return; // skip unowned
@@ -66,7 +66,7 @@ export function useMaterialCalculation() {
           studentId,
           xpNeeded: studentXpNeeded,
           remainingXp: studentXpNeeded,
-          name: student?.Name ?? studentId
+          name: student?.Name ?? studentId,
         });
       }
     });
@@ -81,13 +81,15 @@ export function useMaterialCalculation() {
     const totalXpNeeded = studentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
 
     // Use the shared helper so changes to XP-item IDs don't require updates here.
-    const ownedXp = getCharXpItems(id => resources[id]?.QuantityOwned ?? 0)
-      .reduce((s, item) => s + item.owned * item.xpValue, 0);
+    const ownedXp = getCharXpItems((id) => resources[id]?.QuantityOwned ?? 0).reduce(
+      (s, item) => s + item.owned * item.xpValue,
+      0,
+    );
 
     return {
       totalXpNeeded,
       ownedXp,
-      studentXpDetails
+      studentXpDetails,
     };
   };
 
@@ -102,83 +104,84 @@ export function useMaterialCalculation() {
 
   if (!_totalMaterialsNeeded) {
     _totalMaterialsNeeded = computed(() => {
-    const materialMap = new Map<number, Material>();
-    const creditsMaterial = getResourceDataByIdSync(CREDITS_ID);
-    const eligmasMaterial = getResourceDataByIdSync(ELIGMAS_ID);
-    let creditsQuantity = 0;
-    let eligmasQuantity = 0;
+      const materialMap = new Map<number, Material>();
+      const creditsMaterial = getResourceDataByIdSync(CREDITS_ID);
+      const eligmasMaterial = getResourceDataByIdSync(ELIGMAS_ID);
+      let creditsQuantity = 0;
+      let eligmasQuantity = 0;
 
-    Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
-      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
-      (materials as Material[]).forEach(material => {
-        const materialId = material.material?.Id;
-        if (!materialId) return;
+      Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        (materials as Material[]).forEach((material) => {
+          const materialId = material.material?.Id;
+          if (!materialId) return;
 
-        if (material.type === 'credits') {
-          creditsQuantity += material.materialQuantity;
-          return;
-        }
+          if (material.type === 'credits') {
+            creditsQuantity += material.materialQuantity;
+            return;
+          }
 
-        if (materialMap.has(materialId)) {
-          const existing = materialMap.get(materialId)!;
-          existing.materialQuantity += material.materialQuantity;
-        } else {
-          materialMap.set(materialId, { ...material });
-        }
-      });
-    });
-
-    // Combine credits and eligma from gears to materials
-    // Also include exclusive gear's normal materials (non-gift items)
-    Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
-      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
-      (materials as Material[]).forEach(material => {
-        const materialId = material.material?.Id;
-        const subcategory = material.material?.SubCategory;
-        if (material.type === 'credits') {
-          creditsQuantity += material.materialQuantity;
-        } else if (materialId === ELIGMAS_ID) {
-          eligmasQuantity += material.materialQuantity;
-        } else if (subcategory === 'Artifact' && materialId) {
           if (materialMap.has(materialId)) {
             const existing = materialMap.get(materialId)!;
             existing.materialQuantity += material.materialQuantity;
           } else {
             materialMap.set(materialId, { ...material });
           }
-        }
+        });
       });
-    });
-    
-    if (creditsMaterial) {
-      materialMap.set(CREDITS_ID, { 
-        material: creditsMaterial, 
-        materialQuantity: creditsQuantity, 
-        type: 'credits'}
-      );
-    }
 
-    if (eligmasMaterial) {
-      materialMap.set(ELIGMAS_ID, { 
-        material: eligmasMaterial, 
-        materialQuantity: eligmasQuantity, 
-        type: 'materials'}
-      );
-    }
-
-    const { totalXpNeeded } = calculateExpNeeds();
-
-    // Add XP as a special material type
-    const xpMaterial = getResourceDataByIdSync(10);
-    if (xpMaterial) {
-      materialMap.set(10, { // Using Novice report ID as the XP material ID
-        material: xpMaterial,
-        materialQuantity: totalXpNeeded,
-        type: 'xp'
+      // Combine credits and eligma from gears to materials
+      // Also include exclusive gear's normal materials (non-gift items)
+      Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
+        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        (materials as Material[]).forEach((material) => {
+          const materialId = material.material?.Id;
+          const subcategory = material.material?.SubCategory;
+          if (material.type === 'credits') {
+            creditsQuantity += material.materialQuantity;
+          } else if (materialId === ELIGMAS_ID) {
+            eligmasQuantity += material.materialQuantity;
+          } else if (subcategory === 'Artifact' && materialId) {
+            if (materialMap.has(materialId)) {
+              const existing = materialMap.get(materialId)!;
+              existing.materialQuantity += material.materialQuantity;
+            } else {
+              materialMap.set(materialId, { ...material });
+            }
+          }
+        });
       });
-    }
-    
-    return Array.from(materialMap.values());
+
+      if (creditsMaterial) {
+        materialMap.set(CREDITS_ID, {
+          material: creditsMaterial,
+          materialQuantity: creditsQuantity,
+          type: 'credits',
+        });
+      }
+
+      if (eligmasMaterial) {
+        materialMap.set(ELIGMAS_ID, {
+          material: eligmasMaterial,
+          materialQuantity: eligmasQuantity,
+          type: 'materials',
+        });
+      }
+
+      const { totalXpNeeded } = calculateExpNeeds();
+
+      // Add XP as a special material type
+      const xpMaterial = getResourceDataByIdSync(10);
+      if (xpMaterial) {
+        materialMap.set(10, {
+          // Using Novice report ID as the XP material ID
+          material: xpMaterial,
+          materialQuantity: totalXpNeeded,
+          type: 'xp',
+        });
+      }
+
+      return Array.from(materialMap.values());
     });
   }
 
@@ -186,27 +189,27 @@ export function useMaterialCalculation() {
 
   if (!_materialsLeftover) {
     _materialsLeftover = computed(() => {
-    const resources = getAllItemsFromCache();
-    const leftover: Material[] = [];
+      const resources = getAllItemsFromCache();
+      const leftover: Material[] = [];
 
-    totalMaterialsNeeded.value.forEach(needed => {
-      const materialId = needed.material?.Id;
-      if (!materialId) return;
+      totalMaterialsNeeded.value.forEach((needed) => {
+        const materialId = needed.material?.Id;
+        if (!materialId) return;
 
-      const resource = resources[materialId];
-      if (!resource) return;
+        const resource = resources[materialId];
+        if (!resource) return;
 
-      const owned = resource.QuantityOwned ?? 0;
-      const remaining = owned - needed.materialQuantity;
+        const owned = resource.QuantityOwned ?? 0;
+        const remaining = owned - needed.materialQuantity;
 
-      leftover.push({
-        material: resource,
-        materialQuantity: remaining,
-        type: needed.type
+        leftover.push({
+          material: resource,
+          materialQuantity: remaining,
+          type: needed.type,
+        });
       });
-    });
 
-    return leftover;
+      return leftover;
     });
   }
 
@@ -216,26 +219,29 @@ export function useMaterialCalculation() {
     return allMaterialsData.value[studentId] || [];
   };
 
-  const getMaterialUsageByStudents = (materialId: number, viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed') => {
+  const getMaterialUsageByStudents = (
+    materialId: number,
+    viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed',
+  ) => {
     const usage: { student: StudentProps; quantity: number }[] = [];
     const isCredits = materialId === CREDITS_ID;
     const studentsCollection = studentData.value || {};
-    
+
     if (isExpReport(materialId)) {
       // Handle EXP reports
       const { studentXpDetails } = calculateExpNeeds();
 
-      studentXpDetails.forEach(detail => {
+      studentXpDetails.forEach((detail) => {
         const student = studentsCollection[detail.studentId];
         if (!student) return;
         if (studentDataStore.value[parseInt(detail.studentId)]?.isOwned === false) return; // skip unowned
-        
+
         const form = studentDataStore.value[parseInt(detail.studentId)];
         if (!form || !form.characterLevels) return;
 
         const currentLevel = form.characterLevels.current ?? 1;
         const targetLevel = form.characterLevels.target ?? currentLevel;
-        
+
         if (currentLevel < targetLevel) {
           const quantity = viewMode === 'needed' ? detail.xpNeeded : detail.remainingXp;
           if (quantity > 0) {
@@ -248,11 +254,15 @@ export function useMaterialCalculation() {
       const studentCredits = new Map<string, number>();
       const resources = getAllItemsFromCache();
       const ownedCredits = resources[CREDITS_ID]?.QuantityOwned ?? 0;
-      
+
       // First pass: collect all needed credits
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
         if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
-        const quantity = getStudentCredits(studentId, materials as Material[], allGearsData.value[studentId] || []);
+        const quantity = getStudentCredits(
+          studentId,
+          materials as Material[],
+          allGearsData.value[studentId] || [],
+        );
         if (quantity > 0) {
           studentCredits.set(studentId, quantity);
         }
@@ -269,35 +279,39 @@ export function useMaterialCalculation() {
           studentCredits.set(studentId, quantity);
         }
       });
-      
-      const totalNeededCredits = Array.from(studentCredits.values()).reduce((sum, qty) => sum + qty, 0);
-      
+
+      const totalNeededCredits = Array.from(studentCredits.values()).reduce(
+        (sum, qty) => sum + qty,
+        0,
+      );
+
       // Sort students by credit needs (highest to lowest)
-      const sortedStudents = Array.from(studentCredits.entries())
-        .sort(([, a], [, b]) => a - b);
-      
+      const sortedStudents = Array.from(studentCredits.entries()).sort(([, a], [, b]) => a - b);
+
       // Calculate remaining credits for each student
       let remainingCredits = Math.max(0, totalNeededCredits - ownedCredits);
       const studentRemainingCredits = new Map<string, number>();
-      
+
       // Distribute remaining credits to students with highest needs first
       for (const [studentId, neededCredits] of sortedStudents) {
         if (remainingCredits <= 0) {
           studentRemainingCredits.set(studentId, 0);
           continue;
         }
-        
+
         const studentRemaining = Math.min(neededCredits, remainingCredits);
         studentRemainingCredits.set(studentId, studentRemaining);
         remainingCredits -= studentRemaining;
       }
-      
+
       studentCredits.forEach((quantity, studentId) => {
         const student = studentsCollection[studentId];
         if (student) {
           const isMissingView = viewMode === 'missing' || viewMode === 'equipment-missing';
-          const displayQuantity = isMissingView ? studentRemainingCredits.get(studentId) ?? 0 : quantity;
-          
+          const displayQuantity = isMissingView
+            ? (studentRemainingCredits.get(studentId) ?? 0)
+            : quantity;
+
           if (displayQuantity > 0) {
             usage.push({ student, quantity: displayQuantity });
           }
@@ -308,7 +322,7 @@ export function useMaterialCalculation() {
       const materialNeeds = new Map<string, number>();
       const resources = getAllItemsFromCache();
       const ownedQuantity = resources[materialId]?.QuantityOwned ?? 0;
-      
+
       // First pass: collect all needed quantities
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
         const student = studentsCollection[studentId];
@@ -316,12 +330,12 @@ export function useMaterialCalculation() {
         if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
         let quantity = 0;
-        (materials as Material[]).forEach(material => {
+        (materials as Material[]).forEach((material) => {
           if (material.material?.Id === materialId) {
             quantity += material.materialQuantity;
           }
         });
-        
+
         if (quantity > 0) {
           materialNeeds.set(studentId, quantity);
         }
@@ -335,53 +349,57 @@ export function useMaterialCalculation() {
         if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
 
         let quantity = 0;
-        (gears as Material[]).forEach(gear => {
+        (gears as Material[]).forEach((gear) => {
           if (gear.type === 'equipments') return;
           if (gear.material?.Id === materialId) {
             quantity += gear.materialQuantity;
           }
         });
-        
+
         if (quantity > 0) {
           materialNeeds.set(studentId, quantity);
         }
       });
-      
-      const totalNeededQuantity = Array.from(materialNeeds.values()).reduce((sum, qty) => sum + qty, 0);
-      
+
+      const totalNeededQuantity = Array.from(materialNeeds.values()).reduce(
+        (sum, qty) => sum + qty,
+        0,
+      );
+
       // Sort students by material needs (highest to lowest)
-      const sortedStudents = Array.from(materialNeeds.entries())
-        .sort(([, a], [, b]) => a - b);
-      
+      const sortedStudents = Array.from(materialNeeds.entries()).sort(([, a], [, b]) => a - b);
+
       // Calculate remaining quantity for each student
       let remainingQuantity = Math.max(0, totalNeededQuantity - ownedQuantity);
       const studentRemainingQuantities = new Map<string, number>();
-      
+
       // Distribute remaining quantity to students with highest needs first
       for (const [studentId, neededQuantity] of sortedStudents) {
         if (remainingQuantity <= 0) {
           studentRemainingQuantities.set(studentId, 0);
           continue;
         }
-        
+
         const studentRemaining = Math.min(neededQuantity, remainingQuantity);
         studentRemainingQuantities.set(studentId, studentRemaining);
         remainingQuantity -= studentRemaining;
       }
-      
+
       materialNeeds.forEach((quantity, studentId) => {
         const student = studentsCollection[studentId];
         if (student) {
           const isMissingView = viewMode === 'missing' || viewMode === 'equipment-missing';
-          const displayQuantity = isMissingView ? studentRemainingQuantities.get(studentId) ?? 0 : quantity;
-          
+          const displayQuantity = isMissingView
+            ? (studentRemainingQuantities.get(studentId) ?? 0)
+            : quantity;
+
           if (displayQuantity > 0) {
             usage.push({ student, quantity: displayQuantity });
           }
         }
       });
     }
-    
+
     return usage;
   };
 
@@ -390,6 +408,6 @@ export function useMaterialCalculation() {
     materialsLeftover,
     getStudentMaterials,
     getMaterialUsageByStudents,
-    calculateExpNeeds
+    calculateExpNeeds,
   };
 }

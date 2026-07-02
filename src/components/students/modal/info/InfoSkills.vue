@@ -19,10 +19,21 @@ const skillOrder: SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'];
 const { bulletTypeColor } = useStudentInfo(studentRef);
 
 const {
-  useExtraExSkill, hasExtraExSkill, isBasicEnhanced, isPassiveEnhanced,
-  toggleExtraExSkill, getSkillIcon, getSkillName,
-  getLevelDisplay, getSkillDescription, getSkillCostDisplay, getSkillIconUrl
-} = useStudentSkillDisplay(studentRef, toRef(() => props.skillLevels));
+  useExtraExSkill,
+  hasExtraExSkill,
+  isBasicEnhanced,
+  isPassiveEnhanced,
+  toggleExtraExSkill,
+  getSkillIcon,
+  getSkillName,
+  getLevelDisplay,
+  getSkillDescription,
+  getSkillCostDisplay,
+  getSkillIconUrl,
+} = useStudentSkillDisplay(
+  studentRef,
+  toRef(() => props.skillLevels),
+);
 
 const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
   useTooltip<SkillType>();
@@ -37,9 +48,11 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
             v-if="skillType === 'Ex' && hasExtraExSkill"
             class="ex-toggle-btn"
             :class="{ active: useExtraExSkill }"
-            :style="{ borderColor: bulletTypeColor, color: useExtraExSkill ?
-              'white' : bulletTypeColor, backgroundColor: useExtraExSkill ?
-              bulletTypeColor : 'transparent' }"
+            :style="{
+              borderColor: bulletTypeColor,
+              color: useExtraExSkill ? 'white' : bulletTypeColor,
+              backgroundColor: useExtraExSkill ? bulletTypeColor : 'transparent',
+            }"
             @click="toggleExtraExSkill"
             type="button"
           >
@@ -161,7 +174,8 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
   visibility: hidden;
 }
 
-img, svg {
+img,
+svg {
   vertical-align: middle;
 }
 
@@ -205,7 +219,9 @@ img, svg {
   border-radius: 4px;
   border: 1.5px solid;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   line-height: 1.4;
   letter-spacing: 0.5px;
 }

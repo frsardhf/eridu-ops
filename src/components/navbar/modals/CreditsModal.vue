@@ -16,20 +16,32 @@ function closeModal(event: MouseEvent) {
       <div class="credits-modal-header">
         <h2 class="credits-modal-title">{{ $t('credits') }}</h2>
         <button class="credits-close-button" @click="emit('close')" :aria-label="$t('close')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
-      
+
       <div class="credits-modal-content">
         <div class="credits-section">
           <h3>{{ $t('creditsModal.dataSources') }}</h3>
           <p>{{ $t('creditsModal.dataSourcesBody') }}</p>
           <ul>
-            <li><a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a></li>
-            <li><a href="https://arona.icu" target="_blank" rel="noopener noreferrer">arona.icu</a></li>
+            <li>
+              <a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a>
+            </li>
+            <li>
+              <a href="https://arona.icu" target="_blank" rel="noopener noreferrer">arona.icu</a>
+            </li>
           </ul>
         </div>
 
@@ -81,8 +93,14 @@ function closeModal(event: MouseEvent) {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .credits-modal-header {
@@ -169,4 +187,4 @@ function closeModal(event: MouseEvent) {
     padding: 12px;
   }
 }
-</style> 
+</style>

@@ -1,16 +1,28 @@
 import { ref, computed, watch, type Ref } from 'vue';
 import { StudentProps } from '../../types/student';
 import {
-  CharacterLevels, SkillLevels, SkillType, PotentialLevels, PotentialType,
-  DEFAULT_CHARACTER_LEVELS, DEFAULT_SKILL_LEVELS, DEFAULT_POTENTIAL_LEVELS,
+  CharacterLevels,
+  SkillLevels,
+  SkillType,
+  PotentialLevels,
+  PotentialType,
+  DEFAULT_CHARACTER_LEVELS,
+  DEFAULT_SKILL_LEVELS,
+  DEFAULT_POTENTIAL_LEVELS,
   Material,
 } from '../../types/upgrade';
 import {
-  EquipmentLevels, EquipmentType, GradeLevels, GradeInfos, ExclusiveGearLevel,
+  EquipmentLevels,
+  EquipmentType,
+  GradeLevels,
+  GradeInfos,
+  ExclusiveGearLevel,
 } from '../../types/gear';
 import {
-  BondDetailDataProps, DEFAULT_BOND_DETAIL,
-  OtherExpDataProps, DEFAULT_OTHER_EXP,
+  BondDetailDataProps,
+  DEFAULT_BOND_DETAIL,
+  OtherExpDataProps,
+  DEFAULT_OTHER_EXP,
 } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../services/studentPersistenceService';
 import { setStudentDataDirect, studentDataStore } from '../stores/studentStore';
@@ -23,7 +35,10 @@ import { MAX_GRADE, MAX_EXCLUSIVE_GEAR_LEVEL } from '../constants/gameConstants'
 import { calculateGiftStackExp, computeCafeDays, computeCafeExp } from '../utils/bondExpUtils';
 import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import {
-  SELECTOR_BOX_ID, SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID, YELLOW_STONE_ID,
+  SELECTOR_BOX_ID,
+  SR_GIFT_MATERIAL_ID,
+  SSR_GIFT_MATERIAL_ID,
+  YELLOW_STONE_ID,
 } from '../../types/resource';
 import { BOX_ITEM_IDS } from '../constants/giftConstants';
 import { getAllocatedGifts } from './useGiftCalculation';
@@ -52,8 +67,8 @@ import bondData from '../../data/data.json';
 const HISTORY_LIMIT = 10;
 
 interface GiftSnapshot {
-  giftFormData:     Record<string, number>;
-  boxFormData:      Record<string, number>;
+  giftFormData: Record<string, number>;
+  boxFormData: Record<string, number>;
   nonFavorGiftsMap: Record<number, number>;
 }
 
@@ -61,50 +76,47 @@ export interface UseStudentFormOptions {
   /** Persistence gate: saves are skipped when this returns false. Defaults to always-visible. */
   isVisible?: () => boolean;
   /** Optional close hook fired by `closeModal()`. */
-  onClose?:   () => void;
+  onClose?: () => void;
 }
 
-export function useStudentForm(
-  studentRef: Ref<StudentProps>,
-  opts: UseStudentFormOptions = {},
-) {
+export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFormOptions = {}) {
   const student = () => studentRef.value;
   const characterXpTable = bondData.character_xp;
-  const bondXpTable      = bondData.bond_xp;
+  const bondXpTable = bondData.bond_xp;
 
   // --- Form refs (everything that persists to `forms[studentId]`) ---
   // Upgrade slice
   const characterLevels = ref<CharacterLevels>({ ...DEFAULT_CHARACTER_LEVELS });
-  const skillLevels     = ref<SkillLevels>({ ...DEFAULT_SKILL_LEVELS });
+  const skillLevels = ref<SkillLevels>({ ...DEFAULT_SKILL_LEVELS });
   const potentialLevels = ref<PotentialLevels>({ ...DEFAULT_POTENTIAL_LEVELS });
 
   // Gear slice
-  const equipmentLevels    = ref<EquipmentLevels>({});
-  const gradeLevels        = ref<GradeLevels>({});
-  const gradeInfos         = ref<GradeInfos>({});
+  const equipmentLevels = ref<EquipmentLevels>({});
+  const gradeLevels = ref<GradeLevels>({});
+  const gradeInfos = ref<GradeInfos>({});
   const exclusiveGearLevel = ref<ExclusiveGearLevel>({});
 
   // Gifts + bond slice
-  const giftFormData     = ref<Record<string, number>>({});
-  const boxFormData      = ref<Record<string, number>>({});
+  const giftFormData = ref<Record<string, number>>({});
+  const boxFormData = ref<Record<string, number>>({});
   const nonFavorGiftsMap = ref<Record<number, number>>({});
-  const bondDetailData   = ref<BondDetailDataProps>({ ...DEFAULT_BOND_DETAIL });
-  const otherExpData     = ref<OtherExpDataProps>({ ...DEFAULT_OTHER_EXP });
+  const bondDetailData = ref<BondDetailDataProps>({ ...DEFAULT_BOND_DETAIL });
+  const otherExpData = ref<OtherExpDataProps>({ ...DEFAULT_OTHER_EXP });
 
   // --- Transient (non-persisted) state ---
-  const allSkillsMaxed         = ref(false);
-  const targetSkillsMaxed      = ref(false);
-  const allPotentialsMaxed     = ref(false);
-  const targetPotentialsMaxed  = ref(false);
-  const allGearsMaxed          = ref(false);
-  const targetGearsMaxed       = ref(false);
+  const allSkillsMaxed = ref(false);
+  const targetSkillsMaxed = ref(false);
+  const allPotentialsMaxed = ref(false);
+  const targetPotentialsMaxed = ref(false);
+  const allGearsMaxed = ref(false);
+  const targetGearsMaxed = ref(false);
 
-  const isCalculating          = ref(false);
-  const showConvertModal       = ref(false);
-  const convertModalNeeded     = ref(0);
-  const showSyncGiftsModal     = ref(false);
-  const undoStack              = ref<GiftSnapshot[]>([]);
-  const redoStack              = ref<GiftSnapshot[]>([]);
+  const isCalculating = ref(false);
+  const showConvertModal = ref(false);
+  const convertModalNeeded = ref(0);
+  const showSyncGiftsModal = ref(false);
+  const undoStack = ref<GiftSnapshot[]>([]);
+  const redoStack = ref<GiftSnapshot[]>([]);
 
   // --- Defaults (built once per mount; student switching expects remount) ---
   // Equipment defaults follow the student's Equipment slot list. Built lazily
@@ -112,65 +124,81 @@ export function useStudentForm(
   // defaults stay tied to the original student. Both StudentModal and
   // BondsStudentEditor key their hook calls per student so this is fine.
   const defaultEquipmentLevels: EquipmentLevels = {};
-  (student()?.Equipment ?? []).forEach(type => {
+  (student()?.Equipment ?? []).forEach((type) => {
     defaultEquipmentLevels[type as EquipmentType] = { current: 1, target: 1 };
   });
   const starGrade = student()?.StarGrade ?? 1;
 
   const FORM_DEFAULTS = {
-    characterLevels:    { ...DEFAULT_CHARACTER_LEVELS } as CharacterLevels,
-    skillLevels:        { ...DEFAULT_SKILL_LEVELS }     as SkillLevels,
-    potentialLevels:    { ...DEFAULT_POTENTIAL_LEVELS } as PotentialLevels,
-    equipmentLevels:    defaultEquipmentLevels,
-    gradeLevels:        { current: starGrade, target: starGrade } as GradeLevels,
-    gradeInfos:         { owned: 0, price: 1, purchasable: 20 } as GradeInfos,
+    characterLevels: { ...DEFAULT_CHARACTER_LEVELS } as CharacterLevels,
+    skillLevels: { ...DEFAULT_SKILL_LEVELS } as SkillLevels,
+    potentialLevels: { ...DEFAULT_POTENTIAL_LEVELS } as PotentialLevels,
+    equipmentLevels: defaultEquipmentLevels,
+    gradeLevels: { current: starGrade, target: starGrade } as GradeLevels,
+    gradeInfos: { owned: 0, price: 1, purchasable: 20 } as GradeInfos,
     exclusiveGearLevel: { current: 0, target: 0 } as ExclusiveGearLevel,
-    giftFormData:       {} as Record<string, number>,
-    boxFormData:        {} as Record<string, number>,
-    nonFavorGiftsMap:   {} as Record<number, number>,
-    bondDetailData:     { ...DEFAULT_BOND_DETAIL } as BondDetailDataProps,
-    otherExpData:       { ...DEFAULT_OTHER_EXP }   as OtherExpDataProps,
+    giftFormData: {} as Record<string, number>,
+    boxFormData: {} as Record<string, number>,
+    nonFavorGiftsMap: {} as Record<number, number>,
+    bondDetailData: { ...DEFAULT_BOND_DETAIL } as BondDetailDataProps,
+    otherExpData: { ...DEFAULT_OTHER_EXP } as OtherExpDataProps,
   };
 
   // --- Persistence (single debounced flush, single load, single token guard) ---
-  const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
-    useDebouncedFormPersistence({
-      isVisible: opts.isVisible ?? (() => true),
-      refs: {
-        characterLevels, skillLevels, potentialLevels,
-        equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel,
-        giftFormData, boxFormData, nonFavorGiftsMap,
-        bondDetailData, otherExpData,
-      },
-      defaults: FORM_DEFAULTS,
-      loadFn:   (staged) => loadFormDataToRefs(student().Id, staged, FORM_DEFAULTS),
-      saveFn:   () => saveFormData(student().Id, {
-        characterLevels:    characterLevels.value,
-        skillLevels:        skillLevels.value,
-        potentialLevels:    potentialLevels.value,
-        equipmentLevels:    { ...equipmentLevels.value },
-        gradeLevels:        { ...gradeLevels.value },
-        gradeInfos:         { ...gradeInfos.value },
+  const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } = useDebouncedFormPersistence({
+    isVisible: opts.isVisible ?? (() => true),
+    refs: {
+      characterLevels,
+      skillLevels,
+      potentialLevels,
+      equipmentLevels,
+      gradeLevels,
+      gradeInfos,
+      exclusiveGearLevel,
+      giftFormData,
+      boxFormData,
+      nonFavorGiftsMap,
+      bondDetailData,
+      otherExpData,
+    },
+    defaults: FORM_DEFAULTS,
+    loadFn: (staged) => loadFormDataToRefs(student().Id, staged, FORM_DEFAULTS),
+    saveFn: () =>
+      saveFormData(student().Id, {
+        characterLevels: characterLevels.value,
+        skillLevels: skillLevels.value,
+        potentialLevels: potentialLevels.value,
+        equipmentLevels: { ...equipmentLevels.value },
+        gradeLevels: { ...gradeLevels.value },
+        gradeInfos: { ...gradeInfos.value },
         exclusiveGearLevel: { ...exclusiveGearLevel.value },
-        giftFormData:       giftFormData.value,
-        boxFormData:        boxFormData.value,
-        nonFavorGiftsMap:   nonFavorGiftsMap.value,
-        bondDetailData:     bondDetailData.value,
-        otherExpData:       otherExpData.value,
+        giftFormData: giftFormData.value,
+        boxFormData: boxFormData.value,
+        nonFavorGiftsMap: nonFavorGiftsMap.value,
+        bondDetailData: bondDetailData.value,
+        otherExpData: otherExpData.value,
       }),
-      onSaved:  (saved) => setStudentDataDirect(student().Id, saved),
-      afterLoad: () => {
-        // Clear undo history so loaded state isn't undoable.
-        undoStack.value = [];
-        redoStack.value = [];
-      },
-      watchSources: [
-        characterLevels, skillLevels, potentialLevels,
-        equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel,
-        giftFormData, boxFormData, nonFavorGiftsMap,
-        bondDetailData, otherExpData,
-      ],
-    });
+    onSaved: (saved) => setStudentDataDirect(student().Id, saved),
+    afterLoad: () => {
+      // Clear undo history so loaded state isn't undoable.
+      undoStack.value = [];
+      redoStack.value = [];
+    },
+    watchSources: [
+      characterLevels,
+      skillLevels,
+      potentialLevels,
+      equipmentLevels,
+      gradeLevels,
+      gradeInfos,
+      exclusiveGearLevel,
+      giftFormData,
+      boxFormData,
+      nonFavorGiftsMap,
+      bondDetailData,
+      otherExpData,
+    ],
+  });
 
   // --- Maxed-state watchers ---
   const checkAllSkillsMaxed = () =>
@@ -184,21 +212,29 @@ export function useStudentForm(
       return levels.target === max;
     });
   const checkAllPotentialsMaxed = () =>
-    Object.values(potentialLevels.value).every(l =>
-      l.current === MAX_POTENTIAL_LEVEL && l.target === MAX_POTENTIAL_LEVEL,
+    Object.values(potentialLevels.value).every(
+      (l) => l.current === MAX_POTENTIAL_LEVEL && l.target === MAX_POTENTIAL_LEVEL,
     );
   const checkTargetPotentialsMaxed = () =>
-    Object.values(potentialLevels.value).every(l => l.target === MAX_POTENTIAL_LEVEL);
+    Object.values(potentialLevels.value).every((l) => l.target === MAX_POTENTIAL_LEVEL);
 
-  watch(skillLevels, () => {
-    allSkillsMaxed.value    = checkAllSkillsMaxed();
-    targetSkillsMaxed.value = checkTargetSkillsMaxed();
-  }, { deep: true });
+  watch(
+    skillLevels,
+    () => {
+      allSkillsMaxed.value = checkAllSkillsMaxed();
+      targetSkillsMaxed.value = checkTargetSkillsMaxed();
+    },
+    { deep: true },
+  );
 
-  watch(potentialLevels, () => {
-    allPotentialsMaxed.value    = checkAllPotentialsMaxed();
-    targetPotentialsMaxed.value = checkTargetPotentialsMaxed();
-  }, { deep: true });
+  watch(
+    potentialLevels,
+    () => {
+      allPotentialsMaxed.value = checkAllPotentialsMaxed();
+      targetPotentialsMaxed.value = checkTargetPotentialsMaxed();
+    },
+    { deep: true },
+  );
 
   const checkAllGearsMaxed = () => {
     return (student()?.Equipment ?? []).every((type) => {
@@ -215,10 +251,14 @@ export function useStudentForm(
     });
   };
 
-  watch(equipmentLevels, () => {
-    allGearsMaxed.value    = checkAllGearsMaxed();
-    targetGearsMaxed.value = checkTargetGearsMaxed();
-  }, { deep: true });
+  watch(
+    equipmentLevels,
+    () => {
+      allGearsMaxed.value = checkAllGearsMaxed();
+      targetGearsMaxed.value = checkTargetGearsMaxed();
+    },
+    { deep: true },
+  );
 
   // --- Material aggregates ---
   const allMaterialsNeeded = computed<Material[]>(() =>
@@ -241,13 +281,21 @@ export function useStudentForm(
   );
 
   // Update aggregate stores when calcs change (side effects belong in watchers).
-  watch(allMaterialsNeeded, (mats) => {
-    updateMaterialsData(student().Id, mats);
-  }, { immediate: true });
+  watch(
+    allMaterialsNeeded,
+    (mats) => {
+      updateMaterialsData(student().Id, mats);
+    },
+    { immediate: true },
+  );
 
-  watch(equipmentMaterialsNeeded, (mats) => {
-    updateGearsData(student().Id, mats);
-  }, { immediate: true });
+  watch(
+    equipmentMaterialsNeeded,
+    (mats) => {
+      updateGearsData(student().Id, mats);
+    },
+    { immediate: true },
+  );
 
   // --- Exclusive gear ---
   const hasExclusiveGear = computed(() => {
@@ -271,7 +319,7 @@ export function useStudentForm(
   // --- XP / Bond computeds ---
   const characterRemainingXp = computed(() => {
     const currentXp = characterXpTable[characterLevels.value.current - 1] ?? 0;
-    const targetXp  = characterXpTable[characterLevels.value.target  - 1] ?? 0;
+    const targetXp = characterXpTable[characterLevels.value.target - 1] ?? 0;
     return Math.max(0, targetXp - currentXp);
   });
 
@@ -284,11 +332,11 @@ export function useStudentForm(
       otherExpData.value.cafeDateInclusive,
     ),
   );
-  const cafeExp  = computed(() => computeCafeExp(otherExpData.value.cafeTapsPerDay, cafeDays.value));
+  const cafeExp = computed(() => computeCafeExp(otherExpData.value.cafeTapsPerDay, cafeDays.value));
   const bonusExp = computed(() => Math.max(0, otherExpData.value.bonusExp || 0));
 
-  const totalCumulativeExp = computed(() =>
-    giftsExp.value + boxesExp.value + cafeExp.value + bonusExp.value,
+  const totalCumulativeExp = computed(
+    () => giftsExp.value + boxesExp.value + cafeExp.value + bonusExp.value,
   );
 
   const newBondLevel = computed(() => {
@@ -317,7 +365,9 @@ export function useStudentForm(
   // Writable computed exposes bondDetailData.currentBond as a flat scalar.
   const currentBond = computed({
     get: () => bondDetailData.value.currentBond,
-    set: (v) => { bondDetailData.value.currentBond = v; },
+    set: (v) => {
+      bondDetailData.value.currentBond = v;
+    },
   });
 
   // --- Undo/redo helpers (gift inputs only) ---
@@ -327,8 +377,8 @@ export function useStudentForm(
   function savePreviousState() {
     if (undoStack.value.length >= HISTORY_LIMIT) undoStack.value.shift();
     undoStack.value.push({
-      giftFormData:     { ...giftFormData.value },
-      boxFormData:      { ...boxFormData.value },
+      giftFormData: { ...giftFormData.value },
+      boxFormData: { ...boxFormData.value },
       nonFavorGiftsMap: { ...nonFavorGiftsMap.value },
     });
     redoStack.value = [];
@@ -337,32 +387,37 @@ export function useStudentForm(
   // --- Upgrade handlers ---
   function handleLevelUpdate(current: number, target: number) {
     characterLevels.value.current = current;
-    characterLevels.value.target  = target;
+    characterLevels.value.target = target;
   }
 
   function handleSkillUpdate(type: SkillType, current: number, target: number) {
     if (current >= 1 && target >= current && skillLevels.value[type]) {
       skillLevels.value[type].current = current;
-      skillLevels.value[type].target  = target;
+      skillLevels.value[type].target = target;
     }
   }
 
   function handlePotentialUpdate(type: PotentialType, current: number, target: number) {
     if (current >= 0 && target >= current && potentialLevels.value[type]) {
       potentialLevels.value[type].current = current;
-      potentialLevels.value[type].target  = target;
+      potentialLevels.value[type].target = target;
     }
   }
 
   function toggleMaxAllSkills(checked: boolean) {
     Object.keys(skillLevels.value).forEach((type) => {
       const max = student()?.Skills?.[type as SkillType]?.Parameters?.[0]?.length;
-      const sl  = skillLevels.value[type as SkillType];
+      const sl = skillLevels.value[type as SkillType];
       if (!sl) return;
-      if (checked) { sl.current = max; sl.target = max; }
-      else         { sl.current = 1;   sl.target = 1;   }
+      if (checked) {
+        sl.current = max;
+        sl.target = max;
+      } else {
+        sl.current = 1;
+        sl.target = 1;
+      }
     });
-    allSkillsMaxed.value    = checked;
+    allSkillsMaxed.value = checked;
     targetSkillsMaxed.value = checked;
     saveToIndexedDB();
   }
@@ -370,7 +425,7 @@ export function useStudentForm(
   function toggleMaxTargetSkills(checked: boolean) {
     Object.keys(skillLevels.value).forEach((type) => {
       const max = student()?.Skills?.[type as SkillType]?.Parameters?.[0]?.length;
-      const sl  = skillLevels.value[type as SkillType];
+      const sl = skillLevels.value[type as SkillType];
       if (!sl) return;
       if (checked) {
         sl.target = max;
@@ -380,7 +435,7 @@ export function useStudentForm(
       }
     });
     targetSkillsMaxed.value = checked;
-    allSkillsMaxed.value    = checkAllSkillsMaxed();
+    allSkillsMaxed.value = checkAllSkillsMaxed();
     saveToIndexedDB();
   }
 
@@ -388,10 +443,15 @@ export function useStudentForm(
     Object.keys(potentialLevels.value).forEach((type) => {
       const pl = potentialLevels.value[type as PotentialType];
       if (!pl) return;
-      if (checked) { pl.current = MAX_POTENTIAL_LEVEL; pl.target = MAX_POTENTIAL_LEVEL; }
-      else         { pl.current = 0;                    pl.target = 0;                    }
+      if (checked) {
+        pl.current = MAX_POTENTIAL_LEVEL;
+        pl.target = MAX_POTENTIAL_LEVEL;
+      } else {
+        pl.current = 0;
+        pl.target = 0;
+      }
     });
-    allPotentialsMaxed.value    = checked;
+    allPotentialsMaxed.value = checked;
     targetPotentialsMaxed.value = checked;
     saveToIndexedDB();
   }
@@ -401,10 +461,10 @@ export function useStudentForm(
       const pl = potentialLevels.value[type as PotentialType];
       if (!pl) return;
       if (checked) pl.target = MAX_POTENTIAL_LEVEL;
-      else         pl.target = pl.current;
+      else pl.target = pl.current;
     });
     targetPotentialsMaxed.value = checked;
-    allPotentialsMaxed.value    = checkAllPotentialsMaxed();
+    allPotentialsMaxed.value = checkAllPotentialsMaxed();
     saveToIndexedDB();
   }
 
@@ -417,27 +477,27 @@ export function useStudentForm(
       return;
     }
     equipmentLevels.value[type].current = current;
-    equipmentLevels.value[type].target  = target;
+    equipmentLevels.value[type].target = target;
   }
 
   function handleGradeUpdate(current: number, target: number) {
     if (current < 1 || current > MAX_GRADE || target < current || target > MAX_GRADE) return;
     if (!gradeLevels.value) return;
     gradeLevels.value.current = current;
-    gradeLevels.value.target  = target;
+    gradeLevels.value.target = target;
   }
 
   function handleGradeInfoUpdate(owned: number, price: number, purchasable: number) {
     if (!gradeInfos.value) return;
-    gradeInfos.value.owned       = owned;
-    gradeInfos.value.price       = price;
+    gradeInfos.value.owned = owned;
+    gradeInfos.value.price = price;
     gradeInfos.value.purchasable = purchasable;
   }
 
   function handleExclusiveGearUpdate(current: number, target: number) {
     const max = maxUnlockableGearTier.value;
     current = Math.min(Math.max(0, current), max);
-    target  = Math.min(Math.max(current, target), MAX_EXCLUSIVE_GEAR_LEVEL);
+    target = Math.min(Math.max(current, target), MAX_EXCLUSIVE_GEAR_LEVEL);
     exclusiveGearLevel.value = { current, target };
     if (opts.isVisible?.() ?? true) saveToIndexedDB();
   }
@@ -447,9 +507,9 @@ export function useStudentForm(
       const max = getMaxTierForTypeSync(type);
       equipmentLevels.value[type as EquipmentType] = checked
         ? { current: max, target: max }
-        : { current: 1,   target: 1   };
+        : { current: 1, target: 1 };
     });
-    allGearsMaxed.value    = checked;
+    allGearsMaxed.value = checked;
     targetGearsMaxed.value = checked;
     saveToIndexedDB();
   }
@@ -459,11 +519,11 @@ export function useStudentForm(
       const max = getMaxTierForTypeSync(type);
       const current = equipmentLevels.value[type as EquipmentType]?.current ?? 1;
       equipmentLevels.value[type as EquipmentType] = checked
-        ? { current, target: max     }
+        ? { current, target: max }
         : { current, target: current };
     });
     targetGearsMaxed.value = checked;
-    allGearsMaxed.value    = checkAllGearsMaxed();
+    allGearsMaxed.value = checkAllGearsMaxed();
     saveToIndexedDB();
   }
 
@@ -488,7 +548,7 @@ export function useStudentForm(
     boxFormData.value[boxId] = newValue;
 
     // Manual aggregate edits below the per-rarity sum invalidate per-gift tracking.
-    if (boxId === SR_GIFT_MATERIAL_ID)  clearNonFavorIfOvercount('SR',  newValue);
+    if (boxId === SR_GIFT_MATERIAL_ID) clearNonFavorIfOvercount('SR', newValue);
     if (boxId === SSR_GIFT_MATERIAL_ID) clearNonFavorIfOvercount('SSR', newValue);
   }
 
@@ -496,13 +556,14 @@ export function useStudentForm(
   // counts in nonFavorGiftsMap so bond EXP (which reads the aggregate) stays
   // in sync when individual non-favored gifts are edited.
   function recomputeNonFavorAggregates() {
-    let sr = 0, ssr = 0;
+    let sr = 0,
+      ssr = 0;
     Object.entries(nonFavorGiftsMap.value).forEach(([id, qty]) => {
       const rarity = getResourceDataByIdSync(Number(id))?.Rarity;
-      if (rarity === 'SR')  sr  += qty;
+      if (rarity === 'SR') sr += qty;
       if (rarity === 'SSR') ssr += qty;
     });
-    boxFormData.value[SR_GIFT_MATERIAL_ID]  = sr;
+    boxFormData.value[SR_GIFT_MATERIAL_ID] = sr;
     boxFormData.value[SSR_GIFT_MATERIAL_ID] = ssr;
   }
 
@@ -512,24 +573,33 @@ export function useStudentForm(
     const input = event.target as HTMLInputElement;
     const newValue = parseInt(input.value) || 0;
     if (newValue <= 0) delete nonFavorGiftsMap.value[giftId];
-    else                 nonFavorGiftsMap.value[giftId] = newValue;
+    else nonFavorGiftsMap.value[giftId] = newValue;
     recomputeNonFavorAggregates();
   }
 
   // When the aggregate stepper drops below the tracked per-gift sum, we can't
   // tell which specific gifts were removed: clear that rarity's tracking.
   function clearNonFavorIfOvercount(rarity: 'SR' | 'SSR', newTotal: number) {
-    const nonFavorIds = Object.keys(nonFavorGiftsMap.value)
-      .filter(id => getResourceDataByIdSync(Number(id))?.Rarity === rarity);
-    const nonFavorSum = nonFavorIds.reduce((s, id) => s + (nonFavorGiftsMap.value[Number(id)] ?? 0), 0);
+    const nonFavorIds = Object.keys(nonFavorGiftsMap.value).filter(
+      (id) => getResourceDataByIdSync(Number(id))?.Rarity === rarity,
+    );
+    const nonFavorSum = nonFavorIds.reduce(
+      (s, id) => s + (nonFavorGiftsMap.value[Number(id)] ?? 0),
+      0,
+    );
 
-    const convertedIds = Object.keys(boxFormData.value)
-      .filter(id => !BOX_ITEM_IDS.has(Number(id)) && getResourceDataByIdSync(Number(id))?.Rarity === rarity);
-    const convertedSum = convertedIds.reduce((s, id) => s + (boxFormData.value[Number(id)] ?? 0), 0);
+    const convertedIds = Object.keys(boxFormData.value).filter(
+      (id) =>
+        !BOX_ITEM_IDS.has(Number(id)) && getResourceDataByIdSync(Number(id))?.Rarity === rarity,
+    );
+    const convertedSum = convertedIds.reduce(
+      (s, id) => s + (boxFormData.value[Number(id)] ?? 0),
+      0,
+    );
 
     if (newTotal < nonFavorSum + convertedSum) {
-      nonFavorIds.forEach(id => delete nonFavorGiftsMap.value[Number(id)]);
-      convertedIds.forEach(id => delete boxFormData.value[Number(id)]);
+      nonFavorIds.forEach((id) => delete nonFavorGiftsMap.value[Number(id)]);
+      convertedIds.forEach((id) => delete boxFormData.value[Number(id)]);
     }
   }
 
@@ -549,17 +619,17 @@ export function useStudentForm(
   function convertBoxes() {
     if (!student()?.Boxes?.length) return;
 
-    const srCount    = boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0;
-    const stoneCount = boxFormData.value[YELLOW_STONE_ID]     ?? 0;
+    const srCount = boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0;
+    const stoneCount = boxFormData.value[YELLOW_STONE_ID] ?? 0;
     if (srCount <= 0 || stoneCount <= 0) return;
 
     const convertedCount = Math.min(Math.floor(srCount / 2), stoneCount);
-    const giftsNeeded    = convertedCount * 2;
+    const giftsNeeded = convertedCount * 2;
 
     const hasIndividualTracking = Object.keys(nonFavorGiftsMap.value).length > 0;
     if (hasIndividualTracking) {
       convertModalNeeded.value = giftsNeeded;
-      showConvertModal.value   = true;
+      showConvertModal.value = true;
     } else {
       savePreviousState();
       calculateOptimalConversion();
@@ -576,7 +646,7 @@ export function useStudentForm(
       const giftId = Number(id);
       const remaining = (nonFavorGiftsMap.value[giftId] ?? 0) - qty;
       if (remaining <= 0) delete nonFavorGiftsMap.value[giftId];
-      else                  nonFavorGiftsMap.value[giftId] = remaining;
+      else nonFavorGiftsMap.value[giftId] = remaining;
       if (qty > 0) {
         boxFormData.value[giftId] = (boxFormData.value[giftId] ?? 0) + qty;
       }
@@ -595,20 +665,20 @@ export function useStudentForm(
     if (isCalculating.value) return;
     try {
       isCalculating.value = true;
-      const yellowStoneQuantity     = boxFormData.value[YELLOW_STONE_ID]      || 0;
-      const srGiftMaterialQuantity  = boxFormData.value[SR_GIFT_MATERIAL_ID]  || 0;
-      const selectorBoxQuantity     = boxFormData.value[SELECTOR_BOX_ID]     || 0;
+      const yellowStoneQuantity = boxFormData.value[YELLOW_STONE_ID] || 0;
+      const srGiftMaterialQuantity = boxFormData.value[SR_GIFT_MATERIAL_ID] || 0;
+      const selectorBoxQuantity = boxFormData.value[SELECTOR_BOX_ID] || 0;
       if (yellowStoneQuantity <= 0 || srGiftMaterialQuantity <= 0) return;
 
       const maxConvertibleByMaterials = Math.floor(srGiftMaterialQuantity / 2);
-      const maxConvertibleByStones    = yellowStoneQuantity;
-      const convertedQuantity         = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
+      const maxConvertibleByStones = yellowStoneQuantity;
+      const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
 
       boxFormData.value = {
         ...boxFormData.value,
-        [YELLOW_STONE_ID]:      yellowStoneQuantity - convertedQuantity,
-        [SR_GIFT_MATERIAL_ID]:  srGiftMaterialQuantity - convertedQuantity * 2,
-        [SELECTOR_BOX_ID]:      selectorBoxQuantity + convertedQuantity,
+        [YELLOW_STONE_ID]: yellowStoneQuantity - convertedQuantity,
+        [SR_GIFT_MATERIAL_ID]: srGiftMaterialQuantity - convertedQuantity * 2,
+        [SELECTOR_BOX_ID]: selectorBoxQuantity + convertedQuantity,
       };
     } finally {
       isCalculating.value = false;
@@ -620,8 +690,8 @@ export function useStudentForm(
 
   function resetGifts() {
     savePreviousState();
-    giftFormData.value     = {};
-    boxFormData.value      = {};
+    giftFormData.value = {};
+    boxFormData.value = {};
     nonFavorGiftsMap.value = {};
   }
 
@@ -629,12 +699,12 @@ export function useStudentForm(
     const snapshot = undoStack.value.pop();
     if (!snapshot) return;
     redoStack.value.push({
-      giftFormData:     { ...giftFormData.value },
-      boxFormData:      { ...boxFormData.value },
+      giftFormData: { ...giftFormData.value },
+      boxFormData: { ...boxFormData.value },
       nonFavorGiftsMap: { ...nonFavorGiftsMap.value },
     });
-    giftFormData.value     = snapshot.giftFormData;
-    boxFormData.value      = snapshot.boxFormData;
+    giftFormData.value = snapshot.giftFormData;
+    boxFormData.value = snapshot.boxFormData;
     nonFavorGiftsMap.value = snapshot.nonFavorGiftsMap;
   }
 
@@ -642,12 +712,12 @@ export function useStudentForm(
     const snapshot = redoStack.value.pop();
     if (!snapshot) return;
     undoStack.value.push({
-      giftFormData:     { ...giftFormData.value },
-      boxFormData:      { ...boxFormData.value },
+      giftFormData: { ...giftFormData.value },
+      boxFormData: { ...boxFormData.value },
       nonFavorGiftsMap: { ...nonFavorGiftsMap.value },
     });
-    giftFormData.value     = snapshot.giftFormData;
-    boxFormData.value      = snapshot.boxFormData;
+    giftFormData.value = snapshot.giftFormData;
+    boxFormData.value = snapshot.boxFormData;
     nonFavorGiftsMap.value = snapshot.nonFavorGiftsMap;
   }
 
@@ -661,7 +731,7 @@ export function useStudentForm(
     Object.entries(allGearsData).forEach(([studentId, materials]) => {
       if (Number(studentId) === excludeStudentId) return;
       if (studentDataStore.value[Number(studentId)]?.isOwned === false) return;
-      (materials as Material[]).forEach(material => {
+      (materials as Material[]).forEach((material) => {
         if (material.material?.Category !== 'Favor') return;
         const id = material.material?.Id;
         if (!id) return;
@@ -674,11 +744,11 @@ export function useStudentForm(
   function syncGifts(mode: 'greedy' | 'aware') {
     savePreviousState();
 
-    const resources         = getAllItemsFromCache();
+    const resources = getAllItemsFromCache();
     const allocatedByOthers = getAllocatedGifts(student()?.Id);
-    const gearNeeds         = mode === 'aware' ? getGearGiftNeedsExcluding(student().Id) : {};
+    const gearNeeds = mode === 'aware' ? getGearGiftNeedsExcluding(student().Id) : {};
 
-    const gifts = Object.values(resources ?? {}).filter(r => r && r.Category === 'Favor');
+    const gifts = Object.values(resources ?? {}).filter((r) => r && r.Category === 'Favor');
 
     if (!giftFormData.value) giftFormData.value = {};
     nonFavorGiftsMap.value = {};
@@ -690,24 +760,25 @@ export function useStudentForm(
     const blackListIds = [5996, 5997, 5998, 5999];
 
     if (student()?.Gifts) {
-      gifts.forEach(gift => {
+      gifts.forEach((gift) => {
         if (!gift.Id) return;
-        const owned            = gift.QuantityOwned ?? 0;
+        const owned = gift.QuantityOwned ?? 0;
         const alreadyAllocated = allocatedByOthers[gift.Id] ?? 0;
-        const available        = Math.max(0, owned - alreadyAllocated - (gearNeeds[gift.Id] ?? 0));
-        const isStudentGift    = (student()?.Gifts ?? []).some(g => g.gift.Id === gift.Id);
+        const available = Math.max(0, owned - alreadyAllocated - (gearNeeds[gift.Id] ?? 0));
+        const isStudentGift = (student()?.Gifts ?? []).some((g) => g.gift.Id === gift.Id);
 
         if (isStudentGift) {
           giftFormData.value[gift.Id] = available;
         } else {
           if (available > 0) nonFavorGiftsMap.value[gift.Id] = available;
-          if (gift.Rarity === 'SR')                                       nonFavorGiftsSr  += available;
-          if (gift.Rarity === 'SSR' && !blackListIds.includes(gift.Id))   nonFavorGiftsSsr += available;
+          if (gift.Rarity === 'SR') nonFavorGiftsSr += available;
+          if (gift.Rarity === 'SSR' && !blackListIds.includes(gift.Id))
+            nonFavorGiftsSsr += available;
         }
       });
     }
 
-    boxFormData.value[SR_GIFT_MATERIAL_ID]  = nonFavorGiftsSr;
+    boxFormData.value[SR_GIFT_MATERIAL_ID] = nonFavorGiftsSr;
     boxFormData.value[SSR_GIFT_MATERIAL_ID] = nonFavorGiftsSsr;
   }
 
@@ -718,48 +789,88 @@ export function useStudentForm(
 
   return {
     // --- Form refs (state) ---
-    characterLevels, skillLevels, potentialLevels,
-    equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel,
-    giftFormData, boxFormData, nonFavorGiftsMap,
-    bondDetailData, otherExpData,
+    characterLevels,
+    skillLevels,
+    potentialLevels,
+    equipmentLevels,
+    gradeLevels,
+    gradeInfos,
+    exclusiveGearLevel,
+    giftFormData,
+    boxFormData,
+    nonFavorGiftsMap,
+    bondDetailData,
+    otherExpData,
     currentBond,
 
     // --- Maxed flags ---
-    allSkillsMaxed, targetSkillsMaxed,
-    allPotentialsMaxed, targetPotentialsMaxed,
-    allGearsMaxed, targetGearsMaxed,
+    allSkillsMaxed,
+    targetSkillsMaxed,
+    allPotentialsMaxed,
+    targetPotentialsMaxed,
+    allGearsMaxed,
+    targetGearsMaxed,
 
     // --- Gear-derived ---
-    hasExclusiveGear, maxUnlockableGearTier,
+    hasExclusiveGear,
+    maxUnlockableGearTier,
 
     // --- Material aggregates ---
-    allMaterialsNeeded, equipmentMaterialsNeeded,
+    allMaterialsNeeded,
+    equipmentMaterialsNeeded,
 
     // --- XP / Bond computeds ---
     characterRemainingXp,
-    giftsExp, boxesExp, cafeDays, cafeExp, bonusExp,
-    totalCumulativeExp, newBondLevel, remainingXp,
+    giftsExp,
+    boxesExp,
+    cafeDays,
+    cafeExp,
+    bonusExp,
+    totalCumulativeExp,
+    newBondLevel,
+    remainingXp,
 
     // --- Convert/sync modal state ---
-    showConvertModal, convertModalNeeded, confirmConversion, cancelConversion,
-    showSyncGiftsModal, syncGifts,
+    showConvertModal,
+    convertModalNeeded,
+    confirmConversion,
+    cancelConversion,
+    showSyncGiftsModal,
+    syncGifts,
 
     // --- Undo/redo ---
-    canUndo, canRedo, undoChanges, redoChanges,
+    canUndo,
+    canRedo,
+    undoChanges,
+    redoChanges,
 
     // --- Upgrade handlers ---
-    handleLevelUpdate, handleSkillUpdate, handlePotentialUpdate,
-    toggleMaxAllSkills, toggleMaxTargetSkills,
-    toggleMaxAllPotentials, toggleMaxTargetPotentials,
+    handleLevelUpdate,
+    handleSkillUpdate,
+    handlePotentialUpdate,
+    toggleMaxAllSkills,
+    toggleMaxTargetSkills,
+    toggleMaxAllPotentials,
+    toggleMaxTargetPotentials,
 
     // --- Gear handlers ---
-    handleEquipmentUpdate, handleGradeUpdate, handleGradeInfoUpdate, handleExclusiveGearUpdate,
-    toggleMaxAllGears, toggleMaxTargetGears,
+    handleEquipmentUpdate,
+    handleGradeUpdate,
+    handleGradeInfoUpdate,
+    handleExclusiveGearUpdate,
+    toggleMaxAllGears,
+    toggleMaxTargetGears,
 
     // --- Gift handlers ---
-    handleGiftInput, handleBoxInput, handleNonFavorGiftInput, handleBondInput,
-    updateOtherExp, resetOtherExp,
-    convertBoxes, resetGifts, shouldShowGiftGrade,
+    handleGiftInput,
+    handleBoxInput,
+    handleNonFavorGiftInput,
+    handleBondInput,
+    updateOtherExp,
+    resetOtherExp,
+    convertBoxes,
+    resetGifts,
+    shouldShowGiftGrade,
 
     // --- Lifecycle ---
     loadFromIndexedDB,

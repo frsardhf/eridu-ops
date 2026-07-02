@@ -5,14 +5,14 @@ import { $t } from '@/locales';
 import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 
 const props = defineProps<{
-  students: StudentProps[],
-  activeStudentId?: number
+  students: StudentProps[];
+  activeStudentId?: number;
 }>();
 
 const emit = defineEmits<{
-  (e: 'select-student', student: StudentProps): void,
-  (e: 'navigate-prev'): void,
-  (e: 'navigate-next'): void
+  (e: 'select-student', student: StudentProps): void;
+  (e: 'navigate-prev'): void;
+  (e: 'navigate-next'): void;
 }>();
 
 const searchQuery = ref('');
@@ -25,29 +25,31 @@ const filteredStudents = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return props.students;
 
-  return props.students.filter(student =>
-    student.Name.toLowerCase().includes(query)
-  );
+  return props.students.filter((student) => student.Name.toLowerCase().includes(query));
 });
 
 // Auto-scroll to keep active student visible
-watch(() => [props.activeStudentId, isExpanded.value], async () => {
-  if (!isExpanded.value) return;
-  await nextTick();
-  if (!scrollContainer.value || props.activeStudentId == null) return;
+watch(
+  () => [props.activeStudentId, isExpanded.value],
+  async () => {
+    if (!isExpanded.value) return;
+    await nextTick();
+    if (!scrollContainer.value || props.activeStudentId == null) return;
 
-  const activeEl = scrollContainer.value.querySelector(
-    `[data-student-id="${props.activeStudentId}"]`
-  ) as HTMLElement;
+    const activeEl = scrollContainer.value.querySelector(
+      `[data-student-id="${props.activeStudentId}"]`,
+    ) as HTMLElement;
 
-  if (activeEl) {
-    activeEl.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center'
-    });
-  }
-}, { immediate: true });
+    if (activeEl) {
+      activeEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

@@ -29,7 +29,9 @@ const emit = defineEmits<{
         </div>
 
         <div class="sync-footer">
-          <button class="modal-btn modal-btn-cancel" @click="emit('cancel')">{{ $t('cancel') }}</button>
+          <button class="modal-btn modal-btn-cancel" @click="emit('cancel')">
+            {{ $t('cancel') }}
+          </button>
         </div>
       </div>
     </div>
@@ -84,7 +86,7 @@ const emit = defineEmits<{
   padding: 12px 16px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
-  background: var(--secondary-bg, rgba(0,0,0,0.05));
+  background: var(--secondary-bg, rgba(0, 0, 0, 0.05));
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;
@@ -117,5 +119,4 @@ const emit = defineEmits<{
   display: flex;
   justify-content: flex-end;
 }
-
 </style>

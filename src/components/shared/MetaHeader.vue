@@ -5,7 +5,12 @@ import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
 import { useBondEditor } from '@/composables/useInputEditor';
 import { getSchoolColor } from '@/lib/utils/colorUtils';
-import { getBondIconUrl, getTypeIconUrl, getRoleIconUrl, getSchoolIconUrl } from '@/lib/utils/iconUtils';
+import {
+  getBondIconUrl,
+  getTypeIconUrl,
+  getRoleIconUrl,
+  getSchoolIconUrl,
+} from '@/lib/utils/iconUtils';
 import { MIN_BOND_LEVEL, MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 
@@ -46,12 +51,22 @@ const effectiveNewBondLevel = computed(() => props.newBondLevel ?? props.current
 
 const studentRef = toRef(() => props.student);
 
-const { squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName, tacticRoleName,
-  squadTypeColor, bulletTypeColor, armorTypeColor, bulletTypeColorLight, armorTypeColorLight
+const {
+  squadTypeName,
+  bulletTypeName,
+  armorTypeName,
+  schoolName,
+  clubName,
+  tacticRoleName,
+  squadTypeColor,
+  bulletTypeColor,
+  armorTypeColor,
+  bulletTypeColorLight,
+  armorTypeColorLight,
 } = useStudentInfo(studentRef);
 
 const { showLevelArrow } = useStudentLevels(
-  () => props.characterLevels ?? { current: 0, target: 0 }
+  () => props.characterLevels ?? { current: 0, target: 0 },
 );
 
 const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel.value);
@@ -59,13 +74,21 @@ const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel
 // Inline bond editor: only used when bondProgress is true (BondsPage).
 // Inert in the modal's level / navigate modes.
 const {
-  bondState, bondEditorRef, isEditing, editValue,
-  startEdit, commitEdit, handleEditorKeydown,
-} = useBondEditor(() => props.currentBond, (value) => emit('update-bond', value));
+  bondState,
+  bondEditorRef,
+  isEditing,
+  editValue,
+  startEdit,
+  commitEdit,
+  handleEditorKeydown,
+} = useBondEditor(
+  () => props.currentBond,
+  (value) => emit('update-bond', value),
+);
 
 const levelPillClass = computed(() => ({
   maxed50: props.currentBond >= 50 && props.currentBond < 100,
-  maxed100: props.currentBond >= 100
+  maxed100: props.currentBond >= 100,
 }));
 
 const styleModeLabel = computed(() => {
@@ -81,7 +104,9 @@ const styleModeLabel = computed(() => {
 });
 
 const isBondMaxed = computed(() => props.currentBond >= 100);
-const isBondInteractive = computed(() => !!props.bondProgress || (!!props.enableBondNavigate && !isBondMaxed.value));
+const isBondInteractive = computed(
+  () => !!props.bondProgress || (!!props.enableBondNavigate && !isBondMaxed.value),
+);
 
 const bondInlineTooltip = computed(() => {
   if (props.bondProgress) return $t('editBondLevel');
@@ -163,11 +188,7 @@ function onBondInlineClick() {
             @keydown.enter.prevent="onBondInlineClick"
             @keydown.space.prevent="onBondInlineClick"
           >
-            <img
-              :src="getBondIconUrl()"
-              alt="Bond"
-              class="bond-icon-inline"
-            />
+            <img :src="getBondIconUrl()" alt="Bond" class="bond-icon-inline" />
             <span class="bond-number-inline">{{ currentBond }}</span>
           </div>
           <div class="level-content">
@@ -180,7 +201,9 @@ function onBondInlineClick() {
                 :title="$t('editBondLevel')"
                 :aria-label="$t('editBondLevel')"
                 @click="startEdit"
-              >{{ bondState }}</button>
+              >
+                {{ bondState }}
+              </button>
               <input
                 v-else
                 ref="bondEditorRef"
@@ -240,7 +263,8 @@ function onBondInlineClick() {
           class="affiliation-icon icon-white"
         />
         <span class="affiliation-text">
-          {{ schoolName }}<template v-if="schoolName && clubName"> / {{ clubName }}</template><template v-else-if="clubName">{{ clubName }}</template>
+          {{ schoolName }}<template v-if="schoolName && clubName"> / {{ clubName }}</template
+          ><template v-else-if="clubName">{{ clubName }}</template>
         </span>
       </span>
     </div>
@@ -377,7 +401,9 @@ function onBondInlineClick() {
 .bond-inline--editable {
   cursor: pointer;
   border-radius: 999px;
-  transition: background-color 0.15s, transform 0.15s;
+  transition:
+    background-color 0.15s,
+    transform 0.15s;
 }
 
 /* Bond maxed badge: no pointer when standalone (modal); editable keeps
@@ -435,23 +461,23 @@ function onBondInlineClick() {
 .bond-inline--maxed::before {
   background: rgba(255, 105, 180, 0.95);
   box-shadow:
-    -9px  -11px 0 0.5px rgba(255, 105, 180, 0.95),
-     7px  -13px 0 0.5px rgba(235,  51, 255, 0.85),
-    14px    2px 0 0.5px rgba(255, 160, 210, 0.9),
-   -12px    8px 0 0.5px rgba(255, 105, 180, 0.85),
-     1px  -17px 0 0.5px rgba(255, 210, 230, 0.9),
-    16px   -7px 0 0.5px rgba(235,  51, 255, 0.75);
+    -9px -11px 0 0.5px rgba(255, 105, 180, 0.95),
+    7px -13px 0 0.5px rgba(235, 51, 255, 0.85),
+    14px 2px 0 0.5px rgba(255, 160, 210, 0.9),
+    -12px 8px 0 0.5px rgba(255, 105, 180, 0.85),
+    1px -17px 0 0.5px rgba(255, 210, 230, 0.9),
+    16px -7px 0 0.5px rgba(235, 51, 255, 0.75);
 }
 
 .bond-inline--maxed::after {
   background: rgba(235, 51, 255, 0.85);
   box-shadow:
-    -5px  -15px 0 0.5px rgba(255, 180, 220, 0.9),
-    13px   -9px 0 0.5px rgba(255, 105, 180, 0.8),
-    10px   12px 0 0.5px rgba(235,  51, 255, 0.75),
-   -15px    2px 0 0.5px rgba(255, 210, 230, 0.85),
-     6px   16px 0 0.5px rgba(255, 130, 190, 0.8),
-   -10px  -18px 0 0.5px rgba(235,  51, 255, 0.7);
+    -5px -15px 0 0.5px rgba(255, 180, 220, 0.9),
+    13px -9px 0 0.5px rgba(255, 105, 180, 0.8),
+    10px 12px 0 0.5px rgba(235, 51, 255, 0.75),
+    -15px 2px 0 0.5px rgba(255, 210, 230, 0.85),
+    6px 16px 0 0.5px rgba(255, 130, 190, 0.8),
+    -10px -18px 0 0.5px rgba(235, 51, 255, 0.7);
 }
 
 /* Non-maxed (navigate + editable): accent color: identical, so grouped. */
@@ -459,29 +485,34 @@ function onBondInlineClick() {
 .bond-inline--editable:not(.bond-inline--maxed)::before {
   background: var(--accent-color);
   box-shadow:
-    -9px  -11px 0 1px color-mix(in srgb, var(--accent-color) 95%, transparent),
-     7px  -13px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
-    14px    2px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
-   -12px    8px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
-     1px  -17px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
-    16px   -7px 0 1px color-mix(in srgb, var(--accent-color) 75%, transparent);
+    -9px -11px 0 1px color-mix(in srgb, var(--accent-color) 95%, transparent),
+    7px -13px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
+    14px 2px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
+    -12px 8px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
+    1px -17px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
+    16px -7px 0 1px color-mix(in srgb, var(--accent-color) 75%, transparent);
 }
 
 .bond-inline--navigate::after,
 .bond-inline--editable:not(.bond-inline--maxed)::after {
   background: color-mix(in srgb, var(--accent-color) 85%, transparent);
   box-shadow:
-    -5px  -15px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
-    13px   -9px 0 1px color-mix(in srgb, var(--accent-color) 80%, transparent),
-    10px   12px 0 1px color-mix(in srgb, var(--accent-color) 75%, transparent),
-   -15px    2px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
-     6px   16px 0 1px color-mix(in srgb, var(--accent-color) 80%, transparent),
-   -10px  -18px 0 1px color-mix(in srgb, var(--accent-color) 70%, transparent);
+    -5px -15px 0 1px color-mix(in srgb, var(--accent-color) 90%, transparent),
+    13px -9px 0 1px color-mix(in srgb, var(--accent-color) 80%, transparent),
+    10px 12px 0 1px color-mix(in srgb, var(--accent-color) 75%, transparent),
+    -15px 2px 0 1px color-mix(in srgb, var(--accent-color) 85%, transparent),
+    6px 16px 0 1px color-mix(in srgb, var(--accent-color) 80%, transparent),
+    -10px -18px 0 1px color-mix(in srgb, var(--accent-color) 70%, transparent);
 }
 
 /* Hover: bond-100 loops forever; non-maxed plays once. */
-.bond-inline--maxed:hover::before { animation: bond-drift 2.4s ease-in-out infinite; }
-.bond-inline--maxed:hover::after  { animation: bond-drift 2.4s ease-in-out infinite; animation-delay: -1.2s; }
+.bond-inline--maxed:hover::before {
+  animation: bond-drift 2.4s ease-in-out infinite;
+}
+.bond-inline--maxed:hover::after {
+  animation: bond-drift 2.4s ease-in-out infinite;
+  animation-delay: -1.2s;
+}
 
 .bond-inline--navigate:hover::before,
 .bond-inline--editable:not(.bond-inline--maxed):hover::before {
@@ -495,10 +526,22 @@ function onBondInlineClick() {
 }
 
 @keyframes bond-drift {
-  0%   { opacity: 0;   transform: rotate(45deg) scale(0.55); }
-  15%  { opacity: 1;   transform: rotate(45deg) scale(0.65); }
-  85%  { opacity: 0.9; transform: rotate(45deg) scale(0.9); }
-  100% { opacity: 0;   transform: rotate(45deg) scale(1.0); }
+  0% {
+    opacity: 0;
+    transform: rotate(45deg) scale(0.55);
+  }
+  15% {
+    opacity: 1;
+    transform: rotate(45deg) scale(0.65);
+  }
+  85% {
+    opacity: 0.9;
+    transform: rotate(45deg) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(45deg) scale(1);
+  }
 }
 
 .bond-icon-inline {

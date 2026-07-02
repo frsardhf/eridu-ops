@@ -18,16 +18,9 @@ interface StudentUsage {
   equipmentTypes?: EquipmentType[];
 }
 
-export function useResourceTooltip(
-  activeTab: Ref<ViewTab>,
-  activeMode: Ref<ViewMode>
-) {
-  const {
-    getMaterialUsageByStudents,
-    materialsLeftover,
-    totalMaterialsNeeded,
-    calculateExpNeeds,
-  } = useMaterialCalculation();
+export function useResourceTooltip(activeTab: Ref<ViewTab>, activeMode: Ref<ViewMode>) {
+  const { getMaterialUsageByStudents, materialsLeftover, totalMaterialsNeeded, calculateExpNeeds } =
+    useMaterialCalculation();
 
   const {
     getEquipmentUsageByStudents,
@@ -47,7 +40,12 @@ export function useResourceTooltip(
   const materialUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
   const equipmentUsageCache = ref<Map<string, StudentUsage[]>>(new Map());
 
-  function setCapped(map: Map<string, StudentUsage[]>, key: string, value: StudentUsage[], limit = 60): void {
+  function setCapped(
+    map: Map<string, StudentUsage[]>,
+    key: string,
+    value: StudentUsage[],
+    limit = 60,
+  ): void {
     if (map.size >= limit) {
       map.delete(map.keys().next().value as string);
     }
@@ -77,12 +75,14 @@ export function useResourceTooltip(
 
     let usage: StudentUsage[];
     if (isEquipmentView) {
-      usage = getEquipmentUsageByStudents(materialId, usageMode)
-        .sort((a, b) => b.quantity - a.quantity);
+      usage = getEquipmentUsageByStudents(materialId, usageMode).sort(
+        (a, b) => b.quantity - a.quantity,
+      );
       setCapped(equipmentUsageCache.value, cacheKey, usage);
     } else {
-      usage = getMaterialUsageByStudents(materialId, usageMode)
-        .sort((a, b) => b.quantity - a.quantity);
+      usage = getMaterialUsageByStudents(materialId, usageMode).sort(
+        (a, b) => b.quantity - a.quantity,
+      );
       setCapped(materialUsageCache.value, cacheKey, usage);
     }
 
@@ -98,10 +98,10 @@ export function useResourceTooltip(
 
   // Tooltip grid column counts
   const tooltipGridColumns = computed(() =>
-    getTooltipGridColumns(studentUsageForMaterial.value.length)
+    getTooltipGridColumns(studentUsageForMaterial.value.length),
   );
   const giftTooltipGridColumns = computed(() =>
-    getTooltipGridColumns(giftsForHoveredStudent.value.length)
+    getTooltipGridColumns(giftsForHoveredStudent.value.length),
   );
 
   // Credit info
@@ -111,7 +111,7 @@ export function useResourceTooltip(
   });
 
   const creditNeeded = computed(() => {
-    const needed = totalMaterialsNeeded.value.find(m => m.material?.Id === 5);
+    const needed = totalMaterialsNeeded.value.find((m) => m.material?.Id === 5);
     return needed?.materialQuantity || 0;
   });
 
@@ -137,17 +137,19 @@ export function useResourceTooltip(
   const expInfo = createExpInfo(() => calculateExpNeeds());
   const expBallInfo = createExpInfo(() => calculateEquipmentExpNeeds());
 
-  const materialsLeftoverById = computed(() =>
-    new Map(materialsLeftover.value.map(m => [m.material?.Id, m]))
+  const materialsLeftoverById = computed(
+    () => new Map(materialsLeftover.value.map((m) => [m.material?.Id, m])),
   );
-  const equipmentsLeftoverById = computed(() =>
-    new Map(equipmentsLeftover.value.map(m => [m.material?.Id, m]))
+  const equipmentsLeftoverById = computed(
+    () => new Map(equipmentsLeftover.value.map((m) => [m.material?.Id, m])),
   );
 
   // Leftover quantity for a regular material
   const getMaterialLeftover = (materialId: number) => {
     const isEquipmentView = activeTab.value === 'equipment';
-    const leftoverMap = isEquipmentView ? equipmentsLeftoverById.value : materialsLeftoverById.value;
+    const leftoverMap = isEquipmentView
+      ? equipmentsLeftoverById.value
+      : materialsLeftoverById.value;
     return leftoverMap.get(materialId)?.materialQuantity ?? 0;
   };
 

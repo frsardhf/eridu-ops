@@ -30,33 +30,56 @@ import ModalHeader from '@/components/students/modal/ModalHeader.vue';
 import StudentStrip from '@/components/shared/StudentStrip.vue';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
-import { SkillType, PotentialType, Material, MaterialPreviewItem, type SectionId } from '@/types/upgrade';
+import {
+  SkillType,
+  PotentialType,
+  Material,
+  MaterialPreviewItem,
+  type SectionId,
+} from '@/types/upgrade';
 import type { EquipmentType } from '@/types/gear';
-import { computeCharacterXpCost, getCharXpItems, calculateLevelMaterials, calculateSkillMaterials, calculatePotentialMaterials } from '@/lib/utils/upgradeMaterialUtils';
-import { computeEquipmentXpCost, getEquipXpItems, calculateEquipmentMaterials, calculateEquipmentCredits, calculateGradeMaterials, calculateGradeCredits, calculateExclusiveGearMaterials, getElephsForGrade } from '@/lib/utils/gearMaterialUtils';
+import {
+  computeCharacterXpCost,
+  getCharXpItems,
+  calculateLevelMaterials,
+  calculateSkillMaterials,
+  calculatePotentialMaterials,
+} from '@/lib/utils/upgradeMaterialUtils';
+import {
+  computeEquipmentXpCost,
+  getEquipXpItems,
+  calculateEquipmentMaterials,
+  calculateEquipmentCredits,
+  calculateGradeMaterials,
+  calculateGradeCredits,
+  calculateExclusiveGearMaterials,
+  getElephsForGrade,
+} from '@/lib/utils/gearMaterialUtils';
 import { deductXpItems, simulateXpDeduction } from '@/lib/utils/upgradeUtils';
 import { sortMaterials } from '@/lib/utils/materialUtils';
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
 import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/lib/stores/resourceCacheStore';
-import '@/styles/studentModal.css'
+import '@/styles/studentModal.css';
 
 // Lazy in every importer (here, StudentsPage, BondsPage) so the inventory
 // modal + ResourceGrid subtree split into one shared on-demand chunk.
-const GlobalInventoryModal = defineAsyncComponent(() => import('@/components/inventory/GlobalInventoryModal.vue'));
+const GlobalInventoryModal = defineAsyncComponent(
+  () => import('@/components/inventory/GlobalInventoryModal.vue'),
+);
 
 type ModalTab = 'info' | 'upgrade' | 'gear';
 
 const MODAL_TAB_ORDER: Record<ModalTab, number> = {
   info: 0,
   upgrade: 1,
-  gear: 2
+  gear: 2,
 };
 
 const props = defineProps<{
-  student: StudentProps,
-  originRect?: ModalOriginRect | null,
-  isVisible?: boolean,
-  studentsArray?: StudentProps[]
+  student: StudentProps;
+  originRect?: ModalOriginRect | null;
+  isVisible?: boolean;
+  studentsArray?: StudentProps[];
 }>();
 
 const emit = defineEmits<{
@@ -70,11 +93,11 @@ const { setOwned } = useStudentOwnership();
 const activeTab = ref<ModalTab>('info');
 const tabDirection = ref<'forward' | 'backward'>('forward');
 const activeTabTransitionName = computed(() =>
-  tabDirection.value === 'forward' ? 'modal-pane-forward' : 'modal-pane-backward'
+  tabDirection.value === 'forward' ? 'modal-pane-forward' : 'modal-pane-backward',
 );
 const activeTabTransitionKey = computed(() => activeTab.value);
 
-const isInventoryOpen  = ref(false);
+const isInventoryOpen = ref(false);
 const showApplyModal = ref(false);
 
 const displayedStudent = ref<StudentProps | null>(null);
@@ -114,7 +137,7 @@ const modalOriginStyle = computed<CSSProperties>(() => {
     '--modal-origin-x': `${origin.left}px`,
     '--modal-origin-y': `${origin.top}px`,
     '--modal-origin-scale-x': `${scaleX}`,
-    '--modal-origin-scale-y': `${scaleY}`
+    '--modal-origin-scale-y': `${scaleY}`,
   } as CSSProperties;
 });
 
@@ -145,33 +168,48 @@ const { addStudent: addBondsTracked } = useBondsTracked();
 // Upgrade mutated both upgrade and gear refs in the same tick.
 const {
   // Upgrade slice
-  characterLevels, skillLevels, potentialLevels, allMaterialsNeeded,
-  allSkillsMaxed, targetSkillsMaxed, allPotentialsMaxed, targetPotentialsMaxed,
+  characterLevels,
+  skillLevels,
+  potentialLevels,
+  allMaterialsNeeded,
+  allSkillsMaxed,
+  targetSkillsMaxed,
+  allPotentialsMaxed,
+  targetPotentialsMaxed,
   characterRemainingXp,
-  handleLevelUpdate, handleSkillUpdate, handlePotentialUpdate,
-  toggleMaxAllSkills, toggleMaxTargetSkills, toggleMaxAllPotentials, toggleMaxTargetPotentials,
+  handleLevelUpdate,
+  handleSkillUpdate,
+  handlePotentialUpdate,
+  toggleMaxAllSkills,
+  toggleMaxTargetSkills,
+  toggleMaxAllPotentials,
+  toggleMaxTargetPotentials,
   // Gear slice
-  equipmentLevels, gradeLevels, gradeInfos, equipmentMaterialsNeeded, exclusiveGearLevel,
-  allGearsMaxed, targetGearsMaxed, hasExclusiveGear, maxUnlockableGearTier,
-  handleEquipmentUpdate, handleGradeUpdate, handleGradeInfoUpdate,
-  toggleMaxAllGears, toggleMaxTargetGears, handleExclusiveGearUpdate,
+  equipmentLevels,
+  gradeLevels,
+  gradeInfos,
+  equipmentMaterialsNeeded,
+  exclusiveGearLevel,
+  allGearsMaxed,
+  targetGearsMaxed,
+  hasExclusiveGear,
+  maxUnlockableGearTier,
+  handleEquipmentUpdate,
+  handleGradeUpdate,
+  handleGradeInfoUpdate,
+  toggleMaxAllGears,
+  toggleMaxTargetGears,
+  handleExclusiveGearUpdate,
   // Lifecycle
-  saveBeforeClose, loadFromIndexedDB: loadFormData,
+  saveBeforeClose,
+  loadFromIndexedDB: loadFormData,
 } = useStudentForm(toRef(props, 'student'), {
   isVisible: () => !!props.isVisible,
 });
 
-const {
-  itemFormData,
-  handleItemInput,
-  loadItems
-} = useStudentItems(props);
+const { itemFormData, handleItemInput, loadItems } = useStudentItems(props);
 
-const {
-  equipmentFormData,
-  handleEquipmentInput,
-  loadEquipments
-} = useStudentEquipment(props);
+const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment(props);
 
 // --- Navigation & handlers ---
 // Image preloading for neighbor students
@@ -185,14 +223,14 @@ function preloadStudentImages(s: StudentProps) {
 // Navigation
 function navigateToPrevious() {
   if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
-  const currentIndex = props.studentsArray.findIndex(s => s.Id === props.student?.Id);
+  const currentIndex = props.studentsArray.findIndex((s) => s.Id === props.student?.Id);
   const previousIndex = currentIndex > 0 ? currentIndex - 1 : props.studentsArray.length - 1;
   emit('navigate', props.studentsArray[previousIndex]);
 }
 
 function navigateToNext() {
   if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
-  const currentIndex = props.studentsArray.findIndex(s => s.Id === props.student?.Id);
+  const currentIndex = props.studentsArray.findIndex((s) => s.Id === props.student?.Id);
   const nextIndex = currentIndex < props.studentsArray.length - 1 ? currentIndex + 1 : 0;
   emit('navigate', props.studentsArray[nextIndex]);
 }
@@ -221,15 +259,11 @@ function handleStyleToggle() {
   activeStyleId.value = activeStyleId.value === partnerId ? null : partnerId;
 }
 
-
 // --- Apply Upgrade ---
 
 // Conservative material check: all pending materials vs inventory
 const insufficientList = computed<string[]>(() => {
-  const allMats = [
-    ...allMaterialsNeeded.value,
-    ...equipmentMaterialsNeeded.value,
-  ];
+  const allMats = [...allMaterialsNeeded.value, ...equipmentMaterialsNeeded.value];
   // Aggregate quantities by ID
   const needed = new Map<number, { name: string; qty: number; isEquip: boolean }>();
   for (const mat of allMats) {
@@ -244,25 +278,30 @@ const insufficientList = computed<string[]>(() => {
   }
   const out: string[] = [];
   for (const [id, { name, qty, isEquip }] of needed.entries()) {
-    const owned = isEquip
-      ? (equipmentFormData.value[id] ?? 0)
-      : (itemFormData.value[id] ?? 0);
+    const owned = isEquip ? (equipmentFormData.value[id] ?? 0) : (itemFormData.value[id] ?? 0);
     if (owned < qty) out.push(name);
   }
   // Check EXP sufficiency (activity reports for level, XP balls for equipment)
   const levelPending = (characterLevels.value.current ?? 1) < (characterLevels.value.target ?? 1);
   if (levelPending) {
-    const xpNeeded = computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target);
-    const ownedXp  = getCharXpItems(id => itemFormData.value[id] ?? 0)
-      .reduce((s, item) => s + item.owned * item.xpValue, 0);
+    const xpNeeded = computeCharacterXpCost(
+      characterLevels.value.current,
+      characterLevels.value.target,
+    );
+    const ownedXp = getCharXpItems((id) => itemFormData.value[id] ?? 0).reduce(
+      (s, item) => s + item.owned * item.xpValue,
+      0,
+    );
     if (ownedXp < xpNeeded) out.push($t('activityReport'));
   }
 
-  const equipPending = Object.values(equipmentLevels.value).some(e => e && e.current < e.target);
+  const equipPending = Object.values(equipmentLevels.value).some((e) => e && e.current < e.target);
   if (equipPending) {
     const xpNeeded = computeEquipmentXpCost(equipmentLevels.value);
-    const ownedXp  = getEquipXpItems(id => equipmentFormData.value[id] ?? 0)
-      .reduce((s, item) => s + item.owned * item.xpValue, 0);
+    const ownedXp = getEquipXpItems((id) => equipmentFormData.value[id] ?? 0).reduce(
+      (s, item) => s + item.owned * item.xpValue,
+      0,
+    );
     if (ownedXp < xpNeeded) out.push($t('equipmentXp'));
   }
 
@@ -308,23 +347,37 @@ function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
   for (const m of map.values()) {
     if (m.materialQuantity <= 0) continue;
     const id = m.material.Id;
-    const owned = m.type === 'equipments'
-      ? (equipmentFormData.value[id] ?? 0)
-      : (itemFormData.value[id] ?? 0);
-    result.push({ material: m.material, needed: m.materialQuantity, owned, remaining: owned - m.materialQuantity, type: m.type ?? 'materials' });
+    const owned =
+      m.type === 'equipments' ? (equipmentFormData.value[id] ?? 0) : (itemFormData.value[id] ?? 0);
+    result.push({
+      material: m.material,
+      needed: m.materialQuantity,
+      owned,
+      remaining: owned - m.materialQuantity,
+      type: m.type ?? 'materials',
+    });
   }
 
   // XP items for level (activity reports)
   if (selectedIds.includes('level')) {
-    const cost = computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target);
+    const cost = computeCharacterXpCost(
+      characterLevels.value.current,
+      characterLevels.value.target,
+    );
     if (cost > 0) {
-      const charItems = getCharXpItems(id => itemFormData.value[id] ?? 0);
-      const consumed  = simulateXpDeduction(cost, charItems);
+      const charItems = getCharXpItems((id) => itemFormData.value[id] ?? 0);
+      const consumed = simulateXpDeduction(cost, charItems);
       charItems.forEach((item, i) => {
         if (consumed[i] <= 0) return;
         const mat = getResourceDataByIdSync(item.id);
         if (!mat) return;
-        result.push({ material: mat, needed: consumed[i], owned: item.owned, remaining: item.owned - consumed[i], type: 'xp' });
+        result.push({
+          material: mat,
+          needed: consumed[i],
+          owned: item.owned,
+          remaining: item.owned - consumed[i],
+          type: 'xp',
+        });
       });
     }
   }
@@ -333,30 +386,38 @@ function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
   if (selectedIds.includes('equipment')) {
     const cost = computeEquipmentXpCost(equipmentLevels.value);
     if (cost > 0) {
-      const equipItems = getEquipXpItems(id => equipmentFormData.value[id] ?? 0);
-      const consumed   = simulateXpDeduction(cost, equipItems);
+      const equipItems = getEquipXpItems((id) => equipmentFormData.value[id] ?? 0);
+      const consumed = simulateXpDeduction(cost, equipItems);
       equipItems.forEach((item, i) => {
         if (consumed[i] <= 0) return;
         const mat = getEquipmentDataByIdSync(item.id);
         if (!mat) return;
-        result.push({ material: mat, needed: consumed[i], owned: item.owned, remaining: item.owned - consumed[i], type: 'xp' });
+        result.push({
+          material: mat,
+          needed: consumed[i],
+          owned: item.owned,
+          remaining: item.owned - consumed[i],
+          type: 'xp',
+        });
       });
     }
   }
 
-  result.sort((a, b) => sortMaterials(
-    { material: a.material, materialQuantity: a.needed, type: a.type },
-    { material: b.material, materialQuantity: b.needed, type: b.type },
-  ));
+  result.sort((a, b) =>
+    sortMaterials(
+      { material: a.material, materialQuantity: a.needed, type: a.type },
+      { material: b.material, materialQuantity: b.needed, type: b.type },
+    ),
+  );
 
   return result;
 }
 
 const hasAnyPendingUpgrade = computed(() => {
   if ((characterLevels.value.current ?? 1) < (characterLevels.value.target ?? 1)) return true;
-  if (Object.values(skillLevels.value).some(s => s.current < s.target)) return true;
-  if (Object.values(potentialLevels.value).some(p => p.current < p.target)) return true;
-  if (Object.values(equipmentLevels.value).some(e => e && e.current < e.target)) return true;
+  if (Object.values(skillLevels.value).some((s) => s.current < s.target)) return true;
+  if (Object.values(potentialLevels.value).some((p) => p.current < p.target)) return true;
+  if (Object.values(equipmentLevels.value).some((e) => e && e.current < e.target)) return true;
   if ((gradeLevels.value.current ?? 1) < (gradeLevels.value.target ?? 1)) return true;
   if ((exclusiveGearLevel.value.current ?? 0) < (exclusiveGearLevel.value.target ?? 0)) return true;
   return false;
@@ -376,7 +437,6 @@ function applyMaterialDelta(snapshot: Material[], afterMap: Map<number, number>)
 }
 
 function doApplyUpgrade(selectedIds: SectionId[]) {
-
   // 0. Snapshot XP costs BEFORE levels change (step 2 sets current = target)
   const charXpCost = selectedIds.includes('level')
     ? computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target)
@@ -387,26 +447,26 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
 
   // 1. Snapshot materials BEFORE applying level changes
   const beforeUpgrade = [...allMaterialsNeeded.value];
-  const beforeGear    = [...equipmentMaterialsNeeded.value];
+  const beforeGear = [...equipmentMaterialsNeeded.value];
 
   // 2. Apply: set current = target for each selected section
   if (selectedIds.includes('level')) {
     characterLevels.value.current = characterLevels.value.target;
   }
   if (selectedIds.includes('skills')) {
-    Object.keys(skillLevels.value).forEach(t => {
+    Object.keys(skillLevels.value).forEach((t) => {
       const sk = skillLevels.value[t as SkillType];
       if (sk) sk.current = sk.target;
     });
   }
   if (selectedIds.includes('potential')) {
-    Object.keys(potentialLevels.value).forEach(t => {
+    Object.keys(potentialLevels.value).forEach((t) => {
       const pt = potentialLevels.value[t as PotentialType];
       if (pt) pt.current = pt.target;
     });
   }
   if (selectedIds.includes('equipment')) {
-    Object.keys(equipmentLevels.value).forEach(t => {
+    Object.keys(equipmentLevels.value).forEach((t) => {
       const eq = equipmentLevels.value[t as EquipmentType];
       if (eq) eq.current = eq.target;
     });
@@ -419,8 +479,12 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
   }
 
   // 3. Read materials AFTER (computed reacts synchronously on next read)
-  const afterUpgrade = new Map(allMaterialsNeeded.value.map(m => [m.material.Id, m.materialQuantity]));
-  const afterGear    = new Map(equipmentMaterialsNeeded.value.map(m => [m.material.Id, m.materialQuantity]));
+  const afterUpgrade = new Map(
+    allMaterialsNeeded.value.map((m) => [m.material.Id, m.materialQuantity]),
+  );
+  const afterGear = new Map(
+    equipmentMaterialsNeeded.value.map((m) => [m.material.Id, m.materialQuantity]),
+  );
 
   // 4. Deduct the delta from inventory (watchers auto-persist to IndexedDB)
   applyMaterialDelta(beforeUpgrade, afterUpgrade);
@@ -430,15 +494,19 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
   if (charXpCost > 0) {
     deductXpItems(
       charXpCost,
-      getCharXpItems(id => itemFormData.value[id] ?? 0),
-      (id, qty) => { itemFormData.value[id] = qty; },
+      getCharXpItems((id) => itemFormData.value[id] ?? 0),
+      (id, qty) => {
+        itemFormData.value[id] = qty;
+      },
     );
   }
   if (equipXpCost > 0) {
     deductXpItems(
       equipXpCost,
-      getEquipXpItems(id => equipmentFormData.value[id] ?? 0),
-      (id, qty) => { equipmentFormData.value[id] = qty; },
+      getEquipXpItems((id) => equipmentFormData.value[id] ?? 0),
+      (id, qty) => {
+        equipmentFormData.value[id] = qty;
+      },
     );
   }
 
@@ -448,9 +516,8 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
 // --- Tab & ownership management ---
 function setActiveTab(nextTab: ModalTab) {
   if (nextTab === activeTab.value) return;
-  tabDirection.value = MODAL_TAB_ORDER[nextTab] >= MODAL_TAB_ORDER[activeTab.value]
-    ? 'forward'
-    : 'backward';
+  tabDirection.value =
+    MODAL_TAB_ORDER[nextTab] >= MODAL_TAB_ORDER[activeTab.value] ? 'forward' : 'backward';
   activeTab.value = nextTab;
 }
 
@@ -514,41 +581,41 @@ useDocumentListener('keydown', handleKeyDown);
 
 // --- Hydration ---
 // Centralized hydration flow: initialize defaults once, then load all hook data together.
-watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
-  if (!visible || !student) return;
+watch(
+  [() => props.isVisible, () => props.student],
+  async ([visible, student]) => {
+    if (!visible || !student) return;
 
-  activeStyleId.value = null;
-  const requestToken = ++hydrateRequestToken;
+    activeStyleId.value = null;
+    const requestToken = ++hydrateRequestToken;
 
-  try {
-    const formData = await initializeStudentFormData(student);
-    if (requestToken !== hydrateRequestToken) return;
+    try {
+      const formData = await initializeStudentFormData(student);
+      if (requestToken !== hydrateRequestToken) return;
 
-    setStudentDataDirect(student.Id, formData);
+      setStudentDataDirect(student.Id, formData);
 
-    await Promise.all([
-      loadFormData(),
-      loadItems(),
-      loadEquipments(),
-    ]);
+      await Promise.all([loadFormData(), loadItems(), loadEquipments()]);
 
-    if (requestToken !== hydrateRequestToken) return;
-    displayedStudent.value = student;
+      if (requestToken !== hydrateRequestToken) return;
+      displayedStudent.value = student;
 
-    // Preload neighbor images so next/prev navigation is near-instant
-    if (props.studentsArray && props.studentsArray.length > 1) {
-      const idx = props.studentsArray.findIndex(s => s.Id === student.Id);
-      if (idx !== -1) {
-        const prevIdx = idx > 0 ? idx - 1 : props.studentsArray.length - 1;
-        const nextIdx = idx < props.studentsArray.length - 1 ? idx + 1 : 0;
-        preloadStudentImages(props.studentsArray[prevIdx]);
-        preloadStudentImages(props.studentsArray[nextIdx]);
+      // Preload neighbor images so next/prev navigation is near-instant
+      if (props.studentsArray && props.studentsArray.length > 1) {
+        const idx = props.studentsArray.findIndex((s) => s.Id === student.Id);
+        if (idx !== -1) {
+          const prevIdx = idx > 0 ? idx - 1 : props.studentsArray.length - 1;
+          const nextIdx = idx < props.studentsArray.length - 1 ? idx + 1 : 0;
+          preloadStudentImages(props.studentsArray[prevIdx]);
+          preloadStudentImages(props.studentsArray[nextIdx]);
+        }
       }
+    } finally {
+      // no-op: previous student remains displayed until hydrate completes
     }
-  } finally {
-    // no-op: previous student remains displayed until hydrate completes
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -566,13 +633,19 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       <div class="modal-header-actions">
         <button class="header-action-btn inventory-btn" @click="isInventoryOpen = true">
           <svg viewBox="0 0 24 24" width="18" height="18">
-            <path fill="currentColor" d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>
+            <path
+              fill="currentColor"
+              d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"
+            />
           </svg>
           {{ $t('inventory') }}
         </button>
         <button class="header-action-btn close-btn" @click="handleClose" :title="$t('close')">
           <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            <path
+              fill="currentColor"
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
           </svg>
         </button>
       </div>
@@ -633,14 +706,20 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                 {{ $t('info') }}
               </button>
               <button
-                :class="['tab-button', { active: activeTab === 'upgrade', 'tab-button--disabled': !isOwned }]"
+                :class="[
+                  'tab-button',
+                  { active: activeTab === 'upgrade', 'tab-button--disabled': !isOwned },
+                ]"
                 :disabled="!isOwned"
                 @click="isOwned ? setActiveTab('upgrade') : undefined"
               >
                 {{ $t('upgrade') }}
               </button>
               <button
-                :class="['tab-button', { active: activeTab === 'gear', 'tab-button--disabled': !isOwned }]"
+                :class="[
+                  'tab-button',
+                  { active: activeTab === 'gear', 'tab-button--disabled': !isOwned },
+                ]"
                 :disabled="!isOwned"
                 @click="isOwned ? setActiveTab('gear') : undefined"
               >
@@ -652,10 +731,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
               <div :key="activeTabTransitionKey" class="tab-pane-state">
                 <template v-if="activeTab === 'info'">
                   <div class="tab-pane-scroll tab-pane-scroll--info">
-                    <InfoSkills
-                      :student="activeStyleStudent!"
-                      :skill-levels="skillLevels"
-                    />
+                    <InfoSkills :student="activeStyleStudent!" :skill-levels="skillLevels" />
 
                     <InfoWeapon
                       :student="activeStyleStudent!"
@@ -702,9 +778,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                       @toggle-max-target-potentials="toggleMaxTargetPotentials"
                     />
 
-                    <MaterialsSection
-                      :materials="allMaterialsNeeded"
-                    />
+                    <MaterialsSection :materials="allMaterialsNeeded" />
                   </div>
                 </template>
 
@@ -713,7 +787,13 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
                     <ElephEligmaSection
                       v-if="(gradeLevels.current ?? 1) < 9"
                       :student="displayedStudent"
-                      :eleph-needed="getElephsForGrade(gradeLevels.current ?? 1, gradeLevels.target ?? 1, gradeInfos?.owned ?? 0)"
+                      :eleph-needed="
+                        getElephsForGrade(
+                          gradeLevels.current ?? 1,
+                          gradeLevels.target ?? 1,
+                          gradeInfos?.owned ?? 0,
+                        )
+                      "
                       :grade-infos="gradeInfos"
                       @update-info="handleGradeInfoUpdate"
                     />
@@ -789,7 +869,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       @apply="doApplyUpgrade"
       @close="showApplyModal = false"
     />
-
   </div>
 </template>
 
@@ -872,7 +951,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   width: 100%;
 }
 
-
 /* Status bars row: Recruitment + Apply Upgrade side-by-side */
 .status-bars-row {
   display: flex;
@@ -923,7 +1001,9 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   background: var(--background-primary);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -935,7 +1015,6 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   opacity: 0.4;
   cursor: not-allowed;
 }
-
 
 .recruitment-status {
   font-size: 0.82rem;
@@ -956,7 +1035,9 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   background: var(--background-primary);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
   flex-shrink: 0;
 }
 
@@ -998,7 +1079,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
   }
 
   .recruitment-bar {
-    border-right: none;   /* full width now, not a left half */
+    border-right: none; /* full width now, not a left half */
   }
 
   /* Divider only when the upgrade bar follows (unowned students have just this one). */

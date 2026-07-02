@@ -14,17 +14,19 @@ function detectBrowserLanguage(): Language {
 }
 
 // Priority: stored preference > browser language > 'en'.
-export const currentLanguage = ref<Language>(
-  getSettings().language || detectBrowserLanguage()
-);
+export const currentLanguage = ref<Language>(getSettings().language || detectBrowserLanguage());
 
 if (!getSettings().language) {
   updateSetting('language', currentLanguage.value);
 }
 
-watch(currentLanguage, (newLanguage) => {
-  updateSetting('language', newLanguage);
-}, { immediate: true });
+watch(
+  currentLanguage,
+  (newLanguage) => {
+    updateSetting('language', newLanguage);
+  },
+  { immediate: true },
+);
 
 export function setLanguage(language: Language) {
   currentLanguage.value = language;

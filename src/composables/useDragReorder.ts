@@ -37,7 +37,9 @@ export function useDragReorder<K = number>(
         onReorder(from, key);
       } else {
         rejectedKey.value = key;
-        setTimeout(() => { rejectedKey.value = null; }, 400);
+        setTimeout(() => {
+          rejectedKey.value = null;
+        }, 400);
       }
     }
     dragFrom.value = null;
@@ -62,5 +64,14 @@ export function useDragReorder<K = number>(
     return rejectedKey.value === key;
   }
 
-  return { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isDropTarget, isRejected };
+  return {
+    onDragStart,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onDragEnd,
+    isDragging,
+    isDropTarget,
+    isRejected,
+  };
 }

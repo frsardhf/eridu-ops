@@ -33,8 +33,8 @@ const showGuide = ref(false);
 const parsedEntries = ref<ParsedEntry[]>([]);
 const isApplying = ref(false);
 
-const lineCount = computed(() =>
-  rawText.value.split('\n').filter(l => l.trim().length > 0).length
+const lineCount = computed(
+  () => rawText.value.split('\n').filter((l) => l.trim().length > 0).length,
 );
 
 // --- Parsing ---
@@ -53,16 +53,24 @@ function parseLine(raw: string): ParsedEntry | null {
 
   const dotIdx = namePart.indexOf('.');
   if (dotIdx > 0) {
-    prefix   = namePart.slice(0, dotIdx).toLowerCase();
+    prefix = namePart.slice(0, dotIdx).toLowerCase();
     baseName = namePart.slice(dotIdx + 1).toLowerCase();
   } else {
     baseName = namePart.toLowerCase();
   }
 
   return {
-    i: 0, rawName: namePart, bond, prefix, baseName,
-    status: 'unmatched', resolved: undefined,
-    candidates: [], searchQuery: namePart, showResults: false, searchResults: [],
+    i: 0,
+    rawName: namePart,
+    bond,
+    prefix,
+    baseName,
+    status: 'unmatched',
+    resolved: undefined,
+    candidates: [],
+    searchQuery: namePart,
+    showResults: false,
+    searchResults: [],
   };
 }
 
@@ -71,7 +79,7 @@ function parseLine(raw: string): ParsedEntry | null {
 const BRACKET_RE = /[(（]([^)）]+)[)）]/;
 
 function resolveEntry(entry: ParsedEntry): ParsedEntry {
-  const hits = props.students.filter(s => {
+  const hits = props.students.filter((s) => {
     const pathName = s.PathName?.toLowerCase() ?? '';
     const pathBase = pathName ? pathName.split('_')[0] : '';
     const pathSuffix = pathName.includes('_') ? pathName.slice(pathName.indexOf('_') + 1) : '';
@@ -90,14 +98,15 @@ function resolveEntry(entry: ParsedEntry): ParsedEntry {
   // Auto-resolve to base character (PathName has no variant suffix)
   if (!entry.prefix && hits.length > 1) {
     const baseHit =
-      hits.find(s => s.PathName && !s.PathName.includes('_')) ??
-      hits.find(s => !BRACKET_RE.test(s.Name));
+      hits.find((s) => s.PathName && !s.PathName.includes('_')) ??
+      hits.find((s) => !BRACKET_RE.test(s.Name));
     if (baseHit) return { ...entry, status: 'matched', resolved: baseHit, candidates: hits };
   }
 
-  if (hits.length === 1) return { ...entry, status: 'matched',   resolved: hits[0], candidates: hits };
-  if (hits.length  > 1) return { ...entry, status: 'ambiguous',  candidates: hits };
-  return                        { ...entry, status: 'unmatched',  candidates: [] };
+  if (hits.length === 1)
+    return { ...entry, status: 'matched', resolved: hits[0], candidates: hits };
+  if (hits.length > 1) return { ...entry, status: 'ambiguous', candidates: hits };
+  return { ...entry, status: 'unmatched', candidates: [] };
 }
 
 function handleParse() {
@@ -114,7 +123,9 @@ function handleParse() {
 function handleSelectStudent(index: number, student: StudentProps) {
   parsedEntries.value[index] = {
     ...parsedEntries.value[index],
-    status: 'matched', resolved: student, showResults: false,
+    status: 'matched',
+    resolved: student,
+    showResults: false,
   };
 }
 
@@ -128,7 +139,9 @@ function updateSearch(index: number, query: string) {
     ...parsedEntries.value[index],
     searchQuery: query,
     showResults: q.length > 0,
-    searchResults: q ? props.students.filter(s => s.Name.toLowerCase().includes(q)).slice(0, 6) : [],
+    searchResults: q
+      ? props.students.filter((s) => s.Name.toLowerCase().includes(q)).slice(0, 6)
+      : [],
   };
 }
 
@@ -138,12 +151,15 @@ function portraitUrl(student: StudentProps): string {
 
 // --- Computed views ---
 
-const matchedEntries = computed(() => parsedEntries.value.filter(e => e.status === 'matched'));
-const flaggedEntries = computed(() => parsedEntries.value.filter(e => e.status === 'ambiguous' || e.status === 'unmatched'));
-const canApply       = computed(() =>
-  parsedEntries.value.every(e => e.status !== 'ambiguous') &&
-  matchedEntries.value.length > 0 &&
-  !isApplying.value
+const matchedEntries = computed(() => parsedEntries.value.filter((e) => e.status === 'matched'));
+const flaggedEntries = computed(() =>
+  parsedEntries.value.filter((e) => e.status === 'ambiguous' || e.status === 'unmatched'),
+);
+const canApply = computed(
+  () =>
+    parsedEntries.value.every((e) => e.status !== 'ambiguous') &&
+    matchedEntries.value.length > 0 &&
+    !isApplying.value,
 );
 
 // --- Apply ---
@@ -152,20 +168,18 @@ async function handleApply() {
   if (!canApply.value) return;
   isApplying.value = true;
   try {
-    const updates = matchedEntries.value.map(e => ({ studentId: e.resolved!.Id, bond: e.bond }));
+    const updates = matchedEntries.value.map((e) => ({ studentId: e.resolved!.Id, bond: e.bond }));
     await applyBulkBondUpdates(updates);
     emit('close');
   } finally {
     isApplying.value = false;
   }
 }
-
 </script>
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
     <div class="modal-container">
-
       <!-- Header -->
       <div class="modal-header">
         <div class="header-left">
@@ -175,7 +189,9 @@ async function handleApply() {
             type="button"
             :aria-label="$t('previous')"
             @click="step = 'input'"
-          >←</button>
+          >
+            ←
+          </button>
           <h2 class="modal-title">{{ $t('bondUpdate.title') }}</h2>
           <button
             v-if="step === 'input'"
@@ -184,9 +200,18 @@ async function handleApply() {
             :class="{ active: showGuide }"
             aria-label="Format guide"
             @click="showGuide = !showGuide"
-          >?</button>
+          >
+            ?
+          </button>
         </div>
-        <button class="icon-btn close-btn" type="button" :aria-label="$t('close')" @click="emit('close')">×</button>
+        <button
+          class="icon-btn close-btn"
+          type="button"
+          :aria-label="$t('close')"
+          @click="emit('close')"
+        >
+          ×
+        </button>
       </div>
 
       <!-- Input step -->
@@ -220,13 +245,17 @@ async function handleApply() {
         </div>
 
         <div class="modal-footer">
-          <button class="btn-secondary" type="button" @click="emit('close')">{{ $t('cancel') }}</button>
+          <button class="btn-secondary" type="button" @click="emit('close')">
+            {{ $t('cancel') }}
+          </button>
           <button
             class="btn-primary"
             type="button"
             :disabled="lineCount === 0"
             @click="handleParse"
-          >{{ $t('bondUpdate.parse') }} ({{ lineCount }})</button>
+          >
+            {{ $t('bondUpdate.parse') }} ({{ lineCount }})
+          </button>
         </div>
       </template>
 
@@ -235,13 +264,19 @@ async function handleApply() {
         <!-- Summary badges -->
         <div class="summary-row">
           <span class="badge badge--matched">{{ matchedEntries.length }} matched</span>
-          <span v-if="flaggedEntries.length > 0" class="badge badge--flagged">{{ flaggedEntries.length }} {{ $t('bondUpdate.flagged') }}</span>
+          <span v-if="flaggedEntries.length > 0" class="badge badge--flagged"
+            >{{ flaggedEntries.length }} {{ $t('bondUpdate.flagged') }}</span
+          >
         </div>
 
         <div class="review-body">
           <!-- Matched entries -->
           <div v-if="matchedEntries.length > 0" class="entry-list">
-            <div v-for="entry in matchedEntries" :key="entry.i" class="entry-row entry-row--matched">
+            <div
+              v-for="entry in matchedEntries"
+              :key="entry.i"
+              class="entry-row entry-row--matched"
+            >
               <img :src="portraitUrl(entry.resolved!)" class="entry-portrait" alt="" />
               <span class="entry-name">{{ entry.resolved!.Name }}</span>
               <span class="entry-bond-diff">
@@ -311,18 +346,14 @@ async function handleApply() {
         </div>
 
         <div class="modal-footer">
-          <button class="btn-secondary" type="button" @click="step = 'input'">{{ $t('previous') }}</button>
-          <button
-            class="btn-primary"
-            type="button"
-            :disabled="!canApply"
-            @click="handleApply"
-          >
+          <button class="btn-secondary" type="button" @click="step = 'input'">
+            {{ $t('previous') }}
+          </button>
+          <button class="btn-primary" type="button" :disabled="!canApply" @click="handleApply">
             {{ isApplying ? '…' : `${$t('apply')} (${matchedEntries.length})` }}
           </button>
         </div>
       </template>
-
     </div>
   </div>
 </template>
@@ -352,8 +383,14 @@ async function handleApply() {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Header --- */
@@ -392,7 +429,10 @@ async function handleApply() {
   cursor: pointer;
   font-size: 1rem;
   font-weight: 700;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
 }
 
 .icon-btn:hover {
@@ -406,7 +446,9 @@ async function handleApply() {
   color: var(--accent-color);
 }
 
-.close-btn { border-color: transparent; }
+.close-btn {
+  border-color: transparent;
+}
 
 /* --- Guide panel --- */
 .guide-panel {
@@ -433,8 +475,13 @@ async function handleApply() {
   line-height: 1.7;
 }
 
-.guide-list li { list-style: disc; }
-.guide-list .indent { list-style: none; margin-left: 8px; }
+.guide-list li {
+  list-style: disc;
+}
+.guide-list .indent {
+  list-style: none;
+  margin-left: 8px;
+}
 
 .prefix-table {
   list-style: none;
@@ -485,7 +532,10 @@ async function handleApply() {
   border-color: var(--accent-color);
 }
 
-.notes-textarea::placeholder { color: var(--text-secondary); opacity: 0.6; }
+.notes-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
 
 /* --- Review body --- */
 .summary-row {
@@ -502,8 +552,14 @@ async function handleApply() {
   font-weight: 600;
 }
 
-.badge--matched  { background: color-mix(in srgb, #22c55e 14%, var(--background-secondary)); color: #16a34a; }
-.badge--flagged  { background: color-mix(in srgb, var(--color-warning) 14%, var(--background-secondary)); color: #b45309; }
+.badge--matched {
+  background: color-mix(in srgb, #22c55e 14%, var(--background-secondary));
+  color: #16a34a;
+}
+.badge--flagged {
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--background-secondary));
+  color: #b45309;
+}
 
 .review-body {
   flex: 1;
@@ -557,9 +613,16 @@ async function handleApply() {
   font-weight: 600;
 }
 
-.bond-old   { color: var(--text-secondary); }
-.bond-arrow { color: var(--text-secondary); font-size: 0.7rem; }
-.bond-new   { color: var(--accent-color); }
+.bond-old {
+  color: var(--text-secondary);
+}
+.bond-arrow {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+.bond-new {
+  color: var(--accent-color);
+}
 
 /* --- Flagged section --- */
 .flagged-section {
@@ -594,8 +657,16 @@ async function handleApply() {
   gap: 8px;
 }
 
-.flagged-raw  { font-size: 0.83rem; color: var(--text-primary); font-weight: 600; }
-.flagged-bond { font-size: 0.8rem; color: var(--accent-color); font-weight: 700; }
+.flagged-raw {
+  font-size: 0.83rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.flagged-bond {
+  font-size: 0.8rem;
+  color: var(--accent-color);
+  font-weight: 700;
+}
 
 /* --- Candidate chips (ambiguous) --- */
 .candidate-chips {
@@ -613,7 +684,9 @@ async function handleApply() {
   border-radius: 20px;
   background: var(--background-primary);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .candidate-chip:hover {
@@ -635,7 +708,9 @@ async function handleApply() {
 }
 
 /* --- Search picker (unmatched) --- */
-.search-wrapper { position: relative; }
+.search-wrapper {
+  position: relative;
+}
 
 .search-input-row {
   display: flex;
@@ -667,10 +742,15 @@ async function handleApply() {
   font-size: 0.78rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
-.skip-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+.skip-btn:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
 
 .search-results {
   position: absolute;
@@ -680,7 +760,7 @@ async function handleApply() {
   background: var(--background-primary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
   z-index: 10;
   overflow: hidden;
 }
@@ -700,7 +780,9 @@ async function handleApply() {
   transition: background 0.12s;
 }
 
-.search-result-item:hover { background: var(--background-secondary); }
+.search-result-item:hover {
+  background: var(--background-secondary);
+}
 
 .no-results {
   margin: 0;
@@ -728,10 +810,15 @@ async function handleApply() {
   color: var(--text-secondary);
   font-size: 0.82rem;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
-.btn-secondary:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+.btn-secondary:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
 
 .btn-primary {
   padding: 5px 16px;
@@ -745,8 +832,13 @@ async function handleApply() {
   transition: opacity 0.15s;
 }
 
-.btn-primary:hover:not(:disabled) { opacity: 0.85; }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 @media (max-width: 480px) {
   .modal-container {
@@ -757,6 +849,8 @@ async function handleApply() {
     bottom: 0;
   }
 
-  .modal-backdrop { align-items: flex-end; }
+  .modal-backdrop {
+    align-items: flex-end;
+  }
 }
 </style>

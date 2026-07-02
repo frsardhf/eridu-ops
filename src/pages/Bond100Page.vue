@@ -12,10 +12,7 @@ import { useImageExport } from '@/composables/useImageExport';
 import { BOND100_SERVER_OPTIONS, BOND100_SORT_MODES } from '@/lib/constants/bond100';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
 import { useStudentData } from '@/lib/hooks/useStudentData';
-import {
-  getBond100StudentEntries,
-  getBond100Summary,
-} from '@/lib/services/bond100Service';
+import { getBond100StudentEntries, getBond100Summary } from '@/lib/services/bond100Service';
 import { getSettings, updateSetting } from '@/lib/utils/settingsStorage';
 import { resolveLocalized } from '@/lib/utils/localizationUtils';
 import { $t } from '@/locales';
@@ -50,11 +47,11 @@ watch(hideEmpty, (v) => updateSetting('bond100HideEmpty', v));
 
 const serverFilterOptions = computed<{ value: Bond100ServerFilter; label: string }[]>(() => [
   { value: 'all', label: $t('bond100.allServers') },
-  ...BOND100_SERVER_OPTIONS.map(o => ({ value: o.code, label: $t(o.labelKey) })),
+  ...BOND100_SERVER_OPTIONS.map((o) => ({ value: o.code, label: $t(o.labelKey) })),
 ]);
 
 const sortOptions = computed<{ value: Bond100SortMode; label: string }[]>(() =>
-  BOND100_SORT_MODES.map(m => ({ value: m, label: $t(`bond100.sortModes.${m}`) }))
+  BOND100_SORT_MODES.map((m) => ({ value: m, label: $t(`bond100.sortModes.${m}`) })),
 );
 
 const infoOpen = ref(false);
@@ -103,7 +100,7 @@ const allStudents = computed<StudentProps[]>(() => {
   // false) so stray 0-count tiles don't appear and the "N of M" coverage uses
   // the real Global roster. Fail open if the flag is missing (keep the student).
   return filterSecondaryStudents(Object.values(studentData.value))
-    .filter(s => s.IsReleased?.[1] !== false)
+    .filter((s) => s.IsReleased?.[1] !== false)
     .sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
@@ -113,14 +110,14 @@ const schoolOptions = computed<{ value: string; label: string }[]>(() => {
   const schools = new Set<string>();
   for (const s of allStudents.value) if (s.School) schools.add(s.School);
   const opts = Array.from(schools)
-    .map(school => ({ value: school, label: resolveLocalized('School', school) || school }))
+    .map((school) => ({ value: school, label: resolveLocalized('School', school) || school }))
     .sort((a, b) => a.label.localeCompare(b.label));
   return [{ value: 'all', label: $t('bond100.allSchools') }, ...opts];
 });
 
 const summaryMap = computed(() => {
   return new Map<number, Bond100StudentSummary>(
-    (summary.value?.students ?? []).map(item => [item.studentId, item])
+    (summary.value?.students ?? []).map((item) => [item.studentId, item]),
   );
 });
 
@@ -132,7 +129,7 @@ const totals = computed(() => {
   if (selectedServer.value === 'all') {
     return {
       total: summary.value?.total ?? students.reduce((sum, item) => sum + item.count, 0),
-      studentsRepresented: students.filter(item => item.count > 0).length,
+      studentsRepresented: students.filter((item) => item.count > 0).length,
     };
   }
 
@@ -152,7 +149,7 @@ const visibleCards = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
 
   return allStudents.value
-    .map(student => {
+    .map((student) => {
       const item = summaryMap.value.get(student.Id) ?? null;
       return {
         student,
@@ -160,14 +157,16 @@ const visibleCards = computed(() => {
         count: getVisibleCount(item),
       };
     })
-    .filter(card => {
+    .filter((card) => {
       const matchesQuery = !query || card.student.Name.toLowerCase().includes(query);
-      const matchesSchool = selectedSchool.value === 'all' || card.student.School === selectedSchool.value;
+      const matchesSchool =
+        selectedSchool.value === 'all' || card.student.School === selectedSchool.value;
       const matchesEmpty = !hideEmpty.value || card.count > 0;
       return matchesQuery && matchesSchool && matchesEmpty;
     })
     .sort((a, b) => {
-      const byOrder = (a.student.DefaultOrder ?? a.student.Id) - (b.student.DefaultOrder ?? b.student.Id);
+      const byOrder =
+        (a.student.DefaultOrder ?? a.student.Id) - (b.student.DefaultOrder ?? b.student.Id);
 
       if (sortMode.value === 'name') {
         return a.student.Name.localeCompare(b.student.Name) || byOrder;
@@ -228,7 +227,8 @@ async function openEntries(student: StudentProps) {
     if (token === entriesToken) selectedEntries.value = res;
   } catch (error) {
     if (token === entriesToken) {
-      entriesError.value = error instanceof Error ? error.message : $t('bond100.entriesUnavailable');
+      entriesError.value =
+        error instanceof Error ? error.message : $t('bond100.entriesUnavailable');
     }
   } finally {
     if (token === entriesToken) isEntriesLoading.value = false;
@@ -252,15 +252,17 @@ const snapshotLabel = computed(() => {
   const d = new Date(`${iso}T00:00:00`);
   return Number.isNaN(d.getTime())
     ? ''
-    : new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+    : new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' }).format(
+        d,
+      );
 });
 
 // Fixed export layout: a wide 25-column grid rather than the responsive
 // on-screen count, so the image is consistent regardless of window size.
 const EXPORT_COLS = 25;
-const EXPORT_TILE = 64;  // px
-const EXPORT_GAP = 6;    // matches .bond100-wall gap
-const EXPORT_BORDER = '#c8ccd2';  // soft neutral that reads cleanly on the white sheet
+const EXPORT_TILE = 64; // px
+const EXPORT_GAP = 6; // matches .bond100-wall gap
+const EXPORT_BORDER = '#c8ccd2'; // soft neutral that reads cleanly on the white sheet
 
 async function exportWall() {
   const wrap = document.querySelector<HTMLElement>('.bond100-wall-wrap');
@@ -292,7 +294,7 @@ async function exportWall() {
     const date = summary.value?.snapshotDate ?? new Date().toISOString().slice(0, 10);
     await captureToPng(wrap, {
       scale: 2,
-      backgroundColor: '#ffffff',   // always a clean white sheet, theme-independent
+      backgroundColor: '#ffffff', // always a clean white sheet, theme-independent
       fileName: `bond100-hall-${date}.png`,
     });
   } finally {
@@ -316,7 +318,10 @@ onMounted(loadSummary);
       <div class="bond100-toolbar">
         <label class="bond100-search">
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-            <path fill="currentColor" d="m21 20.3-5.5-5.5a7 7 0 1 0-1.1 1.1l5.5 5.5 1.1-1.1zM4.5 10a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"/>
+            <path
+              fill="currentColor"
+              d="m21 20.3-5.5-5.5a7 7 0 1 0-1.1 1.1l5.5 5.5 1.1-1.1zM4.5 10a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"
+            />
           </svg>
           <input
             v-model="searchQuery"
@@ -349,17 +354,23 @@ onMounted(loadSummary);
           :aria-label="$t('bond100.hideEmptyAria')"
           @click="hideEmpty = !hideEmpty"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
           <span>{{ $t('bond100.hideEmpty') }}</span>
         </button>
 
-        <SelectMenu
-          v-model="sortMode"
-          :options="sortOptions"
-          :aria-label="$t('bond100.sort')"
-        />
+        <SelectMenu v-model="sortMode" :options="sortOptions" :aria-label="$t('bond100.sort')" />
 
         <button
           v-if="isOwner"
@@ -369,7 +380,17 @@ onMounted(loadSummary);
           title="Generate high-res image"
           @click="exportWall"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
@@ -379,9 +400,14 @@ onMounted(loadSummary);
       </div>
 
       <div class="bond100-metrics">
-        <span><strong>{{ totals.total }}</strong> {{ $t('bond100.atBond100') }}</span>
+        <span
+          ><strong>{{ totals.total }}</strong> {{ $t('bond100.atBond100') }}</span
+        >
         <span class="sep">·</span>
-        <span><strong>{{ totals.studentsRepresented }}</strong> {{ $t('bond100.studentsRepresented').toLowerCase() }}</span>
+        <span
+          ><strong>{{ totals.studentsRepresented }}</strong>
+          {{ $t('bond100.studentsRepresented').toLowerCase() }}</span
+        >
         <span v-if="summary?.isMock || summaryError" class="bond100-note">
           {{ summaryError || $t('bond100.demoDataNote') }}
         </span>
@@ -419,12 +445,25 @@ onMounted(loadSummary);
             >
               ?
             </button>
-            <div v-if="infoOpen" class="bond100-info-popover" role="dialog" :aria-label="$t('bond100.aboutTitle')">
+            <div
+              v-if="infoOpen"
+              class="bond100-info-popover"
+              role="dialog"
+              :aria-label="$t('bond100.aboutTitle')"
+            >
               <h3>{{ $t('bond100.aboutTitle') }}</h3>
               <p class="bond100-info-text">{{ $t('bond100.aboutCount') }}</p>
               <p class="bond100-info-text">
-                <template v-if="aboutSourcesParts.length === 2">{{ aboutSourcesParts[0]
-                  }}<a class="bond100-info-link" :href="ARONA_URL" target="_blank" rel="noopener noreferrer">arona.icu</a>{{ aboutSourcesParts[1] }}</template>
+                <template v-if="aboutSourcesParts.length === 2"
+                  >{{ aboutSourcesParts[0]
+                  }}<a
+                    class="bond100-info-link"
+                    :href="ARONA_URL"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >arona.icu</a
+                  >{{ aboutSourcesParts[1] }}</template
+                >
                 <template v-else>{{ $t('bond100.aboutSources') }}</template>
               </p>
               <p class="bond100-info-text">{{ $t('bond100.aboutDelay') }}</p>
@@ -445,9 +484,14 @@ onMounted(loadSummary);
         <div ref="exportHeaderRef" class="bond100-export-header">
           <span class="bond100-export-handle">@idxyllune</span>
           <span class="bond100-export-sep">·</span>
-          <span class="bond100-export-total"><strong>{{ totals.total }}</strong> {{ $t('bond100.atBond100') }}</span>
+          <span class="bond100-export-total"
+            ><strong>{{ totals.total }}</strong> {{ $t('bond100.atBond100') }}</span
+          >
           <span class="bond100-export-sep">·</span>
-          <span class="bond100-export-students"><strong>{{ totals.studentsRepresented }}</strong> {{ $t('bond100.stats.ofStudents', { total: allStudents.length }) }}</span>
+          <span class="bond100-export-students"
+            ><strong>{{ totals.studentsRepresented }}</strong>
+            {{ $t('bond100.stats.ofStudents', { total: allStudents.length }) }}</span
+          >
           <span v-if="snapshotLabel" class="bond100-export-sep">·</span>
           <span v-if="snapshotLabel" class="bond100-export-date">{{ snapshotLabel }}</span>
         </div>
@@ -499,7 +543,7 @@ onMounted(loadSummary);
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;   /* push the subtitle + ? to the end of the metrics row */
+  margin-left: auto; /* push the subtitle + ? to the end of the metrics row */
 }
 
 .bond100-subtitle {
@@ -528,7 +572,9 @@ onMounted(loadSummary);
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .bond100-info-btn:hover,
@@ -550,7 +596,7 @@ onMounted(loadSummary);
 .bond100-info-popover {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;   /* anchored to the right since the ? now sits at the row's end */
+  right: 0; /* anchored to the right since the ? now sits at the row's end */
   z-index: 1100;
   width: 300px;
   max-width: calc(100vw - 32px);
@@ -634,7 +680,9 @@ onMounted(loadSummary);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .bond100-export-btn:hover:not(:disabled) {
@@ -663,7 +711,10 @@ onMounted(loadSummary);
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
 }
 
 .bond100-toggle:hover {

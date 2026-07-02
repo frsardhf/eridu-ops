@@ -17,22 +17,30 @@ import { StudentProps } from '@/types/student';
  */
 export function useStudentInfo(student: Ref<StudentProps>) {
   // Colors
-  const squadTypeColor       = computed(() => getSquadTypeColor(student.value.SquadType));
-  const bulletTypeColor      = computed(() => getBulletTypeColor(student.value.BulletType));
-  const armorTypeColor       = computed(() => getArmorTypeColor(student.value.ArmorType));
+  const squadTypeColor = computed(() => getSquadTypeColor(student.value.SquadType));
+  const bulletTypeColor = computed(() => getBulletTypeColor(student.value.BulletType));
+  const armorTypeColor = computed(() => getArmorTypeColor(student.value.ArmorType));
   const bulletTypeColorLight = computed(() => colorWithOpacity(bulletTypeColor.value, 0.8));
-  const armorTypeColorLight  = computed(() => colorWithOpacity(armorTypeColor.value, 0.8));
+  const armorTypeColorLight = computed(() => colorWithOpacity(armorTypeColor.value, 0.8));
   // Localization
-  const squadTypeName  = computed(() => resolveLocalized('SquadType', student.value.SquadType));
+  const squadTypeName = computed(() => resolveLocalized('SquadType', student.value.SquadType));
   const bulletTypeName = computed(() => resolveLocalized('BulletType', student.value.BulletType));
-  const armorTypeName  = computed(() => resolveLocalized('ArmorType', student.value.ArmorType));
-  const schoolName     = computed(() => resolveLocalized('School', student.value.School));
-  const clubName       = computed(() => resolveLocalized('Club', student.value.Club));
+  const armorTypeName = computed(() => resolveLocalized('ArmorType', student.value.ArmorType));
+  const schoolName = computed(() => resolveLocalized('School', student.value.School));
+  const clubName = computed(() => resolveLocalized('Club', student.value.Club));
   const tacticRoleName = computed(() => resolveLocalized('TacticRole', student.value.TacticRole));
 
   return {
-    squadTypeColor, bulletTypeColor, armorTypeColor,
-    bulletTypeColorLight, armorTypeColorLight,
-    squadTypeName, bulletTypeName, armorTypeName, schoolName, clubName, tacticRoleName,
+    squadTypeColor,
+    bulletTypeColor,
+    armorTypeColor,
+    bulletTypeColorLight,
+    armorTypeColorLight,
+    squadTypeName,
+    bulletTypeName,
+    armorTypeName,
+    schoolName,
+    clubName,
+    tacticRoleName,
   };
 }

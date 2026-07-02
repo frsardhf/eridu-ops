@@ -41,7 +41,7 @@ function sumCurrentLevels(levels?: Record<string, { current?: number }>): number
 // entries tie a clean 9/9/9. Sum only the student's real slots, matching the card.
 function sumEquipmentLevels(
   student: StudentProps,
-  levels?: Record<string, { current?: number }>
+  levels?: Record<string, { current?: number }>,
 ): number {
   if (!levels || !student.Equipment) return 0;
   let total = 0;
@@ -59,7 +59,7 @@ function toComparableValue(
   student: StudentProps,
   option: SortOption,
   studentStore: Record<number, FormRecord>,
-  resolveLocalized?: (category: ResolveCategory, key?: string) => string
+  resolveLocalized?: (category: ResolveCategory, key?: string) => string,
 ): number | string {
   switch (option) {
     case 'name':
@@ -94,7 +94,7 @@ function compareStudents(
   option: SortOption,
   direction: SortDirection,
   studentStore: Record<number, FormRecord>,
-  resolveLocalized?: (category: ResolveCategory, key?: string) => string
+  resolveLocalized?: (category: ResolveCategory, key?: string) => string,
 ): number {
   const aValue = toComparableValue(a, option, studentStore, resolveLocalized);
   const bValue = toComparableValue(b, option, studentStore, resolveLocalized);
@@ -112,11 +112,8 @@ function compareStudents(
 // Unarmed and SpecialArmor are the same in-game defense category
 const UNARMED_ALIASES = new Set(['Unarmed', 'SpecialArmor']);
 
-function applyStudentFilters(
-  students: StudentProps[],
-  filters: StudentFilters,
-): StudentProps[] {
-  return students.filter(student => {
+function applyStudentFilters(students: StudentProps[], filters: StudentFilters): StudentProps[] {
+  return students.filter((student) => {
     if (filters.squadType.length && !filters.squadType.includes(student.SquadType)) return false;
     if (filters.starGrade.length && !filters.starGrade.includes(student.StarGrade)) return false;
     if (filters.bulletType.length && !filters.bulletType.includes(student.BulletType)) return false;
@@ -125,11 +122,13 @@ function applyStudentFilters(
       const studentArmor = student.ArmorType;
       const filterSet = new Set(filters.armorType);
       const unarmedSelected = filterSet.has('Unarmed') || filterSet.has('SpecialArmor');
-      const matches = filterSet.has(studentArmor) || (unarmedSelected && UNARMED_ALIASES.has(studentArmor));
+      const matches =
+        filterSet.has(studentArmor) || (unarmedSelected && UNARMED_ALIASES.has(studentArmor));
       if (!matches) return false;
     }
     if (filters.school.length && !filters.school.includes(student.School)) return false;
-    if (filters.equipment.length && !filters.equipment.every(e => student.Equipment?.includes(e))) return false;
+    if (filters.equipment.length && !filters.equipment.every((e) => student.Equipment?.includes(e)))
+      return false;
     if (filters.availability.length) {
       const avail = student.IsLimited?.[0] ?? 0;
       if (!filters.availability.includes(avail)) return false;
@@ -157,7 +156,7 @@ export function sortStudentsWithPins({
   const normalizedQuery = normalizeText(searchQuery || '');
 
   const filtered = normalizedQuery
-    ? students.filter(s => normalizeText(s.Name || '').includes(normalizedQuery))
+    ? students.filter((s) => normalizeText(s.Name || '').includes(normalizedQuery))
     : students;
 
   if (isPinnedMode) {
@@ -165,7 +164,7 @@ export function sortStudentsWithPins({
     const pinnedSet = new Set(pinnedStudentIds);
     const pinned: StudentProps[] = [];
     const unpinned: StudentProps[] = [];
-    filtered.forEach(s => (pinnedSet.has(String(s.Id)) ? pinned : unpinned).push(s));
+    filtered.forEach((s) => (pinnedSet.has(String(s.Id)) ? pinned : unpinned).push(s));
     const cmp = byBondDesc(studentStore);
     return [...pinned.sort(cmp), ...unpinned.sort(cmp)];
   }
@@ -173,16 +172,19 @@ export function sortStudentsWithPins({
   // Normal mode: flat list sorted by the selected option (no pinned priority).
   return filtered
     .slice()
-    .sort((a, b) => compareStudents(a, b, sortOption, sortDirection, studentStore, resolveLocalized));
+    .sort((a, b) =>
+      compareStudents(a, b, sortOption, sortDirection, studentStore, resolveLocalized),
+    );
 }
 
 /**
  * Splits students into owned/unowned groups then sorts each independently.
  */
 export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
-  const students = params.filters && !isFiltersEmpty(params.filters)
-    ? applyStudentFilters(params.students, params.filters)
-    : params.students;
+  const students =
+    params.filters && !isFiltersEmpty(params.filters)
+      ? applyStudentFilters(params.students, params.filters)
+      : params.students;
 
   const allOwned: StudentProps[] = [];
   const allUnowned: StudentProps[] = [];
@@ -195,7 +197,7 @@ export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
   }
 
   return {
-    owned:   sortStudentsWithPins({ ...params, students: allOwned }),
+    owned: sortStudentsWithPins({ ...params, students: allOwned }),
     unowned: sortStudentsWithPins({ ...params, students: allUnowned }),
   };
 }

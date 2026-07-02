@@ -5,9 +5,7 @@ import { getAllEquipmentInventories } from '../services/dbService';
 import type { CachedResource } from '../../types/resource';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 
-export function useStudentEquipment(props: {
-  isVisible?: boolean
-}) {
+export function useStudentEquipment(props: { isVisible?: boolean }) {
   const equipmentFormData = ref<Record<string, number>>({});
 
   function handleEquipmentInput(id: string, event: Event) {
@@ -17,14 +15,14 @@ export function useStudentEquipment(props: {
   }
 
   const { loadNow: loadEquipments } = useDebouncedFormPersistence({
-    isVisible:    () => props.isVisible,
-    refs:         { equipmentFormData },
-    defaults:     { equipmentFormData: {} as Record<string, number> },
-    loadFn:       async (staged) => {
+    isVisible: () => props.isVisible,
+    refs: { equipmentFormData },
+    defaults: { equipmentFormData: {} as Record<string, number> },
+    loadFn: async (staged) => {
       const inventories = await getAllEquipmentInventories();
       staged.equipmentFormData.value = { ...inventories };
     },
-    saveFn:       async () => {
+    saveFn: async () => {
       await saveEquipmentInventory(equipmentFormData.value);
 
       // Sync the in-memory cache so gear-material calculations see current quantities.

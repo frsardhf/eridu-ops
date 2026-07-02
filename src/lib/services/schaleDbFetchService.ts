@@ -22,8 +22,11 @@ async function fetchData(type: string, lang: string, maxRetries = 2): Promise<an
     } catch (error) {
       if (attempt < maxRetries) {
         const delayMs = 1000 * (attempt + 1); // 1 s, 2 s
-        console.warn(`Fetch attempt ${attempt + 1} failed for ${type}, retrying in ${delayMs}ms…`, error);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        console.warn(
+          `Fetch attempt ${attempt + 1} failed for ${type}, retrying in ${delayMs}ms…`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       } else {
         console.error(`Error fetching ${type} data after ${maxRetries + 1} attempts:`, error);
         return {};
@@ -54,7 +57,7 @@ export function fetchAllData(lang: string): Promise<FetchedData> {
 
   _dataCache.set(lang, promise);
   promise.then(
-    data => {
+    (data) => {
       if (!data.students || Object.keys(data.students).length === 0) _dataCache.delete(lang);
     },
     () => _dataCache.delete(lang),
@@ -75,8 +78,8 @@ const locCacheKey = (lang: string) => `localization:${lang}`;
 // Network fetch with write-through to IndexedDB and the session cache.
 function fetchAndPersistLocalization(lang: string): Promise<SchaleLocalization> {
   const promise = fetch(`https://schaledb.com/data/${lang}/localization.json`)
-    .then(response => response.json() as Promise<SchaleLocalization>)
-    .then(data => {
+    .then((response) => response.json() as Promise<SchaleLocalization>)
+    .then((data) => {
       setMetadata(locCacheKey(lang), data);
       return data;
     });

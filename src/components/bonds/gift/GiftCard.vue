@@ -9,18 +9,18 @@ import { SR_GIFT_MATERIAL_ID, SSR_GIFT_MATERIAL_ID } from '@/types/resource';
 import { $t } from '@/locales';
 
 const props = defineProps<{
-  item: GiftProps,
-  value?: number | string,
-  convertBox?: boolean,
-  showGiftGrade?: boolean,
-  isBox?: boolean,
+  item: GiftProps;
+  value?: number | string;
+  convertBox?: boolean;
+  showGiftGrade?: boolean;
+  isBox?: boolean;
   /** Hides the input and always shows the quantity badge (BondsPage banners). */
-  readonly?: boolean,
+  readonly?: boolean;
   /** Suppresses the grade icon overlay entirely (materials banner). */
-  hideGrade?: boolean,
+  hideGrade?: boolean;
 }>();
 
-const emit = defineEmits<{'update:value': [event: Event];}>();
+const emit = defineEmits<{ 'update:value': [event: Event] }>();
 
 const { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus } = useFocusInput();
 
@@ -35,7 +35,12 @@ const manualStepperTitle = computed(() => {
 </script>
 
 <template>
-  <div class="gift-card" :class="{ 'box-card': isBox }" :title="manualStepperTitle" @click="forceInputFocus">
+  <div
+    class="gift-card"
+    :class="{ 'box-card': isBox }"
+    :title="manualStepperTitle"
+    @click="forceInputFocus"
+  >
     <div class="gift-header">
       <div class="gift-icon-container">
         <img
@@ -49,12 +54,9 @@ const manualStepperTitle = computed(() => {
           :alt="item.grade.toString()"
           class="grade-icon"
         />
-        
+
         <!-- Quantity display (similar to resource-quantity) -->
-        <div
-          class="resource-quantity"
-          v-if="readonly || (!isInputFocused && value)"
-        >
+        <div class="resource-quantity" v-if="readonly || (!isInputFocused && value)">
           {{ formatItemQuantity(value) }}
         </div>
 

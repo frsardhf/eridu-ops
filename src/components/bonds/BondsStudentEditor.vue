@@ -32,14 +32,37 @@ const { allGifts } = useStudentData();
 const { isGiftPlanningEnabled, enableGiftPlanning, disableGiftPlanning } = useBondsTracked();
 
 const {
-  currentBond, newBondLevel, totalCumulativeExp, remainingXp,
-  giftsExp, boxesExp, cafeExp, bonusExp,
-  giftFormData, boxFormData, nonFavorGiftsMap, otherExpData, shouldShowGiftGrade,
-  convertBoxes, handleBondInput, handleGiftInput, handleBoxInput, handleNonFavorGiftInput,
-  updateOtherExp, resetOtherExp,
-  showConvertModal, convertModalNeeded, confirmConversion, cancelConversion,
-  showSyncGiftsModal, syncGifts,
-  canUndo, canRedo, undoChanges, redoChanges, resetGifts,
+  currentBond,
+  newBondLevel,
+  totalCumulativeExp,
+  remainingXp,
+  giftsExp,
+  boxesExp,
+  cafeExp,
+  bonusExp,
+  giftFormData,
+  boxFormData,
+  nonFavorGiftsMap,
+  otherExpData,
+  shouldShowGiftGrade,
+  convertBoxes,
+  handleBondInput,
+  handleGiftInput,
+  handleBoxInput,
+  handleNonFavorGiftInput,
+  updateOtherExp,
+  resetOtherExp,
+  showConvertModal,
+  convertModalNeeded,
+  confirmConversion,
+  cancelConversion,
+  showSyncGiftsModal,
+  syncGifts,
+  canUndo,
+  canRedo,
+  undoChanges,
+  redoChanges,
+  resetGifts,
   loadFromIndexedDB,
 } = useStudentForm(toRef(props, 'student'));
 
@@ -55,7 +78,7 @@ const hasNonGiftExp = computed(() => cafeExp.value > 0 || bonusExp.value > 0);
 const reachesMax = computed(() => newBondLevel.value >= MAX_BOND_LEVEL);
 
 const filteredBoxes = computed(() =>
-  (props.student.Boxes ?? []).filter(b => !HIDDEN_BOX_IDS.has(b.gift.Id))
+  (props.student.Boxes ?? []).filter((b) => !HIDDEN_BOX_IDS.has(b.gift.Id)),
 );
 
 const editorStudent = computed<StudentProps>(() => ({
@@ -66,14 +89,15 @@ const editorStudent = computed<StudentProps>(() => ({
 // --- Non-favored gifts: full list from allGifts minus the student's favored ---
 const nonFavorGifts = computed(() => {
   const full = allGifts.value[String(props.student.Id)] ?? [];
-  const favoredIds = new Set((props.student.Gifts ?? []).map(g => g.gift.Id));
-  return full.filter(g => !favoredIds.has(g.gift.Id));
+  const favoredIds = new Set((props.student.Gifts ?? []).map((g) => g.gift.Id));
+  return full.filter((g) => !favoredIds.has(g.gift.Id));
 });
 
 // --- Convert button gating ---
-const canConvert = computed(() =>
-  (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 &&
-  (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2
+const canConvert = computed(
+  () =>
+    (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 &&
+    (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2,
 );
 
 // --- Yellow stone item (rendered as a GiftCard) ---
@@ -86,10 +110,10 @@ const yellowStoneItem = computed<GiftProps | null>(() => {
 const materialNeeds = computed(() => getStudentFavorMaterialNeeds(props.student.Id));
 
 const materialNeedItems = computed<{ item: GiftProps; qty: number }[]>(() =>
-  materialNeeds.value.map(n => ({
+  materialNeeds.value.map((n) => ({
     item: { gift: n.material, exp: 0, grade: 0 },
     qty: n.quantity,
-  }))
+  })),
 );
 
 // --- Gift planning visibility ---
@@ -99,8 +123,8 @@ const hasAllocations = computed(() => {
   return false;
 });
 
-const showGiftGrid = computed(() =>
-  hasAllocations.value || isGiftPlanningEnabled(props.student.Id)
+const showGiftGrid = computed(
+  () => hasAllocations.value || isGiftPlanningEnabled(props.student.Id),
 );
 
 function onEnableGiftGrid() {
@@ -246,7 +270,12 @@ function returnToStudentPage() {
 
     <SyncGiftsModeModal
       v-if="showSyncGiftsModal"
-      @confirm="(mode) => { showSyncGiftsModal = false; syncGifts(mode); }"
+      @confirm="
+        (mode) => {
+          showSyncGiftsModal = false;
+          syncGifts(mode);
+        }
+      "
       @cancel="showSyncGiftsModal = false"
     />
 
@@ -429,7 +458,10 @@ function returnToStudentPage() {
   font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .be-plan-gifts-btn:hover {
@@ -483,7 +515,7 @@ function returnToStudentPage() {
   .be-icon-wrap {
     align-self: flex-start;
     width: 96px;
-    height: 108px;  /* matches collection portrait's ~200/226 aspect at 96px wide */
+    height: 108px; /* matches collection portrait's ~200/226 aspect at 96px wide */
   }
 }
 </style>

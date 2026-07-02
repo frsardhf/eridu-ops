@@ -7,7 +7,7 @@ import type { EquipmentType } from '../../types/gear';
 import {
   DEFAULT_CHARACTER_LEVELS,
   DEFAULT_SKILL_LEVELS,
-  DEFAULT_POTENTIAL_LEVELS
+  DEFAULT_POTENTIAL_LEVELS,
 } from '../../types/upgrade';
 import { DEFAULT_BOND_DETAIL } from '../../types/gift';
 import { getPrimaryStudentId } from '../constants/linkedStudents';
@@ -23,7 +23,7 @@ export function buildDefaultFormData(student: StudentProps): FormRecord {
   // Build equipment levels based on student's equipment types
   const equipmentLevels: Record<string, { current: number; target: number }> = {};
   if (student.Equipment) {
-    student.Equipment.forEach(type => {
+    student.Equipment.forEach((type) => {
       equipmentLevels[type as EquipmentType] = { current: 1, target: 1 };
     });
   }
@@ -44,7 +44,7 @@ export function buildDefaultFormData(student: StudentProps): FormRecord {
     // Gear slice
     equipmentLevels,
     gradeLevels: { current: starGrade, target: starGrade },
-    gradeInfos: { owned: 0, price: 1, purchasable: 20 }
+    gradeInfos: { owned: 0, price: 1, purchasable: 20 },
   };
 }
 
@@ -83,4 +83,3 @@ export async function initializeStudentFormData(student: StudentProps): Promise<
     return defaults;
   });
 }
-

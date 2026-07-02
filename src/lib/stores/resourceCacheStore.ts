@@ -65,10 +65,7 @@ async function initializeEquipmentCache() {
  * Call this at app startup
  */
 export async function initializeAllCaches() {
-  await Promise.all([
-    initializeItemsCache(),
-    initializeEquipmentCache()
-  ]);
+  await Promise.all([initializeItemsCache(), initializeEquipmentCache()]);
 }
 
 /**

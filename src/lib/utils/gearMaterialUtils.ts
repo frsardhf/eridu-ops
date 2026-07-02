@@ -1,16 +1,12 @@
 import { StudentProps } from '../../types/student';
 import dataTable from '../../data/data.json';
-import { getResourceDataByIdSync, getEquipmentDataByIdSync, getAllEquipmentFromCache } from '../stores/resourceCacheStore';
 import {
-  EquipmentLevels,
-  GradeInfos,
-  GradeLevels
-} from '../../types/gear';
-import {
-  CREDITS_ID,
-  ELIGMAS_ID,
-  Material,
-} from '../../types/upgrade';
+  getResourceDataByIdSync,
+  getEquipmentDataByIdSync,
+  getAllEquipmentFromCache,
+} from '../stores/resourceCacheStore';
+import { EquipmentLevels, GradeInfos, GradeLevels } from '../../types/gear';
+import { CREDITS_ID, ELIGMAS_ID, Material } from '../../types/upgrade';
 import { consolidateAndSortMaterials } from '../utils/materialUtils';
 import { EXCLUSIVE_GEAR_T2_CREDIT_COST } from '../constants/gameConstants';
 import type { ExclusiveGearLevel } from '../../types/gear';
@@ -20,10 +16,11 @@ function getCreditsForEquipmentTier(current: number, target: number) {
   const equipmentCreditsTable = dataTable.equipment_credits;
 
   if (current === 1) {
-    return equipmentCreditsTable[target-2] ?? 0;
+    return equipmentCreditsTable[target - 2] ?? 0;
   }
 
-  const creditsNeeded = (equipmentCreditsTable[target-2] ?? 0) - (equipmentCreditsTable[current-2] ?? 0);
+  const creditsNeeded =
+    (equipmentCreditsTable[target - 2] ?? 0) - (equipmentCreditsTable[current - 2] ?? 0);
   return Math.max(0, creditsNeeded);
 }
 
@@ -31,10 +28,11 @@ function getCreditsForGrade(current: number, target: number) {
   const gradeCreditsTable = dataTable.grade_credits;
 
   if (current === 1) {
-    return gradeCreditsTable[target-2] ?? 0;
+    return gradeCreditsTable[target - 2] ?? 0;
   }
 
-  const creditsNeeded = (gradeCreditsTable[target-2] ?? 0) - (gradeCreditsTable[current-2] ?? 0);
+  const creditsNeeded =
+    (gradeCreditsTable[target - 2] ?? 0) - (gradeCreditsTable[current - 2] ?? 0);
   return Math.max(0, creditsNeeded);
 }
 
@@ -42,16 +40,16 @@ export function getElephsForGrade(current: number, target: number, owned: number
   const gradeElephsTable = dataTable.grade_elephs;
 
   if (current === 1) {
-    return gradeElephsTable[target-2] ?? 0;
+    return gradeElephsTable[target - 2] ?? 0;
   }
 
-  const elephsNeeded = (gradeElephsTable[target-2] ?? 0) - (gradeElephsTable[current-2] ?? 0);
+  const elephsNeeded = (gradeElephsTable[target - 2] ?? 0) - (gradeElephsTable[current - 2] ?? 0);
   return Math.max(0, elephsNeeded - owned);
 }
 
 function getEligmasForGrade(needed: number, price: number = 1, purchasable: number = 20) {
-  let totalEligma = 0
-  let remainingElephs = needed
+  let totalEligma = 0;
+  let remainingElephs = needed;
   while (price <= 5) {
     remainingElephs -= purchasable;
     totalEligma += price * purchasable;
@@ -61,16 +59,16 @@ function getEligmasForGrade(needed: number, price: number = 1, purchasable: numb
       }
       break;
     }
-    price++
+    price++;
   }
-  if (remainingElephs > 0) totalEligma += 5 * remainingElephs
+  if (remainingElephs > 0) totalEligma += 5 * remainingElephs;
 
   return totalEligma || 0;
 }
 
 export function calculateEquipmentMaterials(
   student: StudentProps,
-  equipmentLevels: EquipmentLevels
+  equipmentLevels: EquipmentLevels,
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
@@ -128,7 +126,11 @@ export function calculateEquipmentMaterials(
         } else {
           const materialData = getEquipmentDataByIdSync(materialId);
           if (!materialData) continue;
-          const entry: Material = { material: materialData, materialQuantity: quantity, type: 'equipments' };
+          const entry: Material = {
+            material: materialData,
+            materialQuantity: quantity,
+            type: 'equipments',
+          };
           byMaterialId.set(materialId, entry);
           materialsNeeded.push(entry);
         }
@@ -139,9 +141,7 @@ export function calculateEquipmentMaterials(
   return materialsNeeded;
 }
 
-export function calculateEquipmentCredits(
-  equipmentLevels: EquipmentLevels
-): Material[] {
+export function calculateEquipmentCredits(equipmentLevels: EquipmentLevels): Material[] {
   const materialsNeeded: Material[] = [];
   const creditsData = getResourceDataByIdSync(CREDITS_ID);
 
@@ -156,7 +156,7 @@ export function calculateEquipmentCredits(
       materialsNeeded.push({
         material: creditsData,
         materialQuantity: creditsQuantity,
-        type: 'credits'
+        type: 'credits',
       });
     }
   });
@@ -164,9 +164,7 @@ export function calculateEquipmentCredits(
   return materialsNeeded;
 }
 
-export function calculateGradeCredits(
-  gradeLevels: GradeLevels
-): Material[] {
+export function calculateGradeCredits(gradeLevels: GradeLevels): Material[] {
   const materialsNeeded: Material[] = [];
   const creditsData = getResourceDataByIdSync(CREDITS_ID);
 
@@ -181,7 +179,7 @@ export function calculateGradeCredits(
     materialsNeeded.push({
       material: creditsData,
       materialQuantity: creditsQuantity,
-      type: 'credits'
+      type: 'credits',
     });
   }
 
@@ -190,7 +188,7 @@ export function calculateGradeCredits(
 
 export function calculateGradeMaterials(
   gradeLevels: GradeLevels,
-  gradeInfos: GradeInfos
+  gradeInfos: GradeInfos,
 ): Material[] {
   const materialsNeeded: Material[] = [];
   const eligmasData = getResourceDataByIdSync(ELIGMAS_ID);
@@ -210,7 +208,7 @@ export function calculateGradeMaterials(
     materialsNeeded.push({
       material: eligmasData,
       materialQuantity: eligmasQuantity,
-      type: 'materials'
+      type: 'materials',
     });
   }
 
@@ -220,7 +218,7 @@ export function calculateGradeMaterials(
 // Calculate materials needed for exclusive gear upgrade (T1->T2)
 export function calculateExclusiveGearMaterials(
   student: StudentProps,
-  exclusiveGearLevel: ExclusiveGearLevel
+  exclusiveGearLevel: ExclusiveGearLevel,
 ): Material[] {
   const materialsNeeded: Material[] = [];
 
@@ -246,7 +244,7 @@ export function calculateExclusiveGearMaterials(
         materialsNeeded.push({
           material: materialData,
           materialQuantity: tierUpAmounts[index],
-          type: 'materials'
+          type: 'materials',
         });
       }
     });
@@ -256,7 +254,7 @@ export function calculateExclusiveGearMaterials(
       materialsNeeded.push({
         material: creditsData,
         materialQuantity: EXCLUSIVE_GEAR_T2_CREDIT_COST,
-        type: 'credits'
+        type: 'credits',
       });
     }
   }
@@ -269,7 +267,7 @@ export function calculateAllGears(
   equipmentLevels: EquipmentLevels,
   gradeLevels: GradeLevels,
   gradeInfos: GradeInfos,
-  exclusiveGearLevel: ExclusiveGearLevel
+  exclusiveGearLevel: ExclusiveGearLevel,
 ): Material[] {
   const materials: Material[] = [];
 
@@ -295,8 +293,10 @@ export function computeEquipmentSlotXpCost(current: number, target: number): num
 
 /** Total XP cost across all pending equipment slots. */
 export function computeEquipmentXpCost(equipmentLevels: EquipmentLevels): number {
-  return Object.values(equipmentLevels)
-    .reduce((sum, lv) => sum + (lv ? computeEquipmentSlotXpCost(lv.current, lv.target) : 0), 0);
+  return Object.values(equipmentLevels).reduce(
+    (sum, lv) => sum + (lv ? computeEquipmentSlotXpCost(lv.current, lv.target) : 0),
+    0,
+  );
 }
 
 /**
@@ -309,7 +309,7 @@ export function getEquipXpItems(
   eqCache?: ReturnType<typeof getAllEquipmentFromCache>,
 ): Array<{ id: number; xpValue: number; owned: number }> {
   const eq = eqCache ?? getAllEquipmentFromCache();
-  return ([4, 3, 2, 1] as const).map(id => ({
+  return ([4, 3, 2, 1] as const).map((id) => ({
     id,
     xpValue: eq[id]?.LevelUpFeedExp ?? 0,
     owned: getOwned(id),

@@ -10,12 +10,12 @@ import { localizationData } from '@/lib/stores/localizationStore';
  * @param key The raw key from the student data.
  * @returns The localized string if found; otherwise the original key or an empty string.
  */
-export function resolveLocalized (category: keyof SchaleLocalization, key?: string) {
+export function resolveLocalized(category: keyof SchaleLocalization, key?: string) {
   if (!key) return '';
   const map = localizationData.value?.[category];
   if (!map) return '';
   return map[key] ?? key;
-};
+}
 
 /**
  * Fetch localized buff name from the shared localization store
@@ -51,7 +51,7 @@ export function formatSkillDescription(
 
     formattedDesc = formattedDesc.replace(
       placeholder,
-      formatValueWithTarget(currentValue, targetValue)
+      formatValueWithTarget(currentValue, targetValue),
     );
   });
 
@@ -60,7 +60,7 @@ export function formatSkillDescription(
     const indexNum = parseInt(valueIndex, 10);
     if (!skill.Effects) return match;
 
-    const knockbackEffect = skill.Effects.find(effect => effect.Type === 'Knockback');
+    const knockbackEffect = skill.Effects.find((effect) => effect.Type === 'Knockback');
     if (!knockbackEffect?.Scale) return match;
 
     let knockbackSum = 0;
@@ -74,19 +74,29 @@ export function formatSkillDescription(
   // display override inside the brackets, e.g. <s:CH0076_Ex='Keychains'>: when
   // present, use the quoted text verbatim so the raw key never leaks. Plain tags
   // (<s:CH0076_Ex>, <b:AttackPower>) fall through to the localization lookup.
-  formattedDesc = formattedDesc.replace(/<([bcds]):([^>=']+)(?:='([^']*)')?>/g,
+  formattedDesc = formattedDesc.replace(
+    /<([bcds]):([^>=']+)(?:='([^']*)')?>/g,
     (match: string, tagType: string, value: string, override?: string) => {
       if (override !== undefined) return override;
       let prefix = '';
       switch (tagType) {
-        case 'b': prefix = 'Buff_'; break;
-        case 'd': prefix = 'Debuff_'; break;
-        case 'c': prefix = 'CC_'; break;
-        case 's': prefix = 'Special_'; break;
+        case 'b':
+          prefix = 'Buff_';
+          break;
+        case 'd':
+          prefix = 'Debuff_';
+          break;
+        case 'c':
+          prefix = 'CC_';
+          break;
+        case 's':
+          prefix = 'Special_';
+          break;
       }
       const localizedName = fetchLocalizedBuffName(prefix + value);
       return localizedName || value;
-    });
+    },
+  );
 
   return formattedDesc;
 }

@@ -26,9 +26,12 @@ const stages = computed(() => [
 ]);
 
 const subcatLabel = (sub: string): string => {
-  const key = sub === 'CDItem' ? 'craftingFodder.cdItem'
-    : sub === 'BookItem' ? 'craftingFodder.bookItem'
-    : 'craftingFodder.artifact';
+  const key =
+    sub === 'CDItem'
+      ? 'craftingFodder.cdItem'
+      : sub === 'BookItem'
+        ? 'craftingFodder.bookItem'
+        : 'craftingFodder.artifact';
   return $t(key);
 };
 
@@ -43,7 +46,14 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
       <!-- Header -->
       <div class="modal-header">
         <h2 class="modal-title">{{ $t('craftingFodder.title') }}</h2>
-        <button class="icon-btn close-btn" type="button" @click="emit('close')" :aria-label="$t('close')">×</button>
+        <button
+          class="icon-btn close-btn"
+          type="button"
+          @click="emit('close')"
+          :aria-label="$t('close')"
+        >
+          ×
+        </button>
       </div>
 
       <!-- Threshold grid: 3 subcat rows x 4 rarity cols -->
@@ -80,15 +90,20 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
                 :class="{ active: rarityFilter.includes(rar) }"
                 type="button"
                 @click="toggleRarity(rar)"
-              >{{ rar }}</button>
+              >
+                {{ rar }}
+              </button>
             </div>
           </div>
           <div class="legend-col">
             <div class="section-label">{{ $t('craftingFodder.legend') }}</div>
             <div class="legend-row">
-              <span class="legend-dot legend-dot--craft"></span><span class="legend-text">{{ $t('craftingFodder.legendCraft') }}</span>
-              <span class="legend-dot legend-dot--excess"></span><span class="legend-text">{{ $t('craftingFodder.legendExcess') }}</span>
-              <span class="legend-dot legend-dot--qty"></span><span class="legend-text">{{ $t('craftingFodder.legendQty') }}</span>
+              <span class="legend-dot legend-dot--craft"></span
+              ><span class="legend-text">{{ $t('craftingFodder.legendCraft') }}</span>
+              <span class="legend-dot legend-dot--excess"></span
+              ><span class="legend-text">{{ $t('craftingFodder.legendExcess') }}</span>
+              <span class="legend-dot legend-dot--qty"></span
+              ><span class="legend-text">{{ $t('craftingFodder.legendQty') }}</span>
             </div>
           </div>
         </div>
@@ -104,7 +119,10 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
                 v-for="m in stage.items"
                 :key="m.material.Id"
                 class="fodder-item"
-                :class="{ 'fodder-item--zero': m.craftCount === 0, 'fodder-item--marked': markedIdSet.has(m.material.Id) }"
+                :class="{
+                  'fodder-item--zero': m.craftCount === 0,
+                  'fodder-item--marked': markedIdSet.has(m.material.Id),
+                }"
                 :title="m.material.Name"
                 @click="toggleMark(m.material.Id)"
               >
@@ -153,8 +171,14 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Header --- */
@@ -183,7 +207,9 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   justify-content: center;
   font-size: 1rem;
   line-height: 1;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .icon-btn:hover {
@@ -290,9 +316,15 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   flex-shrink: 0;
 }
 
-.legend-dot--craft { background: #6668ed; }
-.legend-dot--excess { background: #4ade80; }
-.legend-dot--qty   { background: #000; }
+.legend-dot--craft {
+  background: #6668ed;
+}
+.legend-dot--excess {
+  background: #4ade80;
+}
+.legend-dot--qty {
+  background: #000;
+}
 
 .legend-text {
   font-size: 0.75rem;
@@ -316,7 +348,10 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
 }
 
 .rarity-chip.active {

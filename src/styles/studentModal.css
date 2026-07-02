@@ -72,7 +72,8 @@
 /* --- Modal Motion --- */
 .student-modal-shell-enter-active,
 .student-modal-shell-leave-active {
-  transition: transform var(--motion-duration-shell) var(--motion-ease-standard),
+  transition:
+    transform var(--motion-duration-shell) var(--motion-ease-standard),
     opacity var(--motion-duration-medium) var(--motion-ease-standard);
   will-change: transform, opacity;
 }
@@ -104,7 +105,8 @@
 .modal-pane-forward-leave-active,
 .modal-pane-backward-enter-active,
 .modal-pane-backward-leave-active {
-  transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
     opacity var(--motion-duration-fast) var(--motion-ease-standard);
   will-change: transform, opacity;
 }
@@ -368,7 +370,7 @@
   position: relative;
 }
 
-.modal-toggle-item input[type="checkbox"] {
+.modal-toggle-item input[type='checkbox'] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -392,13 +394,13 @@
   transition: all 0.2s ease;
 }
 
-.modal-toggle-item input[type="checkbox"]:checked + label {
+.modal-toggle-item input[type='checkbox']:checked + label {
   border-color: var(--accent-color);
   color: var(--text-primary);
   background: color-mix(in srgb, var(--accent-color) 16%, var(--background-primary));
 }
 
-.modal-toggle-item input[type="checkbox"]:focus-visible + label {
+.modal-toggle-item input[type='checkbox']:focus-visible + label {
   outline: 2px solid var(--accent-color);
   outline-offset: 1px;
 }
@@ -458,7 +460,9 @@
   cursor: pointer;
   padding: 0;
   font-size: 1.1rem;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   flex-shrink: 0;
 }
 
@@ -588,8 +592,8 @@
     grid-template-columns: 1fr;
   }
 
-  input[type="number"],
-  input[type="text"] {
+  input[type='number'],
+  input[type='text'] {
     width: 100%;
     box-sizing: border-box;
   }

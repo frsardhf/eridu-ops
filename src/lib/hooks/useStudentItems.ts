@@ -5,9 +5,7 @@ import { getAllItemsFromCache, updateItemInCache } from '../stores/resourceCache
 import type { CachedResource } from '../../types/resource';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 
-export function useStudentItems(props: {
-  isVisible?: boolean
-}) {
+export function useStudentItems(props: { isVisible?: boolean }) {
   const itemFormData = ref<Record<string, number>>({});
 
   function handleItemInput(id: string, event: Event) {
@@ -17,14 +15,14 @@ export function useStudentItems(props: {
   }
 
   const { loadNow: loadItems } = useDebouncedFormPersistence({
-    isVisible:    () => props.isVisible,
-    refs:         { itemFormData },
-    defaults:     { itemFormData: {} as Record<string, number> },
-    loadFn:       async (staged) => {
+    isVisible: () => props.isVisible,
+    refs: { itemFormData },
+    defaults: { itemFormData: {} as Record<string, number> },
+    loadFn: async (staged) => {
       const inventories = await getAllItemsInventories();
       staged.itemFormData.value = { ...inventories };
     },
-    saveFn:       async () => {
+    saveFn: async () => {
       await saveItemsInventory(itemFormData.value);
 
       // Sync the in-memory cache so gift-auto-fill and leftover calculations

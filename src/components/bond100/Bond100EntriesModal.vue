@@ -33,16 +33,21 @@ const emit = defineEmits<{
 // Hero portrait + background, matching StudentModal's header: a transparent
 // character cutout over a blurred collection-BG scene, with a load shimmer.
 const {
-  portraitSrc, backgroundSrc, imageLoading,
-  handlePortraitLoad, handlePortraitError, handleBackgroundLoad, handleBackgroundError,
+  portraitSrc,
+  backgroundSrc,
+  imageLoading,
+  handlePortraitLoad,
+  handlePortraitError,
+  handleBackgroundLoad,
+  handleBackgroundError,
 } = useStudentImages(toRef(() => props.student));
 
 const serverLabelMap = computed(() => {
-  return new Map(props.serverOptions.map(option => [option.code, $t(option.labelKey)]));
+  return new Map(props.serverOptions.map((option) => [option.code, $t(option.labelKey)]));
 });
 
 const serverShortLabelMap = computed(() => {
-  return new Map(props.serverOptions.map(option => [option.code, option.shortLabel]));
+  return new Map(props.serverOptions.map((option) => [option.code, option.shortLabel]));
 });
 
 function resolveLabel(serverRegion: string): string {
@@ -59,12 +64,12 @@ const allEntries = computed(() => props.entriesResponse?.entries ?? []);
 const entries = computed(() =>
   props.serverFilter === 'all'
     ? allEntries.value
-    : allEntries.value.filter(e => e.serverRegion === props.serverFilter)
+    : allEntries.value.filter((e) => e.serverRegion === props.serverFilter),
 );
 
 const isFiltered = computed(() => props.serverFilter !== 'all');
 const activeServerLabel = computed(() =>
-  isFiltered.value ? resolveShortLabel(props.serverFilter) : ''
+  isFiltered.value ? resolveShortLabel(props.serverFilter) : '',
 );
 
 function deriveServerBreakdown(list: Bond100Entry[]): Partial<Record<Bond100ServerRegion, number>> {
@@ -77,7 +82,9 @@ function deriveServerBreakdown(list: Bond100Entry[]): Partial<Record<Bond100Serv
 
 const totalCount = computed(() => {
   if (isFiltered.value) {
-    return props.summary?.byServer?.[props.serverFilter as Bond100ServerRegion] ?? entries.value.length;
+    return (
+      props.summary?.byServer?.[props.serverFilter as Bond100ServerRegion] ?? entries.value.length
+    );
   }
   return props.summary?.count ?? entries.value.length;
 });
@@ -100,7 +107,7 @@ const serverRows = computed(() => {
 
 // Per-student data freshness (the rolling sweep refreshes students separately).
 const freshnessLabel = computed(() =>
-  formatBond100Freshness(props.entriesResponse?.fetchedAt ?? props.summary?.fetchedAt)
+  formatBond100Freshness(props.entriesResponse?.fetchedAt ?? props.summary?.fetchedAt),
 );
 
 function pillStyle(server: string): Record<string, string> {
@@ -123,7 +130,9 @@ const ROWS_PER_COLUMN = 14;
 // single column.
 const SINGLE_COLUMN_MAX_WIDTH = 800;
 const isNarrow = ref(false);
-useWindowResize(() => { isNarrow.value = window.innerWidth < SINGLE_COLUMN_MAX_WIDTH; });
+useWindowResize(() => {
+  isNarrow.value = window.innerWidth < SINGLE_COLUMN_MAX_WIDTH;
+});
 
 // --- Search: narrow the visible list by player name ---
 // The footer search only appears once a list is long enough to be worth
@@ -135,7 +144,7 @@ const showSearch = computed(() => entries.value.length >= SEARCH_MIN_COUNT);
 const filteredEntries = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return entries.value;
-  return entries.value.filter(e => e.playerName.toLowerCase().includes(q));
+  return entries.value.filter((e) => e.playerName.toLowerCase().includes(q));
 });
 
 // Fill the left column to ROWS_PER_COLUMN first, then spill into the right, so a
@@ -156,8 +165,12 @@ const entryColumns = computed<Bond100Entry[][]>(() => {
 type Mode = 'list' | 'guidelines';
 const mode = ref<Mode>('list');
 
-function openGuidelines() { mode.value = 'guidelines'; }
-function backToList() { mode.value = 'list'; }
+function openGuidelines() {
+  mode.value = 'guidelines';
+}
+function backToList() {
+  mode.value = 'list';
+}
 
 // Scrollable entry list element (reset to the top when the student changes).
 const bodyEl = ref<HTMLElement | null>(null);
@@ -202,7 +215,12 @@ useDocumentListener('keydown', onKeydown);
 
 <template>
   <div class="bond100-modal-backdrop" @click.self="emit('close')">
-    <section class="bond100-entry-modal" role="dialog" aria-modal="true" :aria-label="$t('bond100.entriesTitle', { name: student.Name })">
+    <section
+      class="bond100-entry-modal"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="$t('bond100.entriesTitle', { name: student.Name })"
+    >
       <div class="bond100-hero">
         <div v-if="backgroundSrc" class="bond100-hero-bg">
           <img
@@ -260,7 +278,12 @@ useDocumentListener('keydown', onKeydown);
         <div ref="bodyEl" class="bond100-content-body">
           <!-- --- List --- -->
           <template v-if="mode === 'list'">
-            <div v-if="loading" class="bond100-modal-state" role="status" :aria-label="$t('loading')">
+            <div
+              v-if="loading"
+              class="bond100-modal-state"
+              role="status"
+              :aria-label="$t('loading')"
+            >
               <span class="bond100-spinner" aria-hidden="true"></span>
             </div>
             <div v-else-if="error" class="bond100-modal-state error">
@@ -273,7 +296,11 @@ useDocumentListener('keydown', onKeydown);
             >
               <table v-for="(col, ci) in entryColumns" :key="ci" class="bond100-entry-table">
                 <tbody>
-                  <tr v-for="(entry, ri) in col" :key="`${ci}-${ri}`" :lang="detectLang(entry.playerName)">
+                  <tr
+                    v-for="(entry, ri) in col"
+                    :key="`${ci}-${ri}`"
+                    :lang="detectLang(entry.playerName)"
+                  >
                     <td class="bond100-entry-server">
                       <span
                         class="bond100-server-pill"
@@ -283,12 +310,16 @@ useDocumentListener('keydown', onKeydown);
                         {{ resolveShortLabel(entry.serverRegion) }}
                       </span>
                     </td>
-                    <td class="bond100-entry-name" :title="entry.playerName">{{ entry.playerName }}</td>
+                    <td class="bond100-entry-name" :title="entry.playerName">
+                      {{ entry.playerName }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <p v-else-if="searchQuery" class="bond100-empty-line">{{ $t('bond100.noEntriesSearch') }}</p>
+            <p v-else-if="searchQuery" class="bond100-empty-line">
+              {{ $t('bond100.noEntriesSearch') }}
+            </p>
             <p v-else class="bond100-empty-line">{{ $t('bond100.noEntries') }}</p>
           </template>
 
@@ -303,7 +334,14 @@ useDocumentListener('keydown', onKeydown);
             >
               <span>arona.icu/searchFriendDetail</span>
               <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M9 7h8v8"/>
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M7 17 17 7M9 7h8v8"
+                />
               </svg>
             </a>
           </div>
@@ -318,18 +356,42 @@ useDocumentListener('keydown', onKeydown);
               :aria-label="$t('bond100.requestRemoval')"
               @click="openGuidelines"
             >
-              <svg class="bond100-removal-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M17 8 22 13M22 8 17 13"/>
+              <svg
+                class="bond100-removal-icon"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M17 8 22 13M22 8 17 13" />
               </svg>
               <span class="bond100-removal-label">{{ $t('bond100.requestRemoval') }}</span>
             </button>
           </div>
 
           <div v-if="showSearch" class="bond100-footer-search">
-            <svg class="bond100-search-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"/>
+            <svg
+              class="bond100-search-icon"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3"
+              />
             </svg>
             <input
               v-model="searchQuery"
@@ -345,12 +407,16 @@ useDocumentListener('keydown', onKeydown);
               class="bond100-search-clear"
               :aria-label="$t('clear')"
               @click="searchQuery = ''"
-            >×</button>
+            >
+              ×
+            </button>
           </div>
         </footer>
 
         <footer v-else-if="mode === 'guidelines'" class="bond100-modal-footer bond100-form-footer">
-          <button type="button" class="bond100-footer-btn" @click="backToList">{{ $t('bond100.form.back') }}</button>
+          <button type="button" class="bond100-footer-btn" @click="backToList">
+            {{ $t('bond100.form.back') }}
+          </button>
         </footer>
       </div>
     </section>
@@ -471,8 +537,12 @@ useDocumentListener('keydown', onKeydown);
 }
 
 @keyframes bond100-hero-shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .bond100-hero-overlay {
@@ -612,7 +682,7 @@ useDocumentListener('keydown', onKeydown);
 
 .bond100-entry-table {
   width: 100%;
-  table-layout: fixed;   /* fixed columns so the name cell respects its width and ellipsizes */
+  table-layout: fixed; /* fixed columns so the name cell respects its width and ellipsizes */
   border-collapse: collapse;
   font-size: 0.86rem;
 }
@@ -628,7 +698,7 @@ useDocumentListener('keydown', onKeydown);
 }
 
 .bond100-entry-table td.bond100-entry-server {
-  width: 4.25rem;   /* fits the widest short label ("TW/HK") under fixed layout */
+  width: 4.25rem; /* fits the widest short label ("TW/HK") under fixed layout */
 }
 
 .bond100-entry-table td.bond100-entry-name {
@@ -639,9 +709,15 @@ useDocumentListener('keydown', onKeydown);
 }
 
 /* Per-script font overrides (lang is detected from the player name text) */
-tr[lang="ko"] .bond100-entry-name { font-family: 'Noto Serif KR', sans-serif; }
-tr[lang="ja"] .bond100-entry-name { font-family: 'Zen Old Mincho', sans-serif; }
-tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; }
+tr[lang='ko'] .bond100-entry-name {
+  font-family: 'Noto Serif KR', sans-serif;
+}
+tr[lang='ja'] .bond100-entry-name {
+  font-family: 'Zen Old Mincho', sans-serif;
+}
+tr[lang='zh-TW'] .bond100-entry-name {
+  font-family: 'Noto Sans TC', sans-serif;
+}
 
 .bond100-empty-line {
   margin: 12px;
@@ -773,7 +849,9 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
    class outranks .bond100-footer-btn.ghost regardless of source order. */
 .bond100-footer-btn.ghost.bond100-removal-btn {
   color: var(--color-negative);
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .bond100-footer-btn.ghost.bond100-removal-btn:hover {
@@ -788,7 +866,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   position: relative;
   display: flex;
   align-items: center;
-  flex: 0 1 170px;   /* the box itself shrinks (and stays pinned right); tune this number */
+  flex: 0 1 170px; /* the box itself shrinks (and stays pinned right); tune this number */
   min-width: 0;
 }
 
@@ -828,7 +906,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   justify-content: center;
   width: 19px;
   height: 19px;
-  padding: 0;   /* override the global button padding so the glyph stays centered */
+  padding: 0; /* override the global button padding so the glyph stays centered */
   border: none;
   border-radius: 50%;
   background: transparent;

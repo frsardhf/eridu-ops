@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { $t } from '@/locales';
-import {
-  CHANGELOG,
-  localizeChangelogText,
-  type ChangelogEntry,
-} from '@/lib/constants/changelog';
+import { CHANGELOG, localizeChangelogText, type ChangelogEntry } from '@/lib/constants/changelog';
 
 const emit = defineEmits<{
   close: [];
@@ -45,8 +41,15 @@ function closeModal(event: MouseEvent) {
       <div class="modal-header">
         <h2 class="modal-title">{{ $t('whatsNew') }}</h2>
         <button class="close-button" type="button" :aria-label="$t('close')" @click="emit('close')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -106,7 +109,9 @@ function closeModal(event: MouseEvent) {
 
               <div v-if="entry.sections?.length" class="entry-sections">
                 <div v-for="(section, i) in entry.sections" :key="i" class="entry-section">
-                  <h5 class="entry-section-title entry-section-title--small">{{ localized(section.title) }}</h5>
+                  <h5 class="entry-section-title entry-section-title--small">
+                    {{ localized(section.title) }}
+                  </h5>
                   <ul class="entry-highlights">
                     <li v-for="(h, j) in section.highlights" :key="j">
                       {{ localized(h) }}
@@ -124,7 +129,6 @@ function closeModal(event: MouseEvent) {
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -155,8 +159,14 @@ function closeModal(event: MouseEvent) {
 }
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -185,7 +195,9 @@ function closeModal(event: MouseEvent) {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .close-button:hover {
@@ -308,7 +320,9 @@ function closeModal(event: MouseEvent) {
   font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .previous-toggle:hover {

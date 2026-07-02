@@ -7,7 +7,7 @@ import { batchSetStudentData, studentDataStore } from '../stores/studentStore';
  */
 export function useBondBulkUpdate() {
   async function applyBulkBondUpdates(
-    updates: { studentId: number; bond: number }[]
+    updates: { studentId: number; bond: number }[],
   ): Promise<void> {
     const updated = await applyBondUpdates(updates);
     batchSetStudentData(updated);

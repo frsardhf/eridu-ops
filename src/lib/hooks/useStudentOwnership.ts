@@ -19,7 +19,7 @@ export function useStudentOwnership() {
     if (current) {
       studentDataStore.value = {
         ...studentDataStore.value,
-        [studentId]: { ...current, isOwned: owned }
+        [studentId]: { ...current, isOwned: owned },
       };
     }
   }

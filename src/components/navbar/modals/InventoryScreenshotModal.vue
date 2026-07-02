@@ -2,7 +2,10 @@
 import { ref, computed, onBeforeUnmount } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
-import { saveItemsInventory, saveEquipmentInventory } from '@/lib/services/studentPersistenceService';
+import {
+  saveItemsInventory,
+  saveEquipmentInventory,
+} from '@/lib/services/studentPersistenceService';
 import {
   getAllItemsFromCache,
   updateItemInCache,
@@ -34,7 +37,7 @@ const PARSER_BASE = (import.meta.env.VITE_PARSER_URL as string | undefined) ?? '
 //   16:10 (1.60), 21:9 ultrawide (2.37), and portrait phone screenshots.
 const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp'];
 const MIN_WIDTH = 1900;
-const MIN_ASPECT = 1.70;
+const MIN_ASPECT = 1.7;
 const MAX_ASPECT = 1.85;
 
 // Up to 3 screenshots per request: matches the backend's batched-Gemini cap
@@ -54,7 +57,7 @@ interface ParsedItem {
 }
 
 const emit = defineEmits<{
-  'close': [];
+  close: [];
 }>();
 
 const step = ref<Step>('type');
@@ -78,8 +81,8 @@ let appliedTimer: ReturnType<typeof setTimeout> | null = null;
 //   Slow path: Gemini transient retries / model fallbacks: bar crawls
 //   85->95%; the chain gives up within ~90s and unread quantities degrade
 //   to 0 + red confidence for manual entry.
-const FAST_SECONDS = 20;   // full-scan expected ceiling
-const SLOW_SECONDS = 90;   // Gemini retry-chain ceiling
+const FAST_SECONDS = 20; // full-scan expected ceiling
+const SLOW_SECONDS = 90; // Gemini retry-chain ceiling
 const elapsedSeconds = ref(0);
 let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -101,16 +104,16 @@ function formatTime(secs: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-const elapsedFormatted   = computed(() => formatTime(elapsedSeconds.value));
+const elapsedFormatted = computed(() => formatTime(elapsedSeconds.value));
 const remainingFormatted = computed(() =>
   formatTime(Math.max(0, SLOW_SECONDS - elapsedSeconds.value)),
 );
 
 // Keyed by `${row}-${col}` (position-stable even when item is changed)
 const editedQuantities = ref<Record<string, number>>({});
-const editedItemIds    = ref<Record<string, string>>({});
-const activeSearchPos  = ref<string | null>(null);
-const searchQuery      = ref('');
+const editedItemIds = ref<Record<string, string>>({});
+const activeSearchPos = ref<string | null>(null);
+const searchQuery = ref('');
 
 // --- Position key helpers ---
 function posKey(item: ParsedItem): string {
@@ -119,7 +122,7 @@ function posKey(item: ParsedItem): string {
 
 // Rows per screenshot: equipment grid is 5 rows, items grid is 4 rows.
 // Used in the template for gridTemplateRows / gridRow calculations.
-const rowsPerGroup = computed(() => inventoryType.value === 'equipment' ? 5 : 4);
+const rowsPerGroup = computed(() => (inventoryType.value === 'equipment' ? 5 : 4));
 
 // --- Grouped results (one group per screenshot) ---
 const groupedResults = computed(() => {
@@ -143,11 +146,13 @@ const searchResults = computed<CachedResource[]>(() => {
   // Mirror the same filter used in ResourceGrid so blueprints and other
   // non-inventory items are excluded (avoids broken icons).
   const eligible = applyFilters(raw, isEquipment ? EQUIPMENT : MATERIAL);
-  return (Object.values(eligible) as CachedResource[])
-    .filter(item => item.Name.toLowerCase().includes(q))
-    // For equipment, skip Tier <= 1 (exp items + T1 pieces per user preference).
-    .filter(item => !isEquipment || (item.Tier ?? 0) > 1)
-    .slice(0, 8);
+  return (
+    (Object.values(eligible) as CachedResource[])
+      .filter((item) => item.Name.toLowerCase().includes(q))
+      // For equipment, skip Tier <= 1 (exp items + T1 pieces per user preference).
+      .filter((item) => !isEquipment || (item.Tier ?? 0) > 1)
+      .slice(0, 8)
+  );
 });
 
 function openSearch(pk: string) {
@@ -192,7 +197,9 @@ function handleDragLeave() {
 function handleDrop(event: DragEvent) {
   event.preventDefault();
   isDragging.value = false;
-  const files = Array.from(event.dataTransfer?.files ?? []).filter(f => f.type.startsWith('image/'));
+  const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+    f.type.startsWith('image/'),
+  );
   if (files.length) processFiles(files);
 }
 
@@ -235,7 +242,8 @@ async function validateImageFile(file: File): Promise<string | null> {
   if (width < height) return $t('scanModal.errNotLandscape', { width, height });
   if (width < MIN_WIDTH) return $t('scanModal.errTooSmall', { minWidth: MIN_WIDTH, width, height });
   const ratio = width / height;
-  if (ratio < MIN_ASPECT || ratio > MAX_ASPECT) return $t('scanModal.errBadAspect', { width, height });
+  if (ratio < MIN_ASPECT || ratio > MAX_ASPECT)
+    return $t('scanModal.errBadAspect', { width, height });
   return null;
 }
 
@@ -265,7 +273,7 @@ async function downscaleToFHD(file: File): Promise<Blob> {
     const ctx = canvas.getContext('2d');
     if (!ctx) return file;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
     return blob ?? file;
   } catch {
     return file;
@@ -312,14 +320,14 @@ async function processFiles(fileList: File[]) {
       const err = await res.json().catch(() => ({}));
       throw new Error((err as any).error || `HTTP ${res.status}`);
     }
-    const data = await res.json() as { results: ParsedItem[] };
+    const data = (await res.json()) as { results: ParsedItem[] };
 
     parsedResults.value = data.results;
-    hasLowConfidence.value = data.results.some(r => r.confidence < 0.8);
+    hasLowConfidence.value = data.results.some((r) => r.confidence < 0.8);
 
     editedQuantities.value = {};
     editedItemIds.value = {};
-    data.results.forEach(r => {
+    data.results.forEach((r) => {
       editedQuantities.value[`${r.row}-${r.col}`] = r.quantity;
     });
 
@@ -342,10 +350,10 @@ function updateQuantity(pk: string, event: Event) {
 }
 
 function removeItem(pk: string) {
-  parsedResults.value = parsedResults.value.filter(r => posKey(r) !== pk);
+  parsedResults.value = parsedResults.value.filter((r) => posKey(r) !== pk);
   delete editedQuantities.value[pk];
   delete editedItemIds.value[pk];
-  hasLowConfidence.value = parsedResults.value.some(r => r.confidence < 0.8);
+  hasLowConfidence.value = parsedResults.value.some((r) => r.confidence < 0.8);
 }
 
 function goReupload() {
@@ -359,7 +367,7 @@ function goReupload() {
 
 async function applyResults() {
   const quantityMap: Record<string, number> = {};
-  parsedResults.value.forEach(r => {
+  parsedResults.value.forEach((r) => {
     const pk = posKey(r);
     const effectiveId = editedItemIds.value[pk] ?? r.itemId;
     quantityMap[effectiveId] = editedQuantities.value[pk] ?? r.quantity;
@@ -372,7 +380,10 @@ async function applyResults() {
     const cache = getAllItemsFromCache();
     for (const [id, item] of Object.entries(cache)) {
       if (quantityMap[id] !== undefined) {
-        updateItemInCache(Number(id), { ...item, QuantityOwned: quantityMap[id] } as CachedResource);
+        updateItemInCache(Number(id), {
+          ...item,
+          QuantityOwned: quantityMap[id],
+        } as CachedResource);
       }
     }
   } else {
@@ -380,7 +391,10 @@ async function applyResults() {
     const cache = getAllEquipmentFromCache();
     for (const [id, item] of Object.entries(cache)) {
       if (quantityMap[id] !== undefined) {
-        updateEquipmentInCache(Number(id), { ...item, QuantityOwned: quantityMap[id] } as CachedResource);
+        updateEquipmentInCache(Number(id), {
+          ...item,
+          QuantityOwned: quantityMap[id],
+        } as CachedResource);
       }
     }
   }
@@ -422,33 +436,51 @@ const showGuide = ref(false);
 const GUIDE_IMGS = {
   itemsCorrect: ['/examples/scanner/items-correct-1.png', '/examples/scanner/items-correct-2.png'],
   itemsClipped: ['/examples/scanner/items-clipped-1.png', '/examples/scanner/items-clipped-2.png'],
-  equipCorrect: ['/examples/scanner/equipment-correct-1.png', '/examples/scanner/equipment-correct-2.png'],
-  equipClipped: ['/examples/scanner/equipment-clipped-1.png', '/examples/scanner/equipment-clipped-2.png'],
+  equipCorrect: [
+    '/examples/scanner/equipment-correct-1.png',
+    '/examples/scanner/equipment-correct-2.png',
+  ],
+  equipClipped: [
+    '/examples/scanner/equipment-clipped-1.png',
+    '/examples/scanner/equipment-clipped-2.png',
+  ],
 } as const;
 
 const lightboxImages = ref<readonly string[]>([]);
-const lightboxIndex  = ref(0);
-const lightboxOpen   = computed(() => lightboxImages.value.length > 0);
+const lightboxIndex = ref(0);
+const lightboxOpen = computed(() => lightboxImages.value.length > 0);
 
 function openLightbox(set: readonly string[], index: number) {
   lightboxImages.value = set;
-  lightboxIndex.value  = index;
+  lightboxIndex.value = index;
 }
-function closeLightbox()  { lightboxImages.value = []; }
-function lightboxPrev()   { lightboxIndex.value = (lightboxIndex.value - 1 + lightboxImages.value.length) % lightboxImages.value.length; }
-function lightboxNext()   { lightboxIndex.value = (lightboxIndex.value + 1) % lightboxImages.value.length; }
+function closeLightbox() {
+  lightboxImages.value = [];
+}
+function lightboxPrev() {
+  lightboxIndex.value =
+    (lightboxIndex.value - 1 + lightboxImages.value.length) % lightboxImages.value.length;
+}
+function lightboxNext() {
+  lightboxIndex.value = (lightboxIndex.value + 1) % lightboxImages.value.length;
+}
 
 function onKeydown(e: KeyboardEvent) {
   if (!lightboxOpen.value) return;
-  if (e.key === 'Escape')     { e.stopPropagation(); closeLightbox(); }
-  if (e.key === 'ArrowLeft')  lightboxPrev();
+  if (e.key === 'Escape') {
+    e.stopPropagation();
+    closeLightbox();
+  }
+  if (e.key === 'ArrowLeft') lightboxPrev();
   if (e.key === 'ArrowRight') lightboxNext();
 }
 useDocumentListener('keydown', onKeydown);
 
 function onPaste(e: ClipboardEvent) {
   if (step.value !== 'upload') return;
-  const imageItem = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'));
+  const imageItem = Array.from(e.clipboardData?.items ?? []).find((i) =>
+    i.type.startsWith('image/'),
+  );
   if (!imageItem) return;
   const file = imageItem.getAsFile();
   if (!file) return;
@@ -471,9 +503,18 @@ useDocumentListener('paste', onPaste);
             type="button"
             aria-label="Scanner guide"
             @click="showGuide = !showGuide"
-          >?</button>
+          >
+            ?
+          </button>
         </div>
-        <button class="icon-btn close-btn" type="button" :aria-label="$t('close')" @click="emit('close')">×</button>
+        <button
+          class="icon-btn close-btn"
+          type="button"
+          :aria-label="$t('close')"
+          @click="emit('close')"
+        >
+          ×
+        </button>
       </div>
 
       <!-- Collapsible guide panel -->
@@ -497,7 +538,10 @@ useDocumentListener('paste', onPaste);
         <div class="guide-section">
           <p class="guide-section-title">{{ $t('scanGuide.reviewing.title') }}</p>
           <ul class="guide-list">
-            <li><span class="swatch swatch--med"></span> <span v-html="$t('scanGuide.reviewing.confidence')"></span></li>
+            <li>
+              <span class="swatch swatch--med"></span>
+              <span v-html="$t('scanGuide.reviewing.confidence')"></span>
+            </li>
             <li v-html="$t('scanGuide.reviewing.hoverControls')"></li>
             <li v-html="$t('scanGuide.reviewing.appliesDetected')"></li>
           </ul>
@@ -511,28 +555,68 @@ useDocumentListener('paste', onPaste);
 
             <div class="eg-cell">
               <div class="eg-thumb-pair">
-                <img class="eg-thumb" src="/examples/scanner/items-correct-1.png" alt="Items correct 1" @click="openLightbox(GUIDE_IMGS.itemsCorrect, 0)" />
-                <img class="eg-thumb" src="/examples/scanner/items-correct-2.png" alt="Items correct 2" @click="openLightbox(GUIDE_IMGS.itemsCorrect, 1)" />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/items-correct-1.png"
+                  alt="Items correct 1"
+                  @click="openLightbox(GUIDE_IMGS.itemsCorrect, 0)"
+                />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/items-correct-2.png"
+                  alt="Items correct 2"
+                  @click="openLightbox(GUIDE_IMGS.itemsCorrect, 1)"
+                />
               </div>
             </div>
             <div class="eg-cell eg-cell--bad">
               <div class="eg-thumb-pair">
-                <img class="eg-thumb" src="/examples/scanner/items-clipped-1.png" alt="Items clipped 1" @click="openLightbox(GUIDE_IMGS.itemsClipped, 0)" />
-                <img class="eg-thumb" src="/examples/scanner/items-clipped-2.png" alt="Items clipped 2" @click="openLightbox(GUIDE_IMGS.itemsClipped, 1)" />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/items-clipped-1.png"
+                  alt="Items clipped 1"
+                  @click="openLightbox(GUIDE_IMGS.itemsClipped, 0)"
+                />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/items-clipped-2.png"
+                  alt="Items clipped 2"
+                  @click="openLightbox(GUIDE_IMGS.itemsClipped, 1)"
+                />
               </div>
               <p class="eg-bad-caption">{{ $t('scanGuide.examples.clippedCaption') }}</p>
             </div>
 
             <div class="eg-cell">
               <div class="eg-thumb-pair">
-                <img class="eg-thumb" src="/examples/scanner/equipment-correct-1.png" alt="Equipment correct 1" @click="openLightbox(GUIDE_IMGS.equipCorrect, 0)" />
-                <img class="eg-thumb" src="/examples/scanner/equipment-correct-2.png" alt="Equipment correct 2" @click="openLightbox(GUIDE_IMGS.equipCorrect, 1)" />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/equipment-correct-1.png"
+                  alt="Equipment correct 1"
+                  @click="openLightbox(GUIDE_IMGS.equipCorrect, 0)"
+                />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/equipment-correct-2.png"
+                  alt="Equipment correct 2"
+                  @click="openLightbox(GUIDE_IMGS.equipCorrect, 1)"
+                />
               </div>
             </div>
             <div class="eg-cell eg-cell--bad">
               <div class="eg-thumb-pair">
-                <img class="eg-thumb" src="/examples/scanner/equipment-clipped-1.png" alt="Equipment clipped 1" @click="openLightbox(GUIDE_IMGS.equipClipped, 0)" />
-                <img class="eg-thumb" src="/examples/scanner/equipment-clipped-2.png" alt="Equipment clipped 2" @click="openLightbox(GUIDE_IMGS.equipClipped, 1)" />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/equipment-clipped-1.png"
+                  alt="Equipment clipped 1"
+                  @click="openLightbox(GUIDE_IMGS.equipClipped, 0)"
+                />
+                <img
+                  class="eg-thumb"
+                  src="/examples/scanner/equipment-clipped-2.png"
+                  alt="Equipment clipped 2"
+                  @click="openLightbox(GUIDE_IMGS.equipClipped, 1)"
+                />
               </div>
             </div>
           </div>
@@ -540,21 +624,36 @@ useDocumentListener('paste', onPaste);
       </div>
 
       <div class="screenshot-modal-content">
-
         <!-- Step 1: Choose type -->
         <template v-if="step === 'type'">
           <p class="step-label">{{ $t('selectInventoryType') }}</p>
           <div class="type-buttons">
             <button class="type-btn" @click="selectType('items')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                />
               </svg>
               {{ $t('items') }}
             </button>
             <button class="type-btn" @click="selectType('equipment')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
                 <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
@@ -571,24 +670,49 @@ useDocumentListener('paste', onPaste);
           </div>
 
           <div v-if="lastAppliedCount > 0" class="apply-success">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <polyline points="20 6 9 17 4 12" />
             </svg>
-            {{ lastAppliedCount === 1 ? $t('scanModal.appliedOne') : $t('scanModal.appliedMany', { count: lastAppliedCount }) }}
+            {{
+              lastAppliedCount === 1
+                ? $t('scanModal.appliedOne')
+                : $t('scanModal.appliedMany', { count: lastAppliedCount })
+            }}
           </div>
 
           <!-- Pre-upload preparation hint: type-specific, surfaces in-game prep
                rules right at the action point so users don't have to expand the
                guide panel. -->
           <div class="prep-hint">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" class="prep-hint-icon">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="16" x2="12" y2="12"/>
-              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="prep-hint-icon"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
-            <span v-html="inventoryType === 'equipment' ? $t('scanModal.prepHintEquipment') : $t('scanModal.prepHintItems')"></span>
+            <span
+              v-html="
+                inventoryType === 'equipment'
+                  ? $t('scanModal.prepHintEquipment')
+                  : $t('scanModal.prepHintItems')
+              "
+            ></span>
           </div>
 
           <div
@@ -610,11 +734,19 @@ useDocumentListener('paste', onPaste);
             <div v-if="isLoading" class="status-message loading-message">
               <span class="loader"></span>
               <p class="loading-title">{{ $t('parsingScreenshot') }}</p>
-              <div class="progress-track" role="progressbar" :aria-valuenow="progressPercent" aria-valuemin="0" aria-valuemax="100">
+              <div
+                class="progress-track"
+                role="progressbar"
+                :aria-valuenow="progressPercent"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
                 <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
               </div>
               <p class="progress-meta">
-                {{ elapsedFormatted }} elapsed<template v-if="isSlowPath"> · ~{{ remainingFormatted }} remaining</template>
+                {{ elapsedFormatted }} elapsed<template v-if="isSlowPath">
+                  · ~{{ remainingFormatted }} remaining</template
+                >
               </p>
               <p class="progress-tip">
                 {{ isSlowPath ? $t('scanModal.tipSlow') : $t('scanModal.tipFast') }}
@@ -622,22 +754,38 @@ useDocumentListener('paste', onPaste);
             </div>
 
             <div v-else-if="errorMessage" class="status-message error">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               <p>{{ errorMessage }}</p>
-              <label for="screenshot-input" class="browse-button">{{ $t('uploadScreenshot') }}</label>
+              <label for="screenshot-input" class="browse-button">{{
+                $t('uploadScreenshot')
+              }}</label>
             </div>
 
             <div v-else class="dropzone-content">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
               </svg>
               <p class="dropzone-text">{{ $t('dragDropScreenshot') }}</p>
               <p class="dropzone-subtext">{{ $t('or') }}</p>
@@ -655,11 +803,20 @@ useDocumentListener('paste', onPaste);
           </div>
 
           <div v-if="hasLowConfidence" class="warning-banner">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             {{ $t('lowConfidenceWarning') }}
           </div>
@@ -679,114 +836,133 @@ useDocumentListener('paste', onPaste);
               :class="`group-${groupIdx % 2}`"
             >
               <div v-if="groupedResults.length > 1" class="group-label">#{{ groupIdx + 1 }}</div>
-              <div class="results-grid" :style="{ gridTemplateRows: `repeat(${rowsPerGroup}, auto)` }">
-            <div
-              v-for="item in group"
-              :key="posKey(item)"
-              class="result-card-wrapper"
-              :style="{
-                gridColumn: item.col + 1,
-                gridRow: (item.row % rowsPerGroup) + 1,
-              }"
-              :class="{
-                'conf-low': item.confidence < 0.5,
-                'conf-med': item.confidence >= 0.5 && item.confidence < 0.8
-              }"
-            >
-              <!-- Active search: inline overlay replaces the card -->
               <div
-                v-if="activeSearchPos === posKey(item)"
-                class="item-search-panel"
-                :class="{
-                  'anchor-right': item.col >= 3,
-                  'anchor-top': (item.row % rowsPerGroup) >= rowsPerGroup - 2,
-                }"
+                class="results-grid"
+                :style="{ gridTemplateRows: `repeat(${rowsPerGroup}, auto)` }"
               >
-                <input
-                  class="item-search-input"
-                  v-model="searchQuery"
-                  placeholder="Search item…"
-                  autofocus
-                  @keydown.escape="closeSearch"
-                />
-                <div class="item-search-results">
+                <div
+                  v-for="item in group"
+                  :key="posKey(item)"
+                  class="result-card-wrapper"
+                  :style="{
+                    gridColumn: item.col + 1,
+                    gridRow: (item.row % rowsPerGroup) + 1,
+                  }"
+                  :class="{
+                    'conf-low': item.confidence < 0.5,
+                    'conf-med': item.confidence >= 0.5 && item.confidence < 0.8,
+                  }"
+                >
+                  <!-- Active search: inline overlay replaces the card -->
                   <div
-                    v-for="res in searchResults"
-                    :key="res.Id"
-                    class="item-search-option"
-                    @click="selectSearchResult(res.Id)"
+                    v-if="activeSearchPos === posKey(item)"
+                    class="item-search-panel"
+                    :class="{
+                      'anchor-right': item.col >= 3,
+                      'anchor-top': item.row % rowsPerGroup >= rowsPerGroup - 2,
+                    }"
                   >
-                    <img
-                      :src="getItemIconUrl(res.Icon, inventoryType === 'equipment' ? 'equipment' : 'item', res.Tier)"
-                      class="search-opt-icon"
+                    <input
+                      class="item-search-input"
+                      v-model="searchQuery"
+                      placeholder="Search item…"
+                      autofocus
+                      @keydown.escape="closeSearch"
                     />
-                    <span class="search-opt-name">{{ res.Name }}</span>
+                    <div class="item-search-results">
+                      <div
+                        v-for="res in searchResults"
+                        :key="res.Id"
+                        class="item-search-option"
+                        @click="selectSearchResult(res.Id)"
+                      >
+                        <img
+                          :src="
+                            getItemIconUrl(
+                              res.Icon,
+                              inventoryType === 'equipment' ? 'equipment' : 'item',
+                              res.Tier,
+                            )
+                          "
+                          class="search-opt-icon"
+                        />
+                        <span class="search-opt-name">{{ res.Name }}</span>
+                      </div>
+                      <div v-if="searchQuery && !searchResults.length" class="item-search-empty">
+                        No results
+                      </div>
+                    </div>
                   </div>
-                  <div v-if="searchQuery && !searchResults.length" class="item-search-empty">No results</div>
+
+                  <!-- Normal card view -->
+                  <template v-else>
+                    <ResourceCard
+                      v-if="getEffectiveResource(item)"
+                      :item="getEffectiveResource(item)!"
+                      :value="editedQuantities[posKey(item)]"
+                      :item-type="inventoryType === 'equipment' ? 'equipment' : 'resource'"
+                      :input-tab-index="-1"
+                      @update:value="updateQuantity(posKey(item), $event)"
+                    />
+                    <div v-else class="result-card-placeholder" />
+
+                    <!-- Remove button (x): top-left, shown on hover -->
+                    <button
+                      class="card-remove-btn"
+                      @click.stop="removeItem(posKey(item))"
+                      title="Remove item"
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+
+                    <!-- Edit button (pencil): top-right, shown on hover -->
+                    <button
+                      class="card-edit-btn"
+                      @click.stop="openSearch(posKey(item))"
+                      title="Change item"
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+
+                    <!-- Blue dot (bottom-right): item was manually changed -->
+                    <span
+                      v-if="editedItemIds[posKey(item)]"
+                      class="edited-dot"
+                      title="Icon changed"
+                    />
+                  </template>
                 </div>
-              </div>
-
-              <!-- Normal card view -->
-              <template v-else>
-                <ResourceCard
-                  v-if="getEffectiveResource(item)"
-                  :item="getEffectiveResource(item)!"
-                  :value="editedQuantities[posKey(item)]"
-                  :item-type="inventoryType === 'equipment' ? 'equipment' : 'resource'"
-                  :input-tab-index="-1"
-                  @update:value="updateQuantity(posKey(item), $event)"
-                />
-                <div v-else class="result-card-placeholder" />
-
-                <!-- Remove button (x): top-left, shown on hover -->
-                <button
-                  class="card-remove-btn"
-                  @click.stop="removeItem(posKey(item))"
-                  title="Remove item"
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-
-                <!-- Edit button (pencil): top-right, shown on hover -->
-                <button
-                  class="card-edit-btn"
-                  @click.stop="openSearch(posKey(item))"
-                  title="Change item"
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-
-
-                <!-- Blue dot (bottom-right): item was manually changed -->
-                <span
-                  v-if="editedItemIds[posKey(item)]"
-                  class="edited-dot"
-                  title="Icon changed"
-                />
-              </template>
-            </div>
               </div>
             </div>
           </div>
 
           <div class="review-actions">
             <button class="reupload-btn" @click="goReupload">{{ $t('reupload') }}</button>
-            <button
-              class="apply-btn"
-              :disabled="parsedResults.length === 0"
-              @click="applyResults"
-            >
+            <button class="apply-btn" :disabled="parsedResults.length === 0" @click="applyResults">
               {{ $t('applyInventory') }}
             </button>
           </div>
         </template>
-
       </div>
     </div>
   </div>
@@ -795,9 +971,23 @@ useDocumentListener('paste', onPaste);
   <Teleport to="body">
     <div v-if="lightboxOpen" class="lightbox-backdrop" @click.self="closeLightbox">
       <button class="lightbox-close" @click="closeLightbox" aria-label="Close">×</button>
-      <button v-if="lightboxImages.length > 1" class="lightbox-arrow lightbox-prev" @click="lightboxPrev" aria-label="Previous">←</button>
+      <button
+        v-if="lightboxImages.length > 1"
+        class="lightbox-arrow lightbox-prev"
+        @click="lightboxPrev"
+        aria-label="Previous"
+      >
+        ←
+      </button>
       <img class="lightbox-img" :src="lightboxImages[lightboxIndex]" alt="" />
-      <button v-if="lightboxImages.length > 1" class="lightbox-arrow lightbox-next" @click="lightboxNext" aria-label="Next">→</button>
+      <button
+        v-if="lightboxImages.length > 1"
+        class="lightbox-arrow lightbox-next"
+        @click="lightboxNext"
+        aria-label="Next"
+      >
+        →
+      </button>
       <div class="lightbox-counter">{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</div>
     </div>
   </Teleport>
@@ -827,13 +1017,25 @@ useDocumentListener('paste', onPaste);
 }
 
 /* Width adapts to step content */
-.modal-container.step-type   { width: min(500px, 90vw); }
-.modal-container.step-upload { width: min(500px, 90vw); }
-.modal-container.step-review { width: min(600px, 90vw); }
+.modal-container.step-type {
+  width: min(500px, 90vw);
+}
+.modal-container.step-upload {
+  width: min(500px, 90vw);
+}
+.modal-container.step-review {
+  width: min(600px, 90vw);
+}
 
 @keyframes modal-appear {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -872,7 +1074,10 @@ useDocumentListener('paste', onPaste);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 700;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
 }
 .icon-btn:hover {
@@ -884,7 +1089,9 @@ useDocumentListener('paste', onPaste);
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   color: var(--accent-color);
 }
-.close-btn { border-color: transparent; }
+.close-btn {
+  border-color: transparent;
+}
 
 /* Guide panel */
 .guide-panel {
@@ -899,7 +1106,11 @@ useDocumentListener('paste', onPaste);
   gap: 10px;
 }
 
-.guide-section { display: flex; flex-direction: column; gap: 3px; }
+.guide-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
 
 .guide-section-title {
   margin: 0;
@@ -917,8 +1128,13 @@ useDocumentListener('paste', onPaste);
   color: var(--text-secondary);
   line-height: 1.65;
 }
-.guide-list li { list-style: disc; }
-.guide-list strong { color: var(--text-primary); font-weight: 600; }
+.guide-list li {
+  list-style: disc;
+}
+.guide-list strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
 
 .swatch {
   display: inline-block;
@@ -928,8 +1144,12 @@ useDocumentListener('paste', onPaste);
   vertical-align: middle;
   margin-right: 2px;
 }
-.swatch--med { background: color-mix(in srgb, var(--color-warning) 55%, transparent); }
-.swatch--low { background: color-mix(in srgb, #ef4444 55%, transparent); }
+.swatch--med {
+  background: color-mix(in srgb, var(--color-warning) 55%, transparent);
+}
+.swatch--low {
+  background: color-mix(in srgb, #ef4444 55%, transparent);
+}
 
 .screenshot-modal-content {
   padding: 16px;
@@ -985,7 +1205,9 @@ useDocumentListener('paste', onPaste);
   font-size: 0.85rem;
   padding: 0;
 }
-.back-btn:hover { color: var(--text-primary); }
+.back-btn:hover {
+  color: var(--text-primary);
+}
 
 .dropzone {
   border: 1px dashed var(--border-color);
@@ -1003,9 +1225,13 @@ useDocumentListener('paste', onPaste);
   border-color: var(--accent-color);
   background: color-mix(in srgb, var(--accent-color) 8%, var(--background-secondary));
 }
-.dropzone.has-status { border-style: solid; }
+.dropzone.has-status {
+  border-style: solid;
+}
 
-.file-input { display: none; }
+.file-input {
+  display: none;
+}
 
 .dropzone-content {
   display: flex;
@@ -1031,7 +1257,9 @@ useDocumentListener('paste', onPaste);
   gap: 10px;
   color: var(--text-primary);
 }
-.status-message.error { color: #e57373; }
+.status-message.error {
+  color: #e57373;
+}
 
 .browse-button {
   background: var(--accent-color);
@@ -1046,7 +1274,9 @@ useDocumentListener('paste', onPaste);
   transition: opacity 0.2s;
   display: inline-block;
 }
-.browse-button:hover { opacity: 0.85; }
+.browse-button:hover {
+  opacity: 0.85;
+}
 
 .dropzone-paste-hint {
   margin: 6px 0 0;
@@ -1063,7 +1293,6 @@ useDocumentListener('paste', onPaste);
   background: var(--background-primary);
 }
 
-
 .loader {
   width: 22px;
   height: 22px;
@@ -1074,7 +1303,9 @@ useDocumentListener('paste', onPaste);
   animation: spin 0.9s linear infinite;
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Loading state: explicit progress bar so users don't think a 4-min wait is a hang */
@@ -1192,8 +1423,14 @@ useDocumentListener('paste', onPaste);
   animation: apply-success-in 0.18s ease-out;
 }
 @keyframes apply-success-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .empty-results {
@@ -1216,8 +1453,12 @@ useDocumentListener('paste', onPaste);
   overflow: hidden;
 }
 
-.screenshot-group.group-0 { background: var(--background-secondary); }
-.screenshot-group.group-1 { background: color-mix(in srgb, var(--accent-color) 5%, var(--background-secondary)); }
+.screenshot-group.group-0 {
+  background: var(--background-secondary);
+}
+.screenshot-group.group-1 {
+  background: color-mix(in srgb, var(--accent-color) 5%, var(--background-secondary));
+}
 
 .group-label {
   font-size: 0.75rem;
@@ -1249,9 +1490,14 @@ useDocumentListener('paste', onPaste);
 }
 
 /* Low-confidence background tint on the card wrapper */
-.result-card-wrapper.conf-med { background: color-mix(in srgb, var(--color-warning) 18%, transparent); border-radius: 4px; }
-.result-card-wrapper.conf-low { background: color-mix(in srgb, #ef4444 18%, transparent); border-radius: 4px; }
-
+.result-card-wrapper.conf-med {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  border-radius: 4px;
+}
+.result-card-wrapper.conf-low {
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  border-radius: 4px;
+}
 
 /* Blue dot (bottom-right): item was manually changed */
 .edited-dot {
@@ -1286,8 +1532,12 @@ useDocumentListener('paste', onPaste);
   z-index: 3;
   padding: 0;
 }
-.result-card-wrapper:hover .card-remove-btn { opacity: 1; }
-.card-remove-btn:hover { background: rgba(239, 68, 68, 0.75); }
+.result-card-wrapper:hover .card-remove-btn {
+  opacity: 1;
+}
+.card-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.75);
+}
 
 /* Edit button (pencil): top-right, visible only on hover */
 .card-edit-btn {
@@ -1309,7 +1559,9 @@ useDocumentListener('paste', onPaste);
   z-index: 3;
   padding: 0;
 }
-.result-card-wrapper:hover .card-edit-btn { opacity: 1; }
+.result-card-wrapper:hover .card-edit-btn {
+  opacity: 1;
+}
 
 /* Item search panel: overlays the cell, expands downward.
    Anchors left by default; cols 3-4 use .anchor-right to stay within the modal. */
@@ -1363,7 +1615,9 @@ useDocumentListener('paste', onPaste);
   font-size: 0.72rem;
   color: var(--text-primary);
 }
-.item-search-option:hover { background: var(--background-secondary); }
+.item-search-option:hover {
+  background: var(--background-secondary);
+}
 
 .search-opt-icon {
   width: 40px;
@@ -1423,8 +1677,13 @@ useDocumentListener('paste', onPaste);
   font-weight: 600;
   transition: opacity 0.15s;
 }
-.apply-btn:hover:not(:disabled) { opacity: 0.85; }
-.apply-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.apply-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.apply-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* --- Screenshot example grid --- */
 .eg-grid {
@@ -1439,8 +1698,12 @@ useDocumentListener('paste', onPaste);
   padding: 3px 4px 5px;
   text-align: center;
 }
-.eg-th--good { color: #4ade80; }
-.eg-th--bad  { color: #f87171; }
+.eg-th--good {
+  color: #4ade80;
+}
+.eg-th--bad {
+  color: #f87171;
+}
 
 .eg-cell {
   padding: 3px 4px;
@@ -1464,7 +1727,9 @@ useDocumentListener('paste', onPaste);
   border-radius: 3px;
   border: 1px solid var(--border-color);
   cursor: zoom-in;
-  transition: border-color 0.15s, opacity 0.15s;
+  transition:
+    border-color 0.15s,
+    opacity 0.15s;
   background: var(--background-primary);
 }
 .eg-thumb:hover {
@@ -1514,7 +1779,9 @@ useDocumentListener('paste', onPaste);
   padding: 0 4px;
   transition: color 0.15s;
 }
-.lightbox-close:hover { color: #fff; }
+.lightbox-close:hover {
+  color: #fff;
+}
 
 .lightbox-arrow {
   position: absolute;
@@ -1530,9 +1797,15 @@ useDocumentListener('paste', onPaste);
   transition: color 0.15s;
   user-select: none;
 }
-.lightbox-arrow:hover { color: #fff; }
-.lightbox-prev { left: 8px; }
-.lightbox-next { right: 8px; }
+.lightbox-arrow:hover {
+  color: #fff;
+}
+.lightbox-prev {
+  left: 8px;
+}
+.lightbox-next {
+  right: 8px;
+}
 
 .lightbox-counter {
   position: absolute;
