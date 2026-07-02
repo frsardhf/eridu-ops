@@ -76,6 +76,7 @@ function closeModal(event: MouseEvent) {
 }
 
 .credits-modal-content {
+  padding: 16px;
   width: 100%;
 }
 
