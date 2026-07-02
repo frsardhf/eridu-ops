@@ -4,6 +4,7 @@ import Dexie, { Table } from 'dexie';
 import type { StudentProps } from '../../types/student';
 import type { ResourceProps } from '../../types/resource';
 import type { EquipmentLevels } from '../../types/gear';
+import type { CharacterLevels, SkillLevels, PotentialLevels } from '../../types/upgrade';
 
 // Database interfaces
 export interface StudentRecord extends StudentProps {
@@ -28,21 +29,9 @@ export interface FormRecord {
   bondDetailData?: {
     currentBond: number;
   };
-  characterLevels?: {
-    current: number;
-    target: number;
-  };
-  skillLevels?: {
-    Ex: { current: number; target: number };
-    Public: { current: number; target: number };
-    Passive: { current: number; target: number };
-    ExtraPassive: { current: number; target: number };
-  };
-  potentialLevels?: {
-    attack: { current: number; target: number };
-    maxhp: { current: number; target: number };
-    healpower: { current: number; target: number };
-  };
+  characterLevels?: CharacterLevels;
+  skillLevels?: SkillLevels;
+  potentialLevels?: PotentialLevels;
   equipmentLevels?: EquipmentLevels;
   gradeLevels?: {
     current: number;

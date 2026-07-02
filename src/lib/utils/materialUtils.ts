@@ -2,6 +2,8 @@ import {
   Material,
   MaterialType,
   MaterialWithRemaining,
+  SkillLevels,
+  PotentialLevels,
   DEFAULT_SKILL_LEVELS,
   DEFAULT_POTENTIAL_LEVELS,
   DEFAULT_CHARACTER_LEVELS,
@@ -149,7 +151,9 @@ export function preloadAllStudentsData(
 function hasTargetUpgrades(
   levels:
     | { current?: number; target?: number }
-    | { [key: string]: { current?: number; target?: number } },
+    | { [key: string]: { current?: number; target?: number } }
+    | SkillLevels
+    | PotentialLevels,
 ): boolean {
   // Handle single level object (like CharacterLevels or ExclusiveGearLevel)
   if ('current' in levels && 'target' in levels) {

@@ -2,6 +2,7 @@ import { SortDirection, SortOption } from '@/types/header';
 import { StudentProps } from '@/types/student';
 import { StudentFilters, isFiltersEmpty } from '@/types/filter';
 import type { FormRecord } from '@/lib/db/database';
+import type { SkillLevels, PotentialLevels } from '@/types/upgrade';
 
 export interface StudentSplit {
   owned: StudentProps[];
@@ -28,10 +29,10 @@ function normalizeText(value: string): string {
 
 // Investment sort key: total of `current` across a {current, target} level map
 // (skillLevels, potentialLevels all share that shape).
-function sumCurrentLevels(levels?: Record<string, { current?: number }>): number {
+function sumCurrentLevels(levels?: SkillLevels | PotentialLevels): number {
   if (!levels) return 0;
   let total = 0;
-  for (const key in levels) total += levels[key]?.current ?? 0;
+  for (const level of Object.values(levels)) total += level?.current ?? 0;
   return total;
 }
 
