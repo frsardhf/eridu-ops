@@ -39,11 +39,11 @@ const ARMOR_TYPE_COLORS: Record<string, string> = {
  */
 const SCHOOL_COLORS: Record<string, string> = {
   Abydos:      '#33c0b4',
-  Trinity:     '#c9a227',
+  Trinity:     '#f5c011',
   Gehenna:     '#cc2233',
   Millennium:  '#00a0d2',
-  Hyakkiyako:  '#e63c2f',
-  Shanhaijing: '#2d8f6f',
+  Hyakkiyako:  '#ff5495',
+  Shanhaijing: '#1cb488',
   Arius:       '#939295',
   Valkyrie:    '#1a3a6b',
   Tokiwadai:   '#5599cc',
