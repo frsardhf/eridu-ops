@@ -254,8 +254,11 @@ function schoolChipStyle(color: string) {
 .bond100-stats-srv-chip {
   flex: 0 0 52px;   /* fixed — wide enough for TW/HK, the longest label */
   width: 52px;
-  text-align: center;
-  padding: 2px 6px;
+  height: 22px;     /* pinned so it matches the school chip exactly (not font-drift) */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
   border: 1px solid var(--border-color);
   border-radius: 999px;
   font-size: 0.68rem;
@@ -268,7 +271,7 @@ function schoolChipStyle(color: string) {
 .bond100-stats-school-chip {
   flex: 0 0 52px;
   width: 52px;
-  height: 21px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,7 +282,7 @@ function schoolChipStyle(color: string) {
 }
 
 .bond100-stats-school-chip img {
-  height: 15px;
+  height: 18px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
