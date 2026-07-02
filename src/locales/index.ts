@@ -10,7 +10,7 @@ const translations = {
     },
 
     // Landing
-    landingSubtitle: "Blue Archive Student Progression Planner",
+    landingSubtitle: "Blue Archive Student Companion",
     studentsDesc: "Track bond levels, skill upgrades, gear progression, and material costs.",
     bondsDesc: "Gift planning and bond progress tracker for your students.",
     bond100Desc: "See who across the player base has reached Bond 100 with each student.",
@@ -624,7 +624,7 @@ const translations = {
     },
 
     // Landing
-    landingSubtitle: "ブルーアーカイブ 生徒育成プランナー",
+    landingSubtitle: "ブルーアーカイブ 生徒育成コンパニオン",
     studentsDesc: "絆レベル、スキル強化、装備の進捗、素材コストを追跡。",
     bondsDesc: "ギフト計画と絆進捗の追跡。",
     bond100Desc: "プレイヤー間で誰がどの生徒と絆100に到達したかを確認。",
