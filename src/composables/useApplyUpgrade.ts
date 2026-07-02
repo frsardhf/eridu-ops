@@ -6,6 +6,7 @@ import {
   PotentialType,
   SkillLevels,
   PotentialLevels,
+  CharacterLevels,
   SectionId,
 } from '@/types/upgrade';
 import type { EquipmentLevels, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
@@ -15,7 +16,7 @@ import { WEAPON_STAR_THRESHOLD as GRADE_THRESHOLD } from '@/lib/constants/gameCo
 
 type ApplyUpgradeProps = {
   student: StudentProps;
-  characterLevels: { current: number; target: number };
+  characterLevels: CharacterLevels;
   skillLevels: SkillLevels;
   potentialLevels: PotentialLevels;
   equipmentLevels: EquipmentLevels;

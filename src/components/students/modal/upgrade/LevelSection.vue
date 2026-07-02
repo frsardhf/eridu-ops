@@ -3,9 +3,10 @@ import { $t } from '@/locales';
 import { useStudentLevels } from '@/composables/useStudentLevels';
 import { useLevelEditor } from '@/composables/useInputEditor';
 import { MAX_LEVEL } from '@/lib/constants/gameConstants';
+import type { CharacterLevels } from '@/types/upgrade';
 
 const props = defineProps<{
-  characterLevels: { current: number; target: number };
+  characterLevels: CharacterLevels;
   totalXpNeeded: number;
 }>();
 

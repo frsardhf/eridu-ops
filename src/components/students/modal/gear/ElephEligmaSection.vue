@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+import type { GradeInfos } from '@/types/gear';
 import { useFocusInput, useGradeInfoEditor } from '@/composables/useInputEditor';
 import { formatItemQuantity } from '@/lib/utils/materialUtils';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
@@ -16,7 +17,7 @@ import {
 const props = defineProps<{
   student: StudentProps;
   elephNeeded: number;
-  gradeInfos: { owned?: number; price?: number; purchasable?: number };
+  gradeInfos: GradeInfos;
 }>();
 
 const emit = defineEmits<{

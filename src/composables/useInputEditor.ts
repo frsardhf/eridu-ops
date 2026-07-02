@@ -14,6 +14,7 @@ import {
   createEditorKeydownHandler,
   parseEditValue,
 } from '@/lib/utils/upgradeUtils';
+import type { GradeInfos } from '@/types/gear';
 
 /**
  * Encapsulates the inline level editor state and logic for LevelSection.
@@ -210,7 +211,7 @@ export function useFocusInput() {
  * - Handles per-field clamping and emits the full state on every change.
  */
 export function useGradeInfoEditor(
-  getGradeInfos: () => { owned?: number; price?: number; purchasable?: number } | undefined,
+  getGradeInfos: () => GradeInfos | undefined,
   onUpdate: (owned: number, price: number, purchasable: number) => void,
 ) {
   const gradeState = ref({

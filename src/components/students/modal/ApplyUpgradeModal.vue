@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { $t } from '@/locales';
-import { SkillLevels, PotentialLevels, SectionId, MaterialPreviewItem } from '@/types/upgrade';
+import {
+  SkillLevels,
+  PotentialLevels,
+  CharacterLevels,
+  SectionId,
+  MaterialPreviewItem,
+} from '@/types/upgrade';
 import type { EquipmentLevels, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 import { useApplyUpgrade } from '@/composables/useApplyUpgrade';
@@ -12,7 +18,7 @@ import '@/styles/modalActions.css';
 
 const props = defineProps<{
   student: StudentProps;
-  characterLevels: { current: number; target: number };
+  characterLevels: CharacterLevels;
   skillLevels: SkillLevels;
   potentialLevels: PotentialLevels;
   equipmentLevels: EquipmentLevels;

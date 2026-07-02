@@ -1,9 +1,8 @@
 import { computed, toValue, MaybeRefOrGetter } from 'vue';
 import { MAX_LEVEL } from '@/lib/constants/gameConstants';
+import type { CharacterLevels } from '@/types/upgrade';
 
-export function useStudentLevels(
-  characterLevels: MaybeRefOrGetter<{ current: number; target: number }>,
-) {
+export function useStudentLevels(characterLevels: MaybeRefOrGetter<CharacterLevels>) {
   const isMaxLevel = computed(() => {
     const levels = toValue(characterLevels);
     return levels.current === MAX_LEVEL && levels.target === MAX_LEVEL;

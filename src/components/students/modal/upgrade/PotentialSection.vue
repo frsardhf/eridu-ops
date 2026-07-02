@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { PotentialType } from '@/types/upgrade';
+import { PotentialType, PotentialLevels } from '@/types/upgrade';
 import { $t } from '@/locales';
 import { MAX_POTENTIAL_LEVEL, makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
 import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
 
 const props = defineProps<{
-  potentialLevels: Record<PotentialType, { current: number; target: number }>;
+  potentialLevels: PotentialLevels;
   allPotentialsMaxed: boolean;
   targetPotentialsMaxed: boolean;
 }>();

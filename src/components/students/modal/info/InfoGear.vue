@@ -2,14 +2,14 @@
 import { toRef } from 'vue';
 import { useStudentGearDisplay, getEquipmentTypeName } from '@/composables/useStudentGearDisplay';
 import { $t } from '@/locales';
-import { EquipmentType, EquipmentLevels } from '@/types/gear';
+import { EquipmentType, EquipmentLevels, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 
 const props = defineProps<{
   student: StudentProps;
-  gradeLevels: { current?: number; target?: number };
+  gradeLevels: GradeLevels;
   equipmentLevels: EquipmentLevels;
-  exclusiveGearLevel: { current?: number; target?: number };
+  exclusiveGearLevel: ExclusiveGearLevel;
   hasExclusiveGear: boolean;
 }>();
 

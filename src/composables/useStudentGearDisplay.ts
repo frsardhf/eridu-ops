@@ -6,7 +6,7 @@ import {
 } from '@/lib/utils/iconUtils';
 import { MAX_GRADE, WEAPON_STAR_THRESHOLD } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
-import { EquipmentLevels, EquipmentType } from '@/types/gear';
+import { EquipmentLevels, EquipmentType, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 
 export function getEquipmentTypeName(type: string): string {
@@ -15,9 +15,9 @@ export function getEquipmentTypeName(type: string): string {
 
 export function useStudentGearDisplay(
   student: MaybeRefOrGetter<StudentProps>,
-  gradeLevels: MaybeRefOrGetter<{ current?: number; target?: number }>,
+  gradeLevels: MaybeRefOrGetter<GradeLevels>,
   equipmentLevels: MaybeRefOrGetter<EquipmentLevels>,
-  exclusiveGearLevel: MaybeRefOrGetter<{ current?: number; target?: number }>,
+  exclusiveGearLevel: MaybeRefOrGetter<ExclusiveGearLevel>,
 ) {
   const currentGrade = computed(() => toValue(gradeLevels)?.current ?? 1);
   const targetGrade = computed(() => toValue(gradeLevels)?.target ?? 1);

@@ -5,11 +5,12 @@ import { makeCurrentTargetPair } from '@/lib/utils/upgradeUtils';
 import { MAX_GRADE, WEAPON_STAR_THRESHOLD as TRESHOLD } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
+import type { GradeLevels } from '@/types/gear';
 import StarRatingGroup from '@/components/students/modal/shared/StarRatingGroup.vue';
 
 const props = defineProps<{
   student: StudentProps;
-  gradeLevels: { current?: number; target?: number };
+  gradeLevels: GradeLevels;
 }>();
 
 const emit = defineEmits<{

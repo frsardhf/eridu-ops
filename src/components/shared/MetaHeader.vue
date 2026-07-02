@@ -13,11 +13,12 @@ import {
 } from '@/lib/utils/iconUtils';
 import { MIN_BOND_LEVEL, MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
+import type { CharacterLevels } from '@/types/upgrade';
 
 const props = defineProps<{
   student: StudentProps;
   /** Required in level-pill mode (the default). Ignored when bondProgress is true. */
-  characterLevels?: { current: number; target: number };
+  characterLevels?: CharacterLevels;
   currentBond: number;
   newBondLevel?: number;
   hasStyleSwitch?: boolean;
