@@ -117,7 +117,8 @@ function pillStyle(server: string): Record<string, string> {
 // used to land on a later page are no longer buried. The list area is a fixed
 // ROWS_PER_COLUMN rows tall (see the body height) so every modal is the same
 // size; shorter lists leave empty rows, longer lists scroll.
-const ROWS_PER_COLUMN = 10;
+// Keep in sync with .bond100-content-body height (30rem ÷ ~2.2rem/row ≈ 14).
+const ROWS_PER_COLUMN = 14;
 // Below this viewport width two columns get cramped, so the list collapses to a
 // single column.
 const SINGLE_COLUMN_MAX_WIDTH = 800;
@@ -370,7 +371,7 @@ useDocumentListener('keydown', onKeydown);
 
 .bond100-entry-modal {
   display: flex;
-  width: min(840px, 100%);
+  width: min(976px, 100%);
   /* Height follows the entry count: a short list yields a short modal (and a
      shorter cropped hero), a long list grows to the viewport cap and the body
      scrolls. The floor keeps a tiny list from collapsing the hero to a sliver. */
@@ -387,7 +388,7 @@ useDocumentListener('keydown', onKeydown);
 /* ── Hero (left): blurred scene + character cutout, like StudentModal ──── */
 .bond100-hero {
   position: relative;
-  flex: 0 0 248px;
+  flex: 0 0 360px;
   overflow: hidden;
   isolation: isolate;
   background: var(--card-background);
@@ -589,7 +590,7 @@ useDocumentListener('keydown', onKeydown);
      a consistent size): short lists show empty rows below, long lists (e.g. 124
      entries) scroll. flex-shrink lets it degrade on short viewports instead of
      pushing the footer off-screen. */
-  flex: 0 1 22rem;
+  flex: 0 1 30rem;
   min-height: 0;
   overflow-y: auto;
 }
@@ -787,7 +788,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   position: relative;
   display: flex;
   align-items: center;
-  flex: 0 1 220px;
+  flex: 0 1 170px;   /* the box itself shrinks (and stays pinned right); tune this number */
   min-width: 0;
 }
 
@@ -884,7 +885,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
 }
 
 /* ── Responsive: stack hero on top ───────────────────────── */
-@media (max-width: 600px) {
+@media (max-width: 720px) {
   .bond100-modal-backdrop {
     padding: 10px;
   }
@@ -892,11 +893,11 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   .bond100-entry-modal {
     flex-direction: column;
     width: min(400px, 100%);
-    max-height: calc(100vh - 20px);
+    max-height: calc(100vh - 100px);
   }
 
   .bond100-hero {
-    flex: 0 0 200px;
+    flex: 0 0 350px;
   }
 
   .bond100-hero-name {
