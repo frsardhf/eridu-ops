@@ -11,11 +11,11 @@ function closeModal(event: MouseEvent) {
 </script>
 
 <template>
-  <div class="modal-backdrop" @click="closeModal">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h2 class="modal-title">{{ $t('credits') }}</h2>
-        <button class="close-button" @click="emit('close')" :aria-label="$t('close')">
+  <div class="credits-modal-backdrop" @click="closeModal">
+    <div class="credits-modal-container">
+      <div class="credits-modal-header">
+        <h2 class="credits-modal-title">{{ $t('credits') }}</h2>
+        <button class="credits-close-button" @click="emit('close')" :aria-label="$t('close')">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -23,7 +23,7 @@ function closeModal(event: MouseEvent) {
         </button>
       </div>
       
-      <div class="modal-content">
+      <div class="credits-modal-content">
         <div class="credits-section">
           <h3>{{ $t('creditsModal.dataSources') }}</h3>
           <p>{{ $t('creditsModal.dataSourcesBody') }}</p>
@@ -49,7 +49,7 @@ function closeModal(event: MouseEvent) {
 </template>
 
 <style scoped>
-.modal-backdrop {
+.credits-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -63,7 +63,7 @@ function closeModal(event: MouseEvent) {
   backdrop-filter: blur(2px);
 }
 
-.modal-container {
+.credits-modal-container {
   background-color: var(--background-primary);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
@@ -75,7 +75,7 @@ function closeModal(event: MouseEvent) {
   animation: modal-appear 0.3s ease;
 }
 
-.modal-content {
+.credits-modal-content {
   width: 100%;
 }
 
@@ -84,7 +84,7 @@ function closeModal(event: MouseEvent) {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.modal-header {
+.credits-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -92,14 +92,14 @@ function closeModal(event: MouseEvent) {
   border-bottom: 1px solid var(--border-color);
 }
 
-.modal-title {
+.credits-modal-title {
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0;
   color: var(--text-primary);
 }
 
-.close-button {
+.credits-close-button {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -112,7 +112,7 @@ function closeModal(event: MouseEvent) {
   transition: background-color 0.2s;
 }
 
-.close-button:hover {
+.credits-close-button:hover {
   background-color: rgba(var(--background-hover-rgb), 0.1);
   color: var(--text-primary);
 }
@@ -159,12 +159,12 @@ function closeModal(event: MouseEvent) {
 }
 
 @media (max-width: 576px) {
-  .modal-container {
+  .credits-modal-container {
     width: 95%;
     max-height: 80vh;
   }
-  
-  .modal-content {
+
+  .credits-modal-content {
     padding: 12px;
   }
 }
