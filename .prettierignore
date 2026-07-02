@@ -1,0 +1,8 @@
+dist
+coverage
+node_modules
+public
+package-lock.json
+
+# Hand-maintained docs; Prettier reflows MD tables aggressively.
+*.md

@@ -19,6 +19,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Formatting is fully delegated to Prettier; no manual style rules.
+      - name: Format check
+        run: npm run format:check
+
       # vite build does NOT type-check; vue-tsc is the only type gate.
       - name: Type check
         run: npm run typecheck
