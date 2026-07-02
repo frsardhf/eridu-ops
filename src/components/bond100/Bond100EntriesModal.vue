@@ -259,8 +259,8 @@ useDocumentListener('keydown', onKeydown);
         <div ref="bodyEl" class="bond100-content-body">
           <!-- ── List ── -->
           <template v-if="mode === 'list'">
-            <div v-if="loading" class="bond100-modal-state">
-              {{ $t('loading') }}...
+            <div v-if="loading" class="bond100-modal-state" role="status" :aria-label="$t('loading')">
+              <span class="bond100-spinner" aria-hidden="true"></span>
             </div>
             <div v-else-if="error" class="bond100-modal-state error">
               {{ error }}
@@ -662,12 +662,31 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
 }
 
 .bond100-modal-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   margin: 12px;
   padding: 20px;
   border-radius: 16px;
   background: var(--card-background);
   color: var(--text-secondary);
   text-align: center;
+}
+
+.bond100-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-color);
+  border-bottom-color: var(--accent-color);
+  border-radius: 50%;
+  animation: bond100-spin 0.9s linear infinite;
+}
+
+@keyframes bond100-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .bond100-modal-state.error {
