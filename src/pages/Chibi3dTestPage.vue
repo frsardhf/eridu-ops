@@ -173,6 +173,12 @@ function onStagePointerDown(e: PointerEvent): void {
   background: #f85149;
 }
 
+/* Not requested (battle lines on specials — skipped to avoid the 404/CORB). */
+.chibi-voice__dot.is-idle {
+  background: transparent;
+  border: 1px solid var(--border-color);
+}
+
 .chibi-orbit {
   position: absolute;
   top: 16px;

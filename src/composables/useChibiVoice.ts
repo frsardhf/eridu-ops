@@ -2,19 +2,22 @@ import { reactive, onUnmounted } from 'vue';
 import { getChibiVoiceUrl } from '@/lib/utils/iconUtils';
 
 /**
- * SchaleDB R2 voice for a chibi. Preloads the pickup line + the armed-move pool via
- * HTMLAudioElement (no CORS needed for playback), tracks per-line availability (characters
- * don't all have every line — e.g. specials often lack the battle lines), and plays
- * one-shots that restart on retrigger. `status` feeds the test page's availability readout.
+ * SchaleDB R2 voice for a chibi. Preloads via HTMLAudioElement (no CORS needed for
+ * playback), tracks per-line availability, and plays one-shots that restart on retrigger.
+ *
+ * Every character has the pickup + monolog lines, so those preload up front. The battle
+ * lines only exist for strikers, so they wait for `loadBattleLines()` — the component
+ * calls it only when the model can armed-walk (hasClip Move_Ing). That way specials never
+ * request the nonexistent battle files (which 404 as text/plain → CORB console noise).
  */
 
-export type VoiceStatus = 'loading' | 'available' | 'missing';
+export type VoiceStatus = 'idle' | 'loading' | 'available' | 'missing';
 
-/** Pickup (grab) line. */
+/** Pickup (grab) line — every character has it. */
 const PICKUP_LINE = 'formation_select';
 /** Armed-walk (Move_Ing) pool — gacha'd among the *available* ones when a striker sorties. */
 const ARMED_MOVE_LINES = ['battle_move_1', 'battle_move_2', 'battle_tacticalaction_1'] as const;
-/** Idle-chatter pool — gacha'd periodically while she stands idle (every character has all 5). */
+/** Idle-chatter pool — gacha'd periodically while idle (every character has all 5). */
 const MONOLOG_LINES = [
   'cafe_monolog_1',
   'cafe_monolog_2',
@@ -22,6 +25,9 @@ const MONOLOG_LINES = [
   'cafe_monolog_4',
   'cafe_monolog_5',
 ] as const;
+
+/** Preloaded for every character (no 404s). */
+const ALWAYS_LINES = [PICKUP_LINE, ...MONOLOG_LINES];
 
 /** All lines this composable manages, in display order (for the availability UI). */
 export const CHIBI_VOICE_LINES: readonly string[] = [
@@ -34,7 +40,8 @@ export function useChibiVoice(charId: string) {
   const status = reactive<Record<string, VoiceStatus>>({});
   const audios: Record<string, HTMLAudioElement> = {};
 
-  for (const line of CHIBI_VOICE_LINES) {
+  function loadLine(line: string): void {
+    if (audios[line]) return; // already requested
     status[line] = 'loading';
     const audio = new Audio(getChibiVoiceUrl(charId, line));
     audio.preload = 'auto';
@@ -43,6 +50,19 @@ export function useChibiVoice(charId: string) {
     audio.addEventListener('error', () => { status[line] = 'missing'; }, { once: true });
     audio.load();
     audios[line] = audio;
+  }
+
+  // Battle lines start un-requested ('idle') until loadBattleLines(); the rest preload now.
+  ARMED_MOVE_LINES.forEach((line) => { status[line] = 'idle'; });
+  ALWAYS_LINES.forEach(loadLine);
+
+  /**
+   * Preload the armed-move pool. Call only for characters that can armed-walk (hasClip
+   * Move_Ing) — specials skip it so they never request the (nonexistent) battle files.
+   * Idempotent.
+   */
+  function loadBattleLines(): void {
+    ARMED_MOVE_LINES.forEach(loadLine);
   }
 
   function playLine(line: string): void {
@@ -76,5 +96,5 @@ export function useChibiVoice(charId: string) {
     }
   });
 
-  return { status, playPickup, playArmedMove, playIdleMonolog };
+  return { status, playPickup, playArmedMove, playIdleMonolog, loadBattleLines };
 }

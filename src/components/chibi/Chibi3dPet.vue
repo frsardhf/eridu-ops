@@ -57,9 +57,8 @@ const JUMP_RANDOM_CHANCE = 1 / 3; // when jumping: Move_Jump : Move_Jump_random 
 
 // SchaleDB R2 voice: pickup line on grab, gacha'd battle line on an armed-walk start.
 // Preloaded; only available lines play (some characters lack the battle lines).
-const { status: voiceStatus, playPickup, playArmedMove, playIdleMonolog } = useChibiVoice(
-  props.charId,
-);
+const { status: voiceStatus, playPickup, playArmedMove, playIdleMonolog, loadBattleLines } =
+  useChibiVoice(props.charId);
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 const {
@@ -355,7 +354,11 @@ function step(ts: number): void {
 // onMounted's play() is a no-op until the GLB loads, so kick off idle the moment
 // the scene reports ready (unless the user already grabbed or sent her walking).
 watch(ready, (isReady) => {
-  if (isReady && !held && targetX.value === null) {
+  if (!isReady) return;
+  // Only strikers armed-walk (and only they have battle voice), so preload that pool now
+  // that the clips are known — specials skip it and never request the 404'ing files.
+  if (hasClip(MOVE_ING)) loadBattleLines();
+  if (!held && targetX.value === null) {
     faceCamera();
     play(props.idleClip);
   }
@@ -422,6 +425,15 @@ onUnmounted(() => {
       @pointerdown="onGrab"
       @pointermove="onHover"
     ></canvas>
+    <!-- Shown until the GLB is loaded (first fetch can be a few MB) or if it fails. -->
+    <div
+      v-if="!ready || error"
+      class="chibi-pet__status"
+      :style="{ width: `${size}px`, height: `${size}px` }"
+    >
+      <span v-if="error" class="chibi-pet__status-icon">!</span>
+      <span v-else class="chibi-pet__spinner"></span>
+    </div>
   </div>
 </template>
 
@@ -446,5 +458,43 @@ onUnmounted(() => {
 
 .chibi-pet__canvas--hidden {
   visibility: hidden;
+}
+
+/* Loading / error overlay sits where the canvas will render. */
+.chibi-pet__status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.chibi-pet__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: chibi-spin 0.8s linear infinite;
+}
+
+.chibi-pet__status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  color: var(--background-primary);
+  background: var(--accent-color);
+}
+
+@keyframes chibi-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
