@@ -6,7 +6,7 @@ import {
 } from '@/lib/utils/iconUtils';
 import { MAX_GRADE, WEAPON_STAR_THRESHOLD } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
-import { EquipmentLevels } from '@/types/gear';
+import { EquipmentLevels, EquipmentType } from '@/types/gear';
 import { StudentProps } from '@/types/student';
 
 export function getEquipmentTypeName(type: string): string {
@@ -40,7 +40,11 @@ export function useStudentGearDisplay(
     return iconGetEquipmentIconUrl(type, tier);
   }
 
-  function getEquipmentDisplay(type: string): { current: number; target: number; isSame: boolean } {
+  function getEquipmentDisplay(type: EquipmentType): {
+    current: number;
+    target: number;
+    isSame: boolean;
+  } {
     const levels = toValue(equipmentLevels);
     const current = levels[type]?.current || 1;
     const target = levels[type]?.target || 1;

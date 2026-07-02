@@ -256,7 +256,7 @@ function isItemIconMaterial(material: Partial<ResourceProps> | undefined): boole
  * Helper function to get material icon source
  */
 export function getMaterialIconSrc(
-  item: any,
+  item: { material: ResourceProps },
   isEquipmentTab?: boolean,
   currentExpIcon?: number,
   currentExpBall?: number,
@@ -289,8 +289,8 @@ export function getMaterialIconSrc(
  * to the provided callbacks so this function stays pure.
  */
 export function calculateMissingItems(
-  items: any[],
-  getStorage: () => Record<string, any>,
+  items: Material[],
+  getStorage: () => Record<string, ResourceProps>,
   isSpecialItem: (id: number) => boolean,
   getSpecialItemNeeds: () => { totalXpNeeded: number; ownedXp: number },
 ): MaterialWithRemaining[] {
@@ -343,7 +343,7 @@ export function calculateMissingItems(
  * For tabs with no special item type, pass () => false and () => 0.
  */
 export function calculateLeftoverItems(
-  catalog: any[],
+  catalog: ResourceProps[],
   getNeeded: (id: number) => number,
   defaultType: MaterialType,
   isSpecialItem: (id: number) => boolean,
