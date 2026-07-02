@@ -8,4 +8,4 @@ export const BOND100_SERVER_OPTIONS: Bond100ServerOption[] = [
   { code: 'global_kr', labelKey: 'bond100.serverRegions.global_kr', shortLabel: 'KR' },
 ];
 
-export const BOND100_SORT_MODES: Bond100SortMode[] = ['default', 'name', 'bond100'];
+export const BOND100_SORT_MODES: Bond100SortMode[] = ['default', 'name', 'bond100', 'recent'];

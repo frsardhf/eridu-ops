@@ -17,9 +17,11 @@ import {
   getBond100Summary,
 } from '@/lib/services/bond100Service';
 import { getSettings, updateSetting } from '@/lib/utils/settingsStorage';
+import { resolveLocalized } from '@/lib/utils/localizationUtils';
 import { $t } from '@/locales';
 import type {
   Bond100ServerFilter,
+  Bond100SchoolFilter,
   Bond100SortMode,
   Bond100StudentEntriesResponse,
   Bond100StudentSummary,
@@ -39,6 +41,12 @@ const showSubmit = ref(false);
 
 const sortMode = ref<Bond100SortMode>(getSettings().bond100Sort ?? 'default');
 watch(sortMode, (v) => updateSetting('bond100Sort', v));
+
+const selectedSchool = ref<Bond100SchoolFilter>(getSettings().bond100School ?? 'all');
+watch(selectedSchool, (v) => updateSetting('bond100School', v));
+
+const hideEmpty = ref<boolean>(getSettings().bond100HideEmpty ?? false);
+watch(hideEmpty, (v) => updateSetting('bond100HideEmpty', v));
 
 const serverFilterOptions = computed<{ value: Bond100ServerFilter; label: string }[]>(() => [
   { value: 'all', label: $t('bond100.allServers') },
@@ -99,6 +107,17 @@ const allStudents = computed<StudentProps[]>(() => {
     .sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
+// School filter options derived from the Global-filtered roster (no empty
+// options), localized, sorted, with "All" leading. Value is the raw School key.
+const schoolOptions = computed<{ value: string; label: string }[]>(() => {
+  const schools = new Set<string>();
+  for (const s of allStudents.value) if (s.School) schools.add(s.School);
+  const opts = Array.from(schools)
+    .map(school => ({ value: school, label: resolveLocalized('School', school) || school }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  return [{ value: 'all', label: $t('bond100.allSchools') }, ...opts];
+});
+
 const summaryMap = computed(() => {
   return new Map<number, Bond100StudentSummary>(
     (summary.value?.students ?? []).map(item => [item.studentId, item])
@@ -143,7 +162,9 @@ const visibleCards = computed(() => {
     })
     .filter(card => {
       const matchesQuery = !query || card.student.Name.toLowerCase().includes(query);
-      return matchesQuery;
+      const matchesSchool = selectedSchool.value === 'all' || card.student.School === selectedSchool.value;
+      const matchesEmpty = !hideEmpty.value || card.count > 0;
+      return matchesQuery && matchesSchool && matchesEmpty;
     })
     .sort((a, b) => {
       const byOrder = (a.student.DefaultOrder ?? a.student.Id) - (b.student.DefaultOrder ?? b.student.Id);
@@ -155,6 +176,13 @@ const visibleCards = computed(() => {
       if (sortMode.value === 'bond100') {
         const diff = b.count - a.count;
         return diff !== 0 ? diff : byOrder;
+      }
+
+      if (sortMode.value === 'recent') {
+        // Freshest first; un-swept (no fetchedAt) sort last since any date > ''.
+        const fa = a.summary?.fetchedAt ?? '';
+        const fb = b.summary?.fetchedAt ?? '';
+        return fa !== fb ? fb.localeCompare(fa) : byOrder;
       }
 
       return byOrder;
@@ -306,6 +334,26 @@ onMounted(loadSummary);
           :options="serverFilterOptions"
           :aria-label="$t('bond100.server')"
         />
+
+        <SelectMenu
+          v-model="selectedSchool"
+          :options="schoolOptions"
+          :aria-label="$t('bond100.school')"
+        />
+
+        <button
+          type="button"
+          class="bond100-toggle"
+          :class="{ active: hideEmpty }"
+          :aria-pressed="hideEmpty"
+          :aria-label="$t('bond100.hideEmptyAria')"
+          @click="hideEmpty = !hideEmpty"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          <span>{{ $t('bond100.hideEmpty') }}</span>
+        </button>
 
         <SelectMenu
           v-model="sortMode"
@@ -597,6 +645,36 @@ onMounted(loadSummary);
 .bond100-export-btn:disabled {
   opacity: 0.6;
   cursor: progress;
+}
+
+/* ── Has-bond-100 density toggle ────────────────────────────── */
+.bond100-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.bond100-toggle:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.bond100-toggle.active {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 14%, transparent);
+  color: var(--accent-color);
 }
 
 /* Parks the export header out of the layout; a clone is what gets captured. */

@@ -30,7 +30,11 @@ export interface AppSettings {
   bondsTrackedStudents?: number[];
   bondsLayout: 'cards' | 'tabs';
   bondsGiftPlanningEnabled?: number[];
-  bond100Sort?: 'default' | 'name' | 'bond100';
+  bond100Sort?: 'default' | 'name' | 'bond100' | 'recent';
+  /** /hall school filter: a raw SchaleDB School value, or 'all'. */
+  bond100School?: string;
+  /** /hall toggle to hide students with a 0 bond-100 count. */
+  bond100HideEmpty?: boolean;
   /** ID of the most recent CHANGELOG entry the user has seen / dismissed. */
   lastSeenChangelogId?: string;
   /** Card overlays pinned to always-display (undefined = all shown by default). */
@@ -56,8 +60,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
 const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'theme', 'language', 'sort', 'pinnedStudents', 'isPinnedMode',
   'craftingFodder', 'studentFilters', 'bondsTrackedStudents', 'bondsLayout',
-  'bondsGiftPlanningEnabled', 'bond100Sort', 'lastSeenChangelogId',
-  'cardOverlays',
+  'bondsGiftPlanningEnabled', 'bond100Sort', 'bond100School', 'bond100HideEmpty',
+  'lastSeenChangelogId', 'cardOverlays',
 ];
 
 /**

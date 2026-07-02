@@ -6,7 +6,9 @@ export type Bond100ServerRegion =
   | 'global_tw';
 
 export type Bond100ServerFilter = Bond100ServerRegion | 'all';
-export type Bond100SortMode = 'default' | 'name' | 'bond100';
+/** School filter: a raw SchaleDB School value, or 'all' for no filter. */
+export type Bond100SchoolFilter = string;
+export type Bond100SortMode = 'default' | 'name' | 'bond100' | 'recent';
 
 export interface Bond100ServerOption {
   code: Bond100ServerRegion;
