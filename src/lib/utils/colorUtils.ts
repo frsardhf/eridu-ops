@@ -38,7 +38,7 @@ const ARMOR_TYPE_COLORS: Record<string, string> = {
  * School brand color mapping (approximate, based on in-game visual identity)
  */
 const SCHOOL_COLORS: Record<string, string> = {
-  Abydos:      '#c8962e',
+  Abydos:      '#33c0b4',
   Trinity:     '#c9a227',
   Gehenna:     '#cc2233',
   Millennium:  '#00a0d2',
