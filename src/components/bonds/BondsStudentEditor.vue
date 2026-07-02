@@ -46,12 +46,11 @@ const {
 // Other-EXP panel visibility (modal)
 const showOtherExpPanel = ref(false);
 
-// Load persisted form data once the component is mounted.
 onMounted(() => loadFromIndexedDB());
 
-// ── Projection card visibility + bond cap ────────────────────────────────────
+// --- Projection card visibility + bond cap ---
 // Show the breakdown card only when there's non-gift EXP to break down; the
-// gifts-only path is already covered by the MetaHeader's current → new arrow.
+// gifts-only path is already covered by the MetaHeader's current -> new arrow.
 const hasNonGiftExp = computed(() => cafeExp.value > 0 || bonusExp.value > 0);
 const reachesMax = computed(() => newBondLevel.value >= MAX_BOND_LEVEL);
 
@@ -64,26 +63,26 @@ const editorStudent = computed<StudentProps>(() => ({
   Boxes: filteredBoxes.value,
 }));
 
-// ── Non-favored gifts: full list from allGifts minus the student's favored ─
+// --- Non-favored gifts: full list from allGifts minus the student's favored ---
 const nonFavorGifts = computed(() => {
   const full = allGifts.value[String(props.student.Id)] ?? [];
   const favoredIds = new Set((props.student.Gifts ?? []).map(g => g.gift.Id));
   return full.filter(g => !favoredIds.has(g.gift.Id));
 });
 
-// ── Convert button gating ───────────────────────────────────────────────────
+// --- Convert button gating ---
 const canConvert = computed(() =>
   (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 &&
   (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2
 );
 
-// ── Yellow stone item (rendered as a GiftCard) ──────────────────────────────
+// --- Yellow stone item (rendered as a GiftCard) ---
 const yellowStoneItem = computed<GiftProps | null>(() => {
   const res = getResourceDataByIdSync(YELLOW_STONE_ID);
   return res ? { gift: res, exp: 0, grade: 0 } : null;
 });
 
-// ── Material needs (banner data) ────────────────────────────────────────────
+// --- Material needs (banner data) ---
 const materialNeeds = computed(() => getStudentFavorMaterialNeeds(props.student.Id));
 
 const materialNeedItems = computed<{ item: GiftProps; qty: number }[]>(() =>
@@ -93,7 +92,7 @@ const materialNeedItems = computed<{ item: GiftProps; qty: number }[]>(() =>
   }))
 );
 
-// ── Gift planning visibility ────────────────────────────────────────────────
+// --- Gift planning visibility ---
 const hasAllocations = computed(() => {
   for (const v of Object.values(giftFormData.value)) if (v > 0) return true;
   for (const v of Object.values(boxFormData.value)) if (v > 0) return true;
@@ -272,7 +271,7 @@ function returnToStudentPage() {
   background: var(--card-background);
 }
 
-/* ── Header: full-width row, icon stretches to match MetaHeader's height ───── */
+/* --- Header: full-width row, icon stretches to match MetaHeader's height --- */
 .be-header {
   display: flex;
   align-items: stretch;
@@ -322,7 +321,7 @@ function returnToStudentPage() {
   min-width: 0;
 }
 
-/* ── Card row: two labelled groups, full width ─────────────────────────────── */
+/* --- Card row: two labelled groups, full width --- */
 .be-cards-row {
   display: flex;
   flex-wrap: wrap;
@@ -346,7 +345,7 @@ function returnToStudentPage() {
   background: color-mix(in srgb, var(--accent-color) 6%, transparent);
 }
 
-/* Projection card — solid border (vs dashed) to mark it as a derived summary
+/* Projection card: solid border (vs dashed) to mark it as a derived summary
    rather than an interactive group; same accent tint as CONSUMED. */
 .be-card-group--projection {
   border-style: solid;
@@ -419,7 +418,7 @@ function returnToStudentPage() {
   gap: 8px;
 }
 
-/* ── Opt-in toggle ─────────────────────────────────────────────────────────── */
+/* --- Opt-in toggle --- */
 .be-plan-gifts-btn {
   align-self: flex-start;
   padding: 8px 14px;
@@ -474,7 +473,7 @@ function returnToStudentPage() {
   color: var(--accent-color);
 }
 
-/* ── Responsive ────────────────────────────────────────────────────────────── */
+/* --- Responsive --- */
 @media (max-width: 480px) {
   .be-header {
     flex-direction: column;

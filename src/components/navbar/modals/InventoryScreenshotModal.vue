@@ -26,10 +26,10 @@ const PARSER_BASE = (import.meta.env.VITE_PARSER_URL as string | undefined) ?? '
 // - MIME allowlist matches the <input accept> attr so drag-drop / paste paths
 //   can't sneak in HEIC, GIF, BMP, etc. that would either be rejected by the
 //   backend or waste a Gemini call on an unparseable image.
-// - Dimensions are gated to FHD landscape (1920×1080) and above in the 16:9
+// - Dimensions are gated to FHD landscape (1920x1080) and above in the 16:9
 //   family. Below FHD the icon template matching loses pixel detail (the
 //   sprite templates are calibrated against ~150px cells). The 1900
-//   floor leaves ~20px of slop for Snipping Tool / DPI rounding (e.g. 1919×1079).
+//   floor leaves ~20px of slop for Snipping Tool / DPI rounding (e.g. 1919x1079).
 // - Aspect ratio band 1.70–1.85 covers 16:9 with pixel tolerance while rejecting
 //   16:10 (1.60), 21:9 ultrawide (2.37), and portrait phone screenshots.
 const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp'];
@@ -37,7 +37,7 @@ const MIN_WIDTH = 1900;
 const MIN_ASPECT = 1.70;
 const MAX_ASPECT = 1.85;
 
-// Up to 3 screenshots per request — matches the backend's batched-Gemini cap
+// Up to 3 screenshots per request: matches the backend's batched-Gemini cap
 // (multi-grid OCR is reliable up to 3 grids). Each is downscaled to FHD width
 // before upload so 3 shots stay well under the 10 MB request limit and the
 // parser stays at its tuned resolution.
@@ -72,11 +72,11 @@ const lastAppliedCount = ref(0);
 let appliedTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Two-phase progress bar:
-//   Typical path: ~10–15s for a full 3-screenshot scan — icon matching runs
+//   Typical path: ~10–15s for a full 3-screenshot scan: icon matching runs
 //   concurrently with the Gemini quantity call, so a request costs
-//   max(matching, Gemini). Bar fills 0→85% in 20s.
-//   Slow path: Gemini transient retries / model fallbacks — bar crawls
-//   85→95%; the chain gives up within ~90s and unread quantities degrade
+//   max(matching, Gemini). Bar fills 0->85% in 20s.
+//   Slow path: Gemini transient retries / model fallbacks: bar crawls
+//   85->95%; the chain gives up within ~90s and unread quantities degrade
 //   to 0 + red confidence for manual entry.
 const FAST_SECONDS = 20;   // full-scan expected ceiling
 const SLOW_SECONDS = 90;   // Gemini retry-chain ceiling
@@ -87,10 +87,10 @@ const isSlowPath = computed(() => elapsedSeconds.value >= FAST_SECONDS);
 
 const progressPercent = computed(() => {
   if (!isSlowPath.value) {
-    // Fast phase: 0 → 85% in the first 30s
+    // Fast phase: 0 -> 85% in the first 30s
     return Math.min(85, Math.round((elapsedSeconds.value / FAST_SECONDS) * 85));
   }
-  // Slow phase: 85% → 95% over the remaining ~210s
+  // Slow phase: 85% -> 95% over the remaining ~210s
   const slowElapsed = elapsedSeconds.value - FAST_SECONDS;
   return Math.min(95, 85 + Math.round((slowElapsed / (SLOW_SECONDS - FAST_SECONDS)) * 10));
 });
@@ -112,7 +112,7 @@ const editedItemIds    = ref<Record<string, string>>({});
 const activeSearchPos  = ref<string | null>(null);
 const searchQuery      = ref('');
 
-// ── Position key helpers ──────────────────────────────────────────────────
+// --- Position key helpers ---
 function posKey(item: ParsedItem): string {
   return `${item.row}-${item.col}`;
 }
@@ -121,7 +121,7 @@ function posKey(item: ParsedItem): string {
 // Used in the template for gridTemplateRows / gridRow calculations.
 const rowsPerGroup = computed(() => inventoryType.value === 'equipment' ? 5 : 4);
 
-// ── Grouped results (one group per screenshot) ────────────────────────────
+// --- Grouped results (one group per screenshot) ---
 const groupedResults = computed(() => {
   // Read inventoryType directly to avoid computed-chain reactivity edge cases.
   const rpg = inventoryType.value === 'equipment' ? 5 : 4;
@@ -134,7 +134,7 @@ const groupedResults = computed(() => {
   return groups;
 });
 
-// ── Item search ──────────────────────────────────────────────────────────
+// --- Item search ---
 const searchResults = computed<CachedResource[]>(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return [];
@@ -145,7 +145,7 @@ const searchResults = computed<CachedResource[]>(() => {
   const eligible = applyFilters(raw, isEquipment ? EQUIPMENT : MATERIAL);
   return (Object.values(eligible) as CachedResource[])
     .filter(item => item.Name.toLowerCase().includes(q))
-    // For equipment, skip Tier ≤ 1 (exp items + T1 pieces per user preference).
+    // For equipment, skip Tier <= 1 (exp items + T1 pieces per user preference).
     .filter(item => !isEquipment || (item.Tier ?? 0) > 1)
     .slice(0, 8);
 });
@@ -166,7 +166,7 @@ function selectSearchResult(itemId: number) {
   closeSearch();
 }
 
-// ── Resource lookup ───────────────────────────────────────────────────────
+// --- Resource lookup ---
 function getEffectiveResource(item: ParsedItem): CachedResource | null {
   const id = editedItemIds.value[posKey(item)] ?? item.itemId;
   return inventoryType.value === 'equipment'
@@ -174,7 +174,7 @@ function getEffectiveResource(item: ParsedItem): CachedResource | null {
     : getResourceDataByIdSync(parseInt(id));
 }
 
-// ── Upload flow ───────────────────────────────────────────────────────────
+// --- Upload flow ---
 function selectType(type: InventoryType) {
   inventoryType.value = type;
   step.value = 'upload';
@@ -223,7 +223,7 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
 
 // Returns an error message string if the file is invalid, else null.
 async function validateImageFile(file: File): Promise<string | null> {
-  // MIME allowlist — stricter than <input accept> so drag/paste can't slip in HEIC/GIF/BMP.
+  // MIME allowlist: stricter than <input accept> so drag/paste can't slip in HEIC/GIF/BMP.
   if (!ALLOWED_MIME.includes(file.type)) return $t('scanModal.errInvalidMime');
   let dims: { width: number; height: number };
   try {
@@ -335,7 +335,7 @@ async function processFiles(fileList: File[]) {
   }
 }
 
-// ── Review actions ────────────────────────────────────────────────────────
+// --- Review actions ---
 function updateQuantity(pk: string, event: Event) {
   const val = parseInt((event.target as HTMLInputElement).value);
   editedQuantities.value[pk] = isNaN(val) ? 0 : val;
@@ -388,7 +388,7 @@ async function applyResults() {
   // No global reinit here: the per-id cache updates above are the full effect
   // of an inventory edit, so dependents react without reloading the world.
 
-  // Reset to upload step instead of closing — user can scan more screenshots.
+  // Reset to upload step instead of closing: user can scan more screenshots.
   // Inventory type is preserved so a 10-page items scan doesn't re-prompt the
   // type selector on every page.
   parsedResults.value = [];
@@ -418,7 +418,7 @@ function closeModal(event: MouseEvent) {
 
 const showGuide = ref(false);
 
-// ── Lightbox ──────────────────────────────────────────────────────────────
+// --- Lightbox ---
 const GUIDE_IMGS = {
   itemsCorrect: ['/examples/scanner/items-correct-1.png', '/examples/scanner/items-correct-2.png'],
   itemsClipped: ['/examples/scanner/items-clipped-1.png', '/examples/scanner/items-clipped-2.png'],
@@ -578,7 +578,7 @@ useDocumentListener('paste', onPaste);
             {{ lastAppliedCount === 1 ? $t('scanModal.appliedOne') : $t('scanModal.appliedMany', { count: lastAppliedCount }) }}
           </div>
 
-          <!-- Pre-upload preparation hint — type-specific, surfaces in-game prep
+          <!-- Pre-upload preparation hint: type-specific, surfaces in-game prep
                rules right at the action point so users don't have to expand the
                guide panel. -->
           <div class="prep-hint">
@@ -738,7 +738,7 @@ useDocumentListener('paste', onPaste);
                 />
                 <div v-else class="result-card-placeholder" />
 
-                <!-- Remove button (×) — top-left, shown on hover -->
+                <!-- Remove button (x): top-left, shown on hover -->
                 <button
                   class="card-remove-btn"
                   @click.stop="removeItem(posKey(item))"
@@ -750,7 +750,7 @@ useDocumentListener('paste', onPaste);
                   </svg>
                 </button>
 
-                <!-- Edit button (pencil) — top-right, shown on hover -->
+                <!-- Edit button (pencil): top-right, shown on hover -->
                 <button
                   class="card-edit-btn"
                   @click.stop="openSearch(posKey(item))"
@@ -763,7 +763,7 @@ useDocumentListener('paste', onPaste);
                 </button>
 
 
-                <!-- Blue dot (bottom-right) — item was manually changed -->
+                <!-- Blue dot (bottom-right): item was manually changed -->
                 <span
                   v-if="editedItemIds[posKey(item)]"
                   class="edited-dot"
@@ -858,7 +858,7 @@ useDocumentListener('paste', onPaste);
   color: var(--text-primary);
 }
 
-/* Shared icon button — matches BondUpdateModal .icon-btn */
+/* Shared icon button: matches BondUpdateModal .icon-btn */
 .icon-btn {
   display: flex;
   align-items: center;
@@ -1077,7 +1077,7 @@ useDocumentListener('paste', onPaste);
   to { transform: rotate(360deg); }
 }
 
-/* Loading state — explicit progress bar so users don't think a 4-min wait is a hang */
+/* Loading state: explicit progress bar so users don't think a 4-min wait is a hang */
 .loading-message {
   width: 100%;
   max-width: 320px;
@@ -1149,7 +1149,7 @@ useDocumentListener('paste', onPaste);
   margin-bottom: 10px;
 }
 
-/* Persistent pre-upload hint — type-specific in-game prep rules.
+/* Persistent pre-upload hint: type-specific in-game prep rules.
    Quieter than .warning-banner / .apply-success so repeat users can skim past it,
    but always visible on the upload step. */
 .prep-hint {
@@ -1253,7 +1253,7 @@ useDocumentListener('paste', onPaste);
 .result-card-wrapper.conf-low { background: color-mix(in srgb, #ef4444 18%, transparent); border-radius: 4px; }
 
 
-/* Blue dot (bottom-right) — item was manually changed */
+/* Blue dot (bottom-right): item was manually changed */
 .edited-dot {
   position: absolute;
   bottom: 3px;
@@ -1266,7 +1266,7 @@ useDocumentListener('paste', onPaste);
   pointer-events: none;
 }
 
-/* Remove button (×) — top-left, visible only on hover */
+/* Remove button (x): top-left, visible only on hover */
 .card-remove-btn {
   position: absolute;
   top: 2px;
@@ -1289,7 +1289,7 @@ useDocumentListener('paste', onPaste);
 .result-card-wrapper:hover .card-remove-btn { opacity: 1; }
 .card-remove-btn:hover { background: rgba(239, 68, 68, 0.75); }
 
-/* Edit button (pencil) — top-right, visible only on hover */
+/* Edit button (pencil): top-right, visible only on hover */
 .card-edit-btn {
   position: absolute;
   top: 2px;
@@ -1311,7 +1311,7 @@ useDocumentListener('paste', onPaste);
 }
 .result-card-wrapper:hover .card-edit-btn { opacity: 1; }
 
-/* Item search panel — overlays the cell, expands downward.
+/* Item search panel: overlays the cell, expands downward.
    Anchors left by default; cols 3-4 use .anchor-right to stay within the modal. */
 .item-search-panel {
   position: absolute;
@@ -1426,7 +1426,7 @@ useDocumentListener('paste', onPaste);
 .apply-btn:hover:not(:disabled) { opacity: 0.85; }
 .apply-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ── Screenshot example grid ──────────────────────────────────────────── */
+/* --- Screenshot example grid --- */
 .eg-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1480,7 +1480,7 @@ useDocumentListener('paste', onPaste);
   text-align: center;
 }
 
-/* ── Lightbox ─────────────────────────────────────────────────────────── */
+/* --- Lightbox --- */
 .lightbox-backdrop {
   position: fixed;
   inset: 0;

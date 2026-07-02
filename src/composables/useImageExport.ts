@@ -3,7 +3,7 @@ import { domToPng } from 'modern-screenshot';
 
 /**
  * Capture a DOM element to a high-res PNG. SchaleDB icons are cross-origin and
- * the service worker caches them opaquely, so a tainted canvas would result —
+ * the service worker caches them opaquely, so a tainted canvas would result;
  * we pre-fetch each image as a data URL (bypassing the SW) and swap `img.src`
  * before capture, then restore. Batched so a 700-tile wall doesn't fire 700
  * concurrent requests. (Same technique DeckBuilderModal uses for its export.)

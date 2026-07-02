@@ -19,7 +19,6 @@ let _equipmentsLeftover: ComputedRef<Material[]>;
 export function useGearCalculation() {
   const { studentData } = useStudentData();
 
-  // Helper function to get equipment XP details
   const getEquipmentXpDetails = () => {
     const equipmentXpDetails: {
       studentId: string;
@@ -65,12 +64,10 @@ export function useGearCalculation() {
     return equipmentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
   };
 
-  // Helper function to calculate XP needs and ball allocations
   const calculateExpNeeds = () => {
     const resources = getAllEquipmentFromCache();
     const equipmentXpDetails = getEquipmentXpDetails();
 
-    // Calculate total XP needed
     const totalXpNeeded = equipmentXpDetails.reduce((sum, detail) => sum + detail.xpNeeded, 0);
 
     // Calculate owned XP using the shared helper (avoids hardcoded ID sums)
@@ -114,7 +111,6 @@ export function useGearCalculation() {
       });
     });
 
-    // Get XP calculation results
     const { totalXpNeeded } = calculateExpNeeds();
 
     // Add XP as a special material type
@@ -178,12 +174,10 @@ export function useGearCalculation() {
 
   const equipmentsLeftover = _equipmentsLeftover;
 
-  // Get materials for a specific student
   const getStudentMaterials = (studentId: string | number): Material[] => {
     return allGearsData.value[studentId] || [];
   };
 
-  // Get students using a specific material
   const getEquipmentUsageByStudents = (materialId: number, viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed') => {
     const usage: { student: StudentProps; quantity: number; equipmentTypes: EquipmentType[] }[] = [];
     const studentsCollection = studentData.value || {};
@@ -238,7 +232,6 @@ export function useGearCalculation() {
         }
       });
       
-      // Convert map to array
       studentXpMap.forEach((value) => {
         // Match the exp report implementation exactly
         const isNeededView = viewMode === 'needed' || viewMode === 'equipment-needed';
@@ -285,7 +278,6 @@ export function useGearCalculation() {
         }
       });
       
-      // Calculate total needed quantity
       const totalNeededQuantity = Array.from(materialNeeds.values())
         .reduce((sum, { quantity }) => sum + quantity, 0);
       
@@ -309,7 +301,6 @@ export function useGearCalculation() {
         remainingQuantity -= studentRemaining;
       }
       
-      // Add all students with materials to the usage array
       materialNeeds.forEach(({ quantity, equipmentTypes }, studentId) => {
         const student = studentsCollection[studentId];
         if (student) {

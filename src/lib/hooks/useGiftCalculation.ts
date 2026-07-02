@@ -7,7 +7,7 @@ import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 import { toNumericId } from '../utils/idCoercion';
 
-// Student gift usage for Student → Gifts display
+// Student gift usage for Student -> Gifts display
 interface StudentGiftUsage {
   student: StudentProps;
   totalGifts: number;
@@ -58,7 +58,7 @@ function buildGiftNeededMap() {
   return giftNeededMap;
 }
 
-// Reactively cached bond-allocation map — rebuilt only when studentDataStore
+// Reactively cached bond-allocation map: rebuilt only when studentDataStore
 // changes, not on every tooltip hover or viewMode switch.
 // Shared by getStudentsWithGifts and getGiftsForStudent to avoid redundant
 // full-store scans.
@@ -77,9 +77,8 @@ const _bondAllocated = computed(() => {
 });
 
 /**
- * Get total allocated gifts across all students
- * Used to calculate available quantities for autoFill
- * @param excludeStudentId - Optional student ID to exclude from calculation
+ * Total allocated gifts across all students, for computing available
+ * quantities during autoFill. Pass `excludeStudentId` to omit one student.
  */
 export function getAllocatedGifts(excludeStudentId?: number): Record<number, number> {
   const allocated: Record<number, number> = {};
@@ -116,7 +115,6 @@ export function getAllocatedGifts(excludeStudentId?: number): Record<number, num
 export function useGiftCalculation() {
   const { studentData } = useStudentData();
 
-  // Get all students with their gift allocations (for Student → Gifts display)
   const getStudentsWithGifts = (viewMode: GiftViewMode = 'needed'): StudentGiftUsage[] => {
     if (viewMode === 'leftover') return [];
 
@@ -231,7 +229,6 @@ export function useGiftCalculation() {
           giftRemainingForGear.set(materialId, 0);
         }
 
-        // Add to existing student entry or create new one
         if (studentGiftsMap.has(studentId)) {
           const existing = studentGiftsMap.get(studentId)!;
           existing.gifts.push({ gift, quantity: displayQuantity });
@@ -250,7 +247,6 @@ export function useGiftCalculation() {
       .sort((a, b) => b.totalGifts - a.totalGifts);
   };
 
-  // Get gifts for a specific student
   const getGiftsForStudent = (studentId: number, viewMode: GiftViewMode = 'needed') => {
     if (viewMode === 'leftover') return [];
 
@@ -301,7 +297,7 @@ export function useGiftCalculation() {
     });
 
     // Process exclusive gear gift materials (Category === 'Favor') from gears store
-    // For missing mode, use the cached bondAllocated map (O(1) — no store scan).
+    // For missing mode, use the cached bondAllocated map (O(1): no store scan).
     const bondAllocatedForGear = viewMode === 'missing' ? _bondAllocated.value : new Map<number, number>();
 
     const allGearsData = getAllGearsData();

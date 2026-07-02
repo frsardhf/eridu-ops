@@ -123,7 +123,7 @@ class EriduOpsDatabase extends Dexie {
       resources: null,
       equipments_inventory: null
     }).upgrade(async (tx) => {
-      // Migrate resources → items_inventory with id → Id transform
+      // Migrate resources -> items_inventory with id -> Id transform
       const resourceRows = await tx.table('resources').toArray();
       if (resourceRows.length > 0) {
         await tx.table('items_inventory').bulkAdd(
@@ -131,7 +131,7 @@ class EriduOpsDatabase extends Dexie {
         );
       }
 
-      // Migrate equipments_inventory → equipment_inventory with id → Id transform
+      // Migrate equipments_inventory -> equipment_inventory with id -> Id transform
       const equipmentRows = await tx.table('equipments_inventory').toArray();
       if (equipmentRows.length > 0) {
         await tx.table('equipment_inventory').bulkAdd(

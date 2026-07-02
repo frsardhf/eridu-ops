@@ -1,7 +1,7 @@
 /**
  * Types for the live-3D chibi path (Road 2): one GLB + a side-car manifest per
  * character, rendered in three.js. The manifest carries the per-submesh shader
- * assignment and the per-clip mouth timeline that glTF can't express — see the
+ * assignment and the per-clip mouth timeline that glTF can't express: see the
  * deliverable's `<cid>.manifest.json`. Mirrors only the fields the viewer reads.
  */
 
@@ -25,14 +25,14 @@ interface ChibiMaterialDef {
   blend?: 'additive' | 'normal';
   /** External texture filenames (base maps are embedded in the GLB; the mouth atlas/mask are not). */
   textures?: Record<string, string>;
-  /** Raw `.mat` params (tint, shadow, outline, …) — reference for cel-fidelity polish. */
+  /** Raw `.mat` params (tint, shadow, outline, ...): reference for cel-fidelity polish. */
   params?: Record<string, unknown>;
 }
 
 export interface ChibiManifest {
-  /** Folder/file id, lowercased — e.g. `ch0158`. */
+  /** Folder/file id, lowercased: e.g. `ch0158`. */
   name: string;
-  /** Devname — e.g. `CH0158`. */
+  /** Devname: e.g. `CH0158`. */
   dev: string;
   /** GLB filename, relative to the character folder. */
   model: string;
@@ -40,7 +40,7 @@ export interface ChibiManifest {
   fps: number;
   /** Clips intended for the roaming pet (idle/walk/reaction/victory). */
   petClips: string[];
-  /** Submesh → material definition, keyed by material name. */
+  /** Submesh -> material definition, keyed by material name. */
   materials: Record<string, ChibiMaterialDef>;
   /** Per-clip mouth timeline, keyed by bare clip name (the `CH####_` prefix stripped). */
   mouth: Record<string, ChibiMouthEvent[]>;

@@ -38,7 +38,6 @@ const LEGACY_KEYS = [
  */
 export async function migrateFromLocalStorageToIndexedDB(): Promise<boolean> {
   try {
-    // Check if migration already completed
     const completed = await isMigrationCompleted();
     if (completed) {
       console.log('Migration already completed, skipping...');
@@ -47,7 +46,6 @@ export async function migrateFromLocalStorageToIndexedDB(): Promise<boolean> {
 
     console.log('Starting migration from localStorage to IndexedDB...');
 
-    // Check if there's any legacy data to migrate
     const hasLegacyData = LEGACY_KEYS.some(key => localStorage.getItem(key) !== null);
 
     if (!hasLegacyData) {

@@ -65,11 +65,11 @@ const SQUAD_TYPE_COLORS: Record<string, string> = {
 
 /**
  * Bond 100 server region color mapping.
- * One distinct hue per region — used for server pills in the Hall entries modal.
+ * One distinct hue per region: used for server pills in the Hall entries modal.
  */
 const BOND100_SERVER_COLORS: Record<string, string> = {
   global_na:   'rgb(59, 130, 246)',   // blue
-  global_eu:   'rgb(245, 158, 11)',   // amber  (was cyan — too close to TW/HK)
+  global_eu:   'rgb(245, 158, 11)',   // amber  (was cyan: too close to TW/HK)
   global_asia: 'rgb(139, 92, 246)',   // violet
   global_tw:   'rgb(16, 185, 129)',   // emerald
   global_kr:   'rgb(236, 72, 153)',   // rose
@@ -89,7 +89,7 @@ export function getResourceQuantityClass(value: number): 'positive' | 'negative'
 
 /**
  * CSS class for a resource quantity overlay based on ResourceSummary view mode.
- * missing → negative (red), leftover → positive (green), needed → neutral.
+ * missing -> negative (red), leftover -> positive (green), needed -> neutral.
  */
 export function getModeQuantityClass(mode: 'needed' | 'missing' | 'leftover'): 'positive' | 'negative' | '' {
   if (mode === 'missing') return 'negative';
@@ -116,7 +116,6 @@ export function colorWithOpacity(color: string, opacity: number): string {
     return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${opacity})`;
   }
 
-  // Return original if no match
   return color;
 }
 

@@ -16,18 +16,15 @@ let _materialsLeftover: ComputedRef<Material[]>;
 let _allMaterialsData: ComputedRef<Record<string, Material[]>>;
 let _allGearsData: ComputedRef<Record<string, Material[]>>;
 
-// Helper function to get student credits
 const getStudentCredits = (studentId: string, materials: Material[], gears: Material[]) => {
   let quantity = 0;
-  
-  // Check materials data
+
   materials.forEach(material => {
     if (material.type === 'credits') {
       quantity += material.materialQuantity;
     }
   });
-  
-  // Check gear data
+
   gears.forEach(gear => {
     if (gear.type === 'credits') {
       quantity += gear.materialQuantity;
@@ -40,7 +37,6 @@ const getStudentCredits = (studentId: string, materials: Material[], gears: Mate
 export function useMaterialCalculation() {
   const { studentData } = useStudentData();
 
-  // Helper function to get student XP details
   const getStudentXpDetails = () => {
     const studentXpDetails: {
       studentId: string;
@@ -78,7 +74,6 @@ export function useMaterialCalculation() {
     return studentXpDetails.sort((a, b) => b.xpNeeded - a.xpNeeded);
   };
 
-  // Helper function to calculate XP needs and report allocations
   const calculateExpNeeds = () => {
     const resources = getAllItemsFromCache();
     const studentXpDetails = getStudentXpDetails();
@@ -171,7 +166,6 @@ export function useMaterialCalculation() {
       );
     }
 
-    // Add XP materials from helper function
     const { totalXpNeeded } = calculateExpNeeds();
 
     // Add XP as a special material type
@@ -190,7 +184,6 @@ export function useMaterialCalculation() {
 
   const totalMaterialsNeeded = _totalMaterialsNeeded;
 
-  // Calculate materials leftover
   if (!_materialsLeftover) {
     _materialsLeftover = computed(() => {
     const resources = getAllItemsFromCache();
@@ -219,12 +212,10 @@ export function useMaterialCalculation() {
 
   const materialsLeftover = _materialsLeftover;
 
-  // Get materials for a specific student
   const getStudentMaterials = (studentId: string | number): Material[] => {
     return allMaterialsData.value[studentId] || [];
   };
 
-  // Get students using a specific material
   const getMaterialUsageByStudents = (materialId: number, viewMode: 'needed' | 'missing' | 'equipment-needed' | 'equipment-missing' = 'needed') => {
     const usage: { student: StudentProps; quantity: number }[] = [];
     const isCredits = materialId === CREDITS_ID;
@@ -279,7 +270,6 @@ export function useMaterialCalculation() {
         }
       });
       
-      // Calculate total needed credits
       const totalNeededCredits = Array.from(studentCredits.values()).reduce((sum, qty) => sum + qty, 0);
       
       // Sort students by credit needs (highest to lowest)
@@ -302,7 +292,6 @@ export function useMaterialCalculation() {
         remainingCredits -= studentRemaining;
       }
       
-      // Add all students with credits to the usage array
       studentCredits.forEach((quantity, studentId) => {
         const student = studentsCollection[studentId];
         if (student) {
@@ -358,7 +347,6 @@ export function useMaterialCalculation() {
         }
       });
       
-      // Calculate total needed quantity
       const totalNeededQuantity = Array.from(materialNeeds.values()).reduce((sum, qty) => sum + qty, 0);
       
       // Sort students by material needs (highest to lowest)
@@ -381,7 +369,6 @@ export function useMaterialCalculation() {
         remainingQuantity -= studentRemaining;
       }
       
-      // Add all students with materials to the usage array
       materialNeeds.forEach((quantity, studentId) => {
         const student = studentsCollection[studentId];
         if (student) {

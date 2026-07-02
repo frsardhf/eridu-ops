@@ -68,7 +68,7 @@ function buildBreakdown(
   return rows;
 }
 
-// Per-section breakdown rows — only gifts the user has allocated. Renders
+// Per-section breakdown rows: only gifts the user has allocated. Renders
 // nothing when no allocations, so the section stays compact at empty state.
 const favoredBreakdown = computed<BreakdownRow[]>(() => [
   ...buildBreakdown(props.student.Gifts, props.giftFormData),
@@ -87,7 +87,7 @@ const otherTotalExp = computed(() =>
   otherBreakdown.value.reduce((s, r) => s + r.total, 0),
 );
 
-// Breakdown collapse state — default closed so the editor stays compact;
+// Breakdown collapse state: default closed so the editor stays compact;
 // users click the total chip to expand the per-gift contributions.
 const showFavoredBreakdown = ref(false);
 const showOtherBreakdown = ref(false);

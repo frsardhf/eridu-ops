@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Shared SchaleDB grade-star glyph. Presentational only — size comes from a
+// Shared SchaleDB grade-star glyph. Presentational only: size comes from a
 // `class`/`width`/`height` (all fall through to the root <svg>), color from
 // `currentColor` (set via a class or an ancestor). Replaces the inline star
 // <path> that was previously copy-pasted across StudentCard, BulkModify,

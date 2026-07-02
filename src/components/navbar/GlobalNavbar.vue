@@ -28,7 +28,7 @@ defineProps<{
 const { currentTheme, setTheme, reinitializeData } = useStudentData();
 const { exportData, currentLanguage, setLanguage } = useNavbarSettings();
 
-// Language toggle is mirrored into the mobile menu (the top-bar toggle hides ≤480).
+// Language toggle is mirrored into the mobile menu (the top-bar toggle hides <=480).
 const langLabel = computed(() => (currentLanguage.value === 'en' ? 'English' : '日本語'));
 function toggleLanguage() {
   setLanguage(currentLanguage.value === 'en' ? 'jp' : 'en');
@@ -45,7 +45,7 @@ const menuEl = ref<HTMLElement | null>(null);
 
 // Auto-open the What's New modal once when the latest entry's id doesn't
 // match the user's lastSeen marker. Brand-new visitors hit this too (undefined
-// !== latest.id) — by product decision they see the latest entry on first load.
+// !== latest.id): by product decision they see the latest entry on first load.
 onMounted(() => {
   const latest = CHANGELOG[0];
   if (latest && getLastSeenChangelogId() !== latest.id) {
@@ -60,7 +60,7 @@ function openWhatsNewModal() {
 
 function closeWhatsNewModal() {
   showWhatsNewModal.value = false;
-  // Mark the latest entry as seen on every close — covers both auto-open and
+  // Mark the latest entry as seen on every close: covers both auto-open and
   // manual reopen so a user who explicitly opened it doesn't get re-prompted.
   const latest = CHANGELOG[0];
   if (latest) setLastSeenChangelogId(latest.id);
@@ -207,7 +207,7 @@ useClickOutside(handleClickOutside);
               {{ $t('whatsNew') }}
             </button>
             <!-- compact-only: shown once the matching top-bar control collapses
-                 (Contact/Credits ≤960, Language ≤480) -->
+                 (Contact/Credits <=960, Language <=480) -->
             <button class="mobile-menu-option compact-only" type="button" @click="openContactModal">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="option-icon">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -288,7 +288,7 @@ useClickOutside(handleClickOutside);
   gap: 8px;
 }
 
-/* ── Hamburger ────────────────────────────────────────────────────────────── */
+/* --- Hamburger --- */
 .hamburger-button {
   background: transparent;
   border: none;
@@ -339,7 +339,7 @@ useClickOutside(handleClickOutside);
   transform: translateY(-8px) rotate(-45deg);
 }
 
-/* ── Mobile menu panel ────────────────────────────────────────────────────── */
+/* --- Mobile menu panel --- */
 .an-mobile-menu {
   position: absolute;
   top: 100%;

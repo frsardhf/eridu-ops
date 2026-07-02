@@ -4,7 +4,7 @@ import { getMetadata, setMetadata } from './dbService';
 
 /**
  * Fetch a single SchaleDB data file with automatic retry on failure.
- * Retries up to `maxRetries` times with linear back-off (1 s, 2 s, …).
+ * Retries up to `maxRetries` times with linear back-off (1 s, 2 s, ...).
  * Returns an empty object only after all attempts are exhausted.
  */
 async function fetchData(type: string, lang: string, maxRetries = 2): Promise<any> {
@@ -85,7 +85,7 @@ function fetchAndPersistLocalization(lang: string): Promise<SchaleLocalization> 
   return promise;
 }
 
-/** Cache-first read: session cache → IndexedDB (seeds the session) → network. */
+/** Cache-first read: session cache -> IndexedDB (seeds the session) -> network. */
 export async function loadLocalizationData(lang: string): Promise<SchaleLocalization> {
   const inFlight = _locCache.get(lang);
   if (inFlight) return inFlight;

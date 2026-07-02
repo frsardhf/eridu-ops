@@ -27,7 +27,7 @@ export function useStudentSkillDisplay(
     ExtraPassive: 'Sub'
   };
 
-  // ExtraEx toggle state — owned here so both Info and Upgrade tabs share the same logic
+  // ExtraEx toggle state: owned here so both Info and Upgrade tabs share the same logic
   const useExtraExSkill = ref(false);
 
   const hasExtraExSkill = computed(() => {

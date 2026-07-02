@@ -2,14 +2,9 @@ import { db } from '@/lib/db/database';
 import { studentDataStore } from '@/lib/stores/studentStore';
 
 /**
- * Hook for reading and updating student ownership (recruited/not recruited) status.
- *
- * Storage: `isOwned?: boolean` on `FormRecord` in IndexedDB.
- * - `undefined` or `true`  → owned (backward-compatible default)
- * - `false`               → not recruited
- *
- * The check `form?.isOwned !== false` is the canonical "is this student owned?"
- * expression used throughout the codebase.
+ * Read/update student ownership (recruited/not recruited). Stored as
+ * `isOwned?: boolean` on `FormRecord`: `undefined`/`true` = owned (backward-compat
+ * default), `false` = not recruited. The canonical check is `isOwned !== false`.
  */
 export function useStudentOwnership() {
   /**
@@ -17,7 +12,6 @@ export function useStudentOwnership() {
    * Assumes the student already has a FormRecord (created by initializeStudentFormData).
    */
   async function setOwned(studentId: number, owned: boolean) {
-    // Write to IndexedDB
     await db.forms.where('studentId').equals(studentId).modify({ isOwned: owned });
 
     // Update in-memory store so all reactive consumers (computed, templates) update

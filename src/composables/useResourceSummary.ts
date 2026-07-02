@@ -228,7 +228,7 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
     return rows.sort((a, b) => b.total - a.total);
   });
 
-  // --- Display selection (tab × mode multiplexer) ---
+  // --- Display selection (tab x mode multiplexer) ---
 
   const displayResources = computed(() => {
     let resources: any[] = [];

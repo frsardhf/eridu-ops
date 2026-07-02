@@ -58,7 +58,7 @@ interface GiftSnapshot {
 }
 
 export interface UseStudentFormOptions {
-  /** Persistence gate — saves are skipped when this returns false. Defaults to always-visible. */
+  /** Persistence gate: saves are skipped when this returns false. Defaults to always-visible. */
   isVisible?: () => boolean;
   /** Optional close hook fired by `closeModal()`. */
   onClose?:   () => void;
@@ -72,7 +72,7 @@ export function useStudentForm(
   const characterXpTable = bondData.character_xp;
   const bondXpTable      = bondData.bond_xp;
 
-  // ── Form refs (everything that persists to `forms[studentId]`) ─────────────
+  // --- Form refs (everything that persists to `forms[studentId]`) ---
   // Upgrade slice
   const characterLevels = ref<CharacterLevels>({ ...DEFAULT_CHARACTER_LEVELS });
   const skillLevels     = ref<SkillLevels>({ ...DEFAULT_SKILL_LEVELS });
@@ -91,7 +91,7 @@ export function useStudentForm(
   const bondDetailData   = ref<BondDetailDataProps>({ ...DEFAULT_BOND_DETAIL });
   const otherExpData     = ref<OtherExpDataProps>({ ...DEFAULT_OTHER_EXP });
 
-  // ── Transient (non-persisted) state ────────────────────────────────────────
+  // --- Transient (non-persisted) state ---
   const allSkillsMaxed         = ref(false);
   const targetSkillsMaxed      = ref(false);
   const allPotentialsMaxed     = ref(false);
@@ -106,7 +106,7 @@ export function useStudentForm(
   const undoStack              = ref<GiftSnapshot[]>([]);
   const redoStack              = ref<GiftSnapshot[]>([]);
 
-  // ── Defaults (built once per mount; student switching expects remount) ─────
+  // --- Defaults (built once per mount; student switching expects remount) ---
   // Equipment defaults follow the student's Equipment slot list. Built lazily
   // here at hook construction time; if the studentRef swaps mid-mount the
   // defaults stay tied to the original student. Both StudentModal and
@@ -132,7 +132,7 @@ export function useStudentForm(
     otherExpData:       { ...DEFAULT_OTHER_EXP }   as OtherExpDataProps,
   };
 
-  // ── Persistence (single debounced flush, single load, single token guard) ──
+  // --- Persistence (single debounced flush, single load, single token guard) ---
   const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } =
     useDebouncedFormPersistence({
       isVisible: opts.isVisible ?? (() => true),
@@ -172,7 +172,7 @@ export function useStudentForm(
       ],
     });
 
-  // ── Maxed-state watchers ──────────────────────────────────────────────────
+  // --- Maxed-state watchers ---
   const checkAllSkillsMaxed = () =>
     Object.entries(skillLevels.value).every(([type, levels]) => {
       const max = student()?.Skills?.[type]?.Parameters?.[0]?.length;
@@ -220,7 +220,7 @@ export function useStudentForm(
     targetGearsMaxed.value = checkTargetGearsMaxed();
   }, { deep: true });
 
-  // ── Material aggregates ────────────────────────────────────────────────────
+  // --- Material aggregates ---
   const allMaterialsNeeded = computed<Material[]>(() =>
     calculateAllMaterials(
       student(),
@@ -249,7 +249,7 @@ export function useStudentForm(
     updateGearsData(student().Id, mats);
   }, { immediate: true });
 
-  // ── Exclusive gear ────────────────────────────────────────────────────────
+  // --- Exclusive gear ---
   const hasExclusiveGear = computed(() => {
     const gear = student()?.Gear;
     return !!(gear && Object.keys(gear).length > 0);
@@ -268,7 +268,7 @@ export function useStudentForm(
     return 0;
   });
 
-  // ── XP / Bond computeds ────────────────────────────────────────────────────
+  // --- XP / Bond computeds ---
   const characterRemainingXp = computed(() => {
     const currentXp = characterXpTable[characterLevels.value.current - 1] ?? 0;
     const targetXp  = characterXpTable[characterLevels.value.target  - 1] ?? 0;
@@ -320,7 +320,7 @@ export function useStudentForm(
     set: (v) => { bondDetailData.value.currentBond = v; },
   });
 
-  // ── Undo/redo helpers (gift inputs only) ──────────────────────────────────
+  // --- Undo/redo helpers (gift inputs only) ---
   const canUndo = computed(() => undoStack.value.length > 0);
   const canRedo = computed(() => redoStack.value.length > 0);
 
@@ -334,7 +334,7 @@ export function useStudentForm(
     redoStack.value = [];
   }
 
-  // ── Upgrade handlers ──────────────────────────────────────────────────────
+  // --- Upgrade handlers ---
   function handleLevelUpdate(current: number, target: number) {
     characterLevels.value.current = current;
     characterLevels.value.target  = target;
@@ -408,7 +408,7 @@ export function useStudentForm(
     saveToIndexedDB();
   }
 
-  // ── Gear handlers ─────────────────────────────────────────────────────────
+  // --- Gear handlers ---
   function handleEquipmentUpdate(type: EquipmentType, current: number, target: number) {
     const max = getMaxTierForTypeSync(type);
     if (current < 1 || current > max || target < current || target > max) return;
@@ -467,7 +467,7 @@ export function useStudentForm(
     saveToIndexedDB();
   }
 
-  // ── Gift handlers ─────────────────────────────────────────────────────────
+  // --- Gift handlers ---
   const removeLeadingZeros = (event: Event) => {
     const input = event.target as HTMLInputElement;
     input.value = input.value.replace(/^0+(?=\d)/, '');
@@ -517,7 +517,7 @@ export function useStudentForm(
   }
 
   // When the aggregate stepper drops below the tracked per-gift sum, we can't
-  // tell which specific gifts were removed — clear that rarity's tracking.
+  // tell which specific gifts were removed: clear that rarity's tracking.
   function clearNonFavorIfOvercount(rarity: 'SR' | 'SSR', newTotal: number) {
     const nonFavorIds = Object.keys(nonFavorGiftsMap.value)
       .filter(id => getResourceDataByIdSync(Number(id))?.Rarity === rarity);
@@ -545,7 +545,7 @@ export function useStudentForm(
     otherExpData.value = { ...DEFAULT_OTHER_EXP };
   }
 
-  // ── Convert / Sync gifts ──────────────────────────────────────────────────
+  // --- Convert / Sync gifts ---
   function convertBoxes() {
     if (!student()?.Boxes?.length) return;
 
@@ -582,7 +582,7 @@ export function useStudentForm(
       }
     }
 
-    // Do not pre-subtract the SR aggregate here — calculateOptimalConversion
+    // Do not pre-subtract the SR aggregate here: calculateOptimalConversion
     // reads SR_GIFT_MATERIAL_ID directly and subtracts convertedCount * 2 itself.
     calculateOptimalConversion();
   }
@@ -651,7 +651,7 @@ export function useStudentForm(
     nonFavorGiftsMap.value = snapshot.nonFavorGiftsMap;
   }
 
-  // ── Sync-from-inventory ────────────────────────────────────────────────────
+  // --- Sync-from-inventory ---
   // Returns gear material needs (Category === 'Favor') across all OTHER
   // recruited students. Used by `syncGifts('aware')` to reserve gifts before
   // greedy-filling the current student's inputs.
@@ -717,51 +717,51 @@ export function useStudentForm(
   }
 
   return {
-    // ─ Form refs (state)
+    // --- Form refs (state) ---
     characterLevels, skillLevels, potentialLevels,
     equipmentLevels, gradeLevels, gradeInfos, exclusiveGearLevel,
     giftFormData, boxFormData, nonFavorGiftsMap,
     bondDetailData, otherExpData,
     currentBond,
 
-    // ─ Maxed flags
+    // --- Maxed flags ---
     allSkillsMaxed, targetSkillsMaxed,
     allPotentialsMaxed, targetPotentialsMaxed,
     allGearsMaxed, targetGearsMaxed,
 
-    // ─ Gear-derived
+    // --- Gear-derived ---
     hasExclusiveGear, maxUnlockableGearTier,
 
-    // ─ Material aggregates
+    // --- Material aggregates ---
     allMaterialsNeeded, equipmentMaterialsNeeded,
 
-    // ─ XP / Bond computeds
+    // --- XP / Bond computeds ---
     characterRemainingXp,
     giftsExp, boxesExp, cafeDays, cafeExp, bonusExp,
     totalCumulativeExp, newBondLevel, remainingXp,
 
-    // ─ Convert/sync modal state
+    // --- Convert/sync modal state ---
     showConvertModal, convertModalNeeded, confirmConversion, cancelConversion,
     showSyncGiftsModal, syncGifts,
 
-    // ─ Undo/redo
+    // --- Undo/redo ---
     canUndo, canRedo, undoChanges, redoChanges,
 
-    // ─ Upgrade handlers
+    // --- Upgrade handlers ---
     handleLevelUpdate, handleSkillUpdate, handlePotentialUpdate,
     toggleMaxAllSkills, toggleMaxTargetSkills,
     toggleMaxAllPotentials, toggleMaxTargetPotentials,
 
-    // ─ Gear handlers
+    // --- Gear handlers ---
     handleEquipmentUpdate, handleGradeUpdate, handleGradeInfoUpdate, handleExclusiveGearUpdate,
     toggleMaxAllGears, toggleMaxTargetGears,
 
-    // ─ Gift handlers
+    // --- Gift handlers ---
     handleGiftInput, handleBoxInput, handleNonFavorGiftInput, handleBondInput,
     updateOtherExp, resetOtherExp,
     convertBoxes, resetGifts, shouldShowGiftGrade,
 
-    // ─ Lifecycle
+    // --- Lifecycle ---
     loadFromIndexedDB,
     saveBeforeClose: saveToIndexedDB,
     closeModal,

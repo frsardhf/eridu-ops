@@ -170,7 +170,7 @@ export function sortStudentsWithPins({
     return [...pinned.sort(cmp), ...unpinned.sort(cmp)];
   }
 
-  // Normal mode: flat list sorted by the selected option — no pinned priority.
+  // Normal mode: flat list sorted by the selected option (no pinned priority).
   return filtered
     .slice()
     .sort((a, b) => compareStudents(a, b, sortOption, sortDirection, studentStore, resolveLocalized));

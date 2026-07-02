@@ -1,6 +1,4 @@
-/* ==========================================================================
-   Base Modal Styles
-   ========================================================================== */
+/* --- Base Modal Styles --- */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -27,9 +25,7 @@
   flex-direction: column;
 }
 
-/* ==========================================================================
-   Tab Navigation
-   ========================================================================== */
+/* --- Tab Navigation --- */
 .modal-tabs {
   display: flex;
   align-items: center;
@@ -73,9 +69,7 @@
   background-color: var(--hover-bg);
 }
 
-/* ==========================================================================
-   Modal Motion
-   ========================================================================== */
+/* --- Modal Motion --- */
 .student-modal-shell-enter-active,
 .student-modal-shell-leave-active {
   transition: transform var(--motion-duration-shell) var(--motion-ease-standard),
@@ -148,9 +142,7 @@
   }
 }
 
-/* ==========================================================================
-   Layout Structure
-   ========================================================================== */
+/* --- Layout Structure --- */
 .fullscreen-modal {
   --student-modal-gap: 10px;
   --student-modal-hero-width: clamp(280px, 40vw, 430px);
@@ -289,7 +281,7 @@
   overflow: hidden;
 }
 
-/* Resource Input — rules moved to resourceDisplay.css so they ship with the
+/* Resource Input: rules moved to resourceDisplay.css so they ship with the
    card components themselves: after route/modal lazy-loading, this stylesheet
    only loads with the Students-page chunk, and the scanner modal (global
    navbar) rendered unstyled inputs on other routes. */
@@ -304,9 +296,7 @@
   border-top: 1px solid var(--border-color);
 }
 
-/* ==========================================================================
-   Shared Utilities
-   ========================================================================== */
+/* --- Shared Utilities --- */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -318,9 +308,7 @@
   border: 0;
 }
 
-/* ==========================================================================
-   Shared Section Card
-   ========================================================================== */
+/* --- Shared Section Card --- */
 .modal-section-card {
   padding: 0.6rem;
   background-color: var(--card-background);
@@ -328,7 +316,7 @@
   border: 1px solid var(--border-color);
 }
 
-/* Flat variant — strip the card chrome when the section is embedded inside
+/* Flat variant: strip the card chrome when the section is embedded inside
    another card (e.g., BondsStudentEditor places GiftOption inline). */
 .modal-section-card--flat {
   padding: 0;
@@ -337,9 +325,7 @@
   border-radius: 0;
 }
 
-/* ==========================================================================
-   Shared Grid Item
-   ========================================================================== */
+/* --- Shared Grid Item --- */
 .modal-grid-item {
   display: flex;
   flex-direction: column;
@@ -350,9 +336,7 @@
   padding: 0.5rem;
 }
 
-/* ==========================================================================
-   Shared Item Icon Container (equipment, potential, etc.)
-   ========================================================================== */
+/* --- Shared Item Icon Container (equipment, potential, etc.) --- */
 .modal-item-icon {
   width: 100px;
   height: 100px;
@@ -371,9 +355,7 @@
   object-fit: cover;
 }
 
-/* ==========================================================================
-   Shared Toggle Checkbox Pills
-   ========================================================================== */
+/* --- Shared Toggle Checkbox Pills --- */
 .modal-options-rail {
   display: flex;
   align-items: center;
@@ -421,9 +403,7 @@
   outline-offset: 1px;
 }
 
-/* ==========================================================================
-   Shared Number Input Controls
-   ========================================================================== */
+/* --- Shared Number Input Controls --- */
 .level-control {
   width: 100%;
 }
@@ -507,9 +487,7 @@
   font-weight: bold;
 }
 
-/* ==========================================================================
-   Shared Skill Icon & Tooltip
-   ========================================================================== */
+/* --- Shared Skill Icon & Tooltip --- */
 .skill-icon-wrapper {
   position: relative;
   width: 72px;
@@ -595,9 +573,7 @@
   white-space: pre-wrap;
 }
 
-/* ==========================================================================
-   Responsive Styles
-   ========================================================================== */
+/* --- Responsive Styles --- */
 @media (max-width: 1024px) {
   .modal-content {
     width: 90%;
@@ -682,9 +658,7 @@
   }
 }
 
-/* ==========================================================================
-   Grade Star Rating Controls (StarRatingGroup)
-   ========================================================================== */
+/* --- Grade Star Rating Controls (StarRatingGroup) --- */
 .grade-stars-group {
   display: inline-flex;
   align-items: center;

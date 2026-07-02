@@ -1270,7 +1270,7 @@ function useTranslation(path: string, language?: Language): string {
 
 // Helper function to access nested translations.
 // Optional `params` substitutes `{key}` placeholders in the resolved string.
-//   $t('reachesBond', { n: 87 })  →  EN: "→ Reaches Bond 87"
+//   $t('reachesBond', { n: 87 })  ->  EN: "-> Reaches Bond 87"
 export function $t(path: string, params?: Record<string, string | number>): string {
   const raw = useTranslation(path);
   if (!params) return raw;

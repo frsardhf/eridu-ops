@@ -16,12 +16,7 @@ import type { ItemsInventoryRecord, EquipmentInventoryRecord } from '../db/datab
 import { toNumericId } from '../utils/idCoercion';
 import { SYNTHETIC_ENTITIES } from '../constants/syntheticEntities';
 
-/**
- * Saves student-specific form data to IndexedDB
- * @param studentId The ID of the student
- * @param data The data to save
- * @returns Promise<boolean> indicating success or failure
- */
+/** Saves a student's form data to IndexedDB (id coerced to numeric). */
 export async function saveFormData(studentId: string | number, data: Record<string, any>)
   : Promise<any | null> {
   if (!studentId) return null;
@@ -35,12 +30,7 @@ export async function saveFormData(studentId: string | number, data: Record<stri
   }
 }
 
-/**
- * Merges item records with their inventory quantities
- * @param items Record of items keyed by ID
- * @param inventories Record of inventory quantities keyed by numeric ID
- * @returns Merged record with QuantityOwned added to each item
- */
+/** Merges item records with inventory quantities, adding QuantityOwned to each. */
 function mergeWithInventory<T extends Record<string, any>>(
   items: Record<string, T>,
   inventories: Record<number, number>
@@ -57,7 +47,7 @@ function mergeWithInventory<T extends Record<string, any>>(
 
 /**
  * Retrieves items data with inventory from IndexedDB.
- * Synthetic entities (e.g. Credits) are unioned in at read time — they don't
+ * Synthetic entities (e.g. Credits) are unioned in at read time: they don't
  * live in SchaleDB so we keep their metadata out of the items master table.
  */
 export async function getItems(): Promise<Record<string, any> | null> {
@@ -86,10 +76,7 @@ export async function getItems(): Promise<Record<string, any> | null> {
   }
 }
 
-/**
- * Retrieves equipment data with inventory from IndexedDB
- * @returns Promise<Record> The equipment data with QuantityOwned
- */
+/** Retrieves equipment data with inventory (QuantityOwned) from IndexedDB. */
 export async function getEquipment(): Promise<Record<string, any> | null> {
   try {
     const [equipment, inventories] = await Promise.all([
@@ -104,11 +91,7 @@ export async function getEquipment(): Promise<Record<string, any> | null> {
   }
 }
 
-/**
- * Retrieves a single student's form data from IndexedDB
- * @param studentId The ID of the student
- * @returns Promise<Record> The student form data or null if not found
- */
+/** Retrieves a single student's form data from IndexedDB (null if not found). */
 async function getFormData(studentId: string | number): Promise<Record<string, any> | null> {
   if (!studentId) return null;
 
@@ -123,11 +106,8 @@ async function getFormData(studentId: string | number): Promise<Record<string, a
 }
 
 /**
- * Loads stored values into reactive refs for a student with proper deep merging
- * @param studentId The ID of the student
- * @param refs Object containing reactive refs to update with keys matching storage keys
- * @param defaultValues Default values to use if stored values don't exist
- * @returns Promise<boolean> indicating if data was successfully loaded
+ * Deep-merges a student's stored form data into `refs` (keyed by storage key),
+ * falling back to `defaultValues` for absent keys. Returns false if no data.
  */
 export async function loadFormDataToRefs(
   studentId: string | number,
@@ -207,9 +187,8 @@ export async function loadFormDataToRefs(
 }
 
 /**
- * Saves items inventory to IndexedDB.
- * Accepts either a plain id→quantity map or a full item record map with QuantityOwned.
- * @returns Promise<boolean> indicating success or failure
+ * Saves items inventory to IndexedDB. Accepts either a plain id->quantity map
+ * or a full item record map with QuantityOwned.
  */
 export async function saveItemsInventory(
   data: Record<string, number> | Record<string, any>
@@ -230,9 +209,8 @@ export async function saveItemsInventory(
 }
 
 /**
- * Saves equipment inventory to IndexedDB.
- * Accepts either a plain id→quantity map or a full equipment record map with QuantityOwned.
- * @returns Promise<boolean> indicating success or failure
+ * Saves equipment inventory to IndexedDB. Accepts either a plain id->quantity
+ * map or a full equipment record map with QuantityOwned.
  */
 export async function saveEquipmentInventory(
   data: Record<string, number> | Record<string, any>

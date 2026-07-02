@@ -177,7 +177,7 @@ onUnmounted(() => {
   padding: 24px 20px 48px;
 }
 
-/* ── Brand ────────────────────────────────────────────────────────────────────── */
+/* --- Brand --- */
 .landing-brand {
   display: flex;
   align-items: center;
@@ -213,7 +213,7 @@ onUnmounted(() => {
   max-width: 420px;
 }
 
-/* ── Cards ───────────────────────────────────────────────────────────────────── */
+/* --- Cards --- */
 .landing-cards {
   display: flex;
   gap: 20px;
@@ -331,7 +331,7 @@ onUnmounted(() => {
   transition: transform 0.18s, color 0.18s;
 }
 
-/* ── Footer ──────────────────────────────────────────────────────────────────── */
+/* --- Footer --- */
 .landing-footer {
   padding: 16px 20px 24px;
   text-align: center;
@@ -371,7 +371,7 @@ onUnmounted(() => {
   .landing-card {
     min-width: unset;
     max-width: unset;
-    /* Size to content instead of stretching to fill the column — keeps the cards
+    /* Size to content instead of stretching to fill the column: keeps the cards
        compact and stops the over-full column from squeezing the navbar. */
     flex: 0 0 auto;
   }

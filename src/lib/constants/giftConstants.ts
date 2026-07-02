@@ -15,7 +15,7 @@ import {
 } from '@/types/resource';
 
 /**
- * Every item ID that represents a "gift box" entry — used to distinguish box
+ * Every item ID that represents a "gift box" entry: used to distinguish box
  * inputs from regular gift-item inputs in `useStudentGifts`.
  */
 export const BOX_ITEM_IDS: ReadonlySet<number> = new Set([
@@ -31,7 +31,7 @@ export const BOX_ITEM_IDS: ReadonlySet<number> = new Set([
  *   - SR/SSR_GIFT_MATERIAL_ID are aggregate stand-ins for non-favor gifts; the
  *     bonds page shows the individual non-favor gifts in the "Other gifts"
  *     section instead, so the aggregate row would duplicate the data.
- * The selector box is intentionally NOT hidden — it's a real giftable box.
+ * The selector box is intentionally NOT hidden: it's a real giftable box.
  */
 export const HIDDEN_BOX_IDS: ReadonlySet<number> = new Set([
   YELLOW_STONE_ID,

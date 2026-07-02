@@ -34,7 +34,7 @@ export interface SchaleSkill extends SchaleSkillBase {
 }
 
 /**
- * SchaleDB `localization.json` — only the maps the app reads.
+ * SchaleDB `localization.json`: only the maps the app reads.
  * `BuffName` is a flat map keyed by `Buff_*`, `Debuff_*`, `CC_*`, `Special_*`
  * prefixes; see `fetchLocalizedBuffName`.
  */

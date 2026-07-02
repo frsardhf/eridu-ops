@@ -18,12 +18,12 @@ export const WEAPON_STAR_THRESHOLD = 5;
 
 // Exclusive gear level (0–2)
 export const MAX_EXCLUSIVE_GEAR_LEVEL = 2;
-/** Gear level ≥ 2 unlocks the GearPublic (Basic) skill enhancement */
+/** Gear level >= 2 unlocks the GearPublic (Basic) skill enhancement */
 export const GEAR_UNLOCK_PUBLIC_SKILL = 2;
-/** Weapon grade ≥ 7 unlocks the WeaponPassive (Passive) skill enhancement */
+/** Weapon grade >= 7 unlocks the WeaponPassive (Passive) skill enhancement */
 export const GEAR_UNLOCK_PASSIVE_SKILL = 7;
 
-// Skill level maxes — SchaleDB provides the real per-student max via Parameters[0].length;
+// Skill level maxes: SchaleDB provides the real per-student max via Parameters[0].length;
 // these are fallbacks for when that field is missing.
 export const MAX_EX_SKILL_LEVEL = 5;
 export const MAX_SKILL_LEVEL = 10;

@@ -2,7 +2,12 @@ import type { ResourceProps } from './resource';
 
 export type SkillType = 'Ex' | 'Public' | 'Passive' | 'ExtraPassive';
 
-export const SKILL_TYPES: readonly SkillType[] = ['Ex', 'Public', 'Passive', 'ExtraPassive'] as const;
+export const SKILL_TYPES = [
+  'Ex',
+  'Public',
+  'Passive',
+  'ExtraPassive',
+] as const;
 
 export type SkillTypeName = 'Ex' | 'Basic' | 'Enhanced' | 'Sub';
 
@@ -32,9 +37,9 @@ export interface MaterialWithRemaining extends Material {
 
 export interface MaterialPreviewItem {
   material: ResourceProps;
-  needed: number;    // amount to be consumed
-  owned: number;     // current inventory count
-  remaining: number; // owned − needed (negative = deficit)
+  needed: number;
+  owned: number;
+  remaining: number;
   type: MaterialType;
 }
 
@@ -79,8 +84,6 @@ export interface PotentialLevels {
   };
 }
 
-
-// Re-export CREDITS_ID from centralized synthetic entities
 export { CREDITS_ID } from '../lib/constants/syntheticEntities';
 
 export const ELIGMAS_ID = 23;

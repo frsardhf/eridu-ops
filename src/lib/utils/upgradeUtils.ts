@@ -62,14 +62,9 @@ export function clampLevelPair(
 }
 
 /**
- * Factory returning a current/target update pair.
- * Pure utility — no Vue reactivity. Wraps clampLevelPair for a
- * consistent update pattern used by SkillSection, PotentialSection, etc.
- *
- * @param getLevels - getter returning the current { current, target } pair
- * @param onUpdate  - callback invoked with the new (current, target) values
- * @param min       - minimum allowed value
- * @param getMax    - getter returning the maximum allowed value (reactive-friendly)
+ * Factory returning a current/target update pair. Pure: no Vue reactivity.
+ * Wraps clampLevelPair for the update pattern used by SkillSection,
+ * PotentialSection, etc.
  */
 export function makeCurrentTargetPair(
   getLevels: () => { current: number; target: number },
@@ -89,11 +84,8 @@ export function makeCurrentTargetPair(
   };
 }
 
-/**
- * Formats value display with current/target highlighting
- */
+/** Formats value display with current/target highlighting. */
 export function formatValueWithTarget(currentValue: number, targetValue: number) {
-  // If current and target are the same, just show a single value
   if (currentValue === targetValue) {
     return `<span style="color: var(--accent-color)">${currentValue}</span>`;
   } else {
@@ -104,7 +96,7 @@ export function formatValueWithTarget(currentValue: number, targetValue: number)
 /**
  * Greedily deduct inventory items to cover an XP cost (Greedy Coin Change).
  *
- * Phase 1: floor-deduct highest-value items first — never over-spends a
+ * Phase 1: floor-deduct highest-value items first: never over-spends a
  *          high-value item when lower-value items can cover the remainder.
  * Phase 2: if a fractional remainder persists, consume one more of the
  *          smallest available item (minimum waste, one-item ceiling step).
@@ -146,7 +138,7 @@ export function deductXpItems(
 }
 
 /**
- * Dry-run of the greedy XP deduction — returns how many of each item would be
+ * Dry-run of the greedy XP deduction: returns how many of each item would be
  * consumed (same index order as input) without modifying any state.
  * Mirrors the Phase 1 + Phase 2 logic of deductXpItems exactly.
  */

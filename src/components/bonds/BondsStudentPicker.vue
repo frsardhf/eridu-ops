@@ -18,7 +18,7 @@ const { getStudentsWithGifts } = useGiftCalculation();
 
 const query = ref('');
 
-// Owned students only — picker is about planning bonds for students you have
+// Owned students only: picker is about planning bonds for students you have
 const ownedStudents = computed<StudentProps[]>(() =>
   sortedStudentsArray.value.filter(s => studentDataStore.value[s.Id]?.isOwned !== false)
 );
@@ -27,13 +27,13 @@ const matched = computed<StudentProps[]>(() =>
   ownedStudents.value.filter(s => studentMatchesQuery(s, query.value))
 );
 
-// Sections: Tracking → Suggested → Bond maxed → All owned
+// Sections: Tracking -> Suggested -> Bond maxed -> All owned
 function isBondMaxed(studentId: number): boolean {
   const current = studentDataStore.value[studentId]?.bondDetailData?.currentBond ?? 1;
   return current >= MAX_BOND_LEVEL;
 }
 
-// Hoisted ID sets — rebuilt only when their sources change, not per section.
+// Hoisted ID sets: rebuilt only when their sources change, not per section.
 const trackedSet = computed(() => new Set(trackedIds.value));
 const suggestedIdSet = computed(
   () => new Set(getStudentsWithGifts('needed').map(u => u.student.Id))

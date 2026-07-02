@@ -4,25 +4,13 @@ export type RefMap = Record<string, Ref<any>>;
 type Defaults<R extends RefMap> = { [K in keyof R]: R[K] extends Ref<infer V> ? V : never };
 
 /**
- * Shared persistence boilerplate for domain hooks.
- *
- * Handles:
- *   - isLoading guard (blocks watch from triggering saves during load)
- *   - pendingSave chain (serializes concurrent saves)
- *   - loadRequestToken stale-load guard (staged-ref pattern)
- *   - Debounced watch → save
- *   - onUnmounted timer cleanup
- *
- * @param opts.isVisible    Accessor for the hook's visibility gate
- * @param opts.refs         Live refs whose values will be swapped on load
- * @param opts.defaults     Deep-cloneable defaults, one per ref key
- * @param opts.loadFn       Async fn(stagedRefs) → populates staged refs from storage
- * @param opts.saveFn       Async fn() → T|null — writes current ref values; returns saved record
- * @param opts.onSaved      Optional callback invoked with the non-null saveFn result
- * @param opts.afterFlush   Optional callback invoked after every debounced flush completes
- * @param opts.afterLoad    Optional callback invoked after a successful load swap
- * @param opts.watchSources Refs / computed values to watch for changes
- * @param opts.debounceMs   Debounce window in ms (default 250)
+ * Shared persistence boilerplate for domain hooks. Handles the isLoading guard
+ * (blocks the watch from saving mid-load), the pendingSave chain (serializes
+ * concurrent saves), the loadRequestToken stale-load guard (staged-ref pattern:
+ * loadFn fills staged refs, swapped in only if still current), the debounced
+ * watch -> save (default 250ms), and onUnmounted timer cleanup. saveFn returns
+ * the saved record or null, forwarded to onSaved. The typed `opts` below
+ * documents each field.
  */
 export function useDebouncedFormPersistence<R extends RefMap, T = any>(opts: {
   isVisible:    () => boolean | undefined;
@@ -44,7 +32,7 @@ export function useDebouncedFormPersistence<R extends RefMap, T = any>(opts: {
   /**
    * Flush immediately: cancel any pending debounce, await prior save,
    * then execute save + onSaved + afterFlush in sequence.
-   * Safe to call directly (e.g. from closeModal) — bypasses debounce.
+   * Safe to call directly (e.g. from closeModal): bypasses debounce.
    */
   async function flushNow(): Promise<void> {
     if (timer) { clearTimeout(timer); timer = null; }

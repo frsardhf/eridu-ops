@@ -9,7 +9,7 @@ import { useStudentData } from '@/lib/hooks/useStudentData';
 // in three.js instead of stepping sprite sheets. Not linked from nav.
 
 // Chibi assets we ship (public/chibi3d/<id>). Name + role come from the IndexedDB student
-// store (matched by DevName), not hardcoded — SchaleDB is only fetched via the R2 voice.
+// store (matched by DevName), not hardcoded: SchaleDB is only fetched via the R2 voice.
 const CHIBI_CHAR_IDS = ['ch0158', 'ch0242', 'ch0243', 'ch0331', 'ch0333'] as const;
 const charId = ref<string>(CHIBI_CHAR_IDS[0]);
 
@@ -24,7 +24,7 @@ const studentByDevName = computed(() => {
 const CHARS = computed(() =>
   CHIBI_CHAR_IDS.map((id) => {
     const s = studentByDevName.value.get(id.toUpperCase());
-    if (!s) return { id, label: id }; // store not loaded yet → fall back to the id
+    if (!s) return { id, label: id }; // store not loaded yet -> fall back to the id
     const role = s.SquadType === 'Support' ? 'special' : 'striker'; // Main = striker
     return { id, label: `${s.Name} · ${role}` };
   }),
@@ -173,7 +173,7 @@ function onStagePointerDown(e: PointerEvent): void {
   background: #f85149;
 }
 
-/* Not requested (battle lines on specials — skipped to avoid the 404/CORB). */
+/* Not requested (battle lines on specials: skipped to avoid the 404/CORB). */
 .chibi-voice__dot.is-idle {
   background: transparent;
   border: 1px solid var(--border-color);

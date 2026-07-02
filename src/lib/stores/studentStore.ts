@@ -6,7 +6,7 @@ import { toNumericId } from '../utils/idCoercion';
 // writes use the spread pattern below for clarity (also reassigns the top-level ref).
 export const studentDataStore = ref<Record<number, FormRecord>>({});
 
-// Sync read — populate the store first via setStudentDataDirect / batchSetStudentData.
+// Sync read: populate the store first via setStudentDataDirect / batchSetStudentData.
 export function getStudentData(studentId: string | number): FormRecord | undefined {
   const numericId = toNumericId(studentId);
   return studentDataStore.value[numericId];
@@ -24,7 +24,7 @@ export function useStudentFormData(studentId: Ref<number> | number) {
 }
 
 /**
- * Synchronous direct write — caller provides the new record (no IndexedDB read).
+ * Synchronous direct write: caller provides the new record (no IndexedDB read).
  */
 export function setStudentDataDirect(studentId: number, data: FormRecord) {
   studentDataStore.value = {
@@ -34,7 +34,7 @@ export function setStudentDataDirect(studentId: number, data: FormRecord) {
 }
 
 /**
- * Batch update — more efficient than calling setStudentDataDirect in a loop.
+ * Batch update: more efficient than calling setStudentDataDirect in a loop.
  */
 export function batchSetStudentData(records: Record<number, FormRecord>) {
   studentDataStore.value = {

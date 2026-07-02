@@ -66,7 +66,7 @@ const emit = defineEmits<{
 
 const { setOwned } = useStudentOwnership();
 
-// ── State ────────────────────────────────────────────────────────────────────
+// --- State ---
 const activeTab = ref<ModalTab>('info');
 const tabDirection = ref<'forward' | 'backward'>('forward');
 const activeTabTransitionName = computed(() =>
@@ -87,13 +87,13 @@ const { studentData: rawStudentData } = useStudentData();
 
 const hasStyleSwitch = computed(() => hasLinkedPartner(props.student?.Id));
 
-// Ownership — undefined / true treated as owned (backward-compat)
+// Ownership: undefined / true treated as owned (backward-compat)
 const isOwned = computed(() => {
   if (!displayedStudent.value) return true;
   return studentDataStore.value[displayedStudent.value.Id]?.isOwned !== false;
 });
 
-// ── Modal origin morph ────────────────────────────────────────────────────────
+// --- Modal origin morph ---
 const hasOriginMorph = computed(() => {
   const origin = props.originRect;
   return !!origin && origin.width > 0 && origin.height > 0;
@@ -118,7 +118,7 @@ const modalOriginStyle = computed<CSSProperties>(() => {
   } as CSSProperties;
 });
 
-// ── Style switch ──────────────────────────────────────────────────────────────
+// --- Style switch ---
 const styleStudent = computed<StudentProps | null>(() => {
   if (!displayedStudent.value) return null;
   if (!activeStyleId.value || activeStyleId.value === displayedStudent.value.Id) {
@@ -129,7 +129,7 @@ const styleStudent = computed<StudentProps | null>(() => {
 
 const activeStyleStudent = computed(() => styleStudent.value ?? displayedStudent.value);
 
-// ── Hooks ────────────────────────────────────────────────────────────────────
+// --- Hooks ---
 const currentBond = computed(() => {
   const id = displayedStudent.value?.Id;
   if (!id) return 1;
@@ -139,7 +139,7 @@ const currentBond = computed(() => {
 const router = useRouter();
 const { addStudent: addBondsTracked } = useBondsTracked();
 
-// Consolidated per-student form — replaces useStudentUpgrade + useStudentGear
+// Consolidated per-student form: replaces useStudentUpgrade + useStudentGear
 // (and useStudentGifts on /bonds). One persistence cycle prevents the
 // concurrent-save race that previously clobbered upgrade keys when Apply
 // Upgrade mutated both upgrade and gear refs in the same tick.
@@ -173,7 +173,7 @@ const {
   loadEquipments
 } = useStudentEquipment(props);
 
-// ── Navigation & handlers ─────────────────────────────────────────────────────
+// --- Navigation & handlers ---
 // Image preloading for neighbor students
 function preloadStudentImages(s: StudentProps) {
   new Image().src = getStudentPortraitUrl(s.Id);
@@ -203,7 +203,7 @@ async function handleClose() {
   emit('close');
 }
 
-// Bond chip → /bonds deep-link. Ensure the student is in the tracked list
+// Bond chip -> /bonds deep-link. Ensure the student is in the tracked list
 // so the focus query param actually lands on their card, then route.
 // Skip adding if bond is already maxed (mirrors BondsStudentPicker disabled state).
 function handleNavigateToBonds() {
@@ -222,7 +222,7 @@ function handleStyleToggle() {
 }
 
 
-// ── Apply Upgrade ────────────────────────────────────────────────────────────
+// --- Apply Upgrade ---
 
 // Conservative material check: all pending materials vs inventory
 const insufficientList = computed<string[]>(() => {
@@ -445,7 +445,7 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
   showApplyModal.value = false;
 }
 
-// ── Tab & ownership management ────────────────────────────────────────────────
+// --- Tab & ownership management ---
 function setActiveTab(nextTab: ModalTab) {
   if (nextTab === activeTab.value) return;
   tabDirection.value = MODAL_TAB_ORDER[nextTab] >= MODAL_TAB_ORDER[activeTab.value]
@@ -466,7 +466,7 @@ watch(isOwned, (owned) => {
   }
 });
 
-// ── Keyboard ──────────────────────────────────────────────────────────────────
+// --- Keyboard ---
 function handleKeyDown(event: KeyboardEvent) {
   if (!props.isVisible) return;
 
@@ -512,7 +512,7 @@ function handleKeyDown(event: KeyboardEvent) {
 
 useDocumentListener('keydown', handleKeyDown);
 
-// ── Hydration ────────────────────────────────────────────────────────────────
+// --- Hydration ---
 // Centralized hydration flow: initialize defaults once, then load all hook data together.
 watch([() => props.isVisible, () => props.student], async ([visible, student]) => {
   if (!visible || !student) return;
@@ -773,7 +773,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
       />
     </Transition>
 
-    <!-- Apply Upgrade modal — combined section selection + material preview -->
+    <!-- Apply Upgrade modal: combined section selection + material preview -->
     <ApplyUpgradeModal
       v-if="showApplyModal && displayedStudent"
       :student="displayedStudent"
@@ -991,7 +991,7 @@ watch([() => props.isVisible, () => props.student], async ([visible, student]) =
 }
 
 @media (max-width: 480px) {
-  /* Stack Recruitment + Apply Upgrade — side-by-side, each half is too narrow
+  /* Stack Recruitment + Apply Upgrade: side-by-side, each half is too narrow
      for its label + button (and JP labels are longer), so they clip. */
   .status-bars-row {
     flex-direction: column;

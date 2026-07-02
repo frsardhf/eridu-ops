@@ -83,7 +83,7 @@ function closeModal(event: MouseEvent) {
           </ul>
         </section>
 
-        <!-- Older entries — collapsible accordion -->
+        <!-- Older entries: collapsible accordion -->
         <div v-if="previous.length" class="previous">
           <button
             type="button"
@@ -199,7 +199,7 @@ function closeModal(event: MouseEvent) {
   flex: 1;
 }
 
-/* ── Entry ─────────────────────────────────────────────────────────────── */
+/* --- Entry --- */
 .entry + .entry {
   margin-top: 14px;
   padding-top: 14px;
@@ -289,7 +289,7 @@ function closeModal(event: MouseEvent) {
   font-size: 0.85rem;
 }
 
-/* ── Previous-updates accordion ────────────────────────────────────────── */
+/* --- Previous-updates accordion --- */
 .previous {
   margin-top: 18px;
   padding-top: 12px;

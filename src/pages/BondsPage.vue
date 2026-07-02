@@ -24,18 +24,18 @@ const router = useRouter();
 const { studentData, favoredGift, giftBoxData, isReady } = useStudentData();
 const { trackedIds, removeStudent, seedIfNeeded } = useBondsTracked();
 
-// ── Layout (tabs/cards) ─────────────────────────────────────────────────────
+// --- Layout (tabs/cards) ---
 const layout = ref<'tabs' | 'cards'>(getSettings().bondsLayout);
 watch(layout, (v) => updateSetting('bondsLayout', v));
 
-// ── Picker modal ────────────────────────────────────────────────────────────
+// --- Picker modal ---
 const showPicker = ref(false);
 
-// ── Inventory modal ──────────────────────────────────────────────────────────
+// --- Inventory modal ---
 const showInventory = ref(false);
 
-// ── Per-student "collapsed" state (not persisted; session-only) ─────────────
-// Independent of `bondsTrackedStudents` — hides the editor body but leaves
+// --- Per-student "collapsed" state (not persisted; session-only) ---
+// Independent of `bondsTrackedStudents`: hides the editor body but leaves
 // the student in the tracked list. Same behaviour across cards/tabs views.
 const collapsedIds = ref<Set<number>>(new Set());
 
@@ -52,7 +52,7 @@ function toggleCollapsed(id: number): void {
 
 // Sort: total bond EXP descending (most planned first), tie-break by current bond desc.
 // EXP comes from `computeStudentBondExpTotal` so new EXP contributors only need
-// to be added in that utility — sort updates automatically.
+// to be added in that utility: sort updates automatically.
 const trackedStudents = computed<StudentProps[]>(() => {
   const enriched = trackedIds.value
     .map(id => studentData.value[id])
@@ -79,7 +79,7 @@ const trackedStudents = computed<StudentProps[]>(() => {
     .map(x => x.student);
 });
 
-// ── Active tab (tabs layout) ────────────────────────────────────────────────
+// --- Active tab (tabs layout) ---
 const activeStudentId = ref<number | null>(null);
 
 const activeStudent = computed<StudentProps | null>(() => {
@@ -102,7 +102,7 @@ watch(trackedStudents, (list) => {
   }
 });
 
-// ── Deep-link support: /bonds?focus=<id> ────────────────────────────────────
+// --- Deep-link support: /bonds?focus=<id> ---
 onMounted(async () => {
   if (!isReady.value) {
     await new Promise<void>(resolve => {

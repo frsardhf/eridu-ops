@@ -35,7 +35,7 @@ interface MissingPiece {
  * Equipment farming suggestions for the /students "Equipment Farming" tool.
  *
  * Reads the MISSING equipment (Tier >= 2) from the gear calc and recommends
- * which normal campaign stages to farm. Algorithm (set-cover, run-minimizing —
+ * which normal campaign stages to farm. Algorithm (set-cover, run-minimizing;
  * AP is a flat 10 per farmable stage, so runs are the only cost):
  *
  *   while a missing piece remains:
@@ -45,9 +45,9 @@ interface MissingPiece {
  *     runs   = ceil(remaining / rate); credit ALL of that stage's drops
  *              against the remaining needs (the free lower tiers)
  *
- * `rate` is expected pieces *per run* (guaranteed 1.0 + bonus chances, summed —
+ * `rate` is expected pieces *per run* (guaranteed 1.0 + bonus chances, summed,
  * so it can exceed 1). 2x / 3x event multipliers scale that rate (BA drop events
- * multiply the dropped quantity, so 1.2 × 3 = 3.6 pieces/run, NOT capped at 1),
+ * multiply the dropped quantity, so 1.2 x 3 = 3.6 pieces/run, NOT capped at 1),
  * which shrinks the runs proportionally.
  * Pieces that drop in no normal stage are dropped (hard-only / craft-only).
  */
@@ -76,7 +76,7 @@ export function useEquipmentFarming() {
   const hasMissing = computed(() => missing.value.size > 0);
   const missingCount = computed(() => missing.value.size);
 
-  // The raw missing pieces (deficit) — same data the GlobalInventory "missing"
+  // The raw missing pieces (deficit): same data the GlobalInventory "missing"
   // view shows, surfaced here so users don't have to switch modals. Highest tier
   // first, then by name.
   const missingList = computed(() =>
@@ -90,11 +90,11 @@ export function useEquipmentFarming() {
     if (!want.size) return [];
 
     const mult = multiplier.value;
-    // Effective pieces per run = base rate × event multiplier. The stored rate is
+    // Effective pieces per run = base rate x event multiplier. The stored rate is
     // already an expected count (guaranteed 1.0 + bonus chances, so it can exceed
-    // 1), and a drop event multiplies the quantity per run — so we never cap. A
-    // 1.2 stage under 3× yields ~3.6 pieces/run; capping would wrongly collapse
-    // 2× and 3× for any rate >= 0.5.
+    // 1), and a drop event multiplies the quantity per run, so we never cap. A
+    // 1.2 stage under 3x yields ~3.6 pieces/run; capping would wrongly collapse
+    // 2x and 3x for any rate >= 0.5.
     const eff = (r: number) => r * mult;
 
     // Best (highest effective rate) normal stage that drops a given piece;

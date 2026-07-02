@@ -56,10 +56,7 @@ function parseIntOr(value: string | number | undefined, fallback: number): numbe
   return parseInt(String(value ?? ''), 10) || fallback;
 }
 
-/**
- * Exports all IndexedDB data and settings to a downloadable JSON file
- * @returns Promise resolving to a Blob URL to download the exported data
- */
+/** Exports all IndexedDB data + settings to a Blob URL for download. */
 async function exportLocalStorageData(): Promise<string> {
   try {
     // Export ONLY user data (v3.0 format)
@@ -110,14 +107,11 @@ export async function downloadLocalStorageData(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
-/**
- * Import v3.0 user-data-only format
- * @param importData The parsed v3.0 import data
- */
+/** Imports the v3.0 user-data-only format (parsed export blob). */
 async function importV3Format(importData: any): Promise<void> {
   const { userData, settings } = importData;
 
-  // Convert forms from Record to Array (before transaction — no DB access needed)
+  // Convert forms from Record to Array (before transaction: no DB access needed)
   let formsArray: any[] = [];
   if (userData.forms) {
     if (Array.isArray(userData.forms)) {
@@ -168,11 +162,7 @@ async function importV3Format(importData: any): Promise<void> {
   }
 }
 
-/**
- * Imports data from other sites format into IndexedDB
- * @param importText The text data to import
- * @returns Promise resolving to boolean indicating success
- */
+/** Imports the third-party justin163 planner format from raw JSON text. */
 export async function importFromOtherSite(importText: string): Promise<boolean> {
   try {
     const importData = JSON.parse(importText) as OtherSiteImport;
@@ -191,7 +181,7 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
     importData.characters.forEach((char) => {
       if (!char.id) return;
       const studentId = parseInt(String(char.id), 10);
-      // Reject IDs not present in the SchaleDB cache — prevents phantom form records
+      // Reject IDs not present in the SchaleDB cache: prevents phantom form records
       // from a crafted import that would poison every later iteration over `forms`.
       if (!studentId || !students[studentId]) return;
 
@@ -214,7 +204,7 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
         studentId,
         // justin163 has no ownership field: every student in `characters[]` is one
         // the user added to their planner, i.e. one they own. `enabled` is only a
-        // "count this toward farming targets" toggle, NOT ownership — so a disabled
+        // "count this toward farming targets" toggle, NOT ownership, so a disabled
         // student is still owned. Mark them all recruited; users prune any non-owned
         // planning targets via the Bulk Modify tool.
         isOwned: true,
@@ -233,12 +223,12 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
           target: parseIntOr(char.target.bond_gear, 0)
         },
         giftFormData: {},
-        // gradeLevels = star grade + UE additions (e.g. ★5 + UE3 → 8)
+        // gradeLevels = star grade + UE additions (e.g. ★5 + UE3 -> 8)
         gradeLevels: {
           current: parseIntOr(char.current.star, starData) + parseIntOr(char.current.ue, 0),
           target:  parseIntOr(char.target.star,  starData) + parseIntOr(char.target.ue,  0)
         },
-        // book_atk → attack, book_hp → maxhp, book_heal → healpower
+        // book_atk -> attack, book_hp -> maxhp, book_heal -> healpower
         potentialLevels: {
           attack:    { current: parseIntOr(char.current.book_atk,  0), target: parseIntOr(char.target.book_atk,  0) },
           maxhp:     { current: parseIntOr(char.current.book_hp,   0), target: parseIntOr(char.target.book_hp,   0) },
@@ -282,11 +272,7 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
   }
 }
 
-/**
- * Imports data from a JSON file into IndexedDB
- * @param file The file to import data from
- * @returns Promise resolving to boolean indicating success
- */
+/** Imports data from a user-selected JSON file into IndexedDB. */
 export function importLocalStorageData(file: File): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

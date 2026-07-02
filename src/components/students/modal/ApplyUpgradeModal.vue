@@ -75,7 +75,7 @@ function handleApply() {
 
 function getIconUrl(item: MaterialPreviewItem): string {
   const { Id, Icon, Tier } = item.material;
-  // Equipment XP balls are equipment icons without the '_piece' suffix → omit tier.
+  // Equipment XP balls are equipment icons without the '_piece' suffix -> omit tier.
   if (isExpBall(Id)) return getItemIconUrl(Icon, 'equipment');
   return getItemIconUrl(Icon, item.type === 'equipments' ? 'equipment' : 'item', Tier);
 }
@@ -300,7 +300,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Header ── */
+/* --- Header --- */
 .upgrade-header {
   display: flex;
   align-items: center;
@@ -348,7 +348,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   background: color-mix(in srgb, #2e7d32 18%, var(--card-background));
 }
 
-/* ── Pills section ── */
+/* --- Pills section --- */
 .pills-section {
   padding: 4px 0;
   flex-shrink: 0;
@@ -586,7 +586,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
 }
 .insufficient-warning svg { flex-shrink: 0; margin-top: 1px; }
 
-/* ── Preview section ── */
+/* --- Preview section --- */
 .preview-section {
   overflow-y: auto;
   flex: 1;
@@ -600,7 +600,7 @@ function getIconUrl(item: MaterialPreviewItem): string {
   color: #e57c00 !important;
 }
 
-/* ── Footer ── */
+/* --- Footer --- */
 .upgrade-footer {
   display: flex;
   justify-content: flex-end;

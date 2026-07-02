@@ -24,7 +24,7 @@ const emit = defineEmits<{
   (e: 'click', payload: { student: StudentProps; originRect: ModalOriginRect | null }): void;
 }>();
 
-// ── State ────────────────────────────────────────────────────────────────────
+// --- State ---
 const isMobile = ref(false);
 const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
   computed(() => props.student.Id)
@@ -50,14 +50,14 @@ function checkScreenWidth() {
 
 useWindowResize(checkScreenWidth);
 
-// ── Lifecycle ────────────────────────────────────────────────────────────────
+// --- Lifecycle ---
 onUnmounted(() => {
   if (pinPopTimer) {
     clearTimeout(pinPopTimer);
   }
 });
 
-// ── Display helpers ───────────────────────────────────────────────────────────
+// --- Display helpers ---
 function getFontSizeClass(name: string): string {
   // Mobile sizing is the same regardless of language
   if (isMobile.value) {
@@ -110,7 +110,7 @@ function formatPotentialValue(value: number | undefined): string {
   return value?.toString() ?? '0';
 }
 
-// ── Computed ─────────────────────────────────────────────────────────────────
+// --- Computed ---
 const hasAnyPotentialData = computed(() => {
   const p = studentData.value?.potentialLevels;
   if (!p) return false;
@@ -202,7 +202,7 @@ const gradeLevel = computed(() => {
 
 // Investment toward absolute max across level + grade + equipment + skills +
 // potential, weighted equally per category (~20% each, 0–100). Equipment uses the
-// student's actual slots (studentEquipment) — NOT every key in equipmentLevels,
+// student's actual slots (studentEquipment): NOT every key in equipmentLevels,
 // which holds tier-1 defaults for unused types that would drag a maxed unit < 100%.
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 const avgRatio = (xs: number[]): number | null =>
@@ -246,7 +246,7 @@ const investmentPercent = computed(() => {
   return Math.round((cats.reduce((a, b) => a + b, 0) / cats.length) * 100);
 });
 
-// ── Event handlers ────────────────────────────────────────────────────────────
+// --- Event handlers ---
 function handlePinToggle(event: MouseEvent) {
   event.stopPropagation();
   // Store-backed toggle: persistence + reactivity flow through uiPrefsStore,

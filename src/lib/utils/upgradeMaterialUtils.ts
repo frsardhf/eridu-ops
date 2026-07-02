@@ -67,8 +67,8 @@ export function computeCharacterXpCost(current: number, target: number): number 
 }
 
 /**
- * Activity Report items (IDs 13 → 10) sorted descending by ExpValue,
- * each carrying its current owned count — ready for deductXpItems.
+ * Activity Report items (IDs 13 -> 10) sorted descending by ExpValue,
+ * each carrying its current owned count: ready for deductXpItems.
  * @param getOwned  Returns how many of a given item ID the player owns.
  */
 export function getCharXpItems(
@@ -105,7 +105,6 @@ export function calculateSkillMaterials(
 
     if (!materialIds || !materialQuantities || !creditsQuantities) continue;
 
-    // Calculate materials for each level
     for (let level = current; level < target; level++) {
 
       const levelMaterialIds = materialIds[level-1];

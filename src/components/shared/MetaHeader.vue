@@ -19,7 +19,7 @@ const props = defineProps<{
   activeStyleId?: number;
   primaryStudentId?: number;
   /**
-   * BondsPage mode: the level pill shows BOND progression (currentBond →
+   * BondsPage mode: the level pill shows BOND progression (currentBond ->
    * newBondLevel) instead of character level. When set, `characterLevels`
    * is ignored and `remainingXp` / `totalExp` are rendered as stat chips.
    */
@@ -56,7 +56,7 @@ const { showLevelArrow } = useStudentLevels(
 
 const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel.value);
 
-// Inline bond editor — only used when bondProgress is true (BondsPage).
+// Inline bond editor: only used when bondProgress is true (BondsPage).
 // Inert in the modal's level / navigate modes.
 const {
   bondState, bondEditorRef, isEditing, editValue,
@@ -211,7 +211,7 @@ function onBondInlineClick() {
         <template v-if="bondProgress">
           <!-- Remaining-XP chip is intentionally not gated on showBondArrow so
                users see "X EXP to next level" the moment they set a bond, even
-               before allocating gifts — otherwise an unprojected BOND pill is
+               before allocating gifts: otherwise an unprojected BOND pill is
                visually indistinguishable from the modal's LEVEL pill. -->
           <span v-if="(remainingXp ?? 0) > 0" class="bond-stat-chip">
             {{ remainingXp }} {{ $t('expToNextLevel') }}
@@ -258,7 +258,7 @@ function onBondInlineClick() {
   gap: 10px;
 }
 
-/* Flat variant — strip the card chrome when the header is embedded inside
+/* Flat variant: strip the card chrome when the header is embedded inside
    another card (e.g., BondsStudentEditor places it inline beside the icon). */
 .student-meta-header--flat {
   background: transparent;
@@ -380,7 +380,7 @@ function onBondInlineClick() {
   transition: background-color 0.15s, transform 0.15s;
 }
 
-/* Bond maxed badge — no pointer when standalone (modal); editable keeps
+/* Bond maxed badge: no pointer when standalone (modal); editable keeps
    cursor: pointer since it's still an edit target on /bonds. */
 .bond-inline--maxed {
   border-radius: 999px;
@@ -409,8 +409,8 @@ function onBondInlineClick() {
   outline-offset: 2px;
 }
 
-/* ── Sparkle diamonds ──────────────────────────────────────────────────────
-   2×2 rotated square = ♦. Six pseudo-elements share the same base setup;
+/* --- Sparkle diamonds ---
+   2x2 rotated square = diamond. Six pseudo-elements share the same base setup;
    only color (pink vs accent) and run count (infinite vs once) differ. */
 
 .bond-inline--maxed::before,
@@ -454,7 +454,7 @@ function onBondInlineClick() {
    -10px  -18px 0 0.5px rgba(235,  51, 255, 0.7);
 }
 
-/* Non-maxed (navigate + editable): accent color — identical, so grouped. */
+/* Non-maxed (navigate + editable): accent color: identical, so grouped. */
 .bond-inline--navigate::before,
 .bond-inline--editable:not(.bond-inline--maxed)::before {
   background: var(--accent-color);

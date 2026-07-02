@@ -35,7 +35,7 @@ export function attachElephIcons(
  * `student.Gifts` / `student.Boxes` directly (StudentModal, BondsStudentEditor).
  *
  * The Array.isArray fallback handles the case where the source map has
- * accidentally been serialized as an object — defensive for legacy data.
+ * accidentally been serialized as an object: defensive for legacy data.
  */
 export function enrichStudentWithGifts(
   student: StudentProps,

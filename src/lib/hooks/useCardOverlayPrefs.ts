@@ -1,18 +1,14 @@
 /**
- * Per-card overlay visibility preferences (/students view-controls "eye" menu).
- *
- * Backs the `cardOverlays` AppSetting (localStorage). A pinned overlay is shown
- * permanently on every card; an unpinned one still reveals on hover. Default
- * (setting undefined) = all overlays shown.
- *
- * Module-level singleton so the navbar checklist and every StudentCard share the
- * same reactive state without prop-drilling through StudentGrid.
+ * Per-card overlay visibility prefs (/students "eye" menu), backing the
+ * `cardOverlays` AppSetting. Pinned = always shown, unpinned = hover-only,
+ * undefined = all shown. Module-level singleton so the navbar and every
+ * StudentCard share reactive state without prop-drilling through StudentGrid.
  */
 import { ref, computed } from 'vue';
 import { getSettings, updateSetting } from '../utils/settingsStorage';
 import { CARD_OVERLAY_IDS, type CardOverlayId } from '@/types/card';
 
-// undefined → treat as "all shown"; an explicit array (incl. []) is user intent.
+// undefined -> treat as "all shown"; an explicit array (incl. []) is user intent.
 const _pinned = ref<CardOverlayId[] | undefined>(getSettings().cardOverlays);
 const _shownSet = computed(() => new Set(_pinned.value ?? CARD_OVERLAY_IDS));
 

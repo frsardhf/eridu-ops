@@ -91,7 +91,7 @@ const stripStyle = {
   transform: translateY(-1px);
 }
 
-/* Inactive in the current mode — full tile dims so the eye lands on tiles
+/* Inactive in the current mode: full tile dims so the eye lands on tiles
    that actually have data. Stays clickable for browsing/submission. Hover
    restores full opacity so the user knows it's interactive. */
 .bond100-tile.is-muted {

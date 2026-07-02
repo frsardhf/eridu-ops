@@ -68,11 +68,9 @@ export async function initializeStudentFormData(student: StudentProps): Promise<
 
   // Use a Dexie transaction to ensure atomicity
   return await db.transaction('rw', db.forms, async () => {
-    // Check if data already exists
     const existing = await db.forms.get(studentId);
 
     if (existing) {
-      // Data exists - mark as initialized and return
       initializedStudents.add(studentId);
       return existing;
     }

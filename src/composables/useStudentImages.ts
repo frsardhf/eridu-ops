@@ -6,7 +6,7 @@ import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
  * Encapsulates ModalHeader's image loading state: shimmer timer, portrait/background
  * load tracking, and computed image URLs.
  *
- * - `imageLoading` drives the shimmer overlay — starts true, cleared once both
+ * - `imageLoading` drives the shimmer overlay: starts true, cleared once both
  *   portrait and background (if any) have loaded or errored.
  * - A short 80ms delay before showing the shimmer avoids a flash when images
  *   are already cached (service-worker cache-first).

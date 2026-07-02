@@ -23,7 +23,7 @@ import {
  * - Syncs back when the prop changes externally (e.g. student switch)
  *   and cancels any in-progress edit to avoid stale values.
  * - Delegates clamping to `clampLevelPair` (upgradeUtils) so the
- *   current ↔ target constraint logic lives in one place.
+ *   current <-> target constraint logic lives in one place.
  */
 export function useLevelEditor(
   getLevels: () => { current: number; target: number },
@@ -95,7 +95,7 @@ export function useLevelEditor(
   };
 }
 
-// ---------------------------------------------------------------------------
+// --- Bond editor ---
 
 const MAX_BOND = MAX_BOND_LEVEL;
 const MIN_BOND = MIN_BOND_LEVEL;
@@ -167,7 +167,7 @@ export function useBondEditor(
   };
 }
 
-// ---------------------------------------------------------------------------
+// --- Focus input ---
 
 /**
  * Encapsulates the focus-overlay pattern used by GiftCard and ResourceCard.
@@ -176,7 +176,7 @@ export function useBondEditor(
  * - A quantity display overlay hides while the input is focused.
  * - Parent manages value state; this composable only tracks focus + provides
  *   a programmatic focus helper.
- * - No local buffer, no commit/cancel — works with @input live updates.
+ * - No local buffer, no commit/cancel: works with @input live updates.
  */
 export function useFocusInput() {
   const isInputFocused = ref(false);
@@ -189,7 +189,7 @@ export function useFocusInput() {
   return { isInputFocused, inputEl, handleFocus, handleBlur, forceInputFocus };
 }
 
-// ---------------------------------------------------------------------------
+// --- Grade-info editor ---
 
 /**
  * Encapsulates the grade-info editing state for ElephEligmaSection.

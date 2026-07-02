@@ -112,12 +112,12 @@ function pillStyle(server: string): Record<string, string> {
   };
 }
 
-// ── Layout ────────────────────────────────────────────────────
+// --- Layout ---
 // Every entry is shown in one scrollable view (no pagination), so players who
 // used to land on a later page are no longer buried. The list area is a fixed
 // ROWS_PER_COLUMN rows tall (see the body height) so every modal is the same
 // size; shorter lists leave empty rows, longer lists scroll.
-// Keep in sync with .bond100-content-body height (30rem ÷ ~2.2rem/row ≈ 14).
+// Keep in sync with .bond100-content-body height (30rem / ~2.2rem/row ~= 14).
 const ROWS_PER_COLUMN = 14;
 // Below this viewport width two columns get cramped, so the list collapses to a
 // single column.
@@ -125,7 +125,7 @@ const SINGLE_COLUMN_MAX_WIDTH = 800;
 const isNarrow = ref(false);
 useWindowResize(() => { isNarrow.value = window.innerWidth < SINGLE_COLUMN_MAX_WIDTH; });
 
-// ── Search: narrow the visible list by player name ────────────
+// --- Search: narrow the visible list by player name ---
 // The footer search only appears once a list is long enough to be worth
 // scanning. It filters the rows only; the header total + breakdown still
 // describe the full set (the search is a find tool, not a re-count).
@@ -150,7 +150,7 @@ const entryColumns = computed<Bond100Entry[][]>(() => {
   return [list.slice(0, col1), list.slice(col1)];
 });
 
-// ── View mode: entry list or removal guidelines ──────────────────────────────
+// --- View mode: entry list or removal guidelines ---
 // Submission ("add me") now lives in a global toolbar button on /hall, since
 // arona's /refresh is account-level, not per-student.
 type Mode = 'list' | 'guidelines';
@@ -190,7 +190,7 @@ function detectLang(text: string): string | undefined {
   return undefined;
 }
 
-// ── Keyboard: Escape backs out of guidelines, else closes the modal ──────────
+// --- Keyboard: Escape backs out of guidelines, else closes the modal ---
 function onKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return;
   if (mode.value !== 'list') backToList();
@@ -258,7 +258,7 @@ useDocumentListener('keydown', onKeydown);
         </header>
 
         <div ref="bodyEl" class="bond100-content-body">
-          <!-- ── List ── -->
+          <!-- --- List --- -->
           <template v-if="mode === 'list'">
             <div v-if="loading" class="bond100-modal-state" role="status" :aria-label="$t('loading')">
               <span class="bond100-spinner" aria-hidden="true"></span>
@@ -292,7 +292,7 @@ useDocumentListener('keydown', onKeydown);
             <p v-else class="bond100-empty-line">{{ $t('bond100.noEntries') }}</p>
           </template>
 
-          <!-- ── Removal guidelines (handled on arona's side) ── -->
+          <!-- --- Removal guidelines (handled on arona's side) --- -->
           <div v-else-if="mode === 'guidelines'" class="bond100-guidelines">
             <p class="bond100-guidelines-body">{{ $t('bond100.form.guidelinesBody') }}</p>
             <a
@@ -385,7 +385,7 @@ useDocumentListener('keydown', onKeydown);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
 }
 
-/* ── Hero (left): blurred scene + character cutout, like StudentModal ──── */
+/* --- Hero (left): blurred scene + character cutout, like StudentModal --- */
 .bond100-hero {
   position: relative;
   flex: 0 0 360px;
@@ -502,7 +502,7 @@ useDocumentListener('keydown', onKeydown);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* ── Content (right) ─────────────────────────────────────── */
+/* --- Content (right) --- */
 .bond100-content {
   flex: 1;
   min-width: 0;
@@ -700,7 +700,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   gap: 8px;
 }
 
-/* ── Removal guidelines ──────────────────────────────────── */
+/* --- Removal guidelines --- */
 .bond100-guidelines {
   display: flex;
   flex-direction: column;
@@ -745,7 +745,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   display: block;
 }
 
-/* ── Footer ──────────────────────────────────────────────── */
+/* --- Footer --- */
 .bond100-modal-footer {
   display: flex;
   align-items: center;
@@ -865,7 +865,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   cursor: not-allowed;
 }
 
-/* ── Responsive: icon-only removal below 800px ───────────── */
+/* --- Responsive: icon-only removal below 800px --- */
 @media (max-width: 800px) {
   .bond100-removal-label {
     display: none;
@@ -884,7 +884,7 @@ tr[lang="zh-TW"] .bond100-entry-name { font-family: 'Noto Sans TC', sans-serif; 
   }
 }
 
-/* ── Responsive: stack hero on top ───────────────────────── */
+/* --- Responsive: stack hero on top --- */
 @media (max-width: 720px) {
   .bond100-modal-backdrop {
     padding: 10px;

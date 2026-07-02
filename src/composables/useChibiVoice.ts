@@ -6,18 +6,18 @@ import { getChibiVoiceUrl } from '@/lib/utils/iconUtils';
  * playback), tracks per-line availability, and plays one-shots that restart on retrigger.
  *
  * Every character has the pickup + monolog lines, so those preload up front. The battle
- * lines only exist for strikers, so they wait for `loadBattleLines()` — the component
+ * lines only exist for strikers, so they wait for `loadBattleLines()`: the component
  * calls it only when the model can armed-walk (hasClip Move_Ing). That way specials never
- * request the nonexistent battle files (which 404 as text/plain → CORB console noise).
+ * request the nonexistent battle files (which 404 as text/plain -> CORB console noise).
  */
 
 export type VoiceStatus = 'idle' | 'loading' | 'available' | 'missing';
 
-/** Pickup (grab) line — every character has it. */
+/** Pickup (grab) line: every character has it. */
 const PICKUP_LINE = 'formation_select';
-/** Armed-walk (Move_Ing) pool — gacha'd among the *available* ones when a striker sorties. */
+/** Armed-walk (Move_Ing) pool: gacha'd among the *available* ones when a striker sorties. */
 const ARMED_MOVE_LINES = ['battle_move_1', 'battle_move_2', 'battle_tacticalaction_1'] as const;
-/** Idle-chatter pool — gacha'd periodically while idle (every character has all 5). */
+/** Idle-chatter pool: gacha'd periodically while idle (every character has all 5). */
 const MONOLOG_LINES = [
   'cafe_monolog_1',
   'cafe_monolog_2',
@@ -58,7 +58,7 @@ export function useChibiVoice(charId: string) {
 
   /**
    * Preload the armed-move pool. Call only for characters that can armed-walk (hasClip
-   * Move_Ing) — specials skip it so they never request the (nonexistent) battle files.
+   * Move_Ing): specials skip it so they never request the (nonexistent) battle files.
    * Idempotent.
    */
   function loadBattleLines(): void {

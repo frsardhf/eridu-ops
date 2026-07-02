@@ -16,11 +16,11 @@ export function positionAtElement(
 
   if (panelEl) {
     const pr = panelEl.getBoundingClientRect();
-    // flip right → align right edge of panel with right edge of trigger
+    // flip right -> align right edge of panel with right edge of trigger
     if (x + pr.width > window.innerWidth - 12) {
       x = Math.max(12, tr.right - pr.width);
     }
-    // flip up → open above the trigger
+    // flip up -> open above the trigger
     if (y + pr.height > window.innerHeight - 12) {
       y = Math.max(12, tr.top - pr.height - offsetY);
     }

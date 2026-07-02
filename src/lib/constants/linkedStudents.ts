@@ -1,11 +1,11 @@
 /**
- * Linked Students — Student pairs that represent one in-game unit with multiple styles.
+ * Linked Students: Student pairs that represent one in-game unit with multiple styles.
  *
  * In Blue Archive, some units (e.g., Hoshino Armed) have multiple "styles" that share
  * progression data (levels, bond, equipment, grades, gifts). SchaleDB stores them as
  * separate student entities, but the cross-entity relationship is NOT exposed in its
- * public schema (FavorAlts links a base student to her alt VERSIONS — different cards
- * with separate progression — which is a different relationship). We therefore
+ * public schema (FavorAlts links a base student to her alt VERSIONS: different cards
+ * with separate progression, which is a different relationship). We therefore
  * maintain the style-pair mapping manually here.
  */
 
@@ -27,12 +27,12 @@ const SECONDARY_STUDENT_IDS: Set<number> = new Set(
   LINKED_STUDENT_PAIRS.map(pair => pair.secondaryId)
 );
 
-/** Map from secondary ID → primary ID */
+/** Map from secondary ID -> primary ID */
 const SECONDARY_TO_PRIMARY: Map<number, number> = new Map(
   LINKED_STUDENT_PAIRS.map(pair => [pair.secondaryId, pair.primaryId])
 );
 
-/** Map from primary ID → secondary ID */
+/** Map from primary ID -> secondary ID */
 const PRIMARY_TO_SECONDARY: Map<number, number> = new Map(
   LINKED_STUDENT_PAIRS.map(pair => [pair.primaryId, pair.secondaryId])
 );

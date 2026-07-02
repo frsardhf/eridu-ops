@@ -5,10 +5,10 @@ import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
 
-// ── Props / emits ─────────────────────────────────────────────────────────────
+// --- Props / emits ---
 const props = defineProps<{
   currentTheme: ThemeId;
-  /** No hamburger sibling (e.g. the landing page) — keep every control inline at
+  /** No hamburger sibling (e.g. the landing page): keep every control inline at
    *  all widths instead of collapsing Contact/Credits/Language into a menu that
    *  isn't there. */
   standalone?: boolean;
@@ -22,14 +22,14 @@ const emit = defineEmits<{
   openCredits: [];
 }>();
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// --- State ---
 const { currentLanguage, setLanguage, THEME_OPTIONS } = useNavbarSettings();
 
 const showThemeTray = ref(false);
 const trayEl = ref<HTMLElement | null>(null);
 const toggleEl = ref<HTMLButtonElement | null>(null);
 
-// ── Handlers ──────────────────────────────────────────────────────────────────
+// --- Handlers ---
 function toggleThemeTray(event: Event) {
   event.stopPropagation();
   showThemeTray.value = !showThemeTray.value;
@@ -48,7 +48,7 @@ const langLabel = computed(() => currentLanguage.value === 'en' ? 'English' : '�
 const langSwitchTarget = computed(() => currentLanguage.value === 'en' ? '日本語' : 'English');
 
 // Two-tone swatch of the CURRENT theme's own colors (same source as the tray
-// swatches) — a meaningful "your theme" hint instead of an arbitrary gradient.
+// swatches): a meaningful "your theme" hint instead of an arbitrary gradient.
 const activeThemeGradient = computed(() => {
   const t = THEME_OPTIONS.find(o => o.id === props.currentTheme);
   return t ? `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})` : 'var(--accent-color)';
@@ -331,14 +331,14 @@ useClickOutside(handleClickOutside);
 }
 
 /* Contact + Credits are secondary, so they collapse into the hamburger menu
-   early (tablet ≤960) to keep the search box usable. */
+   early (tablet <=960) to keep the search box usable. */
 @media screen and (max-width: 960px) {
   .gc-icon-btn {
     display: none;
   }
 }
 
-/* The language toggle is more essential — it holds out until phones. */
+/* The language toggle is more essential: it holds out until phones. */
 @media screen and (max-width: 480px) {
   .gc-lang-toggle {
     display: none;

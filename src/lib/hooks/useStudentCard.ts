@@ -4,8 +4,8 @@ import { pinnedIdSet, togglePinned } from '../stores/uiPrefsStore';
 import { currentLanguage } from '../stores/localizationStore';
 
 /**
- * Hook facade for StudentCard — aggregates the store, storage, and localization
- * imports so the component stays within the components → hooks boundary.
+ * Hook facade for StudentCard: aggregates the store, storage, and localization
+ * imports so the component stays within the components -> hooks boundary.
  */
 export function useStudentCard(studentId: ComputedRef<number>) {
   const studentData = useStudentFormData(studentId);

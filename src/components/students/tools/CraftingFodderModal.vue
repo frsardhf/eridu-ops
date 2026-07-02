@@ -46,7 +46,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
         <button class="icon-btn close-btn" type="button" @click="emit('close')" :aria-label="$t('close')">×</button>
       </div>
 
-      <!-- Threshold grid: 3 subcat rows × 4 rarity cols -->
+      <!-- Threshold grid: 3 subcat rows x 4 rarity cols -->
       <section class="section">
         <div class="section-label">{{ $t('craftingFodder.keepAtLeast') }}</div>
         <div class="threshold-grid">
@@ -157,7 +157,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Header ── */
+/* --- Header --- */
 .modal-header {
   display: flex;
   align-items: center;
@@ -195,7 +195,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   border-color: transparent;
 }
 
-/* ── Sections ── */
+/* --- Sections --- */
 .section {
   display: flex;
   flex-direction: column;
@@ -210,7 +210,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   letter-spacing: 0.04em;
 }
 
-/* ── Threshold grid ── */
+/* --- Threshold grid --- */
 .threshold-grid {
   display: grid;
   grid-template-columns: auto repeat(4, 1fr);
@@ -256,7 +256,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   border-color: var(--accent-color);
 }
 
-/* ── Filter + legend row ── */
+/* --- Filter + legend row --- */
 .filter-legend-row {
   display: flex;
   gap: 20px;
@@ -300,7 +300,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   margin-right: 6px;
 }
 
-/* ── Rarity chips ── */
+/* --- Rarity chips --- */
 .chip-row {
   display: flex;
   gap: 6px;
@@ -330,7 +330,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   color: var(--text-primary);
 }
 
-/* ── Side-by-side stage previews ── */
+/* --- Side-by-side stage previews --- */
 .previews-row {
   display: flex;
   gap: 0;
@@ -361,7 +361,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   }
 }
 
-/* ── Fodder icon grid ── */
+/* --- Fodder icon grid --- */
 .fodder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
@@ -439,7 +439,7 @@ useDocumentListener('keydown', (e: KeyboardEvent) => {
   line-height: 1;
 }
 
-/* ── Empty state ── */
+/* --- Empty state --- */
 .empty-state {
   font-size: 0.82rem;
   color: var(--text-secondary);

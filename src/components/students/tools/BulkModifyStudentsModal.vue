@@ -52,7 +52,7 @@ type BulkFieldValues = {
   potentialLevel: string;
 };
 
-// ── Setup ────────────────────────────────────────────────────────────────────
+// --- Setup ---
 const { bulkSetOwnership: applyOwnershipBulk, submitBulkPatch } = useBulkStudentModify();
 
 const isSubmitting = ref(false);
@@ -92,7 +92,7 @@ const fieldValues = ref<BulkFieldValues>({
   potentialLevel: ''
 });
 
-// ── Computed ─────────────────────────────────────────────────────────────────
+// --- Computed ---
 const selectedIdSet = computed(() => new Set(selectedStudentIds.value));
 
 const filteredStudents = computed<StudentProps[]>(() => {
@@ -201,7 +201,7 @@ const gradeStarDisplay = computed(() => {
   };
 });
 
-// ── Watchers & lifecycle ──────────────────────────────────────────────────────
+// --- Watchers & lifecycle ---
 let charLevelDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 watch(characterLevelFilter, (val) => {
   if (charLevelDebounceTimer !== null) clearTimeout(charLevelDebounceTimer);
@@ -224,7 +224,7 @@ onMounted(async () => {
   isFormDataLoaded.value = true;
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// --- Helpers ---
 function closeIfBackdrop(event: MouseEvent) {
   if (event.target === event.currentTarget) {
     emit('close');
@@ -252,7 +252,7 @@ function getAvailabilityLabel(filter: AvailabilityFilter): string {
   }
 }
 
-// ── Selection ────────────────────────────────────────────────────────────────
+// --- Selection ---
 function toggleStudentSelection(studentId: number) {
   const selected = selectedIdSet.value;
   if (selected.has(studentId)) {
@@ -291,7 +291,7 @@ function toggleAvailabilityFilter(filter: AvailabilityFilter) {
   toggleArrayItem(selectedAvailabilityFilters, filter);
 }
 
-// ── Submit ────────────────────────────────────────────────────────────────────
+// --- Submit ---
 async function bulkSetOwnership(owned: boolean) {
   if (selectedStudentIds.value.length === 0) return;
 

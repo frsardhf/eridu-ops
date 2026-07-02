@@ -399,7 +399,7 @@ watch(
         </div>
       </div>
 
-      <!-- Gifts tab: Show student icons (Student → Gifts pattern) -->
+      <!-- Gifts tab: Show student icons (Student -> Gifts pattern) -->
       <div v-else class="resources-grid-wrap">
         <div class="resources-grid">
           <div
@@ -582,7 +582,7 @@ watch(
         </div>
       </div>
 
-      <!-- Student → Gifts Tooltip (for Gifts tab) -->
+      <!-- Student -> Gifts Tooltip (for Gifts tab) -->
       <div
         v-if="hoveredStudentId !== null && giftsForHoveredStudent.length > 0"
         class="material-tooltip"

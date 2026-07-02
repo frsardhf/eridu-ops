@@ -1,5 +1,5 @@
 /**
- * Synthetic Entities — application-defined entities that don't exist in SchaleDB.
+ * Synthetic Entities: application-defined entities that don't exist in SchaleDB.
  *
  * `studentPersistenceService.getItems` unions these in at read time so they appear in the
  * items cache with metadata + user-tracked QuantityOwned from `items_inventory`.
@@ -8,7 +8,7 @@
 
 export const SYNTHETIC_ENTITIES = {
   /**
-   * Credits — in-game currency used for upgrades.
+   * Credits: in-game currency used for upgrades.
    * ID 5 is reserved (not used by SchaleDB).
    */
   CREDITS: {

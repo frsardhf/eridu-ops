@@ -14,7 +14,7 @@ const multipliers: FarmMultiplier[] = [1, 2, 3];
 // collapsed by default so it doesn't crowd the farm plan.
 const showMissing = ref(false);
 
-// Per-stage breakdown is collapsed by default — the item rows are what eat space.
+// Per-stage breakdown is collapsed by default: the item rows are what eat space.
 const expanded = ref<Record<number, boolean>>({});
 const allExpanded = computed(
   () => plan.value.length > 0 && plan.value.every((s) => expanded.value[s.id]),

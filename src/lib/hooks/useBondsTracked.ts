@@ -68,7 +68,7 @@ export function getStudentFavorMaterialNeeds(studentId: number): StudentFavorMat
 function computeAutoSeed(): number[] {
   const seed = new Set<number>();
 
-  // Source 1 — bond tab activity (gifts/boxes allocated)
+  // Source 1: bond tab activity (gifts/boxes allocated)
   Object.entries(studentDataStore.value).forEach(([id, form]) => {
     if (!form) return;
     if (form.isOwned === false) return;
@@ -77,7 +77,7 @@ function computeAutoSeed(): number[] {
     }
   });
 
-  // Source 2 — planned upgrade demand referencing Favor-category items
+  // Source 2: planned upgrade demand referencing Favor-category items
   const gears = getAllGearsData();
   Object.entries(gears).forEach(([id, materials]) => {
     if (studentDataStore.value[Number(id)]?.isOwned === false) return;
@@ -94,14 +94,12 @@ function computeAutoSeed(): number[] {
     }
   });
 
-  // Strip any secondary IDs (defensive — getPrimaryStudentId should already handle this)
+  // Strip any secondary IDs (defensive: getPrimaryStudentId should already handle this)
   return [...seed].filter(id => !isSecondaryStudent(id)).sort((a, b) => a - b);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Generic factory: a settings-backed ID set keyed by primary student ID.
-// Used for both tracked-students and gift-planning opt-in — same CRUD shape.
-// ─────────────────────────────────────────────────────────────────────────────
+// --- Settings-backed ID set factory (keyed by primary student ID) ---
+// Used for both tracked-students and gift-planning opt-in: same CRUD shape.
 
 interface SettingsBackedSet {
   ids: ComputedRef<number[]>;
@@ -165,7 +163,7 @@ export function useBondsTracked() {
   const tracked = createSettingsBackedSet('bondsTrackedStudents');
   const planning = createSettingsBackedSet('bondsGiftPlanningEnabled');
 
-  // First-call seed (deferred until after data has loaded — call site decides
+  // First-call seed (deferred until after data has loaded: call site decides
   // when to invoke). Safe to call multiple times; only runs once per session.
   function seedIfNeeded(): boolean {
     if (_seeded) return false;

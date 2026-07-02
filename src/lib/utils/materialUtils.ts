@@ -162,16 +162,10 @@ function hasTargetUpgrades(
   });
 } 
 
-/**
- * Base function to format large numbers
- * @param quantity The number to format
- * @param prefix Optional prefix to add before the number
- * @returns Formatted number string
- */
+/** Base number formatter: K/M suffixes above 10k/1M, with an optional prefix. */
 function formatNumber(quantity: number, prefix: string = ''): string {
   if (!quantity || quantity <= 0) return '';
-  
-  // Format large numbers with 'k' suffix
+
   if (quantity >= 1000000) {
     return `${prefix}${Math.floor(quantity / 1000000)}M`;
   } else if (quantity >= 10000) {
@@ -182,7 +176,7 @@ function formatNumber(quantity: number, prefix: string = ''): string {
 }
 
 /**
- * Function to format material quantity for display with '×' prefix
+ * Function to format material quantity for display with 'x' prefix
  * Used for material quantities in the UI
  */
 export function formatLargeNumber(quantity: number): string {
@@ -198,7 +192,7 @@ export function formatLargeNumberAmount(quantity: number): string {
 }
 
 /**
- * Formats a small item quantity for display with a '×' prefix.
+ * Formats a small item quantity for display with a 'x' prefix.
  * Returns '' for falsy / zero values (hides the overlay when quantity is 0).
  */
 export function formatItemQuantity(value: number | string | null | undefined): string {
@@ -338,7 +332,7 @@ export function calculateMissingItems(
 }
 
 /**
- * Maps a full catalog to leftover quantities (owned − needed > 0).
+ * Maps a full catalog to leftover quantities (owned - needed > 0).
  * Special items (XP reports, XP balls) delegate their remaining amount
  * to getSpecialRemaining so this function stays pure.
  * For tabs with no special item type, pass () => false and () => 0.

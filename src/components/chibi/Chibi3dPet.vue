@@ -39,11 +39,11 @@ const props = withDefaults(defineProps<{
 // Clip vocabulary (resolved against the loaded GLB; absent clips just no-op).
 // Weapon state is the governing constraint: Cafe_* is unarmed, Formation_*/Move_* are
 // armed. Idle and walk are always drawn from the SAME family so the gun never pops
-// mid-loop — the only flips happen at a walk-start (striker gacha) or at pickup.
-const CAFE_IDLE = 'Cafe_Idle'; // unarmed idle — the universal resting/spawn state
-const CAFE_WALK = 'Cafe_Walk'; // unarmed walk — every unit has it
+// mid-loop: the only flips happen at a walk-start (striker gacha) or at pickup.
+const CAFE_IDLE = 'Cafe_Idle'; // unarmed idle: the universal resting/spawn state
+const CAFE_WALK = 'Cafe_Walk'; // unarmed walk: every unit has it
 const CAFE_REACTION = 'Cafe_Reaction'; // one-shot played on a tap (poke), then back to idle
-const MOVE_ING = 'Move_Ing'; // armed walk — strikers only; its presence == "is a striker"
+const MOVE_ING = 'Move_Ing'; // armed walk: strikers only; its presence == "is a striker"
 const MOVE_JUMP = 'Move_Jump'; // armed mid-walk hop (strikers)
 const MOVE_JUMP_RANDOM = 'Move_Jump_random'; // ch0331 variant
 const FORM_IDLE = 'Formation_Idle'; // armed idle
@@ -117,7 +117,7 @@ function startWalk(): void {
   }
 }
 
-/** Settle into the idle that matches the walk just finished (armed → Formation, else Cafe). */
+/** Settle into the idle that matches the walk just finished (armed -> Formation, else Cafe). */
 function settleIdle(): void {
   walking = false;
   jumping = false;
@@ -185,7 +185,7 @@ function playClip(clip: string): void {
 defineExpose({ walkTo, playClip, voiceStatus });
 
 // Tap vs drag: a press on her is `pending` until the pointer either travels past
-// DRAG_THRESHOLD (→ commit to a pickup/drag) or releases in place (→ a tap plays the
+// DRAG_THRESHOLD (-> commit to a pickup/drag) or releases in place (-> a tap plays the
 // cafe reaction). So no motion = interact, motion = pick up.
 const DRAG_THRESHOLD = 6; // px of travel before a press becomes a drag
 let pending = false;
@@ -214,7 +214,7 @@ function onGrab(e: PointerEvent): void {
   if (!isPointerOnModel(e.clientX - rect.left, e.clientY - rect.top)) return;
   e.stopPropagation();
   scheduleIdleVoice(); // touching her pushes the next monolog out
-  // Arm a press — don't commit to pickup yet; a tap (no travel) becomes a reaction.
+  // Arm a press: don't commit to pickup yet; a tap (no travel) becomes a reaction.
   pending = true;
   activePointerId = e.pointerId;
   startClientX = e.clientX;
@@ -229,7 +229,7 @@ function onGrab(e: PointerEvent): void {
   walking = false;
 }
 
-/** The press crossed the drag threshold → pick her up (voice + held pickup pose). */
+/** The press crossed the drag threshold -> pick her up (voice + held pickup pose). */
 function commitDrag(): void {
   pending = false;
   held = true;
@@ -290,7 +290,7 @@ function onRelease(e: PointerEvent): void {
   const p = canvasLocal(e);
   petCursor.value = p && isPointerOnModel(p.x, p.y) ? 'grab' : 'crosshair';
   if (wasHeld) {
-    // Dropped after a drag → set her down into a gacha'd armed Formation idle.
+    // Dropped after a drag -> set her down into a gacha'd armed Formation idle.
     faceCamera();
     play(pickArmedIdle());
   } else if (wasTap) {
@@ -356,7 +356,7 @@ function step(ts: number): void {
 watch(ready, (isReady) => {
   if (!isReady) return;
   // Only strikers armed-walk (and only they have battle voice), so preload that pool now
-  // that the clips are known — specials skip it and never request the 404'ing files.
+  // that the clips are known: specials skip it and never request the 404'ing files.
   if (hasClip(MOVE_ING)) loadBattleLines();
   if (!held && targetX.value === null) {
     faceCamera();

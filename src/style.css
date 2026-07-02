@@ -134,16 +134,16 @@ body {
 
 [data-theme='ocean'] {
   --background-secondary: #e9f7ff;
-  --background-primary: #e4efff; /* modified */
+  --background-primary: #e4efff;
   --header-gradient-start: #8fd4ff;
   --header-gradient-end: #c2f0ff;
   --text-primary: #11324a;
   --text-secondary: #3f6f93;
   --text-tertiary: #102a3e;
   --border-color: #9fcae8;
-  --card-background: #e9f7ff; /* modified */
-  --card-label-background: #e5fff8; /* modified */
-  --card-label-background-transparent: #e5fff8e6; /* modified */
+  --card-background: #e9f7ff;
+  --card-label-background: #e5fff8;
+  --card-label-background-transparent: #e5fff8e6;
   --input-color: #ffffff;
   --input-placeholder: #5e7f9e;
   --accent-color: #0096ff;
@@ -161,16 +161,16 @@ body {
 
 [data-theme='forest'] {
   --background-secondary: #edf8f1;
-  --background-primary: #e8f5ec; /* modified */
+  --background-primary: #e8f5ec;
   --header-gradient-start: #9fe2b2;
   --header-gradient-end: #d5f3de;
   --text-primary: #163526;
   --text-secondary: #4d7f65;
   --text-tertiary: #153021;
   --border-color: #a8d1b3;
-  --card-background: #edf8f1; /* modified */
-  --card-label-background: #f1ffd4; /* modified */
-  --card-label-background-transparent: #f1ffd4e6; /* modified */
+  --card-background: #edf8f1;
+  --card-label-background: #f1ffd4;
+  --card-label-background-transparent: #f1ffd4e6;
   --input-color: #ffffff;
   --input-placeholder: #5f826d;
   --accent-color: #16b364;
@@ -188,16 +188,16 @@ body {
 
 [data-theme='sunset'] {
   --background-secondary: #fff1ea;
-  --background-primary: #ffede6; /* modified */
+  --background-primary: #ffede6;
   --header-gradient-start: #ffbf98;
   --header-gradient-end: #ffd7bd;
   --text-primary: #4d2514;
   --text-secondary: #8b5f46;
   --text-tertiary: #492110;
   --border-color: #e7b291;
-  --card-background: #fff1ea; /* modified */
-  --card-label-background: #fff8db; /* modified */
-  --card-label-background-transparent: #fff8dbe6; /* modified */
+  --card-background: #fff1ea;
+  --card-label-background: #fff8db;
+  --card-label-background-transparent: #fff8dbe6;
   --input-color: #ffffff;
   --input-placeholder: #956347;
   --accent-color: #ff6a00;
@@ -215,16 +215,16 @@ body {
 
 [data-theme='rose'] {
   --background-secondary: #ffeef7;
-  --background-primary: #fbe8f2; /* modified */
+  --background-primary: #fbe8f2;
   --header-gradient-start: #ffb5ce;
   --header-gradient-end: #ffd8e7;
   --text-primary: #4d1f36;
   --text-secondary: #8d5e75;
   --text-tertiary: #4a1d33;
   --border-color: #e4aec3;
-  --card-background: #ffeef7; /* modified */
-  --card-label-background: #f3e7ff; /* modified */
-  --card-label-background-transparent: #f3e7ffe6; /* modified */
+  --card-background: #ffeef7;
+  --card-label-background: #f3e7ff;
+  --card-label-background-transparent: #f3e7ffe6;
   --input-color: #ffffff;
   --input-placeholder: #96667d;
   --accent-color: #e61b72;
@@ -242,16 +242,16 @@ body {
 
 [data-theme='violet'] {
   --background-secondary: #fde7f9;
-  --background-primary: #eae0ff; /* modified */
+  --background-primary: #eae0ff;
   --header-gradient-start: #ccb8ff;
   --header-gradient-end: #e5d8ff;
   --text-primary: #32244e;
   --text-secondary: #695687;
   --text-tertiary: #31234a;
   --border-color: #c7b2ea;
-  --card-background: #fde7f9; /* modified */
-  --card-label-background: #e2e8ff; /* modified */
-  --card-label-background-transparent: #e2e8ffe6; /* modified */
+  --card-background: #fde7f9;
+  --card-label-background: #e2e8ff;
+  --card-label-background-transparent: #e2e8ffe6;
   --input-color: #ffffff;
   --input-placeholder: #71608d;
   --accent-color: #7c3aed;
@@ -364,7 +364,7 @@ button:focus-visible {
   }
 }
 
-/* ── Game UI font ────────────────────────────────────────────────────────────── */
+/* --- Game UI font --- */
 .font-nexon {
   font-family: 'NEXON Football Gothic', system-ui, sans-serif;
   font-style: italic;
@@ -373,7 +373,7 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
-/* ── Icon filter utilities ───────────────────────────────────────────────────── */
+/* --- Icon filter utilities --- */
 .icon-white  { filter: brightness(0) invert(1); }
 .icon-dimmed { filter: brightness(0) invert(0.4); }
 .icon-locked { filter: grayscale(100%) brightness(50%); }

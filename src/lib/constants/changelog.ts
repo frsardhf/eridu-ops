@@ -10,7 +10,7 @@
  * Runtime contract:
  *  - Entries are newest-first. CHANGELOG[0] is the entry that auto-opens for
  *    users whose `lastSeenChangelogId` doesn't match.
- *  - `fromCommit` / `toCommit` are metadata for the draft script only —
+ *  - `fromCommit` / `toCommit` are metadata for the draft script only;
  *    nothing reads them at runtime.
  *  - All user-facing strings (title, summary, highlights) are inline-localized
  *    `{ en, jp }` so each entry stays self-contained; this avoids bloating
@@ -384,7 +384,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 
 /**
  * Resolve a `LocalizedText` against the active language. Falls back to EN if
- * the current language is missing (defensive — keeps the modal usable if a
+ * the current language is missing (defensive: keeps the modal usable if a
  * future entry forgets a translation).
  */
 export const localizeChangelogText = (text: LocalizedText): string =>

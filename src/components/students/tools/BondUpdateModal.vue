@@ -37,7 +37,7 @@ const lineCount = computed(() =>
   rawText.value.split('\n').filter(l => l.trim().length > 0).length
 );
 
-// ── Parsing ──────────────────────────────────────────────────────────────────
+// --- Parsing ---
 
 function parseLine(raw: string): ParsedEntry | null {
   const line = raw.trim();
@@ -66,7 +66,7 @@ function parseLine(raw: string): ParsedEntry | null {
   };
 }
 
-// Matches both ASCII (Bunny) and full-width （バニー） bracket styles — used only
+// Matches both ASCII (Bunny) and full-width （バニー） bracket styles: used only
 // as a fallback for auto-resolving the base character when PathName is absent.
 const BRACKET_RE = /[(（]([^)）]+)[)）]/;
 
@@ -109,7 +109,7 @@ function handleParse() {
   step.value = 'review';
 }
 
-// ── Resolution helpers ────────────────────────────────────────────────────────
+// --- Resolution helpers ---
 
 function handleSelectStudent(index: number, student: StudentProps) {
   parsedEntries.value[index] = {
@@ -136,7 +136,7 @@ function portraitUrl(student: StudentProps): string {
   return getStudentCollectionUrl(student.Id);
 }
 
-// ── Computed views ────────────────────────────────────────────────────────────
+// --- Computed views ---
 
 const matchedEntries = computed(() => parsedEntries.value.filter(e => e.status === 'matched'));
 const flaggedEntries = computed(() => parsedEntries.value.filter(e => e.status === 'ambiguous' || e.status === 'unmatched'));
@@ -146,7 +146,7 @@ const canApply       = computed(() =>
   !isApplying.value
 );
 
-// ── Apply ─────────────────────────────────────────────────────────────────────
+// --- Apply ---
 
 async function handleApply() {
   if (!canApply.value) return;
@@ -356,7 +356,7 @@ async function handleApply() {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Header ── */
+/* --- Header --- */
 .modal-header {
   display: flex;
   align-items: center;
@@ -408,7 +408,7 @@ async function handleApply() {
 
 .close-btn { border-color: transparent; }
 
-/* ── Guide panel ── */
+/* --- Guide panel --- */
 .guide-panel {
   padding: 10px 14px 8px;
   border-bottom: 1px solid var(--border-color);
@@ -454,7 +454,7 @@ async function handleApply() {
   color: var(--accent-color);
 }
 
-/* ── Input body ── */
+/* --- Input body --- */
 .modal-body {
   padding: 12px 14px;
   flex: 1;
@@ -487,7 +487,7 @@ async function handleApply() {
 
 .notes-textarea::placeholder { color: var(--text-secondary); opacity: 0.6; }
 
-/* ── Review body ── */
+/* --- Review body --- */
 .summary-row {
   display: flex;
   gap: 6px;
@@ -514,7 +514,7 @@ async function handleApply() {
   gap: 10px;
 }
 
-/* ── Entry list (matched) ── */
+/* --- Entry list (matched) --- */
 .entry-list {
   display: flex;
   flex-direction: column;
@@ -561,7 +561,7 @@ async function handleApply() {
 .bond-arrow { color: var(--text-secondary); font-size: 0.7rem; }
 .bond-new   { color: var(--accent-color); }
 
-/* ── Flagged section ── */
+/* --- Flagged section --- */
 .flagged-section {
   display: flex;
   flex-direction: column;
@@ -597,7 +597,7 @@ async function handleApply() {
 .flagged-raw  { font-size: 0.83rem; color: var(--text-primary); font-weight: 600; }
 .flagged-bond { font-size: 0.8rem; color: var(--accent-color); font-weight: 700; }
 
-/* ── Candidate chips (ambiguous) ── */
+/* --- Candidate chips (ambiguous) --- */
 .candidate-chips {
   display: flex;
   flex-wrap: wrap;
@@ -634,7 +634,7 @@ async function handleApply() {
   white-space: nowrap;
 }
 
-/* ── Search picker (unmatched) ── */
+/* --- Search picker (unmatched) --- */
 .search-wrapper { position: relative; }
 
 .search-input-row {
@@ -710,7 +710,7 @@ async function handleApply() {
   text-align: center;
 }
 
-/* ── Footer ── */
+/* --- Footer --- */
 .modal-footer {
   display: flex;
   justify-content: flex-end;

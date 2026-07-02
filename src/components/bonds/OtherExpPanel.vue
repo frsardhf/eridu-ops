@@ -27,14 +27,14 @@ const emit = defineEmits<{
 }>();
 
 // Datepicker min = today's Date object (VueDatePicker uses Date, our model
-// uses ISO YYYY-MM-DD — convert at the boundary so storage stays clean).
+// uses ISO YYYY-MM-DD: convert at the boundary so storage stays clean).
 const todayDate = (() => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 })();
 
-// Start date — empty stored value displays as today (and `computeCafeDays`
+// Start date: empty stored value displays as today (and `computeCafeDays`
 // treats it as today too) so users don't have to set it unless they're
 // planning a future-start campaign.
 const cafeStartDate = computed<Date | null>({
@@ -53,8 +53,8 @@ const endMinDate = computed(() => isoToDate(props.data.cafeStartDateIso) ?? toda
 /**
  * Format the picked date for display inside the picker input. We use a
  * function (rather than a token string) because in VueDatePicker v12 the
- * formatter lives in `formats.input` — the top-level `format` prop is the
- * *parser* (string → Date), not the display formatter.
+ * formatter lives in `formats.input`: the top-level `format` prop is the
+ * *parser* (string -> Date), not the display formatter.
  */
 const dpFormats = {
   input: (d: Date) =>
@@ -450,7 +450,7 @@ const lessonRates = [
   width: 64px;
 }
 
-/* Vue Datepicker — map their CSS vars to our theme so the calendar popup
+/* Vue Datepicker: map their CSS vars to our theme so the calendar popup
    matches our colors instead of the library's default blue/light theme. */
 .oe-datepicker {
   --dp-background-color: var(--background-secondary);

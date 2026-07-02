@@ -189,7 +189,7 @@ export function useResourceTooltip(
     if (!isHoveringTooltip.value) hoveredStudentId.value = null;
   };
 
-  // Resets hover state and caches — call on tab or mode change
+  // Resets hover state and caches: call on tab or mode change
   const clearHoverState = () => {
     hoveredItemId.value = null;
     hoveredStudentId.value = null;

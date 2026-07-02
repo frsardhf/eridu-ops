@@ -65,10 +65,8 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
 ];
 
 /**
- * Get consolidated settings from localStorage.
- * Result is cached in memory; re-parses localStorage only on first call
- * or after saveSettings() invalidates the cache.
- * @returns AppSettings object or default settings if not found
+ * Get consolidated settings from localStorage (defaults if unset). Cached in
+ * memory; re-parses only on first call or after saveSettings() updates the cache.
  */
 export function getSettings(): AppSettings {
   if (_cachedSettings) return _cachedSettings;
@@ -94,7 +92,7 @@ export function getSettings(): AppSettings {
     } as AppSettings;
 
     // Drop stale fields left by older versions (the spread above keeps unknown
-    // keys alive) — retain only the current allowlist.
+    // keys alive): retain only the current allowlist.
     const clean = {} as AppSettings;
     const src = merged as unknown as Record<string, unknown>;
     const dst = clean as unknown as Record<string, unknown>;
@@ -115,11 +113,7 @@ export function getSettings(): AppSettings {
   }
 }
 
-/**
- * Save consolidated settings to localStorage and update the in-memory cache.
- * @param settings The settings object to save
- * @returns True if successful, false otherwise
- */
+/** Save consolidated settings to localStorage and update the in-memory cache. */
 export function saveSettings(settings: AppSettings): boolean {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -131,12 +125,7 @@ export function saveSettings(settings: AppSettings): boolean {
   }
 }
 
-/**
- * Update a single setting field
- * @param key The setting key to update
- * @param value The new value
- * @returns True if successful, false otherwise
- */
+/** Update a single setting field. */
 export function updateSetting<K extends keyof AppSettings>(
   key: K,
   value: AppSettings[K]
@@ -151,12 +140,7 @@ export function updateSetting<K extends keyof AppSettings>(
   }
 }
 
-/**
- * Update sort settings
- * @param option Sort option
- * @param direction Sort direction
- * @returns True if successful, false otherwise
- */
+/** Update the sort option + direction. */
 export function updateSortSettings(
   option: SortOption,
   direction: SortDirection
@@ -171,15 +155,12 @@ export function updateSortSettings(
   }
 }
 
-/**
- * Get pinned students
- * @returns Array of pinned student IDs
- */
+/** Get the pinned student IDs. */
 export function getPinnedStudents(): string[] {
   return getSettings().pinnedStudents;
 }
 
-/** Read the last changelog entry id the user dismissed (undefined ⇒ unseen). */
+/** Read the last changelog entry id the user dismissed (undefined => unseen). */
 export function getLastSeenChangelogId(): string | undefined {
   return getSettings().lastSeenChangelogId;
 }

@@ -122,7 +122,7 @@ export async function getBond100StudentEntries(studentId: number): Promise<Bond1
 }
 
 // Linked-pair styles (e.g. Hoshino Armed 10098 + 10099) share one in-game
-// student — collapse the secondary's counts into the primary so the Hall
+// student: collapse the secondary's counts into the primary so the Hall
 // shows one tile per unit, not one per style. Source of truth: linkedStudents.ts.
 function normalizeSummary(response: Bond100SummaryResponse): Bond100SummaryResponse {
   const merged = new Map<number, Bond100StudentSummary>();
@@ -153,7 +153,7 @@ function normalizeSummary(response: Bond100SummaryResponse): Bond100SummaryRespo
 /**
  * Ask to be listed: server + friend code only. The backend triggers an arona
  * /refresh for that account (rate-limited); the player appears in the next sync.
- * Removal is handled on arona's side — the modal shows guidelines instead.
+ * Removal is handled on arona's side: the modal shows guidelines instead.
  */
 export async function submitBond100Submission(payload: Bond100SubmissionPayload): Promise<void> {
   try {

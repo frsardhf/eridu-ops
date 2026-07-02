@@ -76,7 +76,7 @@ function onClickOutside(event: MouseEvent) {
 // The popover is detached (fixed), so close it when the page scrolls/resizes
 // rather than letting it drift away from the trigger. But ignore scrolls that
 // happen INSIDE the popover's own overflow (e.g. scrolling a long option list
-// down to the last item) — those must not close it.
+// down to the last item): those must not close it.
 function closeOnViewportChange(event?: Event) {
   if (event?.type === 'scroll') {
     const t = event.target as Node | null;

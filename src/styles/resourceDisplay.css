@@ -84,7 +84,7 @@
 }
 
 /* Quantity input overlay (ResourceCard, GiftCard, ElephEligmaSection).
-   Lives here — not in studentModal.css — because that stylesheet only loads
+   Lives here, not in studentModal.css, because that stylesheet only loads
    with the Students-page chunk since the lazy-loading split, while these
    cards also render in the global scanner modal on any route. */
 .resource-input {
@@ -127,7 +127,7 @@
   }
 }
 
-/* Pagination dots — shared by ResourceGrid + ResourceSummary */
+/* Pagination dots: shared by ResourceGrid + ResourceSummary */
 .page-indicator {
   display: flex;
   gap: 8px;

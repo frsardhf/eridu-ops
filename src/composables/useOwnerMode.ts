@@ -3,7 +3,7 @@ import { ref } from 'vue';
 /**
  * Owner-only feature gate (e.g. the high-res Hall export).
  *
- * This is *not* security — it's exclusivity for a feature that only produces a
+ * This is *not* security: it's exclusivity for a feature that only produces a
  * nicer image of already-public data. We bake only the SHA-256 *hash* of the
  * token, never the token itself, so reading the bundle reveals an irreversible
  * hash rather than a usable secret. Unlock by visiting `?owner=<token>` once;

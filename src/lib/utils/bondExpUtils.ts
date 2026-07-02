@@ -23,7 +23,7 @@ function getItemExpValue(item: GiftProps | undefined): number {
 
 /**
  * Total EXP contribution from one stack of gift items (favored OR box) given
- * the user's allocated quantities. Pure — no store reads.
+ * the user's allocated quantities. Pure: no store reads.
  */
 export function calculateGiftStackExp(
   items: GiftProps[] | undefined,
@@ -66,7 +66,7 @@ export function isoToDate(iso: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Inverse of `isoToDate` — local-date components formatted as YYYY-MM-DD. */
+/** Inverse of `isoToDate`: local-date components formatted as YYYY-MM-DD. */
 export function dateToIso(d: Date | null): string {
   if (!d) return '';
   const yyyy = d.getFullYear();
@@ -77,7 +77,7 @@ export function dateToIso(d: Date | null): string {
 
 /**
  * Day delta from `startDateIso` to `endDateIso` (both YYYY-MM-DD).
- * Empty start ⇒ today. Past/invalid end ⇒ 0. If `inclusive`, the end
+ * Empty start => today. Past/invalid end => 0. If `inclusive`, the end
  * date counts as one of the days (so start=end inclusive = 1, exclusive = 0).
  */
 export function computeCafeDays(
@@ -98,14 +98,14 @@ export function computeCafeDays(
   return inclusive ? days + 1 : days;
 }
 
-/** Total EXP from `taps × days × CAFE_TAP_EXP`, clamped to ≥ 0. */
+/** Total EXP from `taps x days x CAFE_TAP_EXP`, clamped to >= 0. */
 export function computeCafeExp(tapsPerDay: number, days: number): number {
   const t = Math.max(0, tapsPerDay || 0);
   const d = Math.max(0, days || 0);
   return t * d * CAFE_TAP_EXP;
 }
 
-/** Combined cafe + manual bonus EXP. Pure — no clock read. */
+/** Combined cafe + manual bonus EXP. Pure: no clock read. */
 export function computeOtherExpTotal(other: OtherExpDataProps | undefined): number {
   if (!other) return 0;
   const days = computeCafeDays(
@@ -118,7 +118,7 @@ export function computeOtherExpTotal(other: OtherExpDataProps | undefined): numb
 
 /**
  * Aggregate total cumulative bond EXP for one student from every known
- * contributor. Pure function — call it from any context (hook, computed,
+ * contributor. Pure function: call it from any context (hook, computed,
  * sort key) by handing it the relevant data.
  */
 export function computeStudentBondExpTotal(sources: BondExpSources): number {

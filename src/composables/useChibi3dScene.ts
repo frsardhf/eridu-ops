@@ -10,7 +10,7 @@ import {
 } from '@/lib/utils/iconUtils';
 
 /**
- * Live-3D chibi renderer — the Vue port of the deliverable's three.js POC
+ * Live-3D chibi renderer: the Vue port of the deliverable's three.js POC
  * (`poc/index.html` + `poc/common.js`). Owns a fixed-camera WebGL scene drawn
  * into a transparent square canvas: loads one GLB + its manifest, assigns the
  * cel / eyemouth / additive-halo materials per submesh, plays clips through an
@@ -20,13 +20,13 @@ import {
  * `play` / `setFacing` / `faceCamera` controls plus `ready` / `error` state.
  *
  * The calibrated mouth mapping and halo-spring values are ported verbatim from
- * the POC — do not re-derive them (see the deliverable GUIDE.md §3 and §6a).
+ * the POC: do not re-derive them (see the deliverable GUIDE.md section 3 and section 6a).
  */
 
 interface PlayOptions {
   /** Loop the clip (default) or play once and clamp on the final frame. */
   loop?: boolean;
-  /** Fired once when a non-looping clip finishes (e.g. Victory_Start → Victory_End). */
+  /** Fired once when a non-looping clip finishes (e.g. Victory_Start -> Victory_End). */
   onEnd?: () => void;
 }
 
@@ -45,7 +45,7 @@ interface MouthUniforms {
   uMouthOffset: { value: THREE.Vector2 };
 }
 
-// FxFollower halo spring (BA values, identical across characters — GUIDE.md §6a).
+// FxFollower halo spring (BA values, identical across characters: GUIDE.md section 6a).
 interface HaloFollower {
   root: THREE.Object3D;
   head: THREE.Object3D;
@@ -63,7 +63,7 @@ interface HaloFollower {
   init: boolean;
 }
 
-// ── Shared toon gradient + texture loader (common.js) ──────────────────────────
+// --- Shared toon gradient + texture loader (common.js) ---
 function makeGradient(): THREE.DataTexture {
   const grad = new THREE.DataTexture(
     new Uint8Array([170, 170, 170, 255, 255, 255, 255, 255]),
@@ -136,22 +136,22 @@ void main() {`,
   return { material, uniforms };
 }
 
-// mouth event (col,row) -> uMouthCell (Unity 1-indexed) — common.js codeToCell.
+// mouth event (col,row) -> uMouthCell (Unity 1-indexed): common.js codeToCell.
 const codeToCell = (col: number, row: number): [number, number] => [col + 1, row + 1];
 
 // Fixed pet camera (POC framing). Orbit mode moves the camera from here; toggling
 // orbit off restores exactly this so the model-facing logic lines up again.
 const FOV_DEG = 35; // vertical fov (square aspect, so == horizontal)
 // One hardcoded camera for all characters (they share a rig + scale, so a single framing
-// is consistent — auto-fitting per model was unreliable because SkinnedMesh bbox = bind
+// is consistent: auto-fitting per model was unreliable because SkinnedMesh bbox = bind
 // pose). Tune DEFAULT_TARGET_Y (vertical centering) + DEFAULT_DISTANCE (size) by eye.
-const TILT_TAN = Math.tan((13.8 * Math.PI) / 180); // ~13.8° downtilt (looking down at the pet)
+const TILT_TAN = Math.tan((13.8 * Math.PI) / 180); // ~13.8deg downtilt (looking down at the pet)
 const CAM_TARGET_Y = 0.6; // look-at height; the canvas centre maps to (0, this, 0)
 const CAM_DISTANCE = 3; // camera distance at zoom 1 (the Size slider divides this)
 
 // Dispose a material AND every texture bound to it. three's `material.dispose()` does
 // NOT free the textures it references, so without this every scene teardown (HMR reload
-// or character switch) leaks the GLB's embedded base maps on the GPU — the main leak.
+// or character switch) leaks the GLB's embedded base maps on the GPU: the main leak.
 function disposeMaterial(mat: THREE.Material): void {
   for (const value of Object.values(mat as unknown as Record<string, unknown>)) {
     if (value && (value as THREE.Texture).isTexture) (value as THREE.Texture).dispose();
@@ -171,7 +171,7 @@ function disposeSubtree(obj: THREE.Object3D): void {
   });
 }
 
-// ── Halo FxFollower spring (common.js HALO_CFG / make- / updateHaloFollower) ────
+// --- Halo FxFollower spring (common.js HALO_CFG / make- / updateHaloFollower) ---
 const HALO_CFG = {
   targetBone: 'Bip001 Head',
   relPos: new THREE.Vector3(-0.36429, -0.20871, 0),
@@ -190,7 +190,7 @@ const _hv = new THREE.Vector3();
 const _hq = new THREE.Quaternion();
 const _hs = new THREE.Vector3();
 const _hm = new THREE.Matrix4();
-// Per-frame halo scratch — reused so updateHaloFollower allocates nothing each frame.
+// Per-frame halo scratch: reused so updateHaloFollower allocates nothing each frame.
 const _hlp = new THREE.Vector3();
 const _htr = new THREE.Quaternion();
 const _hoff = new THREE.Vector3();
@@ -272,7 +272,7 @@ export function useChibi3dScene(
   const ready = ref(false);
   const error = ref(false);
 
-  // three objects, kept out of Vue reactivity (no `ref` — these never render as data).
+  // three objects, kept out of Vue reactivity (no `ref`: these never render as data).
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
   let camera: THREE.PerspectiveCamera | null = null;
@@ -306,9 +306,9 @@ export function useChibi3dScene(
       alpha: true,
       preserveDrawingBuffer: true,
     });
-    // Supersample: render at SS× the canvas resolution and let the browser downscale,
+    // Supersample: render at SSx the canvas resolution and let the browser downscale,
     // so the model stays crisp in a small canvas (the POC looks sharper only because it
-    // renders into the whole window — far more pixels on the same model). 2× is plenty
+    // renders into the whole window: far more pixels on the same model). 2x is plenty
     // for one chibi; raise toward 3 for more, lower if it ever costs frames.
     const SUPERSAMPLE = 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * SUPERSAMPLE);
@@ -447,7 +447,7 @@ export function useChibi3dScene(
   const _pixel = new Uint8Array(4);
   /**
    * True if a pointer at canvas-local px `(localX, localY)` (0..size) is over Rio's
-   * opaque pixels — an alpha hit-test against the rendered frame, so the pet only
+   * opaque pixels: an alpha hit-test against the rendered frame, so the pet only
    * grabs on her actual silhouette, not the empty corners of the square canvas.
    * (Raycasting the animated SkinnedMesh is unreliable; reading the pixel isn't.)
    * Misses fall through to the stage (walk) in the component.
@@ -465,7 +465,7 @@ export function useChibi3dScene(
   const _box = new THREE.Box3();
   const _corner = new THREE.Vector3();
   /**
-   * Rio's current bounding box projected into canvas-local px (0..size) — the rect her
+   * Rio's current bounding box projected into canvas-local px (0..size): the rect her
    * silhouette occupies inside the big square canvas. The component clamps drags by
    * this (not the canvas box) so her head/feet/sides can reach the stage edges while
    * the empty canvas padding overflows off-screen. Halo excluded (it lives in the
@@ -497,7 +497,7 @@ export function useChibi3dScene(
   }
 
   // Screen movement vector -> model yaw. Screen +x = right, +y = down (toward
-  // viewer); yaw = atan2(-dx,-dy) so "down" faces the camera (yaw π), "up" faces
+  // viewer); yaw = atan2(-dx,-dy) so "down" faces the camera (yaw pi), "up" faces
   // away (yaw 0), and left/right turn in profile. Calibrate against the model.
   function setFacing(dx: number, dy: number): void {
     if (!root || (dx === 0 && dy === 0)) return;
@@ -511,7 +511,7 @@ export function useChibi3dScene(
 
   /**
    * Position the fixed pet camera: look at (0, CAM_TARGET_Y, 0), sit CAM_DISTANCE in front
-   * with the ~13.8° downtilt, all scaled by zoom (so zooming preserves the tilt angle).
+   * with the ~13.8deg downtilt, all scaled by zoom (so zooming preserves the tilt angle).
    */
   function applyBaseCamera(): void {
     if (!camera) return;
@@ -534,7 +534,7 @@ export function useChibi3dScene(
   /**
    * Inspection-only orbit (the POC's OrbitControls). On: drag to spin / wheel to zoom
    * the camera; the component suspends pet gestures so they don't collide. `domElement`
-   * is the input surface — pass the full-viewport stage so orbit works anywhere, not just
+   * is the input surface: pass the full-viewport stage so orbit works anywhere, not just
    * over the small canvas. Off: restore the fixed (zoomed) pet camera.
    */
   function setOrbitEnabled(on: boolean, domElement?: HTMLElement): void {
@@ -582,7 +582,7 @@ export function useChibi3dScene(
     controls = null;
     grad?.dispose();
     // External mouth textures live in the eyemouth uniforms, not on a material, so the
-    // generic material-texture sweep below won't reach them — dispose them here.
+    // generic material-texture sweep below won't reach them: dispose them here.
     mouthUniforms?.uMouthTex.value?.dispose();
     mouthUniforms?.uMouthMask.value?.dispose();
     if (root) disposeSubtree(root);

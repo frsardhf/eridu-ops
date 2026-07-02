@@ -18,11 +18,11 @@ export const DEFAULT_BOND_DETAIL: BondDetailDataProps = {
 
 /**
  * Other (non-gift) bond EXP sources, per-student.
- *   cafeTapsPerDay     — invites planned per day, 0..MAX_CAFE_TAPS_PER_DAY
- *   cafeStartDateIso   — YYYY-MM-DD; empty string ⇒ treat as today
- *   cafeTargetDateIso  — YYYY-MM-DD end date from the picker
- *   cafeDateInclusive  — whether to count end date in the day delta
- *   bonusExp           — manual catch-all (lessons, events, future sources)
+ *   cafeTapsPerDay    : invites planned per day, 0..MAX_CAFE_TAPS_PER_DAY
+ *   cafeStartDateIso  : YYYY-MM-DD; empty string => treat as today
+ *   cafeTargetDateIso : YYYY-MM-DD end date from the picker
+ *   cafeDateInclusive : whether to count end date in the day delta
+ *   bonusExp          : manual catch-all (lessons, events, future sources)
  */
 export interface OtherExpDataProps {
   cafeTapsPerDay: number;

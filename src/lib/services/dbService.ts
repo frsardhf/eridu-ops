@@ -35,7 +35,7 @@ async function withQuotaRetry<T>(write: () => Promise<T>, label: string, fallbac
   }
 }
 
-// ========== Metadata Operations ==========
+// --- Metadata Operations ---
 
 /**
  * Get metadata value by key
@@ -86,10 +86,7 @@ async function getDataSource(): Promise<'api' | 'migration' | undefined> {
   return await getMetadata<'api' | 'migration'>('dataSource');
 }
 
-/**
- * Check if data needs refresh based on lastFetched and dataSource
- * @param maxAgeDays Maximum age in days before refresh needed
- */
+/** Whether cached data needs a refresh (older than maxAgeDays, default 7). */
 export async function needsRefresh(maxAgeDays: number = 7): Promise<boolean> {
   const [lastFetched, dataSource] = await Promise.all([
     getLastFetched(),
@@ -120,7 +117,7 @@ export async function updateCacheMetadata(): Promise<void> {
   ]);
 }
 
-// ========== Student Operations ==========
+// --- Student Operations ---
 
 /**
  * Get all students as array
@@ -155,7 +152,7 @@ export async function saveStudents(students: StudentRecord[]): Promise<boolean> 
   }
 }
 
-// ========== Item Operations ==========
+// --- Item Operations ---
 
 /**
  * Get all items as array
@@ -190,7 +187,7 @@ export async function saveItems(items: ItemRecord[]): Promise<boolean> {
   }
 }
 
-// ========== Equipment Operations ==========
+// --- Equipment Operations ---
 
 /**
  * Get all equipment as array
@@ -225,7 +222,7 @@ export async function saveEquipment(equipment: EquipmentRecord[]): Promise<boole
   }
 }
 
-// ========== Form Operations ==========
+// --- Form Operations ---
 
 /**
  * Get form data for a student
@@ -308,7 +305,7 @@ function sanitizeFormData(data: any): any {
  * Returns the merged sanitized data on success for immediate store updates.
  */
 export async function saveFormData(studentId: number, formData: Partial<FormRecord>): Promise<FormRecord | null> {
-  // Sanitize outside the transaction — pure CPU work, no DB I/O needed.
+  // Sanitize outside the transaction: pure CPU work, no DB I/O needed.
   const sanitizedFormData = sanitizeFormData(formData);
 
   return withQuotaRetry(
@@ -343,10 +340,10 @@ export async function getAllFormData(): Promise<Record<number, FormRecord>> {
   }
 }
 
-// ========== Items Inventory Operations ==========
+// --- Items Inventory Operations ---
 
 /**
- * Get all items inventories as id→quantity record
+ * Get all items inventories as id->quantity record
  */
 export async function getAllItemsInventories(): Promise<Record<number, number>> {
   try {
@@ -372,7 +369,7 @@ export async function saveItemsInventories(inventories: ItemsInventoryRecord[]):
   );
 }
 
-// ========== Equipment Inventory Operations ==========
+// --- Equipment Inventory Operations ---
 
 /**
  * Get all equipment inventories

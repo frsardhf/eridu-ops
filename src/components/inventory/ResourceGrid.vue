@@ -8,7 +8,7 @@ import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import '@/styles/resourceDisplay.css';
 
 /**
- * Paginated inventory grid for either items or equipment — the consolidation of
+ * Paginated inventory grid for either items or equipment: the consolidation of
  * the former ItemsGrid + EquipmentGrid (identical apart from the cache source,
  * filter category, card item-type, and page plan).
  */

@@ -18,7 +18,7 @@ export interface Bond100ServerOption {
 
 /**
  * One student's bond-100 player count, broken down by server.
- * A single merged count — community submissions and the public ranking
+ * A single merged count: community submissions and the public ranking
  * snapshot are pooled into one number (no verified/observed split).
  */
 export interface Bond100StudentSummary {

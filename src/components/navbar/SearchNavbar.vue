@@ -51,7 +51,7 @@ const currentSortLabel = computed(() => $t(`sort.${props.currentSort ?? 'default
 function onSortChange(option: SortOption) {
   emit('updateSort', option);
   showSortPanel.value = false;
-  // Sorting is paused while pinned — shake the pin hint instead of pretending
+  // Sorting is paused while pinned: shake the pin hint instead of pretending
   // the pick took effect. The choice is still persisted for when pin turns off.
   if (props.isPinnedMode) showPinHint(true);
 }
@@ -64,7 +64,7 @@ function onDirectionToggle() {
 // Pin button: nudge that sorting is paused. Shown when pinned mode is turned
 // ON, and re-shown with a shake when a sort change is attempted while pinned.
 // Reuses the shared .modal-tooltip, anchored to the pin button (not the
-// cursor — sort attempts happen over the sort panel) with an auto-hide.
+// cursor: sort attempts happen over the sort panel) with an auto-hide.
 const { activeTooltip, tooltipStyle, tooltipRef, hideTooltip } =
   useTooltip<'pinPaused'>();
 const pinBtnEl = ref<HTMLElement | null>(null);
@@ -117,7 +117,7 @@ function updateSearch(event: Event) {
   }, 150);
 }
 
-// Filter / sort / overlay popovers are mutually exclusive — opening one
+// Filter / sort / overlay popovers are mutually exclusive: opening one
 // closes the others.
 function toggleFilterPanel() {
   showFilterPanel.value = !showFilterPanel.value;
@@ -161,7 +161,7 @@ useClickOutside(handleClickOutside);
 
 <template>
   <GlobalNavbar :compact="true">
-    <!-- Mobile-only home button: nav links are hidden ≤768 on the compact navbar,
+    <!-- Mobile-only home button: nav links are hidden <=768 on the compact navbar,
          so this lets phone users reach the landing page to switch routes. -->
     <RouterLink to="/" class="app-navbar-home-btn mobile-home-btn" aria-label="Home">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -267,7 +267,7 @@ useClickOutside(handleClickOutside);
       <!-- Separates the list controls (pin/filter/sort) from card-display (eye) -->
       <div class="vc-divider" aria-hidden="true"></div>
 
-      <!-- Overlay visibility ("eye") — pick which stat overlays stay on cards -->
+      <!-- Overlay visibility ("eye"): pick which stat overlays stay on cards -->
       <div ref="overlayWrapEl" class="vc-popover-wrap">
         <button
           class="app-navbar-icon-btn"
@@ -326,8 +326,8 @@ useClickOutside(handleClickOutside);
 </template>
 
 <style scoped>
-/* Mobile home button — hidden on desktop (the navbar's own home/nav links show
-   there), revealed once those are hidden on the compact navbar (≤768). */
+/* Mobile home button: hidden on desktop (the navbar's own home/nav links show
+   there), revealed once those are hidden on the compact navbar (<=768). */
 .mobile-home-btn {
   display: none;
   flex-shrink: 0;
@@ -386,7 +386,7 @@ useClickOutside(handleClickOutside);
   pointer-events: none;
 }
 
-/* View controls — pin, filter, sort. margin-left: auto pushes them to the
+/* View controls: pin, filter, sort. margin-left: auto pushes them to the
    right edge of the AppNavbar middle slot. */
 .view-controls {
   display: flex;

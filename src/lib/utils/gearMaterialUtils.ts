@@ -78,7 +78,7 @@ export function calculateEquipmentMaterials(
 
   const allEquipment = getAllEquipmentFromCache();
 
-  // Pre-build lookup map: "Category:Tier" → equipment item for O(1) access.
+  // Pre-build lookup map: "Category:Tier" -> equipment item for O(1) access.
   // Use first-match semantics (no overwrite) to mirror Array.find() behaviour,
   // since the cache may contain multiple entries per Category+Tier
   // (e.g. blueprint piece alongside assembled item) and only the first has a Recipe.
@@ -217,7 +217,7 @@ export function calculateGradeMaterials(
   return materialsNeeded;
 }
 
-// Calculate materials needed for exclusive gear upgrade (T1→T2)
+// Calculate materials needed for exclusive gear upgrade (T1->T2)
 export function calculateExclusiveGearMaterials(
   student: StudentProps,
   exclusiveGearLevel: ExclusiveGearLevel
@@ -235,7 +235,7 @@ export function calculateExclusiveGearMaterials(
     return materialsNeeded;
   }
 
-  // Only T1→T2 upgrade costs materials (T0→T1 is free, just needs bond)
+  // Only T1->T2 upgrade costs materials (T0->T1 is free, just needs bond)
   if (current < 2 && target >= 2) {
     const tierUpMaterials = student.Gear.TierUpMaterial?.[0] ?? [];
     const tierUpAmounts = student.Gear.TierUpMaterialAmount?.[0] ?? [];
@@ -300,8 +300,8 @@ export function computeEquipmentXpCost(equipmentLevels: EquipmentLevels): number
 }
 
 /**
- * XP Ball items (IDs 4 → 1) sorted descending by LevelUpFeedExp,
- * each carrying its current owned count — ready for deductXpItems.
+ * XP Ball items (IDs 4 -> 1) sorted descending by LevelUpFeedExp,
+ * each carrying its current owned count: ready for deductXpItems.
  * @param getOwned  Returns how many of a given item ID the player owns.
  */
 export function getEquipXpItems(

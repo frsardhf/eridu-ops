@@ -70,7 +70,7 @@ useDocumentListener('keydown', onKeydown);
           <p>{{ $t('bond100.form.submittedBody') }}</p>
         </div>
 
-        <!-- Fallback: couldn't submit (quota/down) → self-add on arona.icu -->
+        <!-- Fallback: couldn't submit (quota/down) -> self-add on arona.icu -->
         <div v-else-if="showFallback" class="bsm-fallback">
           <h3>{{ $t('bond100.form.fallbackTitle') }}</h3>
           <p>{{ $t('bond100.form.fallbackBody') }}</p>

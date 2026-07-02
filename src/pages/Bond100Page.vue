@@ -124,7 +124,7 @@ const summaryMap = computed(() => {
   );
 });
 
-// Metrics follow the server dropdown (but NOT the search box) — they're
+// Metrics follow the server dropdown (but NOT the search box): they're
 // dataset stats for the selected server, not the visible/filtered subset.
 const totals = computed(() => {
   const students = summary.value?.students ?? [];
@@ -241,7 +241,7 @@ function closeEntries() {
   entriesError.value = '';
 }
 
-// ── Owner-only high-res export ────────────────────────────────────────────────
+// --- Owner-only high-res export ---
 const { isOwner } = useOwnerMode();
 const { exporting, captureToPng } = useImageExport();
 const exportHeaderRef = ref<HTMLElement | null>(null);
@@ -538,7 +538,7 @@ onMounted(loadSummary);
 }
 
 /* Explicit size + fill so the lone SVG child can't collapse to 0 inside the
-   fixed-size button (it has no CSS dimensions otherwise — only HTML attrs). */
+   fixed-size button (it has no CSS dimensions otherwise: only HTML attrs). */
 .bond100-info-btn svg {
   display: block;
   width: 13px;
@@ -619,7 +619,7 @@ onMounted(loadSummary);
   opacity: 0.9;
 }
 
-/* ── Owner-only export ─────────────────────────────────────── */
+/* --- Owner-only export --- */
 .bond100-export-btn {
   display: inline-flex;
   align-items: center;
@@ -647,7 +647,7 @@ onMounted(loadSummary);
   cursor: progress;
 }
 
-/* ── Has-bond-100 density toggle ────────────────────────────── */
+/* --- Has-bond-100 density toggle --- */
 .bond100-toggle {
   display: inline-flex;
   align-items: center;

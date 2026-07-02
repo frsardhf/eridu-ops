@@ -243,7 +243,7 @@ function schoolChipStyle(color: string) {
   opacity: 0.85;
 }
 
-/* ── By-server rows ── */
+/* --- By-server rows --- */
 .bond100-stats-srv {
   display: flex;
   align-items: center;
@@ -252,7 +252,7 @@ function schoolChipStyle(color: string) {
 }
 
 .bond100-stats-srv-chip {
-  flex: 0 0 52px;   /* fixed — wide enough for TW/HK, the longest label */
+  flex: 0 0 52px;   /* fixed: wide enough for TW/HK, the longest label */
   width: 52px;
   height: 22px;     /* pinned so it matches the school chip exactly (not font-drift) */
   display: inline-flex;
@@ -326,7 +326,7 @@ function schoolChipStyle(color: string) {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Top students ── */
+/* --- Top students --- */
 .bond100-stats-top {
   display: flex;
   align-items: center;
@@ -363,7 +363,7 @@ function schoolChipStyle(color: string) {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Coverage + footer ── */
+/* --- Coverage + footer --- */
 .bond100-stats-coverage {
   margin: 0;
   font-size: 0.82rem;

@@ -16,8 +16,8 @@ export type { BulkFormPatch, AvailabilityFilter };
 export type { FormRecord } from '../db/database';
 
 /**
- * Hook facade for BulkModifyStudentsModal — aggregates service and store
- * imports so the component stays within the components → hooks boundary.
+ * Hook facade for BulkModifyStudentsModal: aggregates service and store
+ * imports so the component stays within the components -> hooks boundary.
  */
 export function useBulkStudentModify() {
   async function bulkSetOwnership(

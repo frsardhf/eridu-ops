@@ -19,14 +19,14 @@ const emit = defineEmits<{
 const { decks, initDecks, setUnit, moveUnit, swapUnits, addTeam, removeTeam, renameDeck, copyTeamToPreset, reorderTeam } = useDeckBuilder();
 onMounted(() => initDecks());
 
-// ── State ────────────────────────────────────────────────────────────────────
+// --- State ---
 const activeTab = ref(1);
 const pickerSlot = ref<{ tIdx: number; slotIdx: number } | null>(null);
 const pickerFilter = ref('');
 
 const PRESET_LABELS = ['I', 'II', 'III', 'IV', 'V'];
 
-// ── Computed ─────────────────────────────────────────────────────────────────
+// --- Computed ---
 const activeDeck = computed(() => decks.value.find(d => d.id === activeTab.value));
 
 // Track which specific slot is the "assist" (second occurrence of a student across the preset)
@@ -76,7 +76,7 @@ const pickerStudents = computed(() => {
     .filter(s => filter === '' || s.Name.toLowerCase().includes(filter));
 });
 
-// ── Picker ────────────────────────────────────────────────────────────────────
+// --- Picker ---
 function openPicker(tIdx: number, slotIdx: number) {
   if (pickerSlot.value?.tIdx === tIdx && pickerSlot.value?.slotIdx === slotIdx) {
     pickerSlot.value = null;
@@ -99,7 +99,7 @@ function clearSlotIn(tIdx: number, slotIdx: number) {
   }
 }
 
-// ── Deck management ───────────────────────────────────────────────────────────
+// --- Deck management ---
 function switchTab(id: number) {
   activeTab.value = id;
   pickerSlot.value = null;
@@ -133,7 +133,7 @@ function closeIfBackdrop(event: MouseEvent) {
   if (event.target === event.currentTarget) emit('close');
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
+// --- Export ---
 // Image inlining + PNG capture live in useImageExport; we only add the
 // scroll-height expansion so nothing below the fold is clipped, and request the
 // 'open' output (new tab) instead of the composable's default download.
@@ -157,8 +157,8 @@ async function exportDeckImage() {
   }
 }
 
-// ── Drag & drop ───────────────────────────────────────────────────────────────
-// Slot drag-drop — key format: "${tIdx}-${slotIdx}"
+// --- Drag & drop ---
+// Slot drag-drop: key format: "${tIdx}-${slotIdx}"
 const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isDropTarget, isRejected } =
   useDragReorder<string>(
     (from, to) => {
@@ -177,7 +177,7 @@ const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, isDragging, isD
     },
   );
 
-// Team drag-to-reorder — uses dataTransfer type tag to avoid interfering with slot drags
+// Team drag-to-reorder: uses dataTransfer type tag to avoid interfering with slot drags
 const teamDragFrom = ref<number | null>(null);
 const teamDragOver = ref<number | null>(null);
 
@@ -216,7 +216,7 @@ function isTeamDropTarget(tIdx: number) {
   return teamDragOver.value === tIdx && teamDragFrom.value !== null && teamDragFrom.value !== tIdx;
 }
 
-// ── Copy team ────────────────────────────────────────────────────────────────
+// --- Copy team ---
 const copyMenuTeam = ref<number | null>(null);
 const copyToastMsg = ref('');
 let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -496,7 +496,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
 
-/* Header — title left, preset tabs + close button right */
+/* Header: title left, preset tabs + close button right */
 .deck-header {
   display: flex;
   align-items: center;
@@ -542,7 +542,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
-/* Preset tabs — inline in header-right */
+/* Preset tabs: inline in header-right */
 .preset-tabs {
   display: flex;
   gap: 4px;
@@ -864,7 +864,7 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   display: none;
 }
 
-/* Restore rounded bottom corners — card-img is now the last visible child */
+/* Restore rounded bottom corners: card-img is now the last visible child */
 .deck-modal :deep(.card-img) {
   border-radius: 0 0 8px 8px;
 }
@@ -875,12 +875,12 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
   transform: none;
 }
 
-/* Assist cards: portrait + badge only — hide entire stats overlay */
+/* Assist cards: portrait + badge only: hide entire stats overlay */
 .slot-card-inner.is-assist :deep(.stats-overlay) {
   display: none;
 }
 
-/* Empty slot — match StudentCard image height (label hidden): 150px × 170px */
+/* Empty slot: match StudentCard image height (label hidden): 150px x 170px */
 .slot-empty {
   width: 150px;
   height: 170px;

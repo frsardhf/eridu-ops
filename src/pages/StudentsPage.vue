@@ -68,7 +68,7 @@ const allStudentsArray = computed<StudentProps[]>(() => {
   ).sort((a, b) => (a.DefaultOrder ?? a.Id) - (b.DefaultOrder ?? b.Id));
 });
 
-// Prepare student for modal — attach favored Gifts/Boxes from the per-student maps.
+// Prepare student for modal: attach favored Gifts/Boxes from the per-student maps.
 function prepareStudentForModal(student: StudentProps): StudentProps {
   return enrichStudentWithGifts(student, favoredGift.value, giftBoxData.value);
 }
@@ -90,7 +90,7 @@ function handleNavigate(student: StudentProps) {
   selectedStudent.value = prepareStudentForModal(student);
 }
 
-// ── Reverse deep-link from /bonds?focus=<id> back to /students ──────────────
+// --- Reverse deep-link from /bonds?focus=<id> back to /students ---
 const route = useRoute();
 const router = useRouter();
 
