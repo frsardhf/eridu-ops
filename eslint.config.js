@@ -29,9 +29,9 @@ export default tseslint.config(
       globals: { ...globals.browser },
     },
     rules: {
-      // Existing debt is warn-level so the gate starts green; ratchet to error
-      // once the count reaches zero. New code should not add any.
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Debt reached zero, so this is now error-level: new code must not add any.
+      // Boundary/dynamic data should use unknown + narrowing instead.
+      '@typescript-eslint/no-explicit-any': 'error',
       // _-prefixed args are the project's "intentionally unused" convention;
       // rest-sibling destructuring (`const { id, ...rest }`) strips properties.
       '@typescript-eslint/no-unused-vars': [
