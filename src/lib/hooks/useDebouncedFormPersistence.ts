@@ -1,6 +1,6 @@
 import { ref, watch, onUnmounted, type Ref, type WatchSource } from 'vue';
 
-export type RefMap = Record<string, Ref<any>>;
+export type RefMap = Record<string, Ref<unknown>>;
 type Defaults<R extends RefMap> = { [K in keyof R]: R[K] extends Ref<infer V> ? V : never };
 
 /**
@@ -12,7 +12,7 @@ type Defaults<R extends RefMap> = { [K in keyof R]: R[K] extends Ref<infer V> ? 
  * the saved record or null, forwarded to onSaved. The typed `opts` below
  * documents each field.
  */
-export function useDebouncedFormPersistence<R extends RefMap, T = any>(opts: {
+export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts: {
   isVisible: () => boolean | undefined;
   refs: R;
   defaults: Defaults<R>;
@@ -86,7 +86,7 @@ export function useDebouncedFormPersistence<R extends RefMap, T = any>(opts: {
       if (token !== loadToken) return;
 
       for (const k of Object.keys(opts.refs)) {
-        opts.refs[k].value = (staged as any)[k].value;
+        opts.refs[k].value = staged[k].value;
       }
       await opts.afterLoad?.();
     } finally {

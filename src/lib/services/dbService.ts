@@ -40,7 +40,7 @@ async function withQuotaRetry<T>(write: () => Promise<T>, label: string, fallbac
 /**
  * Get metadata value by key
  */
-export async function getMetadata<T = any>(key: string): Promise<T | undefined> {
+export async function getMetadata<T = unknown>(key: string): Promise<T | undefined> {
   try {
     const record = await db.metadata.get(key);
     return record?.value as T | undefined;
@@ -53,7 +53,7 @@ export async function getMetadata<T = any>(key: string): Promise<T | undefined> 
 /**
  * Set metadata value
  */
-export async function setMetadata(key: string, value: any): Promise<boolean> {
+export async function setMetadata(key: string, value: unknown): Promise<boolean> {
   try {
     await db.metadata.put({ key, value });
     return true;
@@ -234,7 +234,7 @@ export async function getFormData(studentId: number): Promise<FormRecord | undef
  * Sanitize form data to plain JSON-serializable objects
  * Removes Vue reactivity (refs, computed, proxies) and non-cloneable data
  */
-function sanitizeFormData(data: any): any {
+function sanitizeFormData(data: unknown): unknown {
   if (data === null || data === undefined) {
     return data;
   }
@@ -258,11 +258,11 @@ function sanitizeFormData(data: any): any {
   // Use JSON parse/stringify as a safe way to strip Vue reactivity
   // This handles Proxy objects, refs, and other Vue internals
   try {
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
     for (const key in data) {
       // Use hasOwnProperty to avoid prototype chain
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const value = data[key];
+        const value = (data as Record<string, unknown>)[key];
 
         // Skip functions, symbols, undefined
         if (typeof value === 'function' || typeof value === 'symbol' || value === undefined) {
@@ -303,7 +303,7 @@ export async function saveFormData(
   formData: Partial<FormRecord>,
 ): Promise<FormRecord | null> {
   // Sanitize outside the transaction: pure CPU work, no DB I/O needed.
-  const sanitizedFormData = sanitizeFormData(formData);
+  const sanitizedFormData = sanitizeFormData(formData) as Partial<FormRecord>;
 
   return withQuotaRetry(
     () =>

@@ -12,15 +12,16 @@ import {
   getAllItemsAsRecord,
   getAllEquipmentAsRecord,
 } from './dbService';
-import type { ItemsInventoryRecord, EquipmentInventoryRecord } from '../db/database';
+import type { ItemsInventoryRecord, EquipmentInventoryRecord, FormRecord } from '../db/database';
+import type { CachedResource } from '../../types/resource';
 import { toNumericId } from '../utils/idCoercion';
 import { SYNTHETIC_ENTITIES } from '../constants/syntheticEntities';
 
 /** Saves a student's form data to IndexedDB (id coerced to numeric). */
 export async function saveFormData(
   studentId: string | number,
-  data: Record<string, any>,
-): Promise<any | null> {
+  data: Partial<FormRecord>,
+): Promise<FormRecord | null> {
   if (!studentId) return null;
 
   try {
@@ -33,8 +34,8 @@ export async function saveFormData(
 }
 
 /** Merges item records with inventory quantities, adding QuantityOwned to each. */
-function mergeWithInventory<T extends Record<string, any>>(
-  items: Record<string, T>,
+function mergeWithInventory<T extends object>(
+  items: Record<number, T>,
   inventories: Record<number, number>,
 ): Record<string, T & { QuantityOwned: number }> {
   const result: Record<string, T & { QuantityOwned: number }> = {};
@@ -52,14 +53,14 @@ function mergeWithInventory<T extends Record<string, any>>(
  * Synthetic entities (e.g. Credits) are unioned in at read time: they don't
  * live in SchaleDB so we keep their metadata out of the items master table.
  */
-export async function getItems(): Promise<Record<string, any> | null> {
+export async function getItems(): Promise<Record<string, CachedResource> | null> {
   try {
     const [items, inventories] = await Promise.all([
       getAllItemsAsRecord(),
       getAllItemsInventories(),
     ]);
 
-    const merged = mergeWithInventory(items, inventories) as Record<string, any>;
+    const merged = mergeWithInventory(items, inventories) as Record<string, CachedResource>;
 
     for (const entity of Object.values(SYNTHETIC_ENTITIES)) {
       const idStr = String(entity.Id);
@@ -79,7 +80,7 @@ export async function getItems(): Promise<Record<string, any> | null> {
 }
 
 /** Retrieves equipment data with inventory (QuantityOwned) from IndexedDB. */
-export async function getEquipment(): Promise<Record<string, any> | null> {
+export async function getEquipment(): Promise<Record<string, CachedResource> | null> {
   try {
     const [equipment, inventories] = await Promise.all([
       getAllEquipmentAsRecord(),
@@ -94,7 +95,7 @@ export async function getEquipment(): Promise<Record<string, any> | null> {
 }
 
 /** Retrieves a single student's form data from IndexedDB (null if not found). */
-async function getFormData(studentId: string | number): Promise<Record<string, any> | null> {
+async function getFormData(studentId: string | number): Promise<FormRecord | null> {
   if (!studentId) return null;
 
   try {
@@ -119,8 +120,10 @@ export async function loadFormDataToRefs(
   if (!studentId) return false;
 
   try {
-    const studentData = await getFormData(studentId);
-    if (!studentData) return false;
+    const formRecord = await getFormData(studentId);
+    if (!formRecord) return false;
+    // Read dynamically by storage key; FormRecord has no string index signature.
+    const studentData = formRecord as unknown as Record<string, unknown>;
 
     for (const key of Object.keys(refs)) {
       let mergedValue: unknown;
@@ -193,7 +196,7 @@ export async function loadFormDataToRefs(
  * or a full item record map with QuantityOwned.
  */
 export async function saveItemsInventory(
-  data: Record<string, number> | Record<string, any>,
+  data: Record<string, number> | Record<string, { QuantityOwned?: number }>,
 ): Promise<boolean> {
   try {
     const inventories: ItemsInventoryRecord[] = Object.entries(data).map(([id, value]) => ({
@@ -213,7 +216,7 @@ export async function saveItemsInventory(
  * map or a full equipment record map with QuantityOwned.
  */
 export async function saveEquipmentInventory(
-  data: Record<string, number> | Record<string, any>,
+  data: Record<string, number> | Record<string, { QuantityOwned?: number }>,
 ): Promise<boolean> {
   try {
     const inventories: EquipmentInventoryRecord[] = Object.entries(data).map(([id, value]) => ({

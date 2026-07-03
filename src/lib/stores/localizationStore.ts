@@ -6,7 +6,8 @@ import type { SchaleLocalization } from '@/types/schaledb';
 export type Language = 'en' | 'jp';
 
 function detectBrowserLanguage(): Language {
-  const browserLang = navigator.language || (navigator as any).userLanguage;
+  const browserLang =
+    navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || 'en';
   if (browserLang.toLowerCase().startsWith('ja')) {
     return 'jp';
   }

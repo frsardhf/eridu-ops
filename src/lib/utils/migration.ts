@@ -9,6 +9,7 @@ import type {
   ItemsInventoryRecord,
   EquipmentInventoryRecord,
 } from '../db/database';
+import type { SortOption, SortDirection } from '../../types/header';
 import { isMigrationCompleted, setMetadata } from '../services/dbService';
 import { saveSettings, getSettings, DEFAULT_SETTINGS, type AppSettings } from './settingsStorage';
 import { normalizeTheme } from './themeUtils';
@@ -134,12 +135,10 @@ async function migrateResourceInventories(): Promise<void> {
     }
 
     const resourcesData = JSON.parse(resourcesJson);
-    const inventories: ItemsInventoryRecord[] = Object.entries(resourcesData).map(
-      ([id, data]: [string, any]) => ({
-        Id: Number(id),
-        QuantityOwned: data.QuantityOwned || 0,
-      }),
-    );
+    const inventories: ItemsInventoryRecord[] = Object.entries(resourcesData).map(([id, data]) => ({
+      Id: Number(id),
+      QuantityOwned: (data as { QuantityOwned?: number }).QuantityOwned || 0,
+    }));
 
     if (inventories.length > 0) {
       await db.items_inventory.bulkPut(inventories);
@@ -168,9 +167,9 @@ async function migrateEquipmentInventories(): Promise<void> {
 
     const equipmentsData = JSON.parse(equipmentsJson);
     const inventories: EquipmentInventoryRecord[] = Object.entries(equipmentsData).map(
-      ([id, data]: [string, any]) => ({
+      ([id, data]) => ({
         Id: Number(id),
-        QuantityOwned: data.QuantityOwned || 0,
+        QuantityOwned: (data as { QuantityOwned?: number }).QuantityOwned || 0,
       }),
     );
 
@@ -200,12 +199,11 @@ async function migrateForms(): Promise<void> {
     }
 
     const formsData = JSON.parse(formsJson);
-    const formsArray: FormRecord[] = Object.entries(formsData).map(
-      ([studentId, data]: [string, any]) => {
-        const { id, ...rest } = data as any;
-        return { studentId: Number(studentId), ...rest };
-      },
-    );
+    const formsArray: FormRecord[] = Object.entries(formsData).map(([studentId, data]) => {
+      // Legacy forms keyed by `id`; strip it and re-key to studentId.
+      const { id, ...rest } = data as Record<string, unknown>;
+      return { studentId: Number(studentId), ...rest } as FormRecord;
+    });
 
     if (formsArray.length > 0) {
       await db.forms.bulkPut(formsArray);
@@ -244,8 +242,8 @@ function consolidateSettings(): void {
       theme,
       language: language as 'en' | 'jp',
       sort: {
-        option: sortOption as any,
-        direction: sortDirection as any,
+        option: sortOption as SortOption,
+        direction: sortDirection as SortDirection,
       },
       pinnedStudents,
       isPinnedMode: false,

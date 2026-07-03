@@ -7,7 +7,7 @@ import { getMetadata, setMetadata } from './dbService';
  * Retries up to `maxRetries` times with linear back-off (1 s, 2 s, ...).
  * Returns an empty object only after all attempts are exhausted.
  */
-async function fetchData(type: string, lang: string, maxRetries = 2): Promise<any> {
+async function fetchData<T>(type: string, lang: string, maxRetries = 2): Promise<T> {
   const url = `https://schaledb.com/data/${lang}/${type}.json`;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -18,7 +18,7 @@ async function fetchData(type: string, lang: string, maxRetries = 2): Promise<an
         throw new Error(`HTTP ${response.status} fetching ${url}`);
       }
 
-      return await response.json();
+      return (await response.json()) as T;
     } catch (error) {
       if (attempt < maxRetries) {
         const delayMs = 1000 * (attempt + 1); // 1 s, 2 s
@@ -29,10 +29,12 @@ async function fetchData(type: string, lang: string, maxRetries = 2): Promise<an
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       } else {
         console.error(`Error fetching ${type} data after ${maxRetries + 1} attempts:`, error);
-        return {};
+        return {} as T;
       }
     }
   }
+  // Unreachable: the final attempt always returns above. Satisfies control flow.
+  return {} as T;
 }
 
 // Per-language cache of the in-flight or resolved fetch. Toggling back to a
@@ -48,9 +50,9 @@ export function fetchAllData(lang: string): Promise<FetchedData> {
 
   const promise = (async (): Promise<FetchedData> => {
     const [students, items, equipment] = await Promise.all([
-      fetchData('students', lang),
-      fetchData('items', lang),
-      fetchData('equipment', lang),
+      fetchData<FetchedData['students']>('students', lang),
+      fetchData<FetchedData['items']>('items', lang),
+      fetchData<FetchedData['equipment']>('equipment', lang),
     ]);
     return { students, items, equipment };
   })();

@@ -3,7 +3,12 @@
 import Dexie, { Table } from 'dexie';
 import type { StudentProps } from '../../types/student';
 import type { ResourceProps } from '../../types/resource';
-import type { EquipmentLevels } from '../../types/gear';
+import type {
+  EquipmentLevels,
+  GradeLevels,
+  GradeInfos,
+  ExclusiveGearLevel,
+} from '../../types/gear';
 import type { CharacterLevels, SkillLevels, PotentialLevels } from '../../types/upgrade';
 
 // Database interfaces
@@ -21,7 +26,7 @@ export interface EquipmentRecord extends ResourceProps {
 
 interface MetadataRecord {
   key: string; // Primary key
-  value: any;
+  value: unknown;
 }
 
 export interface FormRecord {
@@ -33,15 +38,8 @@ export interface FormRecord {
   skillLevels?: SkillLevels;
   potentialLevels?: PotentialLevels;
   equipmentLevels?: EquipmentLevels;
-  gradeLevels?: {
-    current: number;
-    target: number;
-  };
-  gradeInfos?: {
-    owned: number;
-    price: number;
-    purchasable: number;
-  };
+  gradeLevels?: GradeLevels;
+  gradeInfos?: GradeInfos;
   giftFormData?: Record<string, number>;
   boxFormData?: Record<string, number>;
   nonFavorGiftsMap?: Record<string, number>;
@@ -52,10 +50,7 @@ export interface FormRecord {
     cafeDateInclusive: boolean;
     bonusExp: number;
   };
-  exclusiveGearLevel?: {
-    current: number;
-    target: number;
-  };
+  exclusiveGearLevel?: ExclusiveGearLevel;
   isOwned?: boolean;
 }
 
@@ -118,28 +113,30 @@ class EriduOpsDatabase extends Dexie {
         // Migrate resources -> items_inventory with id -> Id transform
         const resourceRows = await tx.table('resources').toArray();
         if (resourceRows.length > 0) {
-          await tx
-            .table('items_inventory')
-            .bulkAdd(
-              resourceRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned })),
-            );
+          await tx.table('items_inventory').bulkAdd(
+            resourceRows.map((row: { id: number; QuantityOwned?: number }) => ({
+              Id: row.id,
+              QuantityOwned: row.QuantityOwned,
+            })),
+          );
         }
 
         // Migrate equipments_inventory -> equipment_inventory with id -> Id transform
         const equipmentRows = await tx.table('equipments_inventory').toArray();
         if (equipmentRows.length > 0) {
-          await tx
-            .table('equipment_inventory')
-            .bulkAdd(
-              equipmentRows.map((row: any) => ({ Id: row.id, QuantityOwned: row.QuantityOwned })),
-            );
+          await tx.table('equipment_inventory').bulkAdd(
+            equipmentRows.map((row: { id: number; QuantityOwned?: number }) => ({
+              Id: row.id,
+              QuantityOwned: row.QuantityOwned,
+            })),
+          );
         }
 
         // Clean ghost 'id' property from forms records
         const formRows = await tx.table('forms').toArray();
-        const dirtyForms = formRows.filter((row: any) => 'id' in row);
+        const dirtyForms = formRows.filter((row: Record<string, unknown>) => 'id' in row);
         if (dirtyForms.length > 0) {
-          const cleaned = dirtyForms.map((row: any) => {
+          const cleaned = dirtyForms.map((row: Record<string, unknown>) => {
             const { id, ...rest } = row;
             return rest;
           });

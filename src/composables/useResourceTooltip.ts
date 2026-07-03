@@ -1,6 +1,7 @@
 import { ref, computed, nextTick } from 'vue';
 import type { Ref } from 'vue';
 import type { EquipmentType } from '@/types/gear';
+import type { StudentProps } from '@/types/student';
 import { useMaterialCalculation } from '@/lib/hooks/useMaterialCalculation';
 import { useGearCalculation } from '@/lib/hooks/useGearCalculation';
 import { useGiftCalculation } from '@/lib/hooks/useGiftCalculation';
@@ -13,7 +14,7 @@ type ViewTab = 'materials' | 'equipment' | 'gifts';
 type ViewMode = 'needed' | 'missing' | 'leftover';
 
 interface StudentUsage {
-  student: { Id: number; Name: string; [key: string]: any };
+  student: StudentProps;
   quantity: number;
   equipmentTypes?: EquipmentType[];
 }

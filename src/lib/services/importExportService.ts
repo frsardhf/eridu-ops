@@ -10,7 +10,7 @@ import {
   getAllStudentsAsRecord,
 } from './dbService';
 import type { ItemsInventoryRecord, FormRecord } from '../db/database';
-import { getSettings, saveSettings } from '../utils/settingsStorage';
+import { getSettings, saveSettings, type AppSettings } from '../utils/settingsStorage';
 import { db } from '../db/database';
 
 /**
@@ -107,19 +107,30 @@ export async function downloadLocalStorageData(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
+/** Parsed shape of a v3.0 export blob (user data + optional settings). */
+interface ImportV3Blob {
+  userData: {
+    forms?: unknown;
+    items?: Record<string, number>;
+    resources?: Record<string, number>;
+    equipments?: Record<string, number>;
+  };
+  settings?: Partial<AppSettings>;
+}
+
 /** Imports the v3.0 user-data-only format (parsed export blob). */
-async function importV3Format(importData: any): Promise<void> {
+async function importV3Format(importData: ImportV3Blob): Promise<void> {
   const { userData, settings } = importData;
 
   // Convert forms from Record to Array (before transaction: no DB access needed)
-  let formsArray: any[] = [];
+  let formsArray: FormRecord[] = [];
   if (userData.forms) {
     if (Array.isArray(userData.forms)) {
       formsArray = userData.forms;
     } else if (typeof userData.forms === 'object') {
       formsArray = Object.entries(userData.forms).map(([studentId, formData]) => {
-        const { id, ...rest } = formData as any;
-        return { studentId: Number(studentId), ...rest };
+        const { id, ...rest } = formData as Record<string, unknown>;
+        return { studentId: Number(studentId), ...rest } as FormRecord;
       });
     }
   }
@@ -270,7 +281,10 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
       };
 
       // Merge with existing data (strip any ghost numeric 'id' key)
-      const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as any;
+      const { id: _id, ...existingClean } = (existingForms[studentId] ?? {}) as unknown as Record<
+        string,
+        unknown
+      >;
       formDataArray.push({ ...existingClean, ...formData });
     });
 

@@ -317,8 +317,8 @@ async function processFiles(fileList: File[]) {
       body: formData,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).error || `HTTP ${res.status}`);
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
     const data = (await res.json()) as { results: ParsedItem[] };
 
@@ -332,8 +332,9 @@ async function processFiles(fileList: File[]) {
     });
 
     step.value = 'review';
-  } catch (e: any) {
-    errorMessage.value = $t('parseFailed') + (e?.message ? ` (${e.message})` : '');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    errorMessage.value = $t('parseFailed') + (msg ? ` (${msg})` : '');
   } finally {
     if (elapsedTimer) {
       clearInterval(elapsedTimer);

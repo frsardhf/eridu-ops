@@ -1,4 +1,4 @@
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, type UnwrapRef } from 'vue';
 
 /**
  * Position a panel anchored to a trigger element.
@@ -55,7 +55,7 @@ export function useTooltip<T>() {
 
   const showTooltip = async (event: MouseEvent, identifier: T) => {
     tooltipStyle.value = positionAtCursor(event);
-    activeTooltip.value = identifier as any;
+    activeTooltip.value = identifier as UnwrapRef<T>;
 
     await nextTick();
     tooltipStyle.value = positionAtCursor(event, tooltipRef.value);

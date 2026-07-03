@@ -1323,11 +1323,15 @@ function useTranslation(path: string, language?: Language): string {
   if (cached !== undefined) return cached;
 
   const parts = path.split('.');
-  let result: any = translations[lang];
+  let result: unknown = translations[lang];
 
   for (const part of parts) {
-    if (result && result[part] !== undefined) {
-      result = result[part];
+    if (
+      result &&
+      typeof result === 'object' &&
+      (result as Record<string, unknown>)[part] !== undefined
+    ) {
+      result = (result as Record<string, unknown>)[part];
     } else {
       console.warn(`Translation missing for path: ${path} in language: ${lang}`);
       // Try to get the English equivalent as fallback
@@ -1341,8 +1345,9 @@ function useTranslation(path: string, language?: Language): string {
     }
   }
 
-  _translationCache.set(cacheKey, result);
-  return result;
+  const value = result as string;
+  _translationCache.set(cacheKey, value);
+  return value;
 }
 
 // Helper function to access nested translations.
