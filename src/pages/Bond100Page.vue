@@ -121,22 +121,32 @@ const summaryMap = computed(() => {
   );
 });
 
-// Metrics follow the server dropdown (but NOT the search box): they're
-// dataset stats for the selected server, not the visible/filtered subset.
+// Metrics follow the server AND school dropdowns (but NOT the search box):
+// they're dataset stats for the selected server/school, not the visible subset.
 const totals = computed(() => {
   const students = summary.value?.students ?? [];
+  const server = selectedServer.value;
+  const school = selectedSchool.value;
 
-  if (selectedServer.value === 'all') {
+  // All servers + all schools: use the authoritative dataset total.
+  if (server === 'all' && school === 'all') {
     return {
       total: summary.value?.total ?? students.reduce((sum, item) => sum + item.count, 0),
       studentsRepresented: students.filter((item) => item.count > 0).length,
     };
   }
 
+  // Restrict to the selected school's students when one is chosen.
+  const schoolIds =
+    school === 'all'
+      ? null
+      : new Set(allStudents.value.filter((s) => s.School === school).map((s) => s.Id));
+
   let total = 0;
   let studentsRepresented = 0;
   for (const item of students) {
-    const n = item.byServer[selectedServer.value] ?? 0;
+    if (schoolIds && !schoolIds.has(item.studentId)) continue;
+    const n = server === 'all' ? item.count : (item.byServer[server] ?? 0);
     if (n > 0) {
       total += n;
       studentsRepresented += 1;
