@@ -115,7 +115,7 @@ Rules:
 - Skip internal refactors, type cleanups, doc-only changes, and dependency bumps unless they're directly user-visible.
 - Group related commits into a single highlight; don't list every commit.
 - Aim for 1 short summary sentence + 2-4 highlight bullets.
-- Provide both \`en\` and \`jp\` for every user-facing string.
+- Provide \`en\`, \`jp\`, and \`kr\` for every user-facing string (title, summary, each highlight). Match the game-term wording already used in the \`kr\` block of \`src/locales/index.ts\` (e.g. 인연, 잠재능력, 성급, 영입, 전술 교육 BD).
 - Use \`toCommit: '${headSha}'\` and the prior entry's \`toCommit\` (${lastCommit}) as \`fromCommit\`.
 - Pick a date in YYYY-MM-DD format (today is fine).
 - Choose an id like \`YYYY-MM-<slug>\`.
