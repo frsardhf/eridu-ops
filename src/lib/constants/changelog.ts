@@ -54,6 +54,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-07-korean-and-hall-filters',
+    date: '2026-07-04',
+    title: {
+      en: 'Korean support & Bond 100 Hall filters',
+      jp: '韓国語対応と絆100殿堂のフィルター',
+      kr: '한국어 지원과 인연 100 전당 필터',
+    },
+    summary: {
+      en: 'Eridu Ops is now available in Korean, plus new filters and stats on the Bond 100 Hall.',
+      jp: 'Eridu Ops が韓国語で利用可能になりました。絆100殿堂には新しいフィルターと統計も追加。',
+      kr: 'Eridu Ops를 한국어로 이용할 수 있으며, 인연 100 전당에 새로운 필터와 통계가 추가되었습니다.',
+    },
+    highlights: [
+      {
+        en: 'Korean (한국어) is now a fully supported language, and the old English/Japanese toggle is now a proper language picker in the navbar.',
+        jp: '韓国語（한국어）に完全対応しました。これまでの英語／日本語の切り替えは、ナビゲーションバーの言語ピッカーになりました。',
+        kr: '한국어를 완전히 지원하며, 기존의 영어/일본어 토글은 내비게이션 바의 언어 선택기로 바뀌었습니다.',
+      },
+      {
+        en: 'The Bond 100 Hall gains a school filter, a "has Bond 100" toggle, a Recent sort, a by-school breakdown in the stats popover, and per-student freshness dates.',
+        jp: '絆100殿堂に、学園フィルター、「絆100あり」切り替え、最近順の並び替え、統計ポップオーバーの学園別内訳、生徒ごとの更新日を追加。',
+        kr: '인연 100 전당에 학원 필터, "인연 100 보유" 전환, 최근순 정렬, 통계 팝오버의 학원별 내역, 학생별 갱신 날짜가 추가되었습니다.',
+      },
+    ],
+    fromCommit: 'c8487b9',
+    toCommit: 'c3a8a0e',
+  },
+  {
     id: '2026-06-scanner-exact-matching',
     date: '2026-06-13',
     title: {
