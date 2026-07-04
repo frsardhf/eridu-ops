@@ -11,6 +11,7 @@ import type { FormRecord } from '@/lib/hooks/useBulkStudentModify';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { getStudentIconUrl } from '@/lib/utils/iconUtils';
+import { studentMatchesQuery } from '@/lib/utils/sortUtils';
 import { isQuotaExceededError, clearImageCacheStorage } from '@/lib/utils/storageQuota';
 import StarIcon from '@/components/shared/StarIcon.vue';
 import {
@@ -70,6 +71,7 @@ const nonDefaultPersistedIds = ref<Set<number>>(new Set());
 const allFormData = ref<Record<number, FormRecord>>({});
 const isFormDataLoaded = ref(false);
 const enableTargets = ref(false);
+const searchQuery = ref('');
 const characterLevelFilter = ref('');
 const debouncedCharLevelFilter = ref('');
 const showUnfilledOnly = ref(false);
@@ -107,7 +109,11 @@ const filteredStudents = computed<StudentProps[]>(() => {
   const hasCharFilter =
     parsedCharLevel !== null && Number.isFinite(parsedCharLevel) && parsedCharLevel > 0;
 
+  const query = searchQuery.value.trim();
+
   return props.students.filter((student) => {
+    if (query && !studentMatchesQuery(student, query)) return false;
+
     const availability = classifyStudentAvailability(student);
     const matchStar =
       selectedStarFilters.value.length === 0 ||
@@ -530,24 +536,33 @@ async function submitBulkModify() {
             </button>
           </div>
 
-          <!-- Bulk ownership actions -->
-          <div class="ownership-actions">
-            <button
-              type="button"
-              class="ownership-btn ownership-btn--recruit"
-              :disabled="selectedCount === 0 || isSubmitting"
-              @click="bulkSetOwnership(true)"
-            >
-              {{ $t('ownership.markRecruited') }}
-            </button>
-            <button
-              type="button"
-              class="ownership-btn ownership-btn--unrecruit"
-              :disabled="selectedCount === 0 || isSubmitting"
-              @click="bulkSetOwnership(false)"
-            >
-              {{ $t('ownership.markNotRecruited') }}
-            </button>
+          <!-- Bulk ownership actions (left) + student search (right) -->
+          <div class="selection-actions">
+            <div class="ownership-buttons">
+              <button
+                type="button"
+                class="ownership-btn ownership-btn--recruit"
+                :disabled="selectedCount === 0 || isSubmitting"
+                @click="bulkSetOwnership(true)"
+              >
+                {{ $t('ownership.markRecruited') }}
+              </button>
+              <button
+                type="button"
+                class="ownership-btn ownership-btn--unrecruit"
+                :disabled="selectedCount === 0 || isSubmitting"
+                @click="bulkSetOwnership(false)"
+              >
+                {{ $t('ownership.markNotRecruited') }}
+              </button>
+            </div>
+            <input
+              v-model="searchQuery"
+              type="search"
+              class="selection-search"
+              :placeholder="$t('searchStudents')"
+              :aria-label="$t('searchStudents')"
+            />
           </div>
         </section>
 
@@ -1211,11 +1226,49 @@ async function submitBulkModify() {
 }
 
 /* Bulk ownership action buttons */
-.ownership-actions {
+.selection-actions {
   margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.ownership-buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* Hug the right edge of its half rather than stretching the full column. */
+.selection-search {
+  justify-self: end;
+  width: 100%;
+  max-width: 240px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.selection-search:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+/* Narrow: stack buttons over a full-width search. */
+@media (max-width: 640px) {
+  .selection-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .selection-search {
+    justify-self: stretch;
+    max-width: none;
+  }
 }
 
 .ownership-btn {
