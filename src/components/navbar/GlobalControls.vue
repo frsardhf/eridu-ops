@@ -4,6 +4,7 @@ import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
+import SelectMenu from '@/components/shared/SelectMenu.vue';
 
 // --- Props / emits ---
 const props = defineProps<{
@@ -23,7 +24,7 @@ const emit = defineEmits<{
 }>();
 
 // --- State ---
-const { currentLanguage, setLanguage, THEME_OPTIONS } = useNavbarSettings();
+const { currentLanguage, setLanguage, languageOptions, THEME_OPTIONS } = useNavbarSettings();
 
 const showThemeTray = ref(false);
 const trayEl = ref<HTMLElement | null>(null);
@@ -39,13 +40,6 @@ function onSelectTheme(themeId: ThemeId) {
   emit('setTheme', themeId);
   showThemeTray.value = false;
 }
-
-function toggleLanguage() {
-  setLanguage(currentLanguage.value === 'en' ? 'jp' : 'en');
-}
-
-const langLabel = computed(() => (currentLanguage.value === 'en' ? 'English' : '日本語'));
-const langSwitchTarget = computed(() => (currentLanguage.value === 'en' ? '日本語' : 'English'));
 
 // Two-tone swatch of the CURRENT theme's own colors (same source as the tray
 // swatches): a meaningful "your theme" hint instead of an arbitrary gradient.
@@ -72,15 +66,16 @@ useClickOutside(handleClickOutside);
 
 <template>
   <div class="global-controls" :class="{ 'global-controls--standalone': standalone }">
-    <!-- Language toggle -->
-    <button
-      type="button"
-      class="gc-lang-toggle"
-      :aria-label="`Switch to ${langSwitchTarget}`"
-      @click="toggleLanguage"
-    >
-      {{ langLabel }}
-    </button>
+    <!-- Language picker -->
+    <div class="gc-lang">
+      <SelectMenu
+        :model-value="currentLanguage"
+        :options="languageOptions"
+        aria-label="Language"
+        align="right"
+        @update:model-value="setLanguage"
+      />
+    </div>
 
     <!-- Theme picker -->
     <div class="gc-theme-tray-wrapper">
@@ -180,30 +175,9 @@ useClickOutside(handleClickOutside);
   gap: 8px;
 }
 
-.gc-lang-toggle {
-  height: 32px;
-  padding: 0 10px;
-  min-width: 72px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--background-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
+.gc-lang {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-}
-
-.gc-lang-toggle:hover {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
 }
 
 .gc-icon-btn {
@@ -341,13 +315,6 @@ useClickOutside(handleClickOutside);
     gap: 6px;
   }
 
-  .gc-lang-toggle {
-    height: 28px;
-    min-width: 60px;
-    font-size: 0.72rem;
-    padding: 0 8px;
-  }
-
   .gc-icon-btn,
   .gc-theme-tray-toggle {
     width: 28px;
@@ -368,9 +335,9 @@ useClickOutside(handleClickOutside);
   }
 }
 
-/* The language toggle is more essential: it holds out until phones. */
+/* The language picker is more essential: it holds out until phones. */
 @media screen and (max-width: 480px) {
-  .gc-lang-toggle {
+  .gc-lang {
     display: none;
   }
 }
@@ -379,7 +346,7 @@ useClickOutside(handleClickOutside);
    page): keep Contact/Credits/Language inline at every width. Higher specificity
    than the collapse rules above, so it wins regardless of viewport. */
 .global-controls--standalone .gc-icon-btn,
-.global-controls--standalone .gc-lang-toggle {
+.global-controls--standalone .gc-lang {
   display: inline-flex;
 }
 </style>

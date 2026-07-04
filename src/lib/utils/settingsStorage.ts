@@ -4,6 +4,7 @@ import type { SortOption, SortDirection } from '../../types/header';
 import type { ThemeId } from '@/types/theme';
 import type { StudentFilters } from '@/types/filter';
 import type { CardOverlayId } from '@/types/card';
+import type { Language } from '../stores/localizationStore';
 import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
@@ -14,7 +15,7 @@ let _cachedSettings: AppSettings | null = null;
 
 export interface AppSettings {
   theme: ThemeId;
-  language: 'en' | 'jp';
+  language: Language;
   sort: {
     option: SortOption;
     direction: SortDirection;

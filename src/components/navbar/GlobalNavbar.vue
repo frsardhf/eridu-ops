@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { defineAsyncComponent, onMounted, ref } from 'vue';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
+import type { Language } from '@/lib/stores/localizationStore';
 import { CHANGELOG } from '@/lib/constants/changelog';
 import { getLastSeenChangelogId, setLastSeenChangelogId } from '@/lib/utils/settingsStorage';
 import GlobalControls from './GlobalControls.vue';
+import SelectMenu from '@/components/shared/SelectMenu.vue';
 import ContactModal from './modals/ContactModal.vue';
 import CreditsModal from './modals/CreditsModal.vue';
 import '@/styles/navbar.css';
@@ -25,12 +27,12 @@ defineProps<{
 }>();
 
 const { currentTheme, setTheme, reinitializeData } = useStudentData();
-const { exportData, currentLanguage, setLanguage } = useNavbarSettings();
+const { exportData, currentLanguage, setLanguage, languageOptions } = useNavbarSettings();
 
-// Language toggle is mirrored into the mobile menu (the top-bar toggle hides <=480).
-const langLabel = computed(() => (currentLanguage.value === 'en' ? 'English' : '日本語'));
-function toggleLanguage() {
-  setLanguage(currentLanguage.value === 'en' ? 'jp' : 'en');
+// Language picker is mirrored into the mobile menu (the top-bar one hides <=480).
+function onSelectLanguage(lang: Language) {
+  setLanguage(lang);
+  mobileMenuOpen.value = false;
 }
 
 const mobileMenuOpen = ref(false);
@@ -297,12 +299,7 @@ useClickOutside(handleClickOutside);
               </svg>
               {{ $t('credits') }}
             </button>
-            <button
-              class="mobile-menu-option compact-only-sm"
-              type="button"
-              :aria-label="`Language: ${langLabel}`"
-              @click="toggleLanguage"
-            >
+            <div class="mobile-menu-option compact-only-sm mobile-menu-lang">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -321,8 +318,14 @@ useClickOutside(handleClickOutside);
                   d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
                 />
               </svg>
-              {{ langLabel }}
-            </button>
+              <SelectMenu
+                :model-value="currentLanguage"
+                :options="languageOptions"
+                aria-label="Language"
+                block
+                @update:model-value="onSelectLanguage"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -491,6 +494,20 @@ useClickOutside(handleClickOutside);
 
 .option-icon {
   flex-shrink: 0;
+}
+
+/* Language row hosts a SelectMenu (not a button): no pointer/hover affordance,
+   and the picker fills the row width. */
+.mobile-menu-lang {
+  cursor: default;
+}
+
+.mobile-menu-lang:hover {
+  background-color: transparent;
+}
+
+.mobile-menu-lang .select-menu {
+  flex: 1;
 }
 
 /* Menu entries shown only once the matching top-bar control collapses: Contact

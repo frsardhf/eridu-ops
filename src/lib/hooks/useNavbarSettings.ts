@@ -1,4 +1,4 @@
-import { currentLanguage, setLanguage } from '../stores/localizationStore';
+import { currentLanguage, setLanguage, LANGUAGE_OPTIONS } from '../stores/localizationStore';
 import { THEME_OPTIONS } from '../utils/themeUtils';
 import { downloadLocalStorageData } from '../services/importExportService';
 
@@ -14,6 +14,7 @@ export function useNavbarSettings() {
   return {
     currentLanguage,
     setLanguage,
+    languageOptions: LANGUAGE_OPTIONS,
     THEME_OPTIONS,
     exportData,
   };

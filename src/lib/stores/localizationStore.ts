@@ -3,14 +3,23 @@ import { getSettings, updateSetting } from '../utils/settingsStorage';
 import { loadLocalizationData } from '../services/schaleDbFetchService';
 import type { SchaleLocalization } from '@/types/schaledb';
 
-export type Language = 'en' | 'jp';
+export type Language = 'en' | 'jp' | 'kr';
+
+/** Selectable UI languages with native-name labels; drives the navbar picker. */
+export const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'jp', label: '日本語' },
+  { value: 'kr', label: '한국어' },
+];
 
 function detectBrowserLanguage(): Language {
-  const browserLang =
-    navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || 'en';
-  if (browserLang.toLowerCase().startsWith('ja')) {
-    return 'jp';
-  }
+  const browserLang = (
+    navigator.language ||
+    (navigator as Navigator & { userLanguage?: string }).userLanguage ||
+    'en'
+  ).toLowerCase();
+  if (browserLang.startsWith('ja')) return 'jp';
+  if (browserLang.startsWith('ko')) return 'kr';
   return 'en';
 }
 

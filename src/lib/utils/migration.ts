@@ -240,7 +240,7 @@ function consolidateSettings(): void {
 
     const consolidatedSettings: AppSettings = {
       theme,
-      language: language as 'en' | 'jp',
+      language: language as AppSettings['language'],
       sort: {
         option: sortOption as SortOption,
         direction: sortDirection as SortDirection,

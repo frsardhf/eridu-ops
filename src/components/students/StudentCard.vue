@@ -70,8 +70,8 @@ function getFontSizeClass(name: string): string {
   }
 
   // Language-specific font sizing
-  if (currentLanguage.value === 'jp') {
-    // Japanese uses different thresholds
+  if (currentLanguage.value === 'jp' || currentLanguage.value === 'kr') {
+    // Japanese and Korean use full-width glyphs, so fewer chars fit per line
     if (name.length < 7) {
       return 'text-xl';
     } else if (name.length < 8) {
