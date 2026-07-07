@@ -165,10 +165,9 @@ onUnmounted(() => {
 
     <footer class="landing-footer">
       <p class="landing-footer-disclaimer">
-        Eridu Ops is an unofficial fan project, not affiliated with Nexon, Nexon Games, or Yostar.
-        Game data and images are provided via
-        <a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a>; all
-        artwork, information, and assets remain the property of their respective owners.
+        {{ $t('landingDisclaimerBefore')
+        }}<a href="https://schaledb.com" target="_blank" rel="noopener noreferrer">SchaleDB</a
+        >{{ $t('landingDisclaimerAfter') }}
       </p>
     </footer>
 

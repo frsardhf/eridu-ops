@@ -16,6 +16,10 @@ const en = {
   studentsDesc: 'Track bond levels, skill upgrades, gear progression, and material costs.',
   bondsDesc: 'Gift planning and bond progress tracker for your students.',
   bond100Desc: 'See who across the player base has reached Bond 100 with each student.',
+  landingDisclaimerBefore:
+    'Eridu Ops is an unofficial fan project, not affiliated with Nexon, Nexon Games, or Yostar. Game data and images are provided via ',
+  landingDisclaimerAfter:
+    '; all artwork, information, and assets remain the property of their respective owners.',
 
   // Bond100 page
   bond100: {
@@ -668,6 +672,10 @@ const jp: TranslationTree = {
   studentsDesc: '絆レベル、スキル強化、装備の進捗、素材コストを追跡。',
   bondsDesc: 'ギフト計画と絆進捗の追跡。',
   bond100Desc: 'プレイヤー間で誰がどの生徒と絆100に到達したかを確認。',
+  landingDisclaimerBefore:
+    'Eridu Opsは非公式のファン制作物であり、Nexon、Nexon Games、Yostarとは一切関係ありません。ゲームデータおよび画像は',
+  landingDisclaimerAfter:
+    '経由で提供されています。すべてのイラスト、情報、アセットの権利は各権利者に帰属します。',
 
   // Bond100 page
   bond100: {
@@ -1320,6 +1328,10 @@ const kr: TranslationTree = {
   studentsDesc: '인연 레벨, 스킬 강화, 장비 진행도, 재료 비용을 관리하세요.',
   bondsDesc: '학생을 위한 선물 계획과 인연 진행도 추적.',
   bond100Desc: '각 학생과 인연 100을 달성한 플레이어를 확인하세요.',
+  landingDisclaimerBefore:
+    'Eridu Ops는 비공식 팬 제작 프로젝트이며 Nexon, Nexon Games, Yostar와 관련이 없습니다. 게임 데이터와 이미지는 ',
+  landingDisclaimerAfter:
+    '를 통해 제공됩니다. 모든 일러스트, 정보, 리소스의 권리는 각 권리자에게 있습니다.',
 
   // Bond100 page
   bond100: {
