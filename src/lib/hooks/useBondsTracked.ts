@@ -99,7 +99,8 @@ function computeAutoSeed(): number[] {
 }
 
 // --- Settings-backed ID set factory (keyed by primary student ID) ---
-// Used for both tracked-students and gift-planning opt-in: same CRUD shape.
+// Used for tracked-students, gift-planning opt-in, and summary-cards opt-in:
+// same CRUD shape.
 
 interface SettingsBackedSet {
   ids: ComputedRef<number[]>;
@@ -165,6 +166,7 @@ let _seeded = false;
 export function useBondsTracked() {
   const tracked = createSettingsBackedSet('bondsTrackedStudents');
   const planning = createSettingsBackedSet('bondsGiftPlanningEnabled');
+  const summary = createSettingsBackedSet('bondsSummaryShown');
 
   // First-call seed (deferred until after data has loaded: call site decides
   // when to invoke). Safe to call multiple times; only runs once per session.
@@ -195,5 +197,10 @@ export function useBondsTracked() {
     isGiftPlanningEnabled: planning.has,
     enableGiftPlanning: planning.add,
     disableGiftPlanning: planning.remove,
+
+    // Summary cards opt-in (CONVERSION / CONSUMED / PROJECTION; hidden by default)
+    isSummaryShown: summary.has,
+    showSummary: summary.add,
+    hideSummary: summary.remove,
   };
 }

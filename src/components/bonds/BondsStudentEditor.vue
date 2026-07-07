@@ -29,7 +29,14 @@ const props = defineProps<{
 }>();
 
 const { allGifts } = useStudentData();
-const { isGiftPlanningEnabled, enableGiftPlanning, disableGiftPlanning } = useBondsTracked();
+const {
+  isGiftPlanningEnabled,
+  enableGiftPlanning,
+  disableGiftPlanning,
+  isSummaryShown,
+  showSummary,
+  hideSummary,
+} = useBondsTracked();
 
 const {
   currentBond,
@@ -134,6 +141,15 @@ function onHideGiftGrid() {
   disableGiftPlanning(props.student.Id);
 }
 
+// --- Summary cards visibility (CONVERSION / CONSUMED / PROJECTION; hidden by default) ---
+const showSummaryCards = computed(() => isSummaryShown(props.student.Id));
+function onShowSummary() {
+  showSummary(props.student.Id);
+}
+function onHideSummary() {
+  hideSummary(props.student.Id);
+}
+
 // Reverse deep-link: jump back to /students with this student's modal opened.
 const router = useRouter();
 function returnToStudentPage() {
@@ -180,60 +196,70 @@ function returnToStudentPage() {
     </div>
 
     <template v-if="!collapsed">
-      <div class="be-cards-row">
-        <section v-if="yellowStoneItem" class="be-card-group">
-          <h3 class="be-card-label">{{ $t('conversion') }}</h3>
-          <div class="be-card-group-items">
-            <GiftCard
-              :item="yellowStoneItem"
-              :value="boxFormData[YELLOW_STONE_ID] ?? 0"
-              :is-box="true"
-              @update:value="(e) => handleBoxInput(YELLOW_STONE_ID, e)"
-            />
-          </div>
-        </section>
+      <template v-if="showSummaryCards">
+        <div class="be-cards-row">
+          <section v-if="yellowStoneItem" class="be-card-group">
+            <h3 class="be-card-label">{{ $t('conversion') }}</h3>
+            <div class="be-card-group-items">
+              <GiftCard
+                :item="yellowStoneItem"
+                :value="boxFormData[YELLOW_STONE_ID] ?? 0"
+                :is-box="true"
+                @update:value="(e) => handleBoxInput(YELLOW_STONE_ID, e)"
+              />
+            </div>
+          </section>
 
-        <section v-if="materialNeedItems.length" class="be-card-group be-card-group--consumed">
-          <h3 class="be-card-label">{{ $t('consumed') }}</h3>
-          <div class="be-card-group-items">
-            <GiftCard
-              v-for="need in materialNeedItems"
-              :key="need.item.gift.Id"
-              :item="need.item"
-              :value="need.qty"
-              readonly
-              hide-grade
-            />
-          </div>
-        </section>
+          <section v-if="materialNeedItems.length" class="be-card-group be-card-group--consumed">
+            <h3 class="be-card-label">{{ $t('consumed') }}</h3>
+            <div class="be-card-group-items">
+              <GiftCard
+                v-for="need in materialNeedItems"
+                :key="need.item.gift.Id"
+                :item="need.item"
+                :value="need.qty"
+                readonly
+                hide-grade
+              />
+            </div>
+          </section>
 
-        <section v-if="hasNonGiftExp" class="be-card-group be-card-group--projection">
-          <div class="be-projection-header">
-            <h3 class="be-card-label">{{ $t('projection') }}</h3>
-            <span class="be-projection-reaches">
-              {{ reachesMax ? $t('reachesBondMax') : $t('reachesBondN', { n: newBondLevel }) }}
-            </span>
-          </div>
-          <div class="be-projection">
-            <div class="be-projection-row">
-              <span>{{ $t('gifts') }}</span>
-              <span>+{{ (giftsExp + boxesExp).toLocaleString() }}</span>
+          <section v-if="hasNonGiftExp" class="be-card-group be-card-group--projection">
+            <div class="be-projection-header">
+              <h3 class="be-card-label">{{ $t('projection') }}</h3>
+              <span class="be-projection-reaches">
+                {{ reachesMax ? $t('reachesBondMax') : $t('reachesBondN', { n: newBondLevel }) }}
+              </span>
             </div>
-            <div v-if="cafeExp > 0" class="be-projection-row">
-              <span>{{ $t('cafeTaps') }}</span>
-              <span>+{{ cafeExp.toLocaleString() }}</span>
+            <div class="be-projection">
+              <div class="be-projection-row">
+                <span>{{ $t('gifts') }}</span>
+                <span>+{{ (giftsExp + boxesExp).toLocaleString() }}</span>
+              </div>
+              <div v-if="cafeExp > 0" class="be-projection-row">
+                <span>{{ $t('cafeTaps') }}</span>
+                <span>+{{ cafeExp.toLocaleString() }}</span>
+              </div>
+              <div v-if="bonusExp > 0" class="be-projection-row">
+                <span>{{ $t('bonusExp') }}</span>
+                <span>+{{ bonusExp.toLocaleString() }}</span>
+              </div>
+              <div class="be-projection-row be-projection-total">
+                <span>{{ $t('total') }}</span>
+                <span>{{ totalCumulativeExp.toLocaleString() }} {{ $t('exp') }}</span>
+              </div>
             </div>
-            <div v-if="bonusExp > 0" class="be-projection-row">
-              <span>{{ $t('bonusExp') }}</span>
-              <span>+{{ bonusExp.toLocaleString() }}</span>
-            </div>
-            <div class="be-projection-row be-projection-total">
-              <span>{{ $t('total') }}</span>
-              <span>{{ totalCumulativeExp.toLocaleString() }} {{ $t('exp') }}</span>
-            </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
+        <div class="be-summary-footer">
+          <button type="button" class="be-link-btn" @click="onHideSummary">
+            {{ $t('hideSummary') }}
+          </button>
+        </div>
+      </template>
+      <button v-else type="button" class="be-plan-gifts-btn" @click="onShowSummary">
+        + {{ $t('showSummary') }}
+      </button>
 
       <!-- Gift grid OR opt-in toggle -->
       <template v-if="showGiftGrid">
@@ -470,7 +496,8 @@ function returnToStudentPage() {
   background-color: color-mix(in srgb, var(--accent-color) 8%, transparent);
 }
 
-.be-grid-footer {
+.be-grid-footer,
+.be-summary-footer {
   display: flex;
   justify-content: flex-end;
 }

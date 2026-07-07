@@ -31,6 +31,8 @@ export interface AppSettings {
   bondsTrackedStudents?: number[];
   bondsLayout: 'cards' | 'tabs';
   bondsGiftPlanningEnabled?: number[];
+  /** Per-student opt-in to show the CONVERSION / CONSUMED / PROJECTION summary cards (hidden by default). */
+  bondsSummaryShown?: number[];
   bond100Sort?: 'default' | 'name' | 'bond100' | 'recent';
   /** /hall school filter: a raw SchaleDB School value, or 'all'. */
   bond100School?: string;
@@ -69,6 +71,7 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'bondsTrackedStudents',
   'bondsLayout',
   'bondsGiftPlanningEnabled',
+  'bondsSummaryShown',
   'bond100Sort',
   'bond100School',
   'bond100HideEmpty',
