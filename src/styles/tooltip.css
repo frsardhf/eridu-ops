@@ -1,0 +1,44 @@
+/* Shared hover-tooltip primitive (.modal-tooltip + .tooltip-* rows).
+   Lives here, not in studentModal.css, because that stylesheet only loads
+   with the Students-page chunk since the lazy-loading split, while these
+   tooltips also render on /bonds (GiftOption) and in the always-loaded
+   navbar (SearchNavbar pin hint). Import this file wherever a tooltip
+   anchored via useTooltip is rendered. */
+
+.modal-tooltip {
+  position: fixed;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  pointer-events: none;
+  color: var(--text-primary);
+  font-size: 1em;
+}
+
+.tooltip-content {
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.tooltip-name {
+  font-weight: bold;
+  font-size: 1em;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tooltip-cost {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.tooltip-desc {
+  white-space: pre-wrap;
+}

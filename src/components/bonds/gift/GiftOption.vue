@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
+import '@/styles/tooltip.css';
 
 const props = defineProps<{
   canConvert: boolean;

@@ -8,6 +8,7 @@ import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType, SkillLevels, SKILL_TYPES } from '@/types/upgrade';
 import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue';
+import '@/styles/tooltip.css';
 
 const props = defineProps<{
   student: StudentProps;

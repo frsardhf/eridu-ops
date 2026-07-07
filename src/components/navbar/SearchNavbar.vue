@@ -9,6 +9,7 @@ import FilterPanel from './FilterPanel.vue';
 import SortPanel from './SortPanel.vue';
 import { useCardOverlayPrefs } from '@/lib/hooks/useCardOverlayPrefs';
 import { StudentFilters, StudentFilterValue, countActiveFilters } from '@/types/filter';
+import '@/styles/tooltip.css';
 
 const props = defineProps<{
   searchQuery: string;
@@ -484,7 +485,7 @@ useClickOutside(handleClickOutside);
   display: inline-flex;
 }
 
-/* The "sorting paused" nudge reuses the shared .modal-tooltip (studentModal.css,
+/* The "sorting paused" nudge reuses the shared .modal-tooltip (styles/tooltip.css,
    position: fixed) anchored to the pin button via positionAtElement. Raised
    above the sort/filter popovers (.vc-popover z-index 1100) so it stays
    visible when a sort attempt happens with the panel still open. */

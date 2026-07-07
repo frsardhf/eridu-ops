@@ -6,6 +6,7 @@ import { useTooltip } from '@/composables/useTooltip';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { SkillType, SkillLevels } from '@/types/upgrade';
+import '@/styles/tooltip.css';
 
 const props = defineProps<{
   student: StudentProps;
