@@ -23,8 +23,21 @@ function detectBrowserLanguage(): Language {
   return 'en';
 }
 
-// Priority: stored preference > browser language > 'en'.
-export const currentLanguage = ref<Language>(getSettings().language || detectBrowserLanguage());
+// Deep-link override so localized landings / shared links open in the right
+// language. Accepts ISO codes (ja/ko, used in URLs + hreflang) or the internal
+// codes (jp/kr); anything else is ignored so a bad param can't blank the UI.
+function detectUrlLanguage(): Language | null {
+  const raw = new URLSearchParams(window.location.search).get('lang')?.toLowerCase();
+  if (raw === 'en') return 'en';
+  if (raw === 'ja' || raw === 'jp') return 'jp';
+  if (raw === 'ko' || raw === 'kr') return 'kr';
+  return null;
+}
+
+// Priority: `?lang=` deep-link > stored preference > browser language > 'en'.
+export const currentLanguage = ref<Language>(
+  detectUrlLanguage() || getSettings().language || detectBrowserLanguage(),
+);
 
 if (!getSettings().language) {
   updateSetting('language', currentLanguage.value);
