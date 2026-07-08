@@ -72,6 +72,7 @@ const canvasEl = ref<HTMLCanvasElement | null>(null);
 const {
   ready,
   error,
+  clipNames,
   play,
   hasClip,
   setFacing,
@@ -80,6 +81,7 @@ const {
   getModelBoundsPx,
   setOrbitEnabled,
   setZoom,
+  resize,
 } = useChibi3dScene(canvasEl, {
   charId: props.charId,
   size: props.size,
@@ -190,7 +192,7 @@ function playClip(clip: string): void {
   play(clip);
 }
 
-defineExpose({ walkTo, playClip, voiceStatus });
+defineExpose({ walkTo, playClip, voiceStatus, clipNames });
 
 // Tap vs drag: a press on her is `pending` until the pointer either travels past
 // DRAG_THRESHOLD (-> commit to a pickup/drag) or releases in place (-> a tap plays the
@@ -372,9 +374,36 @@ watch(ready, (isReady) => {
   }
 });
 
+// Live zoom (apparent size). Applies when not orbiting.
+watch(
+  () => props.zoom,
+  (z) => setZoom(z),
+);
+
+// Live canvas resize (the page's Inspect mode swells the pet to a large stage). Recenters the
+// new canvas over its positioned parent so the model stays put instead of jumping by the size
+// delta. Any in-flight walk is cancelled; Inspect suspends pet gestures anyway.
+watch(
+  () => props.size,
+  (s) => {
+    resize(s);
+    targetX.value = null;
+    targetY.value = null;
+    walking = false;
+    const parent = rootEl.value?.offsetParent as HTMLElement | null;
+    if (parent) {
+      x.value = Math.round((parent.clientWidth - s) / 2);
+      y.value = Math.round((parent.clientHeight - s) / 2);
+    }
+  },
+);
+
 // Orbit mode: enable inspection controls and switch the cursor; off restores the pet.
 // Controls listen on the full-viewport stage (rootEl's positioned offsetParent) so
-// drag/wheel works anywhere on the page, not just over the small canvas.
+// drag/wheel works anywhere on the page, not just over the small canvas. Registered AFTER
+// the zoom/size watchers so that when several props flip together (Inspect toggling orbit +
+// zoom + size in one tick) the pulled-back framing is applied before OrbitControls latch onto
+// the camera; otherwise orbit would start from the tight pet distance.
 watch(
   () => props.orbit,
   (on) => {
@@ -385,12 +414,6 @@ watch(
     setOrbitEnabled(on, stage);
     petCursor.value = on ? 'grab' : 'crosshair';
   },
-);
-
-// Live zoom (apparent size). Applies when not orbiting.
-watch(
-  () => props.zoom,
-  (z) => setZoom(z),
 );
 
 // Idle chatter: gacha a cafe monolog on a randomized 20–40s cadence (avg ~30s), but only
