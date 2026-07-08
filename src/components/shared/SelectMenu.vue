@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends string | number">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 
 interface SelectOption {
@@ -63,6 +63,19 @@ function toggle(event: Event) {
   if (!open.value) updatePosition();
   open.value = !open.value;
 }
+
+// On open, bring the selected option into view (centred) so a long list doesn't always start
+// scrolled to the top. Runs after the popover renders (nextTick); scrolls only the popover's
+// own overflow, so the page never moves.
+watch(open, (isOpen) => {
+  if (!isOpen) return;
+  nextTick(() => {
+    const pop = popoverEl.value;
+    const active = pop?.querySelector<HTMLElement>('.select-option.active');
+    if (!pop || !active) return;
+    pop.scrollTop = active.offsetTop - pop.clientHeight / 2 + active.clientHeight / 2;
+  });
+});
 
 function pick(value: T) {
   emit('update:modelValue', value);
