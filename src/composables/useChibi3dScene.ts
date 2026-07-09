@@ -35,6 +35,9 @@ interface Chibi3dSceneOptions {
   charId: string;
   /** Rendered canvas size in px (square). */
   size: number;
+  /** Reports the effective zoom back out when the orbit wheel dollies the camera, so a
+   *  bound size slider stays in sync. Fires only on real distance changes (not rotation). */
+  onZoomChange?: (zoom: number) => void;
 }
 
 // The four mouth-overlay uniforms injected into the EyeMouth MeshToonMaterial.
@@ -148,6 +151,15 @@ const FOV_DEG = 35; // vertical fov (square aspect, so == horizontal)
 const TILT_TAN = Math.tan((13.8 * Math.PI) / 180); // ~13.8deg downtilt (looking down at the pet)
 const CAM_TARGET_Y = 0.6; // look-at height; the canvas centre maps to (0, this, 0)
 const CAM_DISTANCE = 3; // camera distance at zoom 1 (the Size slider divides this)
+// applyBaseCamera sits the camera at (0, +d*TILT_TAN, d) with d = CAM_DISTANCE/zoom, so the true
+// |camera - target| is d times this factor. Orbit dolly / zoom read-back use the true distance so
+// zoom <-> distance round-trips exactly (else each orbit toggle shrank zoom by this factor).
+const CAM_TILT_FACTOR = Math.sqrt(1 + TILT_TAN * TILT_TAN);
+const CAM_ORBIT_DISTANCE = CAM_DISTANCE * CAM_TILT_FACTOR; // true target distance at zoom 1
+
+/** Apparent-size (camera dolly) bounds, shared by the size slider and the orbit wheel clamp. */
+export const CHIBI_ZOOM_MIN = 0.5;
+export const CHIBI_ZOOM_MAX = 1.5;
 
 // Dispose a material AND every texture bound to it. three's `material.dispose()` does
 // NOT free the textures it references, so without this every scene teardown (HMR reload
@@ -538,12 +550,33 @@ export function useChibi3dScene(
 
   /**
    * Zoom = apparent size: >1 dollies the camera closer so she fills more of the canvas
-   * (no canvas resize, no extra render cost). Applies immediately when not orbiting;
-   * during orbit the wheel drives zoom and this stays the framing orbit-off restores to.
+   * (no canvas resize, no extra render cost). When not orbiting it re-frames the fixed pet
+   * camera; while orbiting it dollies along the current view direction (keeping the orbit
+   * angle) so a size slider works in both modes. The wheel also dollies during orbit.
    */
   function setZoom(zoom: number): void {
-    currentZoom = Math.max(0.5, zoom);
-    if (!controls?.enabled) applyBaseCamera();
+    currentZoom = Math.min(CHIBI_ZOOM_MAX, Math.max(CHIBI_ZOOM_MIN, zoom));
+    if (controls?.enabled && camera) {
+      const wantDist = CAM_ORBIT_DISTANCE / currentZoom;
+      // Skip if already there: this is what breaks the wheel -> onZoomChange -> prop -> setZoom
+      // feedback loop (the written-back value maps straight back to the current distance).
+      if (Math.abs(camera.position.distanceTo(controls.target) - wantDist) < 1e-3) return;
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      camera.position.copy(controls.target).addScaledVector(dir, wantDist);
+      controls.update();
+    } else {
+      applyBaseCamera();
+    }
+  }
+
+  // Orbit wheel/pan changed the camera distance: derive the zoom and report it out (rotation
+  // leaves distance unchanged, so those changes are filtered by the epsilon check).
+  function onControlsChange(): void {
+    if (!camera || !controls) return;
+    const z = CAM_ORBIT_DISTANCE / camera.position.distanceTo(controls.target);
+    if (Math.abs(z - currentZoom) < 1e-4) return;
+    currentZoom = z;
+    opts.onZoomChange?.(z);
   }
 
   /**
@@ -574,6 +607,10 @@ export function useChibi3dScene(
         controls = new OrbitControls(camera, domElement ?? renderer.domElement);
         controls.enableDamping = true;
         controls.target.set(0, CAM_TARGET_Y, 0);
+        // Clamp the wheel dolly to the same range as the size slider (distance = orbit dist / zoom).
+        controls.minDistance = CAM_ORBIT_DISTANCE / CHIBI_ZOOM_MAX;
+        controls.maxDistance = CAM_ORBIT_DISTANCE / CHIBI_ZOOM_MIN;
+        controls.addEventListener('change', onControlsChange);
       }
       controls.enabled = true;
     } else if (controls) {
@@ -608,6 +645,7 @@ export function useChibi3dScene(
     disposed = true;
     if (rafId) cancelAnimationFrame(rafId);
     mixer?.stopAllAction();
+    controls?.removeEventListener('change', onControlsChange);
     controls?.dispose();
     controls = null;
     grad?.dispose();

@@ -2,6 +2,7 @@
 import { ref, computed, watch, useTemplateRef } from 'vue';
 import { $t } from '@/locales';
 import Chibi3dPet from '@/components/chibi/Chibi3dPet.vue';
+import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/useChibi3dScene';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
 import { useStudentData } from '@/lib/hooks/useStudentData';
@@ -40,20 +41,19 @@ const charOptions = computed(() =>
   })),
 );
 
-// Live-tunable apparent size (camera dolly). armedSpeedMult stays baked at the component
-// default (1.70) now that it's calibrated; this slider was repurposed for sizing.
+// Shared apparent-size slider (camera dolly): higher = closer = bigger chibi. Drives both the
+// pet framing and Inspect (setZoom dollies the orbit camera too), so there's one Size control
+// for every mode. Default sits a touch enlarged.
 const zoom = ref(1.25);
 
 // Inspection orbit mode: drag spins the camera; pet walking/pickup suspend while on.
 const orbit = ref(false);
 
-// Inspect mode: the pet canvas fills the viewport (wide) and the camera pulls back, so
-// furniture/event clips that reach past the 540 pet frame show uncropped. Toggled manually.
-// Pair with Orbit (forced on in Inspect) to spin. The wide canvas + resize live in the pet.
+// Inspect mode: the pet canvas fills the viewport (wide) so furniture/event clips that reach
+// past the 540 pet frame show uncropped. Toggled manually; Orbit is forced on so you can spin.
+// The wide canvas + resize live in the pet.
 const PET_SIZE = 540;
-const INSPECT_ZOOM = 0.6; // dolly out (camera distance 3 / 0.6 = 5) for the wider clips
 const inspect = ref(false);
-const petZoom = computed(() => (inspect.value ? INSPECT_ZOOM : zoom.value));
 
 const pet = useTemplateRef<InstanceType<typeof Chibi3dPet>>('pet');
 
@@ -139,6 +139,16 @@ function onStagePointerDown(e: PointerEvent): void {
           Orbit
         </label>
       </div>
+      <label class="chibi-slider">
+        Size ×{{ zoom.toFixed(2) }}
+        <input
+          v-model.number="zoom"
+          type="range"
+          :min="CHIBI_ZOOM_MIN"
+          :max="CHIBI_ZOOM_MAX"
+          step="0.05"
+        />
+      </label>
       <span class="chibi-orbit__hint">{{
         orbit || inspect ? 'drag to spin · wheel to zoom' : $t('chibi.hint')
       }}</span>
@@ -146,10 +156,6 @@ function onStagePointerDown(e: PointerEvent): void {
 
     <div class="chibi-chars" @pointerdown.stop>
       <SelectMenu v-model="charId" :options="charOptions" align="right" aria-label="Character" />
-      <label v-if="!inspect" class="chibi-slider">
-        Size ×{{ zoom.toFixed(2) }}
-        <input v-model.number="zoom" type="range" min="1" max="1.5" step="0.05" />
-      </label>
     </div>
 
     <Chibi3dPet
@@ -157,7 +163,7 @@ function onStagePointerDown(e: PointerEvent): void {
       ref="pet"
       :char-id="charId"
       :size="PET_SIZE"
-      :zoom="petZoom"
+      v-model:zoom="zoom"
       :orbit="orbit || inspect"
       :inspect="inspect"
     />

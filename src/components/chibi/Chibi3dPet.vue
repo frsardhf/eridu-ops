@@ -44,6 +44,10 @@ const props = withDefaults(
   },
 );
 
+// Write the zoom back out when the orbit wheel dollies the camera, so a bound size slider
+// (v-model:zoom) tracks the wheel instead of going stale.
+const emit = defineEmits<{ 'update:zoom': [number] }>();
+
 // Clip vocabulary (resolved against the loaded GLB; absent clips just no-op).
 // Weapon state is the governing constraint: Cafe_* is unarmed, Formation_*/Move_* are
 // armed. Idle and walk are always drawn from the SAME family so the gun never pops
@@ -90,6 +94,7 @@ const {
 } = useChibi3dScene(canvasEl, {
   charId: props.charId,
   size: props.size,
+  onZoomChange: (z) => emit('update:zoom', z),
 });
 
 const rootEl = ref<HTMLElement | null>(null);
@@ -461,7 +466,17 @@ function onIdleVoiceTick(): void {
 }
 
 onMounted(() => {
-  setZoom(props.zoom); // apply the initial size (the watch only fires on later changes)
+  // Apply the current inspect/zoom/orbit state directly: the watchers are change-only, so a
+  // mount that already starts in Inspect (e.g. switching character while Inspect is on, which
+  // remounts via :key) would otherwise never fill the canvas or enable orbit. Order mirrors the
+  // watchers: layout/aspect, then zoom pull-back, then orbit latches onto the framed camera.
+  if (props.inspect) applyLayout();
+  setZoom(props.zoom);
+  if (props.orbit) {
+    const stage = (rootEl.value?.offsetParent as HTMLElement | null) ?? undefined;
+    setOrbitEnabled(true, stage);
+    petCursor.value = 'grab';
+  }
   play(props.idleClip);
   scheduleIdleVoice();
   rafId = requestAnimationFrame(step);
