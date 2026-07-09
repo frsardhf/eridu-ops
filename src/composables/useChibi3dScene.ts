@@ -291,7 +291,10 @@ export function useChibi3dScene(
   let grad: THREE.DataTexture | null = null;
   let controls: OrbitControls | null = null; // inspection-only orbit; off = fixed pet camera
   let currentZoom = 1; // dolly factor: >1 = closer/bigger; the framing orbit restores to
-  let curSize = opts.size; // live canvas edge (px); grows in the page's Inspect mode
+  // Live canvas pixel dimensions. Square for the pet; the page's Inspect mode fills the
+  // viewport (wide), so width/height diverge and the camera aspect tracks them.
+  let curW = opts.size;
+  let curH = opts.size;
 
   const clipsByName = new Map<string, THREE.AnimationClip>(); // bare name -> clip
   let mouthByClip: Record<string, ChibiMouthEvent[]> = {};
@@ -320,12 +323,12 @@ export function useChibi3dScene(
     // for one chibi; raise toward 3 for more, lower if it ever costs frames.
     const SUPERSAMPLE = 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * SUPERSAMPLE);
-    renderer.setSize(curSize, curSize, false);
+    renderer.setSize(curW, curH, false);
     renderer.setClearColor(0x000000, 0); // transparent: the pet floats over the page
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(FOV_DEG, 1, 0.01, 100);
+    camera = new THREE.PerspectiveCamera(FOV_DEG, curW / curH, 0.01, 100);
     applyBaseCamera();
 
     // Even fill from all angles -> no dark side; soft hemi/dir for a hint of form.
@@ -469,7 +472,7 @@ export function useChibi3dScene(
     const gl = renderer.getContext();
     const ratio = renderer.getPixelRatio();
     const px = Math.floor(localX * ratio);
-    const py = Math.floor((curSize - localY) * ratio); // WebGL origin is bottom-left
+    const py = Math.floor((curH - localY) * ratio); // WebGL origin is bottom-left
     gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, _pixel);
     return _pixel[3] > 16; // alpha: >0-ish means a model pixel was drawn here
   }
@@ -498,8 +501,8 @@ export function useChibi3dScene(
         i & 4 ? _box.max.z : _box.min.z,
       );
       _corner.project(camera);
-      const cx = (_corner.x * 0.5 + 0.5) * curSize;
-      const cy = (0.5 - _corner.y * 0.5) * curSize;
+      const cx = (_corner.x * 0.5 + 0.5) * curW;
+      const cy = (0.5 - _corner.y * 0.5) * curH;
       minX = Math.min(minX, cx);
       maxX = Math.max(maxX, cx);
       minY = Math.min(minY, cy);
@@ -550,13 +553,18 @@ export function useChibi3dScene(
    * over the small canvas. Off: restore the fixed (zoomed) pet camera.
    */
   /**
-   * Resize the (square) canvas + render target to `size` px. Aspect stays 1, so the camera
-   * framing is unchanged; only the pixel dimensions grow. Drives the page's Inspect mode,
-   * where the pet swells to a large centred stage so furniture/event clips aren't cropped.
+   * Resize the canvas + render target to `w` x `h` px and match the camera aspect. The pet
+   * passes a square (w == h); the page's Inspect mode passes the full viewport (wide), which
+   * widens the horizontal field of view so furniture/event clips aren't cropped sideways.
    */
-  function resize(size: number): void {
-    curSize = Math.max(1, Math.round(size));
-    renderer?.setSize(curSize, curSize, false);
+  function resize(w: number, h: number): void {
+    curW = Math.max(1, Math.round(w));
+    curH = Math.max(1, Math.round(h));
+    renderer?.setSize(curW, curH, false);
+    if (camera) {
+      camera.aspect = curW / curH;
+      camera.updateProjectionMatrix();
+    }
   }
 
   function setOrbitEnabled(on: boolean, domElement?: HTMLElement): void {

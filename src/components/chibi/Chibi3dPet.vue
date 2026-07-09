@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useChibi3dScene } from '@/composables/useChibi3dScene';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
+import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { useChibiVoice } from '@/composables/useChibiVoice';
 
 // Roaming-pet shell: click-to-walk, drag-to-pick-up, and gacha-on-release behaviour,
@@ -23,6 +24,9 @@ const props = withDefaults(
     zoom?: number;
     /** Inspection orbit mode: drag to spin the camera; pet gestures (walk/pickup) suspend. */
     orbit?: boolean;
+    /** Inspect mode: the canvas fills the positioned stage (wide, not square) so wide clips
+     *  aren't cropped; the wrapper pins to the stage origin and gestures suspend. */
+    inspect?: boolean;
     /** Starting position in stage-local px (top-left of the sprite). */
     startX?: number;
     startY?: number;
@@ -34,6 +38,7 @@ const props = withDefaults(
     idleClip: 'Cafe_Idle',
     zoom: 1,
     orbit: false,
+    inspect: false,
     startX: 40,
     startY: 40,
   },
@@ -92,6 +97,10 @@ const x = ref(props.startX);
 const y = ref(props.startY);
 const targetX = ref<number | null>(null);
 const targetY = ref<number | null>(null);
+
+// Rendered canvas dimensions. Square (= props.size) as a pet; Inspect fills the stage (wide).
+const canvasW = ref(props.size);
+const canvasH = ref(props.size);
 
 // Walk state. `armedWalk` records whether the current walk used Move_Ing (armed), so the
 // arrival idle can match its weapon state. Jump bookkeeping schedules at most one mid-walk
@@ -380,23 +389,37 @@ watch(
   (z) => setZoom(z),
 );
 
-// Live canvas resize (the page's Inspect mode swells the pet to a large stage). Recenters the
-// new canvas over its positioned parent so the model stays put instead of jumping by the size
-// delta. Any in-flight walk is cancelled; Inspect suspends pet gestures anyway.
-watch(
-  () => props.size,
-  (s) => {
-    resize(s);
-    targetX.value = null;
-    targetY.value = null;
-    walking = false;
-    const parent = rootEl.value?.offsetParent as HTMLElement | null;
+// Canvas layout. Inspect fills the positioned stage (wide aspect) pinned to its origin, so
+// wide clips render uncropped; otherwise it's the square `size` centred in the stage. Any
+// in-flight walk is cancelled; Inspect suspends pet gestures anyway.
+function applyLayout(): void {
+  targetX.value = null;
+  targetY.value = null;
+  walking = false;
+  const parent = rootEl.value?.offsetParent as HTMLElement | null;
+  if (props.inspect) {
+    const w = parent?.clientWidth ?? window.innerWidth;
+    const h = parent?.clientHeight ?? window.innerHeight;
+    canvasW.value = w;
+    canvasH.value = h;
+    x.value = 0;
+    y.value = 0;
+    resize(w, h);
+  } else {
+    canvasW.value = props.size;
+    canvasH.value = props.size;
+    resize(props.size, props.size);
     if (parent) {
-      x.value = Math.round((parent.clientWidth - s) / 2);
-      y.value = Math.round((parent.clientHeight - s) / 2);
+      x.value = Math.round((parent.clientWidth - props.size) / 2);
+      y.value = Math.round((parent.clientHeight - props.size) / 2);
     }
-  },
-);
+  }
+}
+watch(() => props.inspect, applyLayout);
+// Keep the Inspect canvas matched to the viewport as it resizes (no-op in pet mode).
+useWindowResize(() => {
+  if (props.inspect) applyLayout();
+});
 
 // Orbit mode: enable inspection controls and switch the cursor; off restores the pet.
 // Controls listen on the full-viewport stage (rootEl's positioned offsetParent) so
@@ -455,7 +478,7 @@ onUnmounted(() => {
       ref="canvasEl"
       class="chibi-pet__canvas"
       :class="{ 'chibi-pet__canvas--hidden': !ready || error }"
-      :style="{ width: `${size}px`, height: `${size}px`, cursor: petCursor }"
+      :style="{ width: `${canvasW}px`, height: `${canvasH}px`, cursor: petCursor }"
       @pointerdown="onGrab"
       @pointermove="onHover"
     ></canvas>
@@ -463,7 +486,7 @@ onUnmounted(() => {
     <div
       v-if="!ready || error"
       class="chibi-pet__status"
-      :style="{ width: `${size}px`, height: `${size}px` }"
+      :style="{ width: `${canvasW}px`, height: `${canvasH}px` }"
     >
       <span v-if="error" class="chibi-pet__status-icon">!</span>
       <span v-else class="chibi-pet__spinner"></span>

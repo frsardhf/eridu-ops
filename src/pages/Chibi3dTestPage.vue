@@ -4,7 +4,6 @@ import { $t } from '@/locales';
 import Chibi3dPet from '@/components/chibi/Chibi3dPet.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
-import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 
 // Dev surface for the live-3D chibi (Road 2). Mirrors /chibi but renders the GLB
@@ -48,20 +47,12 @@ const zoom = ref(1.25);
 // Inspection orbit mode: drag spins the camera; pet walking/pickup suspend while on.
 const orbit = ref(false);
 
-// Inspect mode: the pet swells to a large centred stage and the camera pulls back, so
-// furniture/event clips (which reach past the 540 pet frame) show uncropped. Toggled
-// manually; also auto-entered when an inspect-only clip is picked. Pair with Orbit to spin.
+// Inspect mode: the pet canvas fills the viewport (wide) and the camera pulls back, so
+// furniture/event clips that reach past the 540 pet frame show uncropped. Toggled manually.
+// Pair with Orbit (forced on in Inspect) to spin. The wide canvas + resize live in the pet.
 const PET_SIZE = 540;
 const INSPECT_ZOOM = 0.6; // dolly out (camera distance 3 / 0.6 = 5) for the wider clips
 const inspect = ref(false);
-
-// Inspect canvas fills the stage as a large square (min viewport edge, capped).
-const viewport = ref({ w: window.innerWidth, h: window.innerHeight });
-useWindowResize(() => {
-  viewport.value = { w: window.innerWidth, h: window.innerHeight };
-});
-const inspectSize = computed(() => Math.min(viewport.value.w, viewport.value.h));
-const petSize = computed(() => (inspect.value ? inspectSize.value : PET_SIZE));
 const petZoom = computed(() => (inspect.value ? INSPECT_ZOOM : zoom.value));
 
 const pet = useTemplateRef<InstanceType<typeof Chibi3dPet>>('pet');
@@ -165,9 +156,10 @@ function onStagePointerDown(e: PointerEvent): void {
       :key="charId"
       ref="pet"
       :char-id="charId"
-      :size="petSize"
+      :size="PET_SIZE"
       :zoom="petZoom"
       :orbit="orbit || inspect"
+      :inspect="inspect"
     />
 
     <div class="chibi-debug" @pointerdown.stop>
