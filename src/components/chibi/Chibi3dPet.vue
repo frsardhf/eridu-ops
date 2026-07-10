@@ -470,7 +470,9 @@ onMounted(() => {
   // mount that already starts in Inspect (e.g. switching character while Inspect is on, which
   // remounts via :key) would otherwise never fill the canvas or enable orbit. Order mirrors the
   // watchers: layout/aspect, then zoom pull-back, then orbit latches onto the framed camera.
-  if (props.inspect) applyLayout();
+  // applyLayout also centres the pet in the stage (its non-Inspect branch), so a freshly mounted
+  // character spawns dead-centre instead of at the startX/startY corner.
+  applyLayout();
   setZoom(props.zoom);
   if (props.orbit) {
     const stage = (rootEl.value?.offsetParent as HTMLElement | null) ?? undefined;

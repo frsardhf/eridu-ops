@@ -2,7 +2,8 @@
 import { ref, computed, watch, useTemplateRef } from 'vue';
 import { $t } from '@/locales';
 import Chibi3dPet from '@/components/chibi/Chibi3dPet.vue';
-import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/useChibi3dScene';
+import Chibi3dInteraction from '@/components/chibi/Chibi3dInteraction.vue';
+import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
 import { useStudentData } from '@/lib/hooks/useStudentData';
@@ -46,14 +47,15 @@ const charOptions = computed(() =>
 // for every mode. Default sits a touch enlarged.
 const zoom = ref(1.25);
 
-// Inspection orbit mode: drag spins the camera; pet walking/pickup suspend while on.
-const orbit = ref(false);
-
-// Inspect mode: the pet canvas fills the viewport (wide) so furniture/event clips that reach
-// past the 540 pet frame show uncropped. Toggled manually; Orbit is forced on so you can spin.
-// The wide canvas + resize live in the pet.
+// Inspect mode: the pet canvas fills the viewport (wide) and orbit turns on so furniture/event
+// clips that reach past the 540 pet frame show uncropped (Orbit is folded into Inspect: there's
+// no separate orbit toggle). The wide canvas + resize live in the pet.
 const PET_SIZE = 540;
 const inspect = ref(false);
+
+// Interaction mode swaps the whole roaming-pet stage for the furniture cafe-interaction stage
+// (Chibi3dInteraction): a separate multi-object scene, so it owns its own canvas + pickers.
+const interactionMode = ref(false);
 
 const pet = useTemplateRef<InstanceType<typeof Chibi3dPet>>('pet');
 
@@ -113,102 +115,218 @@ function toggleInspect(): void {
 }
 
 function onStagePointerDown(e: PointerEvent): void {
-  if (orbit.value || inspect.value) return; // no walk-to-click while inspecting
+  if (inspect.value) return; // no walk-to-click while inspecting
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   pet.value?.walkTo(e.clientX - rect.left, e.clientY - rect.top);
 }
 </script>
 
 <template>
-  <div
-    class="chibi-stage"
-    :class="{ 'chibi-stage--orbit': orbit || inspect }"
-    @pointerdown="onStagePointerDown"
-  >
-    <div class="chibi-orbit" @pointerdown.stop>
-      <div class="chibi-toggle">
-        <input
-          id="orbit-toggle"
-          type="checkbox"
-          :checked="orbit || inspect"
-          :disabled="inspect"
-          @change="orbit = !orbit"
-        />
-        <label for="orbit-toggle" title="Toggle orbit inspection">
-          <span class="chibi-switch" aria-hidden="true"></span>
-          Orbit
-        </label>
+  <div class="chibi-page">
+    <!-- Top-level mode: a segmented control (either/or between two named stages), distinct from
+         the on/off view switches below. -->
+    <div class="chibi-mode" @pointerdown.stop>
+      <div class="chibi-seg" role="group" aria-label="Stage mode">
+        <button
+          type="button"
+          class="chibi-seg__btn"
+          :class="{ 'chibi-seg__btn--active': !interactionMode }"
+          @click="interactionMode = false"
+        >
+          <svg
+            class="chibi-ico"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="5" r="3" />
+            <path d="M12 8v7" />
+            <path d="M8 11h8" />
+            <path d="M8 21l4-6 4 6" />
+          </svg>
+          Pet
+        </button>
+        <button
+          type="button"
+          class="chibi-seg__btn"
+          :class="{ 'chibi-seg__btn--active': interactionMode }"
+          @click="interactionMode = true"
+        >
+          <svg
+            class="chibi-ico"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 10V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+            <path d="M2 12a2 2 0 0 1 4 0v3h12v-3a2 2 0 0 1 4 0v6H2z" />
+          </svg>
+          Furniture
+        </button>
       </div>
-      <label class="chibi-slider">
-        Size ×{{ zoom.toFixed(2) }}
-        <input
-          v-model.number="zoom"
-          type="range"
-          :min="CHIBI_ZOOM_MIN"
-          :max="CHIBI_ZOOM_MAX"
-          step="0.05"
-        />
-      </label>
-      <span class="chibi-orbit__hint">{{
-        orbit || inspect ? 'drag to spin · wheel to zoom' : $t('chibi.hint')
-      }}</span>
     </div>
 
-    <div class="chibi-chars" @pointerdown.stop>
-      <SelectMenu v-model="charId" :options="charOptions" align="right" aria-label="Character" />
-    </div>
+    <Chibi3dInteraction v-if="interactionMode" :char-ids="CHIBI_CHAR_IDS" />
 
-    <Chibi3dPet
-      :key="charId"
-      ref="pet"
-      :char-id="charId"
-      :size="PET_SIZE"
-      v-model:zoom="zoom"
-      :orbit="orbit || inspect"
-      :inspect="inspect"
-    />
-
-    <div class="chibi-debug" @pointerdown.stop>
-      <div class="chibi-toggle">
-        <input id="inspect-toggle" type="checkbox" :checked="inspect" @change="toggleInspect" />
-        <label for="inspect-toggle" title="Toggle full-viewport inspect">
-          <span class="chibi-switch" aria-hidden="true"></span>
-          Inspect
+    <div
+      v-else
+      class="chibi-stage"
+      :class="{ 'chibi-stage--orbit': inspect }"
+      @pointerdown="onStagePointerDown"
+    >
+      <!-- View cluster: Inspect toggle (folds in orbit + wide framing) + size + controls hint. -->
+      <div class="chibi-orbit" @pointerdown.stop>
+        <div class="chibi-toggle">
+          <input id="inspect-toggle" type="checkbox" :checked="inspect" @change="toggleInspect" />
+          <label for="inspect-toggle" title="Toggle full-viewport inspect">
+            <span class="chibi-switch" aria-hidden="true"></span>
+            <svg
+              class="chibi-ico"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+              <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+              <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+              <path d="M16 21h3a2 2 0 0 1 2-2v-3" />
+            </svg>
+            Inspect
+          </label>
+        </div>
+        <label class="chibi-slider">
+          Size ×{{ zoom.toFixed(2) }}
+          <input
+            v-model.number="zoom"
+            type="range"
+            :min="CHIBI_ZOOM_MIN"
+            :max="CHIBI_ZOOM_MAX"
+            step="0.05"
+          />
         </label>
+        <span class="chibi-orbit__hint">{{
+          inspect ? 'drag to spin · wheel to zoom' : $t('chibi.hint')
+        }}</span>
       </div>
-      <SelectMenu
-        :model-value="selectedAnim"
-        :options="animOptions"
-        :placeholder="inspect ? 'Interaction' : 'Chibi'"
-        aria-label="Animation"
-        @update:model-value="playAnim"
+
+      <div class="chibi-chars" @pointerdown.stop>
+        <SelectMenu v-model="charId" :options="charOptions" align="right" aria-label="Character" />
+      </div>
+
+      <Chibi3dPet
+        :key="charId"
+        ref="pet"
+        :char-id="charId"
+        :size="PET_SIZE"
+        v-model:zoom="zoom"
+        :orbit="inspect"
+        :inspect="inspect"
       />
-      <button
-        v-for="d in QUICK_CLIPS"
-        :key="d.clip"
-        type="button"
-        class="chibi-debug__btn"
-        :disabled="!hasQuickClip(d.clip)"
-        @click="onQuickClip(d.clip)"
-      >
-        {{ d.label }}
-      </button>
-    </div>
 
-    <div class="chibi-voice" @pointerdown.stop>
-      <div class="chibi-voice__title">Voice ({{ charId }})</div>
-      <div v-for="line in CHIBI_VOICE_LINES" :key="line" class="chibi-voice__row">
-        <span
-          class="chibi-voice__dot"
-          :class="`is-${pet?.voiceStatus?.[line] ?? 'loading'}`"
-        ></span>
-        {{ line }}
+      <div class="chibi-debug" @pointerdown.stop>
+        <SelectMenu
+          :model-value="selectedAnim"
+          :options="animOptions"
+          :placeholder="inspect ? 'Interaction' : 'Chibi'"
+          aria-label="Animation"
+          @update:model-value="playAnim"
+        />
+        <button
+          v-for="d in QUICK_CLIPS"
+          :key="d.clip"
+          type="button"
+          class="chibi-debug__btn"
+          :disabled="!hasQuickClip(d.clip)"
+          @click="onQuickClip(d.clip)"
+        >
+          {{ d.label }}
+        </button>
+      </div>
+
+      <div class="chibi-voice" @pointerdown.stop>
+        <div class="chibi-voice__title">Voice ({{ charId }})</div>
+        <div v-for="line in CHIBI_VOICE_LINES" :key="line" class="chibi-voice__row">
+          <span
+            class="chibi-voice__dot"
+            :class="`is-${pet?.voiceStatus?.[line] ?? 'loading'}`"
+          ></span>
+          {{ line }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.chibi-page {
+  position: relative;
+}
+
+/* Pet vs furniture-interaction mode, floating above whichever stage is mounted. */
+.chibi-mode {
+  position: fixed;
+  z-index: 10;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Segmented control (two named modes) — the raised active segment marks the current stage. */
+.chibi-seg {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background-secondary);
+}
+
+.chibi-seg__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chibi-seg__btn:hover {
+  color: var(--accent-color);
+}
+
+.chibi-seg__btn--active {
+  background: var(--background-primary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+/* Inline glyph paired with a control label for at-a-glance recognition. */
+.chibi-ico {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
 .chibi-stage {
   position: relative;
   width: 100%;
@@ -279,13 +397,15 @@ function onStagePointerDown(e: PointerEvent): void {
   border: 1px solid var(--border-color);
 }
 
+/* View cluster stacks in three levels: Inspect toggle, then size slider, then the controls hint. */
 .chibi-orbit {
   position: absolute;
   z-index: 2;
   top: 16px;
   left: 16px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   padding: 8px;
   background: var(--background-primary);

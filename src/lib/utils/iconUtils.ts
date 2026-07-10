@@ -114,6 +114,16 @@ export function getChibi3dTextureUrl(charId: string, file: string): string {
   return `${CHIBI3D_BASE}/${charId}/textures/${file}`;
 }
 
+/** Furniture GLB for a cafe-interaction scene, keyed by label (e.g. `avantgardekun`). */
+export function getChibi3dFurnitureUrl(label: string): string {
+  return `${CHIBI3D_BASE}/furniture/${label}.glb`;
+}
+
+/** Curated per-scene overrides (furniture + duo config); see the deliverable's scenes.json. */
+export function getChibi3dScenesUrl(): string {
+  return `${CHIBI3D_BASE}/scenes.json`;
+}
+
 // --- Chibi voice lines (SchaleDB R2 CDN) ---
 // In-game JP voice clips, e.g. the pickup line `ch0158_formation_select.mp3`. Played
 // via an HTMLAudioElement (no CORS needed). Path: `voice/jp_<charId>/<charId>_<line>.mp3`.

@@ -8,19 +8,33 @@ import {
   getChibi3dModelUrl,
   getChibi3dTextureUrl,
 } from '@/lib/utils/iconUtils';
+import {
+  type MouthUniforms,
+  type HaloFollower,
+  FOV_DEG,
+  CAM_TARGET_Y,
+  CAM_ORBIT_DISTANCE,
+  CHIBI_ZOOM_MIN,
+  CHIBI_ZOOM_MAX,
+  positionBaseCamera,
+  bareClipName,
+  makeGradient,
+  loadTexture,
+  driveMouth,
+  applyManifestMaterials,
+  addSceneLights,
+  disposeSubtree,
+  makeHaloFollower,
+  updateHaloFollower,
+} from '@/composables/chibi3dCore';
 
 /**
- * Live-3D chibi renderer: the Vue port of the deliverable's three.js POC
- * (`poc/index.html` + `poc/common.js`). Owns a fixed-camera WebGL scene drawn
- * into a transparent square canvas: loads one GLB + its manifest, assigns the
- * cel / eyemouth / additive-halo materials per submesh, plays clips through an
- * AnimationMixer, drives the per-clip mouth timeline each frame, and runs the
- * halo's FxFollower spring. The roaming-pet behaviour (walk/drag/gacha) lives in
- * the component; this composable is rendering only and exposes imperative
- * `play` / `setFacing` / `faceCamera` controls plus `ready` / `error` state.
- *
- * The calibrated mouth mapping and halo-spring values are ported verbatim from
- * the POC: do not re-derive them (see the deliverable GUIDE.md section 3 and section 6a).
+ * Live-3D chibi renderer (roaming-pet scene): the Vue port of the deliverable POC's
+ * `poc/index.html`. Owns a fixed-camera WebGL scene drawn into a transparent canvas: loads one
+ * character GLB + manifest (materials / halo / mouth via chibi3dCore), plays clips through an
+ * AnimationMixer, drives the mouth timeline, and runs the halo spring. The roaming-pet behaviour
+ * (walk / drag / gacha) lives in the component; this composable is rendering + imperative controls
+ * (`play` / `setFacing` / `faceCamera` / orbit / zoom / resize) plus `ready` / `error` state.
  */
 
 interface PlayOptions {
@@ -38,249 +52,6 @@ interface Chibi3dSceneOptions {
   /** Reports the effective zoom back out when the orbit wheel dollies the camera, so a
    *  bound size slider stays in sync. Fires only on real distance changes (not rotation). */
   onZoomChange?: (zoom: number) => void;
-}
-
-// The four mouth-overlay uniforms injected into the EyeMouth MeshToonMaterial.
-interface MouthUniforms {
-  uMouthTex: { value: THREE.Texture | null };
-  uMouthMask: { value: THREE.Texture | null };
-  uMouthCell: { value: THREE.Vector2 };
-  uMouthOffset: { value: THREE.Vector2 };
-}
-
-// FxFollower halo spring (BA values, identical across characters: GUIDE.md section 6a).
-interface HaloFollower {
-  root: THREE.Object3D;
-  head: THREE.Object3D;
-  halo: THREE.Object3D;
-  relPos: THREE.Vector3;
-  relRot: THREE.Quaternion;
-  clampMin: THREE.Vector3;
-  clampMax: THREE.Vector3;
-  geomCenter: THREE.Vector3;
-  tweakQuat: THREE.Quaternion;
-  posPow: number;
-  rotPow: number;
-  prevPos: THREE.Vector3;
-  prevQuat: THREE.Quaternion;
-  init: boolean;
-}
-
-// --- Shared toon gradient + texture loader (common.js) ---
-function makeGradient(): THREE.DataTexture {
-  const grad = new THREE.DataTexture(
-    new Uint8Array([170, 170, 170, 255, 255, 255, 255, 255]),
-    2,
-    1,
-    THREE.RGBAFormat,
-  );
-  grad.needsUpdate = true;
-  grad.minFilter = THREE.NearestFilter;
-  grad.magFilter = THREE.NearestFilter;
-  return grad;
-}
-
-function loadTexture(url: string, srgb = true): Promise<THREE.Texture | null> {
-  return new Promise((resolve) => {
-    new THREE.TextureLoader().load(
-      url,
-      (t) => {
-        t.flipY = false;
-        t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-        resolve(t);
-      },
-      undefined,
-      () => resolve(null),
-    );
-  });
-}
-
-// EyeMouth: lit cel + the mouth-atlas overlay. uMouthCell is Unity's 1-indexed
-// (col,row); the GLSL maps it to the atlas (col-1, 5-row, row reflected).
-function makeEyeMouth(
-  baseMap: THREE.Texture | null,
-  atlasTex: THREE.Texture | null,
-  maskTex: THREE.Texture | null,
-  grad: THREE.DataTexture,
-): { material: THREE.MeshToonMaterial; uniforms: MouthUniforms } {
-  const material = new THREE.MeshToonMaterial({ map: baseMap, gradientMap: grad });
-  const uniforms: MouthUniforms = {
-    uMouthTex: { value: atlasTex },
-    uMouthMask: { value: maskTex },
-    uMouthCell: { value: new THREE.Vector2(2, 5) }, // idle (code 401) = Unity (col2,row5)
-    uMouthOffset: { value: new THREE.Vector2(0, 0) },
-  };
-  if (atlasTex) {
-    atlasTex.wrapS = THREE.RepeatWrapping;
-    atlasTex.wrapT = THREE.RepeatWrapping;
-  }
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        'void main() {',
-        `uniform sampler2D uMouthTex; uniform sampler2D uMouthMask; uniform vec2 uMouthCell; uniform vec2 uMouthOffset;
-void main() {`,
-      )
-      .replace(
-        '#include <map_fragment>',
-        `#include <map_fragment>
-        { float mask = texture2D(uMouthMask, vMapUv).r;
-          if (mask > 0.5) {                       // mouth region of the face
-            vec2 cell = vec2(uMouthCell.x - 1.0, 5.0 - uMouthCell.y) * 0.125;
-            vec4 mouth = texture2D(uMouthTex, (vMapUv - uMouthOffset) * 0.5 + cell);
-            if (mouth.a < 0.5) discard;           // no mouth pixel here -> show FACE skin behind
-            diffuseColor.rgb = mouth.rgb;         // draw the mouth
-          }                                        // else: eye region -> keep base (eyes)
-        }`,
-      );
-  };
-  material.needsUpdate = true;
-  return { material, uniforms };
-}
-
-// mouth event (col,row) -> uMouthCell (Unity 1-indexed): common.js codeToCell.
-const codeToCell = (col: number, row: number): [number, number] => [col + 1, row + 1];
-
-// Fixed pet camera (POC framing). Orbit mode moves the camera from here; toggling
-// orbit off restores exactly this so the model-facing logic lines up again.
-const FOV_DEG = 35; // vertical fov (square aspect, so == horizontal)
-// One hardcoded camera for all characters (they share a rig + scale, so a single framing
-// is consistent: auto-fitting per model was unreliable because SkinnedMesh bbox = bind
-// pose). Tune DEFAULT_TARGET_Y (vertical centering) + DEFAULT_DISTANCE (size) by eye.
-const TILT_TAN = Math.tan((13.8 * Math.PI) / 180); // ~13.8deg downtilt (looking down at the pet)
-const CAM_TARGET_Y = 0.6; // look-at height; the canvas centre maps to (0, this, 0)
-const CAM_DISTANCE = 3; // camera distance at zoom 1 (the Size slider divides this)
-// applyBaseCamera sits the camera at (0, +d*TILT_TAN, d) with d = CAM_DISTANCE/zoom, so the true
-// |camera - target| is d times this factor. Orbit dolly / zoom read-back use the true distance so
-// zoom <-> distance round-trips exactly (else each orbit toggle shrank zoom by this factor).
-const CAM_TILT_FACTOR = Math.sqrt(1 + TILT_TAN * TILT_TAN);
-const CAM_ORBIT_DISTANCE = CAM_DISTANCE * CAM_TILT_FACTOR; // true target distance at zoom 1
-
-/** Apparent-size (camera dolly) bounds, shared by the size slider and the orbit wheel clamp. */
-export const CHIBI_ZOOM_MIN = 0.5;
-export const CHIBI_ZOOM_MAX = 1.5;
-
-// Dispose a material AND every texture bound to it. three's `material.dispose()` does
-// NOT free the textures it references, so without this every scene teardown (HMR reload
-// or character switch) leaks the GLB's embedded base maps on the GPU: the main leak.
-function disposeMaterial(mat: THREE.Material): void {
-  for (const value of Object.values(mat as unknown as Record<string, unknown>)) {
-    if (value && (value as THREE.Texture).isTexture) (value as THREE.Texture).dispose();
-  }
-  mat.dispose();
-}
-
-// Dispose every mesh's geometry + material(s) under an object subtree.
-function disposeSubtree(obj: THREE.Object3D): void {
-  obj.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    mesh.geometry?.dispose();
-    const mat = mesh.material;
-    if (Array.isArray(mat)) mat.forEach(disposeMaterial);
-    else if (mat) disposeMaterial(mat);
-  });
-}
-
-// --- Halo FxFollower spring (common.js HALO_CFG / make- / updateHaloFollower) ---
-const HALO_CFG = {
-  targetBone: 'Bip001 Head',
-  relPos: new THREE.Vector3(-0.36429, -0.20871, 0),
-  relRot: new THREE.Quaternion(0.5, -0.5, -0.5, -0.5),
-  clampMin: new THREE.Vector3(-0.48, -0.34, -0.27),
-  clampMax: new THREE.Vector3(-0.26, -0.07, 0.27),
-  posPow: 0.1,
-  rotPow: 0.07,
-  tweakDeg: [85, 0, 0] as const, // visual ring-tilt correction after the LH->RH flip
-};
-// Unity(LH) -> glTF(RH): positions negate X, quats -> (x,-y,-z,w).
-const convVec = (v: THREE.Vector3) => new THREE.Vector3(-v.x, v.y, v.z);
-const convQuat = (q: THREE.Quaternion) => new THREE.Quaternion(q.x, -q.y, -q.z, q.w);
-
-const _hv = new THREE.Vector3();
-const _hq = new THREE.Quaternion();
-const _hs = new THREE.Vector3();
-const _hm = new THREE.Matrix4();
-// Per-frame halo scratch: reused so updateHaloFollower allocates nothing each frame.
-const _hlp = new THREE.Vector3();
-const _htr = new THREE.Quaternion();
-const _hoff = new THREE.Vector3();
-
-function makeHaloFollower(root: THREE.Object3D, scene: THREE.Scene): HaloFollower | null {
-  let head: THREE.Object3D | null = null;
-  let halo: THREE.Object3D | null = null;
-  // GLTFLoader sanitizes 'Bip001 Head' -> 'Bip001_Head'; normalize before matching.
-  const norm = (s: string) =>
-    (s || '')
-      .toLowerCase()
-      .replace(/[\s_]+/g, ' ')
-      .trim();
-  const wantHead = norm(HALO_CFG.targetBone);
-  root.traverse((o) => {
-    const nm = norm(o.name);
-    if (nm === wantHead) head = o;
-    if (nm.endsWith('halo')) halo = o;
-  });
-  if (!head || !halo) return null;
-
-  // `head`/`halo` are narrowed to never by the closure above; re-assert the type.
-  const headObj = head as THREE.Object3D;
-  const haloObj = halo as THREE.Object3D;
-  scene.attach(haloObj);
-
-  let geom: THREE.BufferGeometry | null = null;
-  haloObj.traverse((o) => {
-    if (!geom && (o as THREE.Mesh).isMesh) geom = (o as THREE.Mesh).geometry;
-  });
-  const geomCenter = new THREE.Vector3();
-  if (geom) {
-    (geom as THREE.BufferGeometry).computeBoundingBox();
-    (geom as THREE.BufferGeometry).boundingBox?.getCenter(geomCenter);
-  }
-
-  const a = convVec(HALO_CFG.clampMin);
-  const b = convVec(HALO_CFG.clampMax);
-  const td = HALO_CFG.tweakDeg;
-  const D = Math.PI / 180;
-  return {
-    root,
-    head: headObj,
-    halo: haloObj,
-    relPos: convVec(HALO_CFG.relPos),
-    relRot: convQuat(HALO_CFG.relRot),
-    clampMin: new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z)),
-    clampMax: new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z)),
-    geomCenter,
-    tweakQuat: new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(td[0] * D, td[1] * D, td[2] * D),
-    ),
-    posPow: HALO_CFG.posPow,
-    rotPow: HALO_CFG.rotPow,
-    prevPos: new THREE.Vector3(),
-    prevQuat: new THREE.Quaternion(),
-    init: false,
-  };
-}
-
-function updateHaloFollower(f: HaloFollower | null): void {
-  if (!f) return;
-  f.halo.visible = f.root.visible;
-  f.head.updateWorldMatrix(true, false);
-  f.head.matrixWorld.decompose(_hv, _hq, _hs);
-  _hm.copy(f.head.matrixWorld).invert();
-  _hlp.copy(f.prevPos).applyMatrix4(_hm);
-  if (!f.init) _hlp.copy(f.relPos);
-  _hlp.lerp(f.relPos, f.posPow).clamp(f.clampMin, f.clampMax);
-  _hlp.applyMatrix4(f.head.matrixWorld); // _hlp is now the halo world position
-  f.prevPos.copy(_hlp);
-  _htr.copy(_hq).multiply(f.relRot);
-  if (!f.init) f.prevQuat.copy(_htr);
-  f.prevQuat.slerp(_htr, f.rotPow);
-  f.halo.quaternion.copy(f.prevQuat).multiply(f.tweakQuat);
-  _hoff.copy(f.geomCenter).multiply(f.halo.scale).applyQuaternion(f.halo.quaternion);
-  f.halo.position.copy(_hlp).sub(_hoff);
-  f.init = true;
 }
 
 export function useChibi3dScene(
@@ -317,9 +88,6 @@ export function useChibi3dScene(
   let rafId = 0;
   let disposed = false;
 
-  /** Strip the `CH####_` prefix UnityGLTF may add, so manifest keys line up. */
-  const bare = (name: string) => name.replace(/^CH\d+_/i, '');
-
   function setupRenderer(canvas: HTMLCanvasElement): void {
     // preserveDrawingBuffer lets isPointerOnModel read back the rendered frame for a
     // pixel-accurate (alpha) grab hit-test; negligible cost for a single chibi.
@@ -342,13 +110,7 @@ export function useChibi3dScene(
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(FOV_DEG, curW / curH, 0.01, 100);
     applyBaseCamera();
-
-    // Even fill from all angles -> no dark side; soft hemi/dir for a hint of form.
-    scene.add(new THREE.AmbientLight(0xffffff, 1.6));
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x9090a0, 0.4));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.4);
-    dir.position.set(0.5, 1, 1);
-    scene.add(dir);
+    addSceneLights(scene);
   }
 
   async function loadCharacter(): Promise<void> {
@@ -394,31 +156,7 @@ export function useChibi3dScene(
     if (disposed) return;
 
     grad = makeGradient();
-    root.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const mat = mesh.material as THREE.Material & { name?: string; map?: THREE.Texture | null };
-      const matName = (mat?.name || mesh.name || '').toLowerCase();
-      const key = Object.keys(manifest.materials).find((k) => matName.includes(k.toLowerCase()));
-      const def = key ? manifest.materials[key] : null;
-      const baseMap = mat?.map ?? null;
-      if (def?.shader === 'eyemouth') {
-        const built = makeEyeMouth(baseMap, atlas, mask, grad!);
-        mesh.material = built.material;
-        mouthUniforms = built.uniforms;
-      } else if (def?.shader === 'unlit') {
-        mesh.material = new THREE.MeshBasicMaterial({
-          map: baseMap,
-          transparent: true,
-          blending: def.blend === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
-          depthWrite: false,
-        });
-        mesh.renderOrder = 10;
-      } else {
-        mesh.material = new THREE.MeshToonMaterial({ map: baseMap, gradientMap: grad! });
-      }
-    });
-
+    mouthUniforms = applyManifestMaterials(root, manifest, atlas, mask, grad);
     haloFollower = makeHaloFollower(root, scene); // detach + drive with the FxFollower spring
 
     mixer = new THREE.AnimationMixer(root);
@@ -428,7 +166,7 @@ export function useChibi3dScene(
       cb?.();
     });
     clipsByName.clear();
-    for (const clip of gltf.animations) clipsByName.set(bare(clip.name), clip);
+    for (const clip of gltf.animations) clipsByName.set(bareClipName(clip.name), clip);
     clipNames.value = [...clipsByName.keys()].sort();
     mouthByClip = manifest.mouth ?? {};
 
@@ -442,8 +180,8 @@ export function useChibi3dScene(
   }
 
   function resolveClip(name: string): THREE.AnimationClip | null {
-    const want = bare(name).toLowerCase();
-    if (clipsByName.has(bare(name))) return clipsByName.get(bare(name))!;
+    const want = bareClipName(name).toLowerCase();
+    if (clipsByName.has(bareClipName(name))) return clipsByName.get(bareClipName(name))!;
     for (const [k, v] of clipsByName) if (k.toLowerCase() === want) return v;
     return null;
   }
@@ -468,7 +206,7 @@ export function useChibi3dScene(
     action.play();
     currentAction = action;
     pendingOnEnd = loop ? null : (options.onEnd ?? null);
-    currentMouth = mouthByClip[bare(name)] ?? [];
+    currentMouth = mouthByClip[bareClipName(name)] ?? [];
   }
 
   const _pixel = new Uint8Array(4);
@@ -536,16 +274,8 @@ export function useChibi3dScene(
     if (root) root.rotation.y = Math.PI;
   }
 
-  /**
-   * Position the fixed pet camera: look at (0, CAM_TARGET_Y, 0), sit CAM_DISTANCE in front
-   * with the ~13.8deg downtilt, all scaled by zoom (so zooming preserves the tilt angle).
-   */
   function applyBaseCamera(): void {
-    if (!camera) return;
-    const d = CAM_DISTANCE / currentZoom;
-    camera.position.set(0, CAM_TARGET_Y + d * TILT_TAN, d);
-    camera.up.set(0, 1, 0);
-    camera.lookAt(0, CAM_TARGET_Y, 0);
+    if (camera) positionBaseCamera(camera, currentZoom);
   }
 
   /**
@@ -580,12 +310,6 @@ export function useChibi3dScene(
   }
 
   /**
-   * Inspection-only orbit (the POC's OrbitControls). On: drag to spin / wheel to zoom
-   * the camera; the component suspends pet gestures so they don't collide. `domElement`
-   * is the input surface: pass the full-viewport stage so orbit works anywhere, not just
-   * over the small canvas. Off: restore the fixed (zoomed) pet camera.
-   */
-  /**
    * Resize the canvas + render target to `w` x `h` px and match the camera aspect. The pet
    * passes a square (w == h); the page's Inspect mode passes the full viewport (wide), which
    * widens the horizontal field of view so furniture/event clips aren't cropped sideways.
@@ -600,6 +324,11 @@ export function useChibi3dScene(
     }
   }
 
+  /**
+   * Inspection-only orbit (the POC's OrbitControls). On: drag to spin / wheel to zoom the
+   * camera; the component suspends pet gestures so they don't collide. `domElement` is the input
+   * surface: pass the full-viewport stage so orbit works anywhere. Off: restore the pet camera.
+   */
   function setOrbitEnabled(on: boolean, domElement?: HTMLElement): void {
     if (!renderer || !camera) return;
     if (on) {
@@ -625,18 +354,7 @@ export function useChibi3dScene(
     if (controls?.enabled) controls.update();
     const dt = clock.getDelta();
     if (mixer) mixer.update(dt);
-
-    if (mouthUniforms && currentMouth.length && currentAction) {
-      const t = currentAction.time;
-      let cur = currentMouth[0];
-      for (const e of currentMouth) {
-        if (e.t <= t) cur = e;
-        else break;
-      }
-      const [c, r] = codeToCell(cur.col, cur.row);
-      mouthUniforms.uMouthCell.value.set(c, r);
-    }
-
+    if (currentAction) driveMouth(mouthUniforms, currentMouth, currentAction.time);
     updateHaloFollower(haloFollower); // after mixer.update so the head bone is current
     if (renderer && scene && camera) renderer.render(scene, camera);
   }

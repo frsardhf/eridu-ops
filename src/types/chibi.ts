@@ -29,6 +29,24 @@ interface ChibiMaterialDef {
   params?: Record<string, unknown>;
 }
 
+/**
+ * Per-furniture curated overrides from `scenes.json` (game knowledge not in the asset data),
+ * keyed by furniture GLB label. `show`/`solo` are keyed by clip variant suffix (`01`/`02`/...).
+ */
+export interface ChibiFurnitureConfig {
+  /** Default furniture rotation in degrees (face-camera tuning). */
+  ry?: number;
+  /** Per-variant character visibility: variant -> shown cids (null/absent = all). */
+  show?: Record<string, string[] | null>;
+  /** Per-variant split into one picker entry per listed cid. */
+  solo?: Record<string, string[]>;
+}
+
+/** Root shape of `scenes.json`. Duo config is added with the char x char pass. */
+export interface ChibiScenesConfig {
+  furniture?: Record<string, ChibiFurnitureConfig>;
+}
+
 export interface ChibiManifest {
   /** Folder/file id, lowercased: e.g. `ch0158`. */
   name: string;
