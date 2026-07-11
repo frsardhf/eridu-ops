@@ -50,6 +50,8 @@ import {
 interface InteractionSceneOptions {
   /** Candidate character ids to consider for scenes (those with a matching interaction clip). */
   charIds: readonly string[];
+  /** Resolve a cid to a display name (student store), for readable victory labels. */
+  charName?: (cid: string) => string;
   /** Reports the effective zoom back out when the orbit wheel dollies the camera. */
   onZoomChange?: (zoom: number) => void;
 }
@@ -235,7 +237,7 @@ export function useChibi3dInteractionScene(
       const shares = [...victorySets[0]].some((k) => victorySets.every((s) => s.has(k)));
       if (!shares) continue;
       const id = `victory:${key}`;
-      const label = cids.join(' x ');
+      const label = cids.map((c) => opts.charName?.(c) ?? c).join(' × ');
       sceneCatalog.set(id, { id, label, type: 'victory', cids, victoryKey: key });
       options.push({ value: id, label, kind: 'victory' });
     }

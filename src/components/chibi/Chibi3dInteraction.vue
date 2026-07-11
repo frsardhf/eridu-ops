@@ -8,7 +8,11 @@ import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 // Full-viewport orbit stage for cafe interactions (POC furniture.html): pick a scene + a clip
 // variant; the scene seats the character(s) and plays the interaction. The `kind` prop scopes it
 // to furniture (char + prop) or victory (char x char post-battle pose). Drag to spin, wheel to zoom.
-const props = defineProps<{ charIds: readonly string[]; kind: 'furniture' | 'victory' }>();
+const props = defineProps<{
+  charIds: readonly string[];
+  kind: 'furniture' | 'victory';
+  charName?: (cid: string) => string;
+}>();
 
 const stageEl = ref<HTMLElement | null>(null);
 const canvasEl = ref<HTMLCanvasElement | null>(null);
@@ -28,6 +32,7 @@ const {
   resize,
 } = useChibi3dInteractionScene(canvasEl, {
   charIds: props.charIds,
+  charName: props.charName,
   onZoomChange: (z) => (zoom.value = z),
 });
 

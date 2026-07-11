@@ -34,11 +34,16 @@ const studentNameByDevName = computed(() => {
   }
   return map;
 });
+// Resolve a chibi cid to its student name (falls back to the cid), shared by the character
+// picker and the interaction stage's victory labels.
+function resolveCharName(cid: string): string {
+  return studentNameByDevName.value.get(cid.toUpperCase()) ?? cid;
+}
 // Name only (no striker/special role) for the character picker.
 const charOptions = computed(() =>
   CHIBI_CHAR_IDS.map((id) => ({
     value: id,
-    label: studentNameByDevName.value.get(id.toUpperCase()) ?? id,
+    label: resolveCharName(id),
   })),
 );
 
@@ -201,6 +206,7 @@ function onStagePointerDown(e: PointerEvent): void {
       v-if="mode !== 'pet'"
       :char-ids="CHIBI_CHAR_IDS"
       :kind="mode === 'victory' ? 'victory' : 'furniture'"
+      :char-name="resolveCharName"
     />
 
     <div
