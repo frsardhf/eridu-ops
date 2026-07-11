@@ -53,9 +53,9 @@ const zoom = ref(1.25);
 const PET_SIZE = 540;
 const inspect = ref(false);
 
-// Interaction mode swaps the whole roaming-pet stage for the furniture cafe-interaction stage
-// (Chibi3dInteraction): a separate multi-object scene, so it owns its own canvas + pickers.
-const interactionMode = ref(false);
+// Stage mode: the roaming pet, or one of the interaction stages (furniture / victory), each a
+// separate multi-object scene owning its own canvas + pickers (via Chibi3dInteraction's kind).
+const mode = ref<'pet' | 'furniture' | 'victory'>('pet');
 
 const pet = useTemplateRef<InstanceType<typeof Chibi3dPet>>('pet');
 
@@ -130,8 +130,8 @@ function onStagePointerDown(e: PointerEvent): void {
         <button
           type="button"
           class="chibi-seg__btn"
-          :class="{ 'chibi-seg__btn--active': !interactionMode }"
-          @click="interactionMode = false"
+          :class="{ 'chibi-seg__btn--active': mode === 'pet' }"
+          @click="mode = 'pet'"
         >
           <svg
             class="chibi-ico"
@@ -153,8 +153,8 @@ function onStagePointerDown(e: PointerEvent): void {
         <button
           type="button"
           class="chibi-seg__btn"
-          :class="{ 'chibi-seg__btn--active': interactionMode }"
-          @click="interactionMode = true"
+          :class="{ 'chibi-seg__btn--active': mode === 'furniture' }"
+          @click="mode = 'furniture'"
         >
           <svg
             class="chibi-ico"
@@ -171,13 +171,40 @@ function onStagePointerDown(e: PointerEvent): void {
           </svg>
           Furniture
         </button>
+        <button
+          type="button"
+          class="chibi-seg__btn"
+          :class="{ 'chibi-seg__btn--active': mode === 'victory' }"
+          @click="mode = 'victory'"
+        >
+          <svg
+            class="chibi-ico"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="8" cy="7" r="2.4" />
+            <circle cx="16" cy="7" r="2.4" />
+            <path d="M3.5 20c0-3 2-5 4.5-5s4.5 2 4.5 5" />
+            <path d="M11.5 20c0-3 2-5 4.5-5s4.5 2 4.5 5" />
+          </svg>
+          Victory
+        </button>
       </div>
     </div>
 
-    <Chibi3dInteraction v-if="interactionMode" :char-ids="CHIBI_CHAR_IDS" />
+    <Chibi3dInteraction
+      v-if="mode !== 'pet'"
+      :char-ids="CHIBI_CHAR_IDS"
+      :kind="mode === 'victory' ? 'victory' : 'furniture'"
+    />
 
     <div
-      v-else
+      v-if="mode === 'pet'"
       class="chibi-stage"
       :class="{ 'chibi-stage--orbit': inspect }"
       @pointerdown="onStagePointerDown"

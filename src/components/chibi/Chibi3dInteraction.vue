@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { useChibi3dInteractionScene } from '@/composables/useChibi3dInteractionScene';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 
-// Full-viewport orbit stage for cafe furniture interactions (POC furniture.html, furniture
-// branch): pick a furniture scene + an interaction-clip variant; the scene seats the matching
-// character(s) at the furniture GLB and plays them against it. Drag to spin, wheel/slider to zoom.
-const props = defineProps<{ charIds: readonly string[] }>();
+// Full-viewport orbit stage for cafe interactions (POC furniture.html): pick a scene + a clip
+// variant; the scene seats the character(s) and plays the interaction. The `kind` prop scopes it
+// to furniture (char + prop) or victory (char x char post-battle pose). Drag to spin, wheel to zoom.
+const props = defineProps<{ charIds: readonly string[]; kind: 'furniture' | 'victory' }>();
 
 const stageEl = ref<HTMLElement | null>(null);
 const canvasEl = ref<HTMLCanvasElement | null>(null);
-const zoom = ref(0.75); // pulled back a bit so the character + furniture both frame
-const furniture = ref('');
+const zoom = ref(0.75); // pulled back a bit so the character(s) + prop both frame
+const sceneId = ref('');
 
 const {
   ready,
   error,
-  furnitureOptions,
+  sceneOptions,
   clipOptions,
   currentClip,
   loadScene,
@@ -31,12 +31,20 @@ const {
   onZoomChange: (z) => (zoom.value = z),
 });
 
-// The scene builds the furniture catalog on mount; pick the first, then reload on change.
-watch(furnitureOptions, (opts) => {
-  if (opts.length && !furniture.value) furniture.value = opts[0].value;
-});
-watch(furniture, (label) => {
-  if (label) loadScene(label);
+// Scenes of this tab's kind only (furniture or victory). Recomputes when the catalog loads or
+// the kind prop flips, so switching Furniture<->Victory re-filters without a full remount.
+const visibleScenes = computed(() => sceneOptions.value.filter((o) => o.kind === props.kind));
+
+// Keep the selection valid for the current kind; picking the first (re)loads via the sceneId watch.
+watch(
+  visibleScenes,
+  (scenes) => {
+    if (!scenes.some((o) => o.value === sceneId.value)) sceneId.value = scenes[0]?.value ?? '';
+  },
+  { immediate: true },
+);
+watch(sceneId, (id) => {
+  if (id) loadScene(id);
 });
 watch(zoom, (z) => setZoom(z));
 
@@ -58,17 +66,17 @@ onMounted(() => {
     <canvas ref="canvasEl" class="chibi-int__canvas"></canvas>
 
     <div class="chibi-int__panel" @pointerdown.stop>
-      <!-- Level 1: furniture + variant dropdowns. -->
+      <!-- Level 1: scene (furniture or duo) + variant dropdowns. -->
       <div class="chibi-int__row">
         <SelectMenu
-          v-if="furnitureOptions.length"
-          v-model="furniture"
-          :options="furnitureOptions"
-          aria-label="Furniture"
+          v-if="visibleScenes.length"
+          v-model="sceneId"
+          :options="visibleScenes"
+          aria-label="Scene"
         />
-        <!-- Variant lives in its own dropdown beside the furniture picker, so the furniture
-             selector stays a clean furniture-only list. Shown whenever the loaded furniture has
-             any variants (single-variant furniture like avantgardekun just shows one). -->
+        <!-- Variant lives in its own dropdown beside the scene picker, so the scene selector
+             stays a clean scene-only list. Shown whenever the loaded scene has any variants
+             (furniture: clip variants; duo: the shared Start / End interaction). -->
         <SelectMenu
           v-if="clipOptions.length"
           :model-value="currentClip"
@@ -94,7 +102,7 @@ onMounted(() => {
     </div>
 
     <div v-if="!ready || error" class="chibi-int__status">
-      <span v-if="error">No furniture scenes available.</span>
+      <span v-if="error">No scenes available.</span>
       <span v-else class="chibi-int__spinner"></span>
     </div>
   </div>

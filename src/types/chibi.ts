@@ -42,9 +42,22 @@ export interface ChibiFurnitureConfig {
   solo?: Record<string, string[]>;
 }
 
-/** Root shape of `scenes.json`. Duo config is added with the char x char pass. */
+/**
+ * Per-victory curated overrides from `scenes.json`, keyed by the party's cids sorted + joined
+ * with `|` (e.g. `ch0242|ch0243`). For the post-battle/raid victory interaction that a party of
+ * 2-4 characters shares.
+ */
+export interface ChibiVictoryConfig {
+  /** Face-camera default: false for "face each other" groups (leave the raw clip orientation). */
+  autoflip?: boolean;
+  /** World-space nudge applied to the first character (characters[0]) to seat the party. */
+  offset?: { x?: number; y?: number; z?: number };
+}
+
+/** Root shape of `scenes.json`: curated furniture + victory overrides. */
 export interface ChibiScenesConfig {
   furniture?: Record<string, ChibiFurnitureConfig>;
+  victory?: Record<string, ChibiVictoryConfig>;
 }
 
 export interface ChibiManifest {
