@@ -55,6 +55,11 @@ function closeModal(event: MouseEvent) {
           <p>{{ $t('creditsModal.acknowledgementsBody') }}</p>
           <p>{{ $t('creditsModal.acknowledgementsArona') }}</p>
         </div>
+
+        <div class="credits-section">
+          <h3>{{ $t('creditsModal.disclaimerHeader') }}</h3>
+          <p>{{ $t('creditsModal.disclaimerBody') }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -80,7 +85,7 @@ function closeModal(event: MouseEvent) {
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   width: 90%;
-  max-width: 400px;
+  max-width: 600px;
   overflow: hidden;
   display: flex;
   flex-direction: column;

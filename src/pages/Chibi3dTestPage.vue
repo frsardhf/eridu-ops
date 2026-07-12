@@ -15,6 +15,13 @@ import { useStudentData } from '@/lib/hooks/useStudentData';
 // store (matched by DevName), not hardcoded: SchaleDB is only fetched via the R2 voice.
 const CHIBI_CHAR_IDS = ['ch0158', 'ch0242', 'ch0243', 'ch0331', 'ch0333'] as const;
 
+// Copyright / fan-use notice for the ripped 3D assets. Kept in English (unlinked dev surface);
+// the localized version lives in the Credits modal (creditsModal.disclaimer*).
+const LEGAL_NOTICE =
+  'Blue Archive and all game assets (3D models, animations, textures, voices) are © NEXON Games / Yostar. ' +
+  'Non-commercial fan project for personal and educational use only; not for sale or redistribution. ' +
+  'Not affiliated with or endorsed by NEXON. Assets removed on request from the rights holder.';
+
 // Persist the selected character across reloads (dev convenience; own localStorage key,
 // not the app's AppSettings blob since this is an unlinked test surface).
 const CHAR_STORAGE_KEY = 'chibi3d-char';
@@ -128,6 +135,11 @@ function onStagePointerDown(e: PointerEvent): void {
 
 <template>
   <div class="chibi-page">
+    <!-- Light fan-use notice; hover for the full copyright disclaimer. -->
+    <div class="chibi-legal" :title="LEGAL_NOTICE">
+      © NEXON / Yostar · fan project, not for sale
+    </div>
+
     <!-- Top-level mode: a segmented control (either/or between two named stages), distinct from
          the on/off view switches below. -->
     <div class="chibi-mode" @pointerdown.stop>
@@ -305,6 +317,26 @@ function onStagePointerDown(e: PointerEvent): void {
 <style scoped>
 .chibi-page {
   position: relative;
+}
+
+/* Light fan-use notice pinned bottom-right, above whichever stage is mounted. */
+.chibi-legal {
+  position: fixed;
+  z-index: 10;
+  right: 12px;
+  bottom: 10px;
+  max-width: 60vw;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--background-primary) 70%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: help;
+  user-select: none;
 }
 
 /* Pet vs furniture-interaction mode, floating above whichever stage is mounted. */
