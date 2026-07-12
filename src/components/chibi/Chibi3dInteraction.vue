@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { useChibi3dInteractionScene } from '@/composables/useChibi3dInteractionScene';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
-import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
+import { CHIBI_INT_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 
 // Full-viewport orbit stage for cafe interactions (POC furniture.html): pick a scene + a clip
 // variant; the scene seats the character(s) and plays the interaction. The `kind` prop scopes it
@@ -97,7 +97,7 @@ onMounted(() => {
         <input
           v-model.number="zoom"
           type="range"
-          :min="CHIBI_ZOOM_MIN"
+          :min="CHIBI_INT_ZOOM_MIN"
           :max="CHIBI_ZOOM_MAX"
           step="0.05"
         />

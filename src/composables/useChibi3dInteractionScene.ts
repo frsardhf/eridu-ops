@@ -21,7 +21,7 @@ import {
   type HaloFollower,
   FOV_DEG,
   CAM_ORBIT_DISTANCE,
-  CHIBI_ZOOM_MIN,
+  CHIBI_INT_ZOOM_MIN,
   CHIBI_ZOOM_MAX,
   bareClipName,
   makeGradient,
@@ -338,6 +338,10 @@ export function useChibi3dInteractionScene(
     const token = ++loadToken;
     ready.value = false;
     error.value = false;
+    // Clear the variant picker up front so the previous scene's variants don't linger on the
+    // dropdown during the async load (e.g. furniture variants flashing after switching to victory).
+    clipOptions.value = [];
+    currentClip.value = '';
     clearScene();
     if (def.type === 'furniture') await loadFurnitureScene(def, token);
     else await loadVictoryScene(def, token);
@@ -538,7 +542,7 @@ export function useChibi3dInteractionScene(
   }
 
   function setZoom(zoom: number): void {
-    currentZoom = Math.min(CHIBI_ZOOM_MAX, Math.max(CHIBI_ZOOM_MIN, zoom));
+    currentZoom = Math.min(CHIBI_ZOOM_MAX, Math.max(CHIBI_INT_ZOOM_MIN, zoom));
     if (controls?.enabled && camera) {
       const wantDist = CAM_ORBIT_DISTANCE / currentZoom;
       if (Math.abs(camera.position.distanceTo(controls.target) - wantDist) < 1e-3) return;
@@ -576,7 +580,7 @@ export function useChibi3dInteractionScene(
         controls.enableDamping = true;
         controls.target.set(0, SCENE_FRAMING[sceneType].targetY, 0);
         controls.minDistance = CAM_ORBIT_DISTANCE / CHIBI_ZOOM_MAX;
-        controls.maxDistance = CAM_ORBIT_DISTANCE / CHIBI_ZOOM_MIN;
+        controls.maxDistance = CAM_ORBIT_DISTANCE / CHIBI_INT_ZOOM_MIN;
         controls.listenToKeyEvents(window); // arrow keys pan (right-drag pans too)
         controls.addEventListener('change', onControlsChange);
       }

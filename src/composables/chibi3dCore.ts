@@ -51,6 +51,9 @@ export const CAM_ORBIT_DISTANCE = CAM_DISTANCE * Math.sqrt(1 + TILT_TAN * TILT_T
 /** Apparent-size (camera dolly) bounds, shared by the size slider and the orbit wheel clamp. */
 export const CHIBI_ZOOM_MIN = 0.5;
 export const CHIBI_ZOOM_MAX = 1.5;
+// The interaction stage allows zooming much further out (big furniture scenes). Floored just
+// above 0 because zoom 0 = distance CAM_ORBIT_DISTANCE / 0 = Infinity (camera lost, NaN).
+export const CHIBI_INT_ZOOM_MIN = 0.05;
 
 /**
  * Position the fixed camera: look at (0, CAM_TARGET_Y, 0), sit CAM_DISTANCE in front with the
