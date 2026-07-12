@@ -26,6 +26,11 @@
  *   -af 0         no keyframe resampling: Unity-exported curves are already sparse,
  *                 resampling at 30/60 Hz is BIGGER and lossier here
  *   -ac           keep constant tracks, so switching clips still resets every bone
+ *   -vpf          keep positions as floats: position quantization inserts an unnamed
+ *                 dequantization child node under each mesh, which broke the halo
+ *                 spring (it reads the halo geometry's local bounding box; the packed
+ *                 int coordinates put the halo thousands of units off-screen). Costs
+ *                 ~0.01 MB per file, geometry is a rounding error next to animation.
  *   -cc           max meshopt compression
  */
 import { spawnSync } from 'node:child_process';
@@ -37,7 +42,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const base = join(root, 'public', 'chibi3d');
 const origBase = join(base, '_orig');
 
-const GLTFPACK_ARGS = ['-cc', '-kn', '-km', '-ke', '-ar', '16', '-af', '0', '-ac'];
+const GLTFPACK_ARGS = ['-cc', '-kn', '-km', '-ke', '-ar', '16', '-af', '0', '-ac', '-vpf'];
 
 const glbs = globSync('**/*.glb', { cwd: base, exclude: ['_orig/**'] });
 if (!glbs.length) {
