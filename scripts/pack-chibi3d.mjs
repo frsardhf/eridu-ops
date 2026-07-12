@@ -2,9 +2,14 @@
 /**
  * Chibi3d GLB repacker (meshopt).
  *
- * Repacks every GLB under public/chibi3d/ with gltfpack:
+ * Repacks the character GLBs under public/chibi3d/ with gltfpack:
  *   EXT_meshopt_compression + KHR_mesh_quantization, ~5-10x smaller files
  *   (ch0333: 28.1 MB -> 5.2 MB) with no visible quality loss.
+ *
+ * Furniture GLBs are excluded and ship as-is: packed furniture showed visual
+ * artifacts in the interaction scene, and at well under 2 MB each there is no
+ * size win worth chasing (the characters are 95% of the bytes; their size is
+ * almost entirely animation keyframes, which furniture barely has).
  *
  *   npm run chibi3d:pack               # repack in place (originals kept in _orig/)
  *
@@ -44,7 +49,7 @@ const origBase = join(base, '_orig');
 
 const GLTFPACK_ARGS = ['-cc', '-kn', '-km', '-ke', '-ar', '16', '-af', '0', '-ac', '-vpf'];
 
-const glbs = globSync('**/*.glb', { cwd: base, exclude: ['_orig/**'] });
+const glbs = globSync('**/*.glb', { cwd: base, exclude: ['_orig/**', 'furniture/**'] });
 if (!glbs.length) {
   console.error(`No GLBs found under ${base} (assets are gitignored; copy them in first).`);
   process.exit(1);
