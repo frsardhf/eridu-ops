@@ -1,6 +1,5 @@
 import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { ChibiManifest, ChibiMouthEvent } from '@/types/chibi';
 import {
@@ -18,6 +17,7 @@ import {
   CHIBI_ZOOM_MAX,
   positionBaseCamera,
   bareClipName,
+  createGltfLoader,
   makeGradient,
   loadTexture,
   driveMouth,
@@ -129,7 +129,7 @@ export function useChibi3dScene(
       scene: THREE.Object3D;
       animations: THREE.AnimationClip[];
     } | null>((resolve) => {
-      new GLTFLoader().load(
+      createGltfLoader().load(
         getChibi3dModelUrl(charId, manifest.model),
         (g) => resolve(g),
         undefined,

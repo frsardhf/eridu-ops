@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "changelog:draft": "node scripts/changelog-draft.mjs",
-    "build:equipment-drops": "node scripts/build-equipment-drops.mjs"
+    "build:equipment-drops": "node scripts/build-equipment-drops.mjs",
+    "chibi3d:pack": "node scripts/pack-chibi3d.mjs"
   },
   "dependencies": {
     "@vuepic/vue-datepicker": "^12.1.0",

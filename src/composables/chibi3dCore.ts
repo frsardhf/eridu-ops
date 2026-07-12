@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { ChibiManifest, ChibiMouthEvent } from '@/types/chibi';
 
 /**
@@ -81,6 +83,17 @@ export function makeGradient(): THREE.DataTexture {
   grad.minFilter = THREE.NearestFilter;
   grad.magFilter = THREE.NearestFilter;
   return grad;
+}
+
+/**
+ * GLTFLoader with the meshopt decoder attached. The production GLBs are gltfpack'd
+ * (EXT_meshopt_compression + KHR_mesh_quantization, see `npm run chibi3d:pack`), which needs
+ * the decoder; plain uncompressed GLBs still load through the same loader unchanged.
+ */
+export function createGltfLoader(): GLTFLoader {
+  const loader = new GLTFLoader();
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  return loader;
 }
 
 export function loadTexture(url: string, srgb = true): Promise<THREE.Texture | null> {
