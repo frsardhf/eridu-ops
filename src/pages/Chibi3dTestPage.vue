@@ -7,6 +7,8 @@ import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
 import { useStudentData } from '@/lib/hooks/useStudentData';
+import { useTooltip } from '@/composables/useTooltip';
+import '@/styles/tooltip.css';
 
 // Dev surface for the live-3D chibi (Road 2). Mirrors /chibi but renders the GLB
 // in three.js instead of stepping sprite sheets. Not linked from nav.
@@ -21,6 +23,9 @@ const LEGAL_NOTICE =
   'Blue Archive and all game assets (3D models, animations, textures, voices) are © NEXON Games / Yostar. ' +
   'Non-commercial fan project for personal and educational use only; not for sale or redistribution. ' +
   'Not affiliated with or endorsed by NEXON. Assets removed on request from the rights holder.';
+
+// Proper hover tooltip for the disclaimer (same primitive as GiftOption's), not a native title.
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<'legal'>();
 
 // Persist the selected character across reloads (dev convenience; own localStorage key,
 // not the app's AppSettings blob since this is an unlinked test surface).
@@ -136,8 +141,16 @@ function onStagePointerDown(e: PointerEvent): void {
 <template>
   <div class="chibi-page">
     <!-- Light fan-use notice; hover for the full copyright disclaimer. -->
-    <div class="chibi-legal" :title="LEGAL_NOTICE">
+    <div class="chibi-legal" @mouseenter="showTooltip($event, 'legal')" @mouseleave="hideTooltip()">
       © NEXON / Yostar · fan project, not for sale
+    </div>
+    <div
+      v-if="activeTooltip === 'legal'"
+      ref="tooltipRef"
+      class="modal-tooltip"
+      :style="tooltipStyle"
+    >
+      <div class="tooltip-desc">{{ LEGAL_NOTICE }}</div>
     </div>
 
     <!-- Top-level mode: a segmented control (either/or between two named stages), distinct from
