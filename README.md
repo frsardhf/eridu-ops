@@ -16,7 +16,7 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) �
 - **Tools** (ToolsRail on `/students`) — Bulk bond update (paste `name bond` pairs), bulk modify students, crafting fodder picker, equipment farming suggestions, deck builder
 - **Themes** — 7 built-in colour themes (dark, light, ocean, forest, sunset, rose, violet)
 - **Import / Export** — Back up and share your planner data as JSON
-- **Multi-language** — English and Japanese UI
+- **Multi-language** — English, Japanese, and Korean UI (also seedable via a `?lang=` deep-link)
 
 Planner data is stored locally in IndexedDB — no account and no tracking. The optional Inventory Scanner sends uploaded screenshots to the EriduOps parser API and receives detected inventory quantities as JSON.
 
@@ -71,9 +71,9 @@ src/
     bonds/              # /bonds surface — BondsStudentEditor, BondsStudentPicker, OtherExpPanel
       gift/             #   Gift allocation building blocks (GiftCard, GiftGrid, GiftOption, …)
     bond100/            # /hall surface — Bond100Wall, Bond100EntriesModal, Bond100SubmitModal, Bond100StatsPopover
-    inventory/          # GlobalInventoryModal, ItemsGrid, EquipmentGrid, ResourceCard, ResourceSummary
-    navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel
-      modals/           #   Navbar-triggered modals (Contact, Credits, Import, InventoryScreenshot)
+    inventory/          # GlobalInventoryModal, ResourceGrid (items/equipment variant), ResourceCard, ResourceSummary
+    navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel, SortPanel
+      modals/           #   Navbar-triggered modals (Contact, Credits, Import, InventoryScreenshot, WhatsNew)
     shared/             # Cross-page components (MetaHeader, StudentStrip)
   composables/          # Stateless display helpers (useStudentInfo, useResourceTooltip, useTooltip, …)
   lib/
@@ -84,7 +84,7 @@ src/
     stores/             # Singleton reactive caches (studentStore, resourceCacheStore, …)
     utils/              # Pure helpers (sort, filter, material/gear/bondExp calcs, hydration, migration)
   types/                # TypeScript interfaces
-  locales/              # i18n (en, jp) + $t helper
+  locales/              # i18n (en, jp, kr) + $t helper
   styles/               # Global + shared CSS
 public/
   image-cache-sw.js     # Service worker — cache-first for schaledb.com images
