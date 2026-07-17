@@ -15,12 +15,18 @@
  *
  * The first run moves each original to public/chibi3d/_orig/<same relative path>
  * and writes the packed file to the live path; later runs repack from _orig, so
- * the script is idempotent and the originals are never lost. Upload the packed
- * live files to the R2 bucket (assets.eriduops.com/chibi3d) and purge the
- * Cloudflare cache for /chibi3d/* afterwards; the old edge copies are cached for
- * a year. Old (unpacked) GLBs keep loading fine: the app loader always has the
- * meshopt decoder attached (chibi3dCore.createGltfLoader), so code can ship
- * before or after the asset swap.
+ * the script is idempotent. The MASTER copies of the originals live in
+ * ~/Documents/Data/deliverable (characters/ + furniture/); _orig/ is only a
+ * local work archive and may have been cleaned up. If _orig is missing, restore
+ * the original from the deliverable first: the script refuses to archive an
+ * already-packed live file as an "original" (that would double-pack it).
+ *
+ * After uploading to the R2 bucket (assets.eriduops.com/chibi3d), invalidate the
+ * edge with Purge Everything, NOT purge-by-URL: the host serves Vary: Origin, so
+ * per-URL purges miss the Origin-keyed variant that real browsers hit. Browsers
+ * cache the old files until their TTL runs out (a cache rule keeps browser TTL
+ * short); that window is harmless because the app loader always has the meshopt
+ * decoder attached (chibi3dCore.createGltfLoader) and reads both formats.
  *
  * Flag rationale (quality first, verified numerically against the originals:
  * max rotation error 0.1 deg on a hair bone, translation/scale error ~1e-4,
@@ -39,7 +45,7 @@
  *   -cc           max meshopt compression
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, globSync, mkdirSync, renameSync, statSync } from 'node:fs';
+import { existsSync, globSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -61,6 +67,14 @@ for (const rel of glbs.sort()) {
   const live = join(base, rel);
   const orig = join(origBase, rel);
   if (!existsSync(orig)) {
+    if (readFileSync(live).includes('EXT_meshopt_compression')) {
+      console.error(
+        `SKIP ${rel}: live file is already packed and _orig/${rel} is missing; ` +
+          'restore the original from ~/Documents/Data/deliverable first.',
+      );
+      failures++;
+      continue;
+    }
     mkdirSync(dirname(orig), { recursive: true });
     renameSync(live, orig);
   }
