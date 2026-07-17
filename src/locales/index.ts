@@ -442,7 +442,7 @@ const en = {
       'Special thanks to 本心 (benx1n) for granting access to the arona.icu API, which powers the Bond 100 community counts on the Hall.',
     disclaimerHeader: 'Disclaimer',
     disclaimerBody:
-      'Blue Archive and all related game assets and data are © NEXON Games / Yostar. This is a non-commercial fan project for personal and educational use only; not for sale or redistribution. Not affiliated with or endorsed by NEXON. Assets removed on request from the rights holder.',
+      'Blue Archive and all related game assets and data are © NEXON Games / Yostar. This is a non-commercial fan project for personal and educational use only; not for sale or redistribution. Not affiliated with or endorsed by NEXON.',
   },
 
   // Ownership (recruited / not recruited)
@@ -1103,7 +1103,7 @@ const jp: TranslationTree = {
       '絆100殿堂の集計データを支える arona.icu API へのアクセスを許可してくださった本心 (benx1n) 氏に、心より感謝いたします。',
     disclaimerHeader: '免責事項',
     disclaimerBody:
-      'ブルーアーカイブおよび関連するゲームアセット・データの著作権は © NEXON Games / Yostar に帰属します。本サイトは非営利のファンプロジェクトであり、個人的・教育的な利用のみを目的としています。販売・再配布は禁止です。NEXONとの提携・公認ではありません。権利者からの要請があればアセットを削除します。',
+      'ブルーアーカイブおよび関連するゲームアセット・データの著作権は © NEXON Games / Yostar に帰属します。本サイトは非営利のファンプロジェクトであり、個人的・教育的な利用のみを目的としています。販売・再配布は禁止です。NEXONとの提携・公認ではありません。',
   },
 
   // Ownership (recruited / not recruited)
@@ -1762,7 +1762,7 @@ const kr: TranslationTree = {
       '인연 100 전당의 커뮤니티 집계를 지원하는 arona.icu API 접근을 허가해 주신 本心(benx1n) 님께 진심으로 감사드립니다.',
     disclaimerHeader: '면책 조항',
     disclaimerBody:
-      '블루 아카이브 및 관련 게임 에셋과 데이터의 저작권은 © NEXON Games / Yostar에 있습니다. 본 사이트는 비영리 팬 프로젝트로 개인적·교육적 용도로만 사용됩니다. 판매 및 재배포는 금지됩니다. NEXON과 제휴하거나 승인받지 않았습니다. 권리자의 요청 시 에셋을 삭제합니다.',
+      '블루 아카이브 및 관련 게임 에셋과 데이터의 저작권은 © NEXON Games / Yostar에 있습니다. 본 사이트는 비영리 팬 프로젝트로 개인적·교육적 용도로만 사용됩니다. 판매 및 재배포는 금지됩니다. NEXON과 제휴하거나 승인받지 않았습니다.',
   },
 
   // Ownership (recruited / not recruited)

@@ -22,7 +22,7 @@ const CHIBI_CHAR_IDS = ['ch0158', 'ch0242', 'ch0243', 'ch0331', 'ch0333'] as con
 const LEGAL_NOTICE =
   'Blue Archive and all game assets (3D models, animations, textures, voices) are © NEXON Games / Yostar. ' +
   'Non-commercial fan project for personal and educational use only; not for sale or redistribution. ' +
-  'Not affiliated with or endorsed by NEXON. Assets removed on request from the rights holder.';
+  'Not affiliated with or endorsed by NEXON.';
 
 // Proper hover tooltip for the disclaimer (same primitive as GiftOption's), not a native title.
 const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<'legal'>();
