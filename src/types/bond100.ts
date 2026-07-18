@@ -5,6 +5,8 @@ export type Bond100ServerFilter = Bond100ServerRegion | 'all';
 /** School filter: a raw SchaleDB School value, or 'all' for no filter. */
 export type Bond100SchoolFilter = string;
 export type Bond100SortMode = 'default' | 'name' | 'bond100' | 'recent';
+/** /hall view: the per-student wall grid, or the player-centric leaderboard. */
+export type Bond100View = 'wall' | 'players';
 
 export interface Bond100ServerOption {
   code: Bond100ServerRegion;
@@ -45,6 +47,25 @@ export interface Bond100StudentEntriesResponse {
   /** When this student's entries were last fetched (YYYY-MM-DD). */
   fetchedAt?: string;
   entries: Bond100Entry[];
+  isMock?: boolean;
+}
+
+/**
+ * One player on the /players leaderboard: the player-centric inversion of the
+ * wall. studentIds are the (primary, deduped) students this player has at
+ * bond 100. arona exposes no stable player id, so identity is (serverRegion,
+ * playerName); same-name players on one server merge (accepted rarity).
+ */
+export interface Bond100Player {
+  playerName: string;
+  serverRegion: Bond100ServerRegion;
+  count: number;
+  studentIds: number[];
+}
+
+export interface Bond100PlayersResponse {
+  snapshotDate?: string;
+  players: Bond100Player[];
   isMock?: boolean;
 }
 

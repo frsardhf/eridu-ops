@@ -1,5 +1,7 @@
 import { getPrimaryStudentId } from '@/lib/constants/linkedStudents';
 import type {
+  Bond100Player,
+  Bond100PlayersResponse,
   Bond100ServerRegion,
   Bond100StudentEntriesResponse,
   Bond100StudentSummary,
@@ -77,6 +79,23 @@ const MOCK_ENTRIES: Record<number, Bond100StudentEntriesResponse> = {
   },
 };
 
+const MOCK_PLAYERS: Bond100PlayersResponse = {
+  snapshotDate: '2026-05-26',
+  isMock: true,
+  players: [
+    {
+      playerName: 'DemoSensei',
+      serverRegion: 'global_na',
+      count: 4,
+      studentIds: [10098, 20039, 20040, 20041],
+    },
+    { playerName: 'ミドクニ', serverRegion: 'global_asia', count: 2, studentIds: [20039, 20041] },
+    { playerName: 'Eunere', serverRegion: 'global_eu', count: 1, studentIds: [20039] },
+    { playerName: '히나머리냄새디퓨저', serverRegion: 'global_kr', count: 1, studentIds: [20039] },
+    { playerName: '三遇還素琴', serverRegion: 'global_tw', count: 1, studentIds: [20040] },
+  ],
+};
+
 class Bond100ApiError extends Error {
   constructor(message: string) {
     super(message);
@@ -125,6 +144,32 @@ export async function getBond100StudentEntries(
       }
     );
   }
+}
+
+export async function getBond100Players(): Promise<Bond100PlayersResponse> {
+  try {
+    const raw = await fetchJson<Bond100PlayersResponse>('/bond100/players');
+    return normalizePlayers(raw);
+  } catch {
+    return normalizePlayers(MOCK_PLAYERS);
+  }
+}
+
+// Safety net mirroring normalizeSummary: the backend already stores primary
+// ids, but collapse + dedup here too so a linked pair can never show as two
+// icons for one player. Re-sorts in case dedup changed a count.
+function normalizePlayers(response: Bond100PlayersResponse): Bond100PlayersResponse {
+  const players: Bond100Player[] = response.players.map((p) => {
+    const ids = Array.from(new Set(p.studentIds.map(getPrimaryStudentId))).sort((a, b) => a - b);
+    return { ...p, studentIds: ids, count: ids.length };
+  });
+  players.sort(
+    (a, b) =>
+      b.count - a.count ||
+      a.serverRegion.localeCompare(b.serverRegion) ||
+      a.playerName.localeCompare(b.playerName),
+  );
+  return { ...response, players };
 }
 
 // Linked-pair styles (e.g. Hoshino Armed 10098 + 10099) share one in-game

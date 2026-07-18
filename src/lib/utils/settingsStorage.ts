@@ -38,6 +38,8 @@ export interface AppSettings {
   bond100School?: string;
   /** /hall toggle to hide students with a 0 bond-100 count. */
   bond100HideEmpty?: boolean;
+  /** /hall view: per-student wall grid (default) or the player leaderboard. */
+  bond100View?: 'wall' | 'players';
   /** ID of the most recent CHANGELOG entry the user has seen / dismissed. */
   lastSeenChangelogId?: string;
   /** Card overlays pinned to always-display (undefined = all shown by default). */
@@ -75,6 +77,7 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'bond100Sort',
   'bond100School',
   'bond100HideEmpty',
+  'bond100View',
   'lastSeenChangelogId',
   'cardOverlays',
 ];

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import Bond100EntriesModal from '@/components/bond100/Bond100EntriesModal.vue';
+import Bond100PlayersPanel from '@/components/bond100/Bond100PlayersPanel.vue';
 import Bond100SubmitModal from '@/components/bond100/Bond100SubmitModal.vue';
 import Bond100StatsPopover from '@/components/bond100/Bond100StatsPopover.vue';
 import Bond100Wall from '@/components/bond100/Bond100Wall.vue';
@@ -12,17 +13,23 @@ import { useImageExport } from '@/composables/useImageExport';
 import { BOND100_SERVER_OPTIONS, BOND100_SORT_MODES } from '@/lib/constants/bond100';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
 import { useStudentData } from '@/lib/hooks/useStudentData';
-import { getBond100StudentEntries, getBond100Summary } from '@/lib/services/bond100Service';
+import {
+  getBond100Players,
+  getBond100StudentEntries,
+  getBond100Summary,
+} from '@/lib/services/bond100Service';
 import { getSettings, updateSetting } from '@/lib/utils/settingsStorage';
 import { resolveLocalized } from '@/lib/utils/localizationUtils';
 import { $t } from '@/locales';
 import type {
+  Bond100PlayersResponse,
   Bond100ServerFilter,
   Bond100SchoolFilter,
   Bond100SortMode,
   Bond100StudentEntriesResponse,
   Bond100StudentSummary,
   Bond100SummaryResponse,
+  Bond100View,
 } from '@/types/bond100';
 import type { StudentProps } from '@/types/student';
 
@@ -44,6 +51,27 @@ watch(selectedSchool, (v) => updateSetting('bond100School', v));
 
 const hideEmpty = ref<boolean>(getSettings().bond100HideEmpty ?? false);
 watch(hideEmpty, (v) => updateSetting('bond100HideEmpty', v));
+
+// --- Players view (the wall's player-centric inversion) ---
+const view = ref<Bond100View>(getSettings().bond100View ?? 'wall');
+watch(view, (v) => updateSetting('bond100View', v));
+
+const playersResponse = ref<Bond100PlayersResponse | null>(null);
+const isPlayersLoading = ref(false);
+
+// Lazy: fetched on the first switch to the Players view (or on mount when the
+// persisted view is already 'players'), then cached for the session.
+async function loadPlayers() {
+  if (playersResponse.value || isPlayersLoading.value) return;
+  isPlayersLoading.value = true;
+  try {
+    playersResponse.value = await getBond100Players();
+  } finally {
+    isPlayersLoading.value = false;
+  }
+}
+
+watch(view, (v) => v === 'players' && loadPlayers(), { immediate: true });
 
 const serverFilterOptions = computed<{ value: Bond100ServerFilter; label: string }[]>(() => [
   { value: 'all', label: $t('bond100.allServers') },
@@ -326,6 +354,25 @@ onMounted(loadSummary);
 
     <main class="bond100-body">
       <div class="bond100-toolbar">
+        <div class="bond100-view-toggle" role="group" :aria-label="$t('bond100.viewToggleAria')">
+          <button
+            type="button"
+            class="bond100-view-btn"
+            :class="{ active: view === 'wall' }"
+            @click="view = 'wall'"
+          >
+            {{ $t('bond100.viewWall') }}
+          </button>
+          <button
+            type="button"
+            class="bond100-view-btn"
+            :class="{ active: view === 'players' }"
+            @click="view = 'players'"
+          >
+            {{ $t('bond100.viewPlayers') }}
+          </button>
+        </div>
+
         <label class="bond100-search">
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
             <path
@@ -336,7 +383,11 @@ onMounted(loadSummary);
           <input
             v-model="searchQuery"
             type="search"
-            :placeholder="$t('bond100.searchPlaceholder')"
+            :placeholder="
+              view === 'players'
+                ? $t('bond100.players.searchPlaceholder')
+                : $t('bond100.searchPlaceholder')
+            "
           />
         </label>
 
@@ -351,12 +402,14 @@ onMounted(loadSummary);
         />
 
         <SelectMenu
+          v-if="view === 'wall'"
           v-model="selectedSchool"
           :options="schoolOptions"
           :aria-label="$t('bond100.school')"
         />
 
         <button
+          v-if="view === 'wall'"
           type="button"
           class="bond100-toggle"
           :class="{ active: hideEmpty }"
@@ -380,10 +433,15 @@ onMounted(loadSummary);
           <span>{{ $t('bond100.hideEmpty') }}</span>
         </button>
 
-        <SelectMenu v-model="sortMode" :options="sortOptions" :aria-label="$t('bond100.sort')" />
+        <SelectMenu
+          v-if="view === 'wall'"
+          v-model="sortMode"
+          :options="sortOptions"
+          :aria-label="$t('bond100.sort')"
+        />
 
         <button
-          v-if="isOwner"
+          v-if="isOwner && view === 'wall'"
           type="button"
           class="bond100-export-btn"
           :disabled="exporting"
@@ -409,7 +467,7 @@ onMounted(loadSummary);
         </button>
       </div>
 
-      <div class="bond100-metrics">
+      <div v-if="view === 'wall'" class="bond100-metrics">
         <span
           ><strong>{{ totals.total }}</strong> {{ $t('bond100.atBond100') }}</span
         >
@@ -483,9 +541,20 @@ onMounted(loadSummary);
       </div>
 
       <Bond100Wall
+        v-if="view === 'wall'"
         :cards="visibleCards"
         :loading="isSummaryLoading || !isReady"
         @select-student="openEntries"
+      />
+
+      <Bond100PlayersPanel
+        v-else
+        :players="playersResponse?.players ?? []"
+        :loading="isPlayersLoading || !isReady"
+        :search-query="searchQuery"
+        :server-filter="selectedServer"
+        :server-options="BOND100_SERVER_OPTIONS"
+        :roster="allStudents"
       />
 
       <!-- Parked export header (display:none). At export time a clone is
@@ -652,6 +721,44 @@ onMounted(loadSummary);
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 10px;
+}
+
+/* --- Wall / Players view toggle --- */
+.bond100-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-primary);
+}
+
+.bond100-view-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.bond100-view-btn:hover {
+  color: var(--accent-color);
+}
+
+.bond100-view-btn.active {
+  background: color-mix(in srgb, var(--accent-color) 14%, transparent);
+  color: var(--accent-color);
 }
 
 .bond100-submit-btn {
