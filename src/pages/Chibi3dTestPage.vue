@@ -5,8 +5,10 @@ import Chibi3dPet from '@/components/chibi/Chibi3dPet.vue';
 import Chibi3dInteraction from '@/components/chibi/Chibi3dInteraction.vue';
 import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import SearchSelect from '@/components/shared/SearchSelect.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
 import { useStudentData } from '@/lib/hooks/useStudentData';
+import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { useTooltip } from '@/composables/useTooltip';
 import '@/styles/tooltip.css';
 
@@ -39,24 +41,28 @@ const charId = ref<string>(
 watch(charId, (id) => localStorage.setItem(CHAR_STORAGE_KEY, id));
 
 const { studentData } = useStudentData();
-const studentNameByDevName = computed(() => {
-  const map = new Map<string, string>();
+const studentByDevName = computed(() => {
+  const map = new Map<string, { name: string; id: number }>();
   for (const s of Object.values(studentData.value)) {
-    if (s.DevName) map.set(s.DevName.toUpperCase(), s.Name);
+    if (s.DevName) map.set(s.DevName.toUpperCase(), { name: s.Name, id: s.Id });
   }
   return map;
 });
 // Resolve a chibi cid to its student name (falls back to the cid), shared by the character
 // picker and the interaction stage's victory labels.
 function resolveCharName(cid: string): string {
-  return studentNameByDevName.value.get(cid.toUpperCase()) ?? cid;
+  return studentByDevName.value.get(cid.toUpperCase())?.name ?? cid;
 }
-// Name only (no striker/special role) for the character picker.
+// Name + portrait for the searchable character picker (no striker/special role).
 const charOptions = computed(() =>
-  CHIBI_CHAR_IDS.map((id) => ({
-    value: id,
-    label: resolveCharName(id),
-  })),
+  CHIBI_CHAR_IDS.map((cid) => {
+    const student = studentByDevName.value.get(cid.toUpperCase());
+    return {
+      value: cid,
+      label: student?.name ?? cid,
+      icon: student ? getStudentIconUrl(student.id) : undefined,
+    };
+  }),
 );
 
 // Shared apparent-size slider (camera dolly): higher = closer = bigger chibi. Drives both the
@@ -280,7 +286,13 @@ function onStagePointerDown(e: PointerEvent): void {
       </div>
 
       <div class="chibi-chars" @pointerdown.stop>
-        <SelectMenu v-model="charId" :options="charOptions" align="right" aria-label="Character" />
+        <SearchSelect
+          :model-value="charId"
+          :options="charOptions"
+          align="right"
+          aria-label="Character"
+          @update:model-value="(v) => v !== null && (charId = v)"
+        />
       </div>
 
       <Chibi3dPet
