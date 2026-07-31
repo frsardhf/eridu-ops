@@ -54,6 +54,39 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-07-crafting-and-hall',
+    date: '2026-07-31',
+    title: {
+      en: 'Crafting plans & a smarter Hall',
+      jp: 'クラフト計画と、より便利になった殿堂',
+      kr: '제작 계획과 더 편리해진 전당',
+    },
+    summary: {
+      en: 'Plan crafting fodder from your inventory, follow progress across both stages, and explore the Hall through a new player leaderboard.',
+      jp: '在庫からクラフト素材を計画し、両段階の進捗を記録できるようになりました。殿堂には新しいプレイヤーランキングも追加。',
+      kr: '인벤토리로 제작 재료를 계획하고 두 단계의 진행 상황을 기록할 수 있으며, 새로운 플레이어 순위표로 전당을 살펴볼 수 있습니다.',
+    },
+    highlights: [
+      {
+        en: 'A dedicated Crafting page creates a stable two-stage fodder plan from your inventory, shows how many submissions each stage can support, and records partial progress without changing your inventory.',
+        jp: '専用のクラフトページで、現在の在庫から固定された2段階の素材計画を作成。各段階で可能な投入回数を確認し、在庫を変更せずに途中経過を記録できます。',
+        kr: '전용 제작 페이지에서 현재 인벤토리로 고정된 2단계 재료 계획을 만들고, 단계별 가능한 제출 횟수를 확인하며, 인벤토리를 변경하지 않고 진행 상황을 기록할 수 있습니다.',
+      },
+      {
+        en: 'Search materials by name or ID, filter by material type, adjust keep-at-least rules, and refresh the plan only when you want a new inventory snapshot.',
+        jp: '素材名やIDで検索し、素材タイプで絞り込み、最低保持数のルールを調整できます。新しい在庫スナップショットが必要なときだけ計画を更新できます。',
+        kr: '재료 이름이나 ID로 검색하고, 재료 유형으로 필터링하며, 최소 보유량 규칙을 조정할 수 있습니다. 새로운 인벤토리 스냅샷이 필요할 때만 계획을 갱신할 수 있습니다.',
+      },
+      {
+        en: 'The Bond 100 Hall now includes a player leaderboard with count chips and student filtering, with totals that stay accurate when filtering by school.',
+        jp: '絆100殿堂に、人数チップと生徒フィルターを備えたプレイヤーランキングを追加。学園で絞り込んだ場合も正確な合計を表示します。',
+        kr: '인연 100 전당에 인원 수 칩과 학생 필터가 있는 플레이어 순위표를 추가했으며, 학원으로 필터링해도 정확한 합계를 표시합니다.',
+      },
+    ],
+    fromCommit: 'c3a8a0e',
+    toCommit: 'b49bc58',
+  },
+  {
     id: '2026-07-korean-and-hall-filters',
     date: '2026-07-04',
     title: {

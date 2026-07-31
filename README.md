@@ -13,7 +13,8 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) �
 - **Bond planner** (`/bonds`) — Tracked-students view with gift allocation, cafe-tap projection (start/end dates), bonus EXP from lessons, and per-gift EXP breakdowns
 - **Bond 100 Hall** (`/hall`) — Community wall of senseis who've reached bond level 100 with each student; search, server filters, sorting, friend-code submission, and a per-student entries view (data via arona.icu)
 - **Inventory** — Manage owned materials, equipment, and gifts across all students; bulk-update from a single screenshot via OCR scan
-- **Tools** (ToolsRail on `/students`) — Bulk bond update (paste `name bond` pairs), bulk modify students, crafting fodder picker, equipment farming suggestions, deck builder
+- **Crafting Fodder** (`/crafting`): Two-stage crafting tracker with frozen inventory snapshots, standalone stage capacities, paired full-craft counts, filters, and stage-specific progress
+- **Tools** (ToolsRail on `/students`): Bulk bond update (paste `name bond` pairs), bulk modify students, equipment farming suggestions, deck builder
 - **Themes** — 7 built-in colour themes (dark, light, ocean, forest, sunset, rose, violet)
 - **Import / Export** — Back up and share your planner data as JSON
 - **Multi-language** — English, Japanese, and Korean UI (also seedable via a `?lang=` deep-link)
@@ -62,15 +63,16 @@ Folders under `components/` map to a **route surface** (`students/`, `bonds/`, `
 
 ```
 src/
-  pages/                # Route components — LandingPage, StudentsPage, BondsPage, Bond100Page
+  pages/                # Route components: LandingPage, StudentsPage, BondsPage, Bond100Page, CraftingPage
   router/               # vue-router config
   components/
     students/           # /students surface
       modal/            #   StudentModal + Info / Upgrade / Gear / Shared subtrees
-      tools/            #   ToolsRail-triggered modals (BondUpdate, BulkModify, CraftingFodder, EquipmentFarming, DeckBuilder)
+      tools/            #   ToolsRail-triggered modals (BondUpdate, BulkModify, EquipmentFarming, DeckBuilder)
     bonds/              # /bonds surface — BondsStudentEditor, BondsStudentPicker, OtherExpPanel
       gift/             #   Gift allocation building blocks (GiftCard, GiftGrid, GiftOption, …)
     bond100/            # /hall surface — Bond100Wall, Bond100EntriesModal, Bond100SubmitModal, Bond100StatsPopover
+    crafting/           # /crafting surface: CraftingFodderCard
     inventory/          # GlobalInventoryModal, ResourceGrid (items/equipment variant), ResourceCard, ResourceSummary
     navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel, SortPanel
       modals/           #   Navbar-triggered modals (Contact, Credits, Import, InventoryScreenshot, WhatsNew)
@@ -106,7 +108,7 @@ Components  →  Composables / Hooks  →  Services  →  IndexedDB (source of t
 - **IndexedDB** (Dexie) — single source of truth for persisted user data
 - **Settings** (localStorage) — UI preferences (theme, sort, filters, tracked bonds)
 
-See `CLAUDE.md` for a deeper architecture reference (data loading pipeline, store layer, hook domains, persistence pattern).
+See `AGENTS.md` for a deeper architecture reference (data loading pipeline, store layer, hook domains, persistence pattern).
 
 ---
 
