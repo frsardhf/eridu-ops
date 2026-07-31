@@ -5,6 +5,7 @@ import type { ThemeId } from '@/types/theme';
 import type { StudentFilters } from '@/types/filter';
 import type { CardOverlayId } from '@/types/card';
 import type { Language } from '../stores/localizationStore';
+import type { CraftingFodderSession } from '../../types/crafting';
 import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
@@ -23,9 +24,10 @@ export interface AppSettings {
   pinnedStudents: string[];
   isPinnedMode: boolean;
   craftingFodder?: {
-    thresholds: Record<string, Record<string, number>>; // thresholds[subcat][rarity]
-    rarityFilter: string[]; // user's chip selection for Stage 1
-    markedIds: number[]; // material IDs the user has marked as "used"
+    thresholds: Record<string, Record<string, number>>;
+    rarityFilter: string[];
+    session?: CraftingFodderSession;
+    markedIds?: number[];
   };
   studentFilters?: StudentFilters;
   bondsTrackedStudents?: number[];

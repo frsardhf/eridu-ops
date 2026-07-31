@@ -17,9 +17,6 @@ const BulkModifyStudentsModal = defineAsyncComponent(
 const BondUpdateModal = defineAsyncComponent(
   () => import('@/components/students/tools/BondUpdateModal.vue'),
 );
-const CraftingFodderModal = defineAsyncComponent(
-  () => import('@/components/students/tools/CraftingFodderModal.vue'),
-);
 const DeckBuilderModal = defineAsyncComponent(
   () => import('@/components/students/tools/DeckBuilderModal.vue'),
 );
@@ -64,7 +61,6 @@ const isBondUpdateVisible = ref(false);
 const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
 const inventoryInitialTab = ref<'items' | 'equipment'>('items');
-const isCraftingFodderVisible = ref(false);
 const isEquipmentFarmingVisible = ref(false);
 
 function openInventoryFromFarming() {
@@ -178,7 +174,6 @@ function handleClearFilters() {
       @open-deck-builder="isDeckBuilderVisible = true"
       @open-inventory="isInventoryModalVisible = true"
       @open-bond-update="isBondUpdateVisible = true"
-      @open-crafting-fodder="isCraftingFodderVisible = true"
       @open-equipment-farming="isEquipmentFarmingVisible = true"
     />
 
@@ -230,8 +225,6 @@ function handleClearFilters() {
       :students="allStudentsArray"
       @close="isDeckBuilderVisible = false"
     />
-
-    <CraftingFodderModal v-if="isCraftingFodderVisible" @close="isCraftingFodderVisible = false" />
 
     <EquipmentFarmingModal
       v-if="isEquipmentFarmingVisible"

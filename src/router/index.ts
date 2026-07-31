@@ -25,6 +25,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/Bond100Page.vue'),
   },
   {
+    path: '/crafting',
+    name: 'Crafting',
+    component: () => import('@/pages/CraftingPage.vue'),
+  },
+  {
     path: '/bond100',
     redirect: '/hall',
   },

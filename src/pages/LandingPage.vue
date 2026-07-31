@@ -19,6 +19,14 @@ const bondIconUrl = getBondIconUrl();
 const studentIconUrl = ref<string>('');
 const studentsImgError = ref(false);
 const bondsImgError = ref(false);
+const craftingImgError = ref(false);
+const craftingIconIndex = ref(0);
+const craftingIconUrls = [
+  'https://schaledb.com/images/craftnode/Favor.png',
+  'https://schaledb.com/images/craftnode/Furniture.png',
+  'https://schaledb.com/images/craftnode/Rairty.png',
+] as const;
+const craftingBorderUrl = 'https://schaledb.com/images/craftnode/Node_Border.png';
 
 /** Pick a random student portrait, avoiding an immediate repeat. */
 function cycleStudentIcon() {
@@ -38,6 +46,11 @@ function cycleStudentIcon() {
   studentsImgError.value = false;
 }
 
+function cycleCraftingIcon() {
+  craftingIconIndex.value = (craftingIconIndex.value + 1) % craftingIconUrls.length;
+  craftingImgError.value = false;
+}
+
 watch(
   sortedStudentsArray,
   (students) => {
@@ -46,14 +59,17 @@ watch(
   { immediate: true },
 );
 
-let studentIconInterval: ReturnType<typeof setInterval> | null = null;
+let landingArtInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
-  studentIconInterval = setInterval(cycleStudentIcon, 2000);
+  landingArtInterval = setInterval(() => {
+    cycleStudentIcon();
+    cycleCraftingIcon();
+  }, 2000);
 });
 
 onUnmounted(() => {
-  if (studentIconInterval) clearInterval(studentIconInterval);
+  if (landingArtInterval) clearInterval(landingArtInterval);
 });
 </script>
 
@@ -146,6 +162,51 @@ onUnmounted(() => {
           <div class="landing-card-body">
             <h2 class="landing-card-title">{{ $t('bonds') }}</h2>
             <p class="landing-card-desc">{{ $t('bondsDesc') }}</p>
+          </div>
+          <div class="landing-card-arrow">→</div>
+        </RouterLink>
+
+        <RouterLink to="/crafting" class="landing-card">
+          <div class="landing-card-art landing-card-art--crafting">
+            <div v-if="!craftingImgError" class="craft-image">
+              <Transition name="portrait-fade">
+                <img
+                  :key="craftingIconUrls[craftingIconIndex]"
+                  :src="craftingIconUrls[craftingIconIndex]"
+                  alt=""
+                  class="node-icon"
+                  @error="craftingImgError = true"
+                />
+              </Transition>
+              <img
+                :src="craftingBorderUrl"
+                alt=""
+                class="node-border"
+                @error="craftingImgError = true"
+              />
+            </div>
+            <div v-else class="landing-card-img-fallback">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="38"
+                height="38"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77" />
+                <path d="m17 2 4 4" />
+                <path d="m2 21 9.4-9.4" />
+                <path d="m7.5 10.5 6 6" />
+              </svg>
+            </div>
+          </div>
+          <div class="landing-card-body">
+            <h2 class="landing-card-title">{{ $t('craftingFodder.nav') }}</h2>
+            <p class="landing-card-desc">{{ $t('craftingDesc') }}</p>
           </div>
           <div class="landing-card-arrow">→</div>
         </RouterLink>
@@ -329,6 +390,50 @@ onUnmounted(() => {
       transparent 48%
     ),
     color-mix(in srgb, var(--color-negative) 12%, var(--background-primary));
+}
+
+.landing-card-art--crafting {
+  background:
+    radial-gradient(
+      circle at 50% 48%,
+      color-mix(in srgb, var(--accent-color) 24%, transparent),
+      transparent 62%
+    ),
+    var(--background-primary);
+}
+
+.craft-image {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.craft-image::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 9px;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: color-mix(in srgb, #111827 72%, var(--accent-color));
+}
+
+.craft-image .node-icon,
+.craft-image .node-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.craft-image .node-icon {
+  z-index: 1;
+  filter: sepia(1) saturate(10) hue-rotate(150deg);
+}
+
+.craft-image .node-border {
+  z-index: 2;
+  pointer-events: none;
 }
 
 .landing-card-img-fallback {

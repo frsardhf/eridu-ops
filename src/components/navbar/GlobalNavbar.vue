@@ -140,6 +140,9 @@ useClickOutside(handleClickOutside);
           <RouterLink to="/bonds" class="app-navbar-link" active-class="active">
             {{ $t('bonds') }}
           </RouterLink>
+          <RouterLink to="/crafting" class="app-navbar-link" active-class="active">
+            {{ $t('craftingFodder.nav') }}
+          </RouterLink>
           <RouterLink to="/hall" class="app-navbar-link" active-class="active">
             {{ $t('bond100.nav') }}
           </RouterLink>
@@ -178,6 +181,24 @@ useClickOutside(handleClickOutside);
 
     <div v-if="mobileMenuOpen" ref="menuEl" class="an-mobile-menu">
       <div class="mobile-menu-container">
+        <div class="mobile-menu-section mobile-nav-only">
+          <h3 class="mobile-menu-heading">{{ $t('navigation') }}</h3>
+          <div class="mobile-menu-options">
+            <RouterLink to="/students" class="mobile-menu-option" @click="mobileMenuOpen = false">
+              {{ $t('students') }}
+            </RouterLink>
+            <RouterLink to="/bonds" class="mobile-menu-option" @click="mobileMenuOpen = false">
+              {{ $t('bonds') }}
+            </RouterLink>
+            <RouterLink to="/crafting" class="mobile-menu-option" @click="mobileMenuOpen = false">
+              {{ $t('craftingFodder.nav') }}
+            </RouterLink>
+            <RouterLink to="/hall" class="mobile-menu-option" @click="mobileMenuOpen = false">
+              {{ $t('bond100.nav') }}
+            </RouterLink>
+          </div>
+        </div>
+
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">{{ $t('data') }}</h3>
           <div class="mobile-menu-options">
@@ -513,7 +534,8 @@ useClickOutside(handleClickOutside);
 /* Menu entries shown only once the matching top-bar control collapses: Contact
    and Credits at the tablet breakpoint, Language at the phone breakpoint. */
 .compact-only,
-.compact-only-sm {
+.compact-only-sm,
+.mobile-nav-only {
   display: none;
 }
 
@@ -541,6 +563,14 @@ useClickOutside(handleClickOutside);
 @media screen and (max-width: 768px) {
   .an-mobile-menu {
     max-width: 100%;
+  }
+
+  .an-left:not(.an-left--compact) .an-nav {
+    display: none;
+  }
+
+  .mobile-nav-only {
+    display: block;
   }
 }
 
