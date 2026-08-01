@@ -4,6 +4,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type {
   ChibiManifest,
   ChibiMouthEvent,
+  ChibiRendererEvent,
+  ChibiCharacterConfig,
   ChibiFurnitureConfig,
   ChibiVictoryConfig,
   ChibiScenesConfig,
@@ -18,6 +20,7 @@ import {
 import {
   type MouthUniforms,
   type HaloFollower,
+  type RendererTimeline,
   FOV_DEG,
   CAM_ORBIT_DISTANCE,
   CHIBI_INT_ZOOM_MIN,
@@ -27,13 +30,17 @@ import {
   makeGradient,
   loadTexture,
   driveMouth,
+  driveRenderers,
   applyManifestMaterials,
+  createRendererTimeline,
   applyToonMaterials,
   addSceneLights,
   disposeSubtree,
   makeHaloFollower,
   updateHaloFollower,
+  setHaloOverride,
 } from '@/composables/chibi3dCore';
+import { CHIBI_FURNITURE_IDS } from '@/composables/chibi3dCatalog';
 
 /**
  * Live-3D chibi interaction scene (the Vue port of the deliverable POC's `poc/furniture.html`):
@@ -60,11 +67,15 @@ interface LoadedChar {
   cid: string;
   root: THREE.Object3D;
   mixer: THREE.AnimationMixer;
+  haloMixer: THREE.AnimationMixer | null;
   action: THREE.AnimationAction | null;
   clipsByBase: Map<string, THREE.AnimationClip>;
-  mouthUniforms: MouthUniforms | null;
+  mouthUniforms: MouthUniforms[];
   mouthByClip: Record<string, ChibiMouthEvent[]>;
   currentMouth: ChibiMouthEvent[];
+  rendererByClip: Record<string, ChibiRendererEvent[]>;
+  currentRenderers: ChibiRendererEvent[];
+  rendererTimeline: RendererTimeline | null;
   halo: HaloFollower | null;
   pelvis: THREE.Object3D | null; // Bip001 root, for victory faceInPlace
   atlas: THREE.Texture | null;
@@ -139,13 +150,18 @@ export function useChibi3dInteractionScene(
 
   let furnCfgAll: Record<string, ChibiFurnitureConfig> = {};
   let victoryCfgAll: Record<string, ChibiVictoryConfig> = {};
+  let charCfgAll: Record<string, ChibiCharacterConfig> = {};
   const sceneCatalog = new Map<string, SceneDef>();
 
   let chars: LoadedChar[] = [];
   let furniture: LoadedFurniture | null = null;
   let sceneType: 'furniture' | 'victory' = 'furniture';
   let victoryAutoflip = true;
+  let victoryMirrorMotionX = false;
+  let victoryMirrorMotionZ = false;
+  let victoryExclude: string[] = [];
   const victoryOffset = new THREE.Vector3();
+  const victorySecondOffset = new THREE.Vector3();
 
   const clock = new THREE.Clock();
   let rafId = 0;
@@ -154,14 +170,17 @@ export function useChibi3dInteractionScene(
 
   const loader = createGltfLoader();
   function loadGltf(url: string) {
-    return new Promise<{ scene: THREE.Object3D; animations: THREE.AnimationClip[] } | null>(
-      (resolve) =>
-        loader.load(
-          url,
-          (g) => resolve(g),
-          undefined,
-          () => resolve(null),
-        ),
+    return new Promise<{
+      scene: THREE.Object3D;
+      animations: THREE.AnimationClip[];
+      parser?: { json?: { nodes?: Array<{ mesh?: number; name?: string }> } };
+    } | null>((resolve) =>
+      loader.load(
+        url,
+        (g) => resolve(g),
+        undefined,
+        () => resolve(null),
+      ),
     );
   }
 
@@ -188,7 +207,8 @@ export function useChibi3dInteractionScene(
       // scenes.json is optional: without it we fall back to no curated overrides.
     }
     furnCfgAll = config.furniture ?? {};
-    victoryCfgAll = config.victory ?? {};
+    victoryCfgAll = config.duo ?? config.victory ?? {};
+    charCfgAll = config.characters ?? {};
 
     // Per-char interaction clip keys, read from the manifest mouth map (cheap JSON).
     const keysByCid = new Map<string, string[]>();
@@ -208,7 +228,7 @@ export function useChibi3dInteractionScene(
     const options: SceneOption[] = [];
 
     // Furniture scenes: a furniture label + every character with a clip for it.
-    for (const label of Object.keys(furnCfgAll)) {
+    for (const label of CHIBI_FURNITURE_IDS) {
       const cids = opts.charIds.filter((cid) =>
         (keysByCid.get(cid) ?? []).some((k) => k.toLowerCase().includes(label.toLowerCase())),
       );
@@ -217,25 +237,18 @@ export function useChibi3dInteractionScene(
       options.push({ value: label, label, kind: 'furniture' });
     }
 
-    // Victory scenes: a curated pair whose two characters share a paired-victory interaction clip.
-    // The pair is reversed vs the sorted scenes.json key: the POC orders victory characters
-    // reversed, and the `offset` seats characters[0] (the reversed-first) -- keep that mapping.
+    // Victory scene keys are sorted for lookup, while their stage order is reversed so the
+    // first-character offsets target the intended interaction lead.
     for (const key of Object.keys(victoryCfgAll)) {
       const cids = key
         .split('|')
         .filter((c) => opts.charIds.includes(c))
         .reverse();
       if (cids.length < 2) continue;
-      const victorySets = cids.map(
-        (cid) =>
-          new Set(
-            (keysByCid.get(cid) ?? [])
-              .filter((k) => VICTORY_INTERACTION_RE.test(k))
-              .map((k) => k.toLowerCase()),
-          ),
-      );
-      const shares = [...victorySets[0]].some((k) => victorySets.every((s) => s.has(k)));
-      if (!shares) continue;
+      if (
+        !cids.every((cid) => (keysByCid.get(cid) ?? []).some((k) => VICTORY_INTERACTION_RE.test(k)))
+      )
+        continue;
       const id = `victory:${key}`;
       const label = cids.map((c) => opts.charName?.(c) ?? c).join(' × ');
       sceneCatalog.set(id, { id, label, type: 'victory', cids, victoryKey: key });
@@ -274,22 +287,46 @@ export function useChibi3dInteractionScene(
     const mask = em.mouthMask
       ? await loadTexture(getChibi3dTextureUrl(cid, em.mouthMask), false)
       : null;
-    const mouthUniforms = applyManifestMaterials(root, manifest, atlas, mask, grad);
+    const charConfig = charCfgAll[cid];
+    const mouthUniforms = applyManifestMaterials(
+      root,
+      manifest,
+      atlas,
+      mask,
+      grad,
+      cid,
+      charConfig,
+    );
+    const rendererTimeline = createRendererTimeline(root, manifest, gltf.parser?.json?.nodes ?? []);
     const halo = makeHaloFollower(root, scene);
+    setHaloOverride(halo, charConfig?.halo ?? null);
 
     const mixer = new THREE.AnimationMixer(root);
+    let haloMixer: THREE.AnimationMixer | null = null;
     const clipsByBase = new Map<string, THREE.AnimationClip>();
-    for (const clip of gltf.animations) clipsByBase.set(bareClipName(clip.name), clip);
+    const haloClip = gltf.animations.find((clip) => /haloloop$/i.test(clip.name));
+    for (const clip of gltf.animations) {
+      if (clip !== haloClip) clipsByBase.set(bareClipName(clip.name, manifest.dev), clip);
+    }
+    if (haloClip) {
+      haloMixer = new THREE.AnimationMixer(halo?.halo ?? root);
+      const action = haloMixer.clipAction(haloClip).setLoop(THREE.LoopRepeat, Infinity).play();
+      action.timeScale = 4;
+    }
 
     return {
       cid,
       root,
       mixer,
+      haloMixer,
       action: null,
       clipsByBase,
       mouthUniforms,
       mouthByClip: manifest.mouth ?? {},
       currentMouth: [],
+      rendererByClip: manifest.renderers?.clips ?? {},
+      currentRenderers: [],
+      rendererTimeline,
       halo,
       pelvis,
       atlas,
@@ -302,14 +339,88 @@ export function useChibi3dInteractionScene(
     const gltf = await loadGltf(getChibi3dFurnitureUrl(label));
     if (!gltf || !scene || !grad) return null;
     const root = gltf.scene;
-    applyToonMaterials(root, grad);
-    // Face-camera rotation (per-furniture; default 180deg like the POC's world flip).
-    root.rotation.y = ((furnCfgAll[label]?.ry ?? 180) * Math.PI) / 180;
+    const config = furnCfgAll[label];
+    applyToonMaterials(root, grad, config?.hide);
+    if (config?.seatSky) seatFurnitureSky(root);
+    root.rotation.y = ((config?.ry ?? 0) * Math.PI) / 180;
     scene.add(root);
     const mixer = gltf.animations.length ? new THREE.AnimationMixer(root) : null;
     const clipsByBase = new Map<string, THREE.AnimationClip>();
     for (const clip of gltf.animations) clipsByBase.set(bareClipName(clip.name), clip);
     return { label, root, mixer, action: null, clipsByBase };
+  }
+
+  /** Re-seat an exported portal sky directly behind its visible window frame. */
+  function seatFurnitureSky(root: THREE.Object3D): void {
+    root.updateWorldMatrix(true, true);
+    let sky: THREE.Mesh | null = null;
+    let frame: THREE.Mesh | null = null;
+    root.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.visible) return;
+      if (mesh.name.includes('_sky')) sky = mesh;
+      else if (!frame) frame = mesh;
+    });
+    if (!sky || !frame) return;
+
+    const skyMesh = sky as THREE.Mesh;
+    const frameMesh = frame as THREE.Mesh;
+    skyMesh.geometry = skyMesh.geometry.clone();
+    const scratch = new THREE.Vector3();
+    const bounds = (mesh: THREE.Mesh): THREE.Box3 => {
+      mesh.updateWorldMatrix(true, false);
+      if (!(mesh as THREE.SkinnedMesh).isSkinnedMesh) return new THREE.Box3().setFromObject(mesh);
+      const skinned = mesh as THREE.SkinnedMesh;
+      const positions = skinned.geometry.getAttribute('position');
+      const box = new THREE.Box3();
+      for (let index = 0; index < positions.count; index++) {
+        scratch.fromBufferAttribute(positions, index);
+        skinned.applyBoneTransform(index, scratch);
+        box.expandByPoint(scratch.applyMatrix4(skinned.matrixWorld));
+      }
+      return box;
+    };
+
+    const frameBox = bounds(frameMesh);
+    const skyBox = bounds(skyMesh);
+    const frameCenter = frameBox.getCenter(new THREE.Vector3());
+    const frameSize = frameBox.getSize(new THREE.Vector3());
+    const skyCenter = skyBox.getCenter(new THREE.Vector3());
+    const skySize = skyBox.getSize(new THREE.Vector3());
+    let depth = 0;
+    for (let axis = 1; axis < 3; axis++) {
+      if (frameSize.getComponent(axis) < frameSize.getComponent(depth)) depth = axis;
+    }
+    const side = Math.sign(skyCenter.getComponent(depth) - frameCenter.getComponent(depth)) || 1;
+    const target = frameCenter.clone();
+    target.setComponent(
+      depth,
+      frameCenter.getComponent(depth) +
+        side * (frameSize.getComponent(depth) / 2 + skySize.getComponent(depth) / 2 - 0.02),
+    );
+    const worldDelta = target.sub(skyCenter);
+    const center = bounds(skyMesh).getCenter(new THREE.Vector3());
+    const columns: THREE.Vector3[] = [];
+    for (let axis = 0; axis < 3; axis++) {
+      const translation = new THREE.Vector3().setComponent(axis, 1);
+      skyMesh.geometry.translate(translation.x, translation.y, translation.z);
+      columns.push(bounds(skyMesh).getCenter(new THREE.Vector3()).sub(center));
+      skyMesh.geometry.translate(-translation.x, -translation.y, -translation.z);
+    }
+    const matrix = new THREE.Matrix3().set(
+      columns[0].x,
+      columns[1].x,
+      columns[2].x,
+      columns[0].y,
+      columns[1].y,
+      columns[2].y,
+      columns[0].z,
+      columns[1].z,
+      columns[2].z,
+    );
+    const geometryDelta = worldDelta.applyMatrix3(matrix.invert());
+    skyMesh.geometry.translate(geometryDelta.x, geometryDelta.y, geometryDelta.z);
+    skyMesh.geometry.computeBoundingSphere();
   }
 
   function clearScene(): void {
@@ -319,6 +430,7 @@ export function useChibi3dInteractionScene(
       if (ch.halo && scene) scene.remove(ch.halo.halo);
       if (ch.halo) disposeSubtree(ch.halo.halo);
       ch.mixer.stopAllAction();
+      ch.haloMixer?.stopAllAction();
       ch.atlas?.dispose();
       ch.mask?.dispose();
     }
@@ -376,7 +488,15 @@ export function useChibi3dInteractionScene(
     }
     const cfg = def.victoryKey ? victoryCfgAll[def.victoryKey] : undefined;
     victoryAutoflip = cfg?.autoflip ?? true;
+    victoryMirrorMotionX = cfg?.mirrorMotionX ?? false;
+    victoryMirrorMotionZ = cfg?.mirrorMotionZ ?? false;
+    victoryExclude = (cfg?.exclude ?? []).map((part) => part.toLowerCase());
     victoryOffset.set(cfg?.offset?.x ?? 0, cfg?.offset?.y ?? 0, cfg?.offset?.z ?? 0);
+    const secondOffset = cfg?.secondOffset ?? cfg?.lastOffset;
+    victorySecondOffset.set(secondOffset?.x ?? 0, secondOffset?.y ?? 0, secondOffset?.z ?? 0);
+    for (const ch of chars) {
+      setHaloOverride(ch.halo, cfg?.halo?.[ch.cid] ?? charCfgAll[ch.cid]?.halo ?? null);
+    }
     clipOptions.value = buildVictoryClipOptions();
     const first =
       clipOptions.value.find((o) => /end/i.test(o.value))?.value ?? clipOptions.value[0]?.value;
@@ -419,17 +539,24 @@ export function useChibi3dInteractionScene(
     return (open.length ? open : options).slice(-1)[0]?.value;
   }
 
-  /** Paired-victory clips shared by both victory characters (e.g. Start / End interaction). */
+  /** One option per interaction core across all members, even when suffixes differ by character. */
   function buildVictoryClipOptions(): Option[] {
     if (chars.length < 2) return [];
-    const otherSets = chars
-      .slice(1)
-      .map((ch) => new Set([...ch.clipsByBase.keys()].map((k) => k.toLowerCase())));
-    const shared = [...chars[0].clipsByBase.keys()].filter(
-      (b) => VICTORY_INTERACTION_RE.test(b) && otherSets.every((s) => s.has(b.toLowerCase())),
-    );
-    return shared.sort().map((b) => ({ value: b, label: victoryClipLabel(b) }));
+    const byCore = new Map<string, string>();
+    const all = chars.flatMap((ch) => [...ch.clipsByBase.keys()]).sort();
+    for (const base of all) {
+      if (!VICTORY_INTERACTION_RE.test(base) || isExcludedVictoryClip(base)) continue;
+      const core = victoryClipCore(base);
+      if (!byCore.has(core)) byCore.set(core, base);
+    }
+    return [...byCore.values()]
+      .filter((base) => chars.every((ch) => findVictoryBase(ch, base)))
+      .map((base) => ({ value: base, label: victoryClipLabel(base) }));
   }
+
+  const victoryClipCore = (base: string): string => base.replace(/_(\d+)$/, '').toLowerCase();
+  const isExcludedVictoryClip = (base: string): boolean =>
+    victoryExclude.some((part) => base.toLowerCase().includes(part));
 
   function victoryClipLabel(base: string): string {
     if (/start/i.test(base)) return 'Start';
@@ -442,6 +569,27 @@ export function useChibi3dInteractionScene(
     const want = base.toLowerCase();
     for (const [k, v] of ch.clipsByBase) if (k.toLowerCase() === want) return v;
     return undefined;
+  }
+
+  function findVictoryBase(ch: LoadedChar, selected: string): string | undefined {
+    if (ch.clipsByBase.has(selected) && !isExcludedVictoryClip(selected)) return selected;
+    const keys = [...ch.clipsByBase.keys()].filter((key) => !isExcludedVictoryClip(key));
+    const core = victoryClipCore(selected);
+    const variant = selected.match(/_(\d+)$/)?.[1];
+    return (
+      (variant
+        ? keys.find(
+            (key) => victoryClipCore(key) === core && key.toLowerCase().endsWith(`_${variant}`),
+          )
+        : undefined) ?? keys.find((key) => victoryClipCore(key) === core)
+    );
+  }
+
+  function timelineFor<T>(record: Record<string, T[]>, key: string): T[] {
+    if (record[key]) return record[key];
+    const want = key.toLowerCase();
+    const match = Object.keys(record).find((candidate) => candidate.toLowerCase() === want);
+    return match ? record[match] : [];
   }
 
   function playScene(sel: string): void {
@@ -478,27 +626,32 @@ export function useChibi3dInteractionScene(
       if (cb) {
         ch.action = ch.mixer.clipAction(ch.clipsByBase.get(cb)!);
         ch.action.reset().play();
-        ch.currentMouth = ch.mouthByClip[cb] ?? [];
+        ch.currentMouth = timelineFor(ch.mouthByClip, cb);
+        ch.currentRenderers = timelineFor(ch.rendererByClip, cb);
       } else {
         ch.action = null;
         ch.currentMouth = [];
+        ch.currentRenderers = [];
       }
       ch.root.visible = !showList || showList.includes(ch.cid);
     }
   }
 
-  /** Play a victory paired-victory interaction: both characters run the same shared clip base. */
+  /** Play each group member's matching interaction core, tolerating character-specific suffixes. */
   function playVictory(sel: string): void {
     for (const ch of chars) {
       ch.mixer.stopAllAction();
-      const clip = findClip(ch, sel);
+      const base = findVictoryBase(ch, sel);
+      const clip = base ? findClip(ch, base) : undefined;
       if (clip) {
         ch.action = ch.mixer.clipAction(clip);
         ch.action.reset().play();
-        ch.currentMouth = ch.mouthByClip[sel] ?? [];
+        ch.currentMouth = timelineFor(ch.mouthByClip, base!);
+        ch.currentRenderers = timelineFor(ch.rendererByClip, base!);
       } else {
         ch.action = null;
         ch.currentMouth = [];
+        ch.currentRenderers = [];
       }
       ch.root.visible = true;
     }
@@ -518,7 +671,11 @@ export function useChibi3dInteractionScene(
     if (ch.pelvis) ch.pelvis.getWorldPosition(_fpv);
     else _fpbox.setFromObject(root).getCenter(_fpv);
     root.rotation.y = Math.PI;
-    root.position.set(2 * _fpv.x, 0, 2 * _fpv.z);
+    root.position.set(
+      victoryMirrorMotionX ? 0 : 2 * _fpv.x,
+      0,
+      victoryMirrorMotionZ ? 0 : 2 * _fpv.z,
+    );
   }
 
   function applyBaseCamera(): void {
@@ -581,7 +738,6 @@ export function useChibi3dInteractionScene(
         controls.target.set(0, SCENE_FRAMING[sceneType].targetY, 0);
         controls.minDistance = CAM_ORBIT_DISTANCE / CHIBI_ZOOM_MAX;
         controls.maxDistance = CAM_ORBIT_DISTANCE / CHIBI_INT_ZOOM_MIN;
-        controls.listenToKeyEvents(window); // arrow keys pan (right-drag pans too)
         controls.addEventListener('change', onControlsChange);
       }
       controls.enabled = true;
@@ -612,12 +768,14 @@ export function useChibi3dInteractionScene(
     const t = master ? master.action.time : 0;
 
     for (const ch of chars) {
+      ch.haloMixer?.update(dt);
       if (ch.action && ch.action !== master?.action) {
         const d = ch.action.getClip().duration;
         ch.action.time = d ? t % d : t;
         ch.mixer.update(0);
       }
       if (ch.action) driveMouth(ch.mouthUniforms, ch.currentMouth, ch.action.time);
+      if (ch.action) driveRenderers(ch.rendererTimeline, ch.currentRenderers, ch.action.time);
     }
     if (furniture?.action && furniture.mixer && furniture.action !== master?.action) {
       const d = furniture.action.getClip().duration;
@@ -625,10 +783,11 @@ export function useChibi3dInteractionScene(
       furniture.mixer.update(0);
     }
 
-    // Victory re-faces each character every frame (after the pose updates), then nudges the first.
+    // Victory re-faces each character every frame, then applies its configured stage nudges.
     if (sceneType === 'victory') {
       for (const ch of chars) faceInPlace(ch);
       chars[0]?.root.position.add(victoryOffset);
+      chars[1]?.root.position.add(victorySecondOffset);
     }
 
     for (const ch of chars) updateHaloFollower(ch.halo); // after facing -> follow the final head

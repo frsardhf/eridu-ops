@@ -126,9 +126,20 @@ export function getChibi3dScenesUrl(): string {
 
 // --- Chibi voice lines (SchaleDB R2 CDN) ---
 // In-game JP voice clips, e.g. the pickup line `ch0158_formation_select.mp3`. Played
-// via an HTMLAudioElement (no CORS needed). Path: `voice/jp_<charId>/<charId>_<line>.mp3`.
+// via an HTMLAudioElement (no CORS needed).
 const SCHALEDB_VOICE_BASE = 'https://r2.schaledb.com/voice';
+// Older SchaleDB packs store the five cafe monolog lines under cafe_act.
+const CAFE_ACT_VOICE_IDS = new Set(['aris', 'hihumi', 'hoshino']);
+
+function getChibiVoiceAssetId(charId: string): string {
+  if (charId === 'hoshino_swimsuit') return 'hoshinoswimsuit';
+  return charId.replace(/_original$/, '');
+}
 
 export function getChibiVoiceUrl(charId: string, line: string): string {
-  return `${SCHALEDB_VOICE_BASE}/jp_${charId}/${charId}_${line}.mp3`;
+  const voiceId = getChibiVoiceAssetId(charId);
+  const voiceLine = CAFE_ACT_VOICE_IDS.has(voiceId)
+    ? line.replace(/^cafe_monolog_/, 'cafe_act_')
+    : line;
+  return `${SCHALEDB_VOICE_BASE}/jp_${voiceId}/${voiceId}_${voiceLine}.mp3`;
 }

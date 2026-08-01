@@ -1,15 +1,22 @@
 import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { ChibiManifest, ChibiMouthEvent } from '@/types/chibi';
+import type {
+  ChibiManifest,
+  ChibiMouthEvent,
+  ChibiRendererEvent,
+  ChibiScenesConfig,
+} from '@/types/chibi';
 import {
   getChibi3dManifestUrl,
   getChibi3dModelUrl,
   getChibi3dTextureUrl,
+  getChibi3dScenesUrl,
 } from '@/lib/utils/iconUtils';
 import {
   type MouthUniforms,
   type HaloFollower,
+  type RendererTimeline,
   FOV_DEG,
   CAM_TARGET_Y,
   CAM_ORBIT_DISTANCE,
@@ -22,10 +29,13 @@ import {
   loadTexture,
   driveMouth,
   applyManifestMaterials,
+  createRendererTimeline,
+  driveRenderers,
   addSceneLights,
   disposeSubtree,
   makeHaloFollower,
   updateHaloFollower,
+  setHaloOverride,
 } from '@/composables/chibi3dCore';
 
 /**
@@ -69,8 +79,10 @@ export function useChibi3dScene(
   let root: THREE.Object3D | null = null;
   let mixer: THREE.AnimationMixer | null = null;
   let currentAction: THREE.AnimationAction | null = null;
+  let haloMixer: THREE.AnimationMixer | null = null;
   let haloFollower: HaloFollower | null = null;
-  let mouthUniforms: MouthUniforms | null = null;
+  let mouthUniforms: MouthUniforms[] = [];
+  let rendererTimeline: RendererTimeline | null = null;
   let grad: THREE.DataTexture | null = null;
   let controls: OrbitControls | null = null; // inspection-only orbit; off = fixed pet camera
   let currentZoom = 1; // dolly factor: >1 = closer/bigger; the framing orbit restores to
@@ -82,6 +94,8 @@ export function useChibi3dScene(
   const clipsByName = new Map<string, THREE.AnimationClip>(); // bare name -> clip
   let mouthByClip: Record<string, ChibiMouthEvent[]> = {};
   let currentMouth: ChibiMouthEvent[] = [];
+  let rendererByClip: Record<string, ChibiRendererEvent[]> = {};
+  let currentRenderers: ChibiRendererEvent[] = [];
   let pendingOnEnd: (() => void) | null = null;
 
   const clock = new THREE.Clock();
@@ -116,10 +130,15 @@ export function useChibi3dScene(
   async function loadCharacter(): Promise<void> {
     const { charId } = opts;
     let manifest: ChibiManifest;
+    let scenesConfig: ChibiScenesConfig = {};
     try {
-      const res = await fetch(getChibi3dManifestUrl(charId));
+      const [res, scenesRes] = await Promise.all([
+        fetch(getChibi3dManifestUrl(charId)),
+        fetch(getChibi3dScenesUrl()).catch(() => null),
+      ]);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       manifest = (await res.json()) as ChibiManifest;
+      if (scenesRes?.ok) scenesConfig = (await scenesRes.json()) as ChibiScenesConfig;
     } catch {
       error.value = true;
       return;
@@ -128,6 +147,7 @@ export function useChibi3dScene(
     const gltf = await new Promise<{
       scene: THREE.Object3D;
       animations: THREE.AnimationClip[];
+      parser?: { json?: { nodes?: Array<{ mesh?: number; name?: string }> } };
     } | null>((resolve) => {
       createGltfLoader().load(
         getChibi3dModelUrl(charId, manifest.model),
@@ -156,8 +176,11 @@ export function useChibi3dScene(
     if (disposed) return;
 
     grad = makeGradient();
-    mouthUniforms = applyManifestMaterials(root, manifest, atlas, mask, grad);
+    const charConfig = scenesConfig.characters?.[charId];
+    mouthUniforms = applyManifestMaterials(root, manifest, atlas, mask, grad, charId, charConfig);
+    rendererTimeline = createRendererTimeline(root, manifest, gltf.parser?.json?.nodes ?? []);
     haloFollower = makeHaloFollower(root, scene); // detach + drive with the FxFollower spring
+    setHaloOverride(haloFollower, charConfig?.halo ?? null);
 
     mixer = new THREE.AnimationMixer(root);
     mixer.addEventListener('finished', () => {
@@ -166,9 +189,18 @@ export function useChibi3dScene(
       cb?.();
     });
     clipsByName.clear();
-    for (const clip of gltf.animations) clipsByName.set(bareClipName(clip.name), clip);
+    const haloClip = gltf.animations.find((clip) => /haloloop$/i.test(clip.name));
+    for (const clip of gltf.animations) {
+      if (clip !== haloClip) clipsByName.set(bareClipName(clip.name, manifest.dev), clip);
+    }
+    if (haloClip) {
+      haloMixer = new THREE.AnimationMixer(haloFollower?.halo ?? root);
+      const action = haloMixer.clipAction(haloClip).setLoop(THREE.LoopRepeat, Infinity).play();
+      action.timeScale = 4;
+    }
     clipNames.value = [...clipsByName.keys()].sort();
     mouthByClip = manifest.mouth ?? {};
+    rendererByClip = manifest.renderers?.clips ?? {};
 
     ready.value = true;
   }
@@ -206,7 +238,16 @@ export function useChibi3dScene(
     action.play();
     currentAction = action;
     pendingOnEnd = loop ? null : (options.onEnd ?? null);
-    currentMouth = mouthByClip[bareClipName(name)] ?? [];
+    const key = bareClipName(name);
+    currentMouth = timelineFor(mouthByClip, key);
+    currentRenderers = timelineFor(rendererByClip, key);
+  }
+
+  function timelineFor<T>(record: Record<string, T[]>, key: string): T[] {
+    if (record[key]) return record[key];
+    const want = key.toLowerCase();
+    const match = Object.keys(record).find((candidate) => candidate.toLowerCase() === want);
+    return match ? record[match] : [];
   }
 
   const _pixel = new Uint8Array(4);
@@ -325,9 +366,9 @@ export function useChibi3dScene(
   }
 
   /**
-   * Inspection-only orbit (the POC's OrbitControls). On: drag to spin / wheel to zoom the
-   * camera; the component suspends pet gestures so they don't collide. `domElement` is the input
-   * surface: pass the full-viewport stage so orbit works anywhere. Off: restore the pet camera.
+   * Inspection-only orbit. Pointer gestures control the camera while the component suspends pet
+   * gestures so they do not collide. `domElement` is the input surface: pass the full-viewport
+   * stage so orbit works anywhere. Off restores the pet camera.
    */
   function setOrbitEnabled(on: boolean, domElement?: HTMLElement): void {
     if (!renderer || !camera) return;
@@ -354,7 +395,9 @@ export function useChibi3dScene(
     if (controls?.enabled) controls.update();
     const dt = clock.getDelta();
     if (mixer) mixer.update(dt);
+    if (haloMixer) haloMixer.update(dt);
     if (currentAction) driveMouth(mouthUniforms, currentMouth, currentAction.time);
+    if (currentAction) driveRenderers(rendererTimeline, currentRenderers, currentAction.time);
     updateHaloFollower(haloFollower); // after mixer.update so the head bone is current
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
@@ -363,14 +406,15 @@ export function useChibi3dScene(
     disposed = true;
     if (rafId) cancelAnimationFrame(rafId);
     mixer?.stopAllAction();
+    haloMixer?.stopAllAction();
     controls?.removeEventListener('change', onControlsChange);
     controls?.dispose();
     controls = null;
     grad?.dispose();
     // External mouth textures live in the eyemouth uniforms, not on a material, so the
     // generic material-texture sweep below won't reach them: dispose them here.
-    mouthUniforms?.uMouthTex.value?.dispose();
-    mouthUniforms?.uMouthMask.value?.dispose();
+    mouthUniforms[0]?.uMouthTex?.value?.dispose();
+    mouthUniforms[0]?.uMouthMask?.value?.dispose();
     if (root) disposeSubtree(root);
     // The halo was reparented out of `root` onto the scene, so it needs its own sweep.
     if (haloFollower) disposeSubtree(haloFollower.halo);
@@ -381,10 +425,13 @@ export function useChibi3dScene(
     camera = null;
     root = null;
     mixer = null;
+    haloMixer = null;
     currentAction = null;
     haloFollower = null;
-    mouthUniforms = null;
+    mouthUniforms = [];
+    rendererTimeline = null;
     currentMouth = [];
+    currentRenderers = [];
   }
 
   onMounted(async () => {

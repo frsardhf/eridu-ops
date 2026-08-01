@@ -1,7 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import type { ChibiManifest, ChibiMouthEvent } from '@/types/chibi';
+import type {
+  ChibiCharacterConfig,
+  ChibiHaloOverride,
+  ChibiManifest,
+  ChibiMouthEvent,
+  ChibiRendererEvent,
+} from '@/types/chibi';
 
 /**
  * Shared live-3D chibi core (the Vue port of the deliverable POC's `common.js`): the pieces
@@ -14,12 +20,19 @@ import type { ChibiManifest, ChibiMouthEvent } from '@/types/chibi';
  * re-derive them (see the deliverable GUIDE.md section 3 and section 6a).
  */
 
-// The four mouth-overlay uniforms injected into the EyeMouth MeshToonMaterial.
+// The mouth-overlay uniforms injected into the EyeMouth MeshToonMaterial.
 export interface MouthUniforms {
   uMouthTex: { value: THREE.Texture | null };
   uMouthMask: { value: THREE.Texture | null };
   uMouthCell: { value: THREE.Vector2 };
   uMouthOffset: { value: THREE.Vector2 };
+  uMouthGrid: { value: THREE.Vector2 };
+  uMode: { value: number };
+}
+
+export interface RendererTimeline {
+  defaults: Record<string, boolean>;
+  meshByIndex: Map<string, THREE.Object3D>;
 }
 
 // FxFollower halo spring (BA values, identical across characters: GUIDE.md section 6a).
@@ -33,6 +46,10 @@ export interface HaloFollower {
   clampMax: THREE.Vector3;
   geomCenter: THREE.Vector3;
   tweakQuat: THREE.Quaternion;
+  relPos0: THREE.Vector3;
+  clampMin0: THREE.Vector3;
+  clampMax0: THREE.Vector3;
+  extraTweak: THREE.Quaternion | null;
   posPow: number;
   rotPow: number;
   prevPos: THREE.Vector3;
@@ -69,7 +86,12 @@ export function positionBaseCamera(camera: THREE.PerspectiveCamera, zoom: number
 }
 
 /** Strip the `CH####_` prefix UnityGLTF may add, so manifest/clip keys line up. */
-export const bareClipName = (name: string): string => name.replace(/^CH\d+_/i, '');
+export const bareClipName = (name: string, dev = ''): string => {
+  const prefix = `${dev}_`;
+  return dev && name.toLowerCase().startsWith(prefix.toLowerCase())
+    ? name.slice(prefix.length)
+    : name.replace(/^CH\d+_/i, '');
+};
 
 // --- Shared toon gradient + texture loader (common.js) ---
 export function makeGradient(): THREE.DataTexture {
@@ -118,6 +140,9 @@ function makeEyeMouth(
   atlasTex: THREE.Texture | null,
   maskTex: THREE.Texture | null,
   grad: THREE.DataTexture,
+  cols: number,
+  rows: number,
+  mode: number,
 ): { material: THREE.MeshToonMaterial; uniforms: MouthUniforms } {
   const material = new THREE.MeshToonMaterial({ map: baseMap, gradientMap: grad });
   const uniforms: MouthUniforms = {
@@ -125,6 +150,8 @@ function makeEyeMouth(
     uMouthMask: { value: maskTex },
     uMouthCell: { value: new THREE.Vector2(2, 5) }, // idle (code 401) = Unity (col2,row5)
     uMouthOffset: { value: new THREE.Vector2(0, 0) },
+    uMouthGrid: { value: new THREE.Vector2(cols, rows) },
+    uMode: { value: mode },
   };
   if (atlasTex) {
     atlasTex.wrapS = THREE.RepeatWrapping;
@@ -135,19 +162,20 @@ function makeEyeMouth(
     shader.fragmentShader = shader.fragmentShader
       .replace(
         'void main() {',
-        `uniform sampler2D uMouthTex; uniform sampler2D uMouthMask; uniform vec2 uMouthCell; uniform vec2 uMouthOffset;
-void main() {`,
+        `uniform sampler2D uMouthTex; uniform sampler2D uMouthMask; uniform vec2 uMouthCell; uniform vec2 uMouthOffset; uniform vec2 uMouthGrid; uniform float uMode;
+	void main() {`,
       )
       .replace(
         '#include <map_fragment>',
         `#include <map_fragment>
         { float mask = texture2D(uMouthMask, vMapUv).r;
           if (mask > 0.5) {                       // mouth region of the face
-            vec2 cell = vec2(uMouthCell.x - 1.0, 5.0 - uMouthCell.y) * 0.125;
-            vec4 mouth = texture2D(uMouthTex, (vMapUv - uMouthOffset) * 0.5 + cell);
+            if (uMode > 1.5) discard;
+            vec2 cell = vec2(uMouthCell.x - 1.0, 5.0 - uMouthCell.y) / uMouthGrid;
+            vec4 mouth = texture2D(uMouthTex, (vMapUv - uMouthOffset) * (4.0 / uMouthGrid) + cell);
             if (mouth.a < 0.5) discard;           // no mouth pixel here -> show FACE skin behind
             diffuseColor.rgb = mouth.rgb;         // draw the mouth
-          }                                        // else: eye region -> keep base (eyes)
+          } else if (uMode > 0.5 && uMode < 1.5) discard;
         }`,
       );
   };
@@ -160,18 +188,18 @@ const codeToCell = (col: number, row: number): [number, number] => [col + 1, row
 
 /** Set the mouth cell for the active clip time from its timeline (no-op without a face). */
 export function driveMouth(
-  uniforms: MouthUniforms | null,
+  uniforms: MouthUniforms[],
   mouth: ChibiMouthEvent[],
   time: number,
 ): void {
-  if (!uniforms || !mouth.length) return;
+  if (!uniforms.length || !mouth.length) return;
   let cur = mouth[0];
   for (const e of mouth) {
     if (e.t <= time) cur = e;
     else break;
   }
   const [c, r] = codeToCell(cur.col, cur.row);
-  uniforms.uMouthCell.value.set(c, r);
+  for (const item of uniforms) item.uMouthCell.value.set(c, r);
 }
 
 /**
@@ -185,42 +213,130 @@ export function applyManifestMaterials(
   atlas: THREE.Texture | null,
   mask: THREE.Texture | null,
   grad: THREE.DataTexture,
-): MouthUniforms | null {
-  let mouthUniforms: MouthUniforms | null = null;
+  charId: string,
+  config: ChibiCharacterConfig = {},
+): MouthUniforms[] {
+  const mouthUniforms: MouthUniforms[] = [];
+  const materialKeys = Object.keys(manifest.materials).sort((a, b) => b.length - a.length);
+  const cols = manifest.mouthAtlas?.cols ?? 8;
+  const rows = manifest.mouthAtlas?.rows ?? 8;
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
-    const mat = mesh.material as THREE.Material & { name?: string; map?: THREE.Texture | null };
-    const matName = (mat?.name || mesh.name || '').toLowerCase();
-    const key = Object.keys(manifest.materials).find((k) => matName.includes(k.toLowerCase()));
+    if (config.hide?.some((part) => mesh.name.includes(part))) {
+      mesh.visible = false;
+      return;
+    }
+    const mat = mesh.material as THREE.Material & {
+      name?: string;
+      map?: THREE.Texture | null;
+      color?: THREE.Color;
+      isMeshBasicMaterial?: boolean;
+    };
+    const matName = `${mat?.name ?? ''} ${charId === 'ch0294' ? mesh.name : ''}`.toLowerCase();
+    const key = materialKeys.find((k) => matName.includes(k.toLowerCase()));
     const def = key ? manifest.materials[key] : null;
     const baseMap = mat?.map ?? null;
+    const baseColor = mat?.color ?? new THREE.Color(0xffffff);
     if (def?.shader === 'eyemouth') {
-      const built = makeEyeMouth(baseMap, atlas, mask, grad);
+      let mode = 0;
+      if (config.eyeNode) {
+        let parent: THREE.Object3D | null = mesh;
+        let underEyeNode = false;
+        while (parent) {
+          if (parent.name.includes(config.eyeNode)) {
+            underEyeNode = true;
+            break;
+          }
+          parent = parent.parent;
+        }
+        mode = underEyeNode ? 2 : 1;
+      }
+      const built = makeEyeMouth(baseMap, atlas, mask, grad, cols, rows, mode);
       mesh.material = built.material;
-      mouthUniforms = built.uniforms;
-    } else if (def?.shader === 'unlit') {
-      mesh.material = new THREE.MeshBasicMaterial({
+      mouthUniforms.push(built.uniforms);
+    } else if (def?.shader === 'unlit' || (!def && mat?.isMeshBasicMaterial)) {
+      const material = new THREE.MeshBasicMaterial({
         map: baseMap,
+        color: baseColor,
         transparent: true,
-        blending: def.blend === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
+        blending: def?.blend === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
         depthWrite: false,
       });
+      if (def?.blend === 'additive') {
+        material.blending = THREE.CustomBlending;
+        material.blendEquation = THREE.AddEquation;
+        material.blendSrc = THREE.OneFactor;
+        material.blendDst = THREE.OneFactor;
+      }
+      mesh.material = material;
       mesh.renderOrder = 10;
     } else {
-      mesh.material = new THREE.MeshToonMaterial({ map: baseMap, gradientMap: grad });
+      const seeThrough =
+        (charId === 'ch0293' && key === 'Body_Alpha') || (charId === 'ch0295' && key === 'Alpha');
+      mesh.material = new THREE.MeshToonMaterial({
+        map: baseMap,
+        color: baseColor,
+        gradientMap: grad,
+        transparent: seeThrough,
+        opacity: seeThrough ? 0.808 : 1,
+        depthWrite: !seeThrough,
+      });
+      if (seeThrough) mesh.renderOrder = 2;
     }
   });
   return mouthUniforms;
 }
 
+/** Build the glTF mesh-index lookup used by Unity child-renderer visibility timelines. */
+export function createRendererTimeline(
+  root: THREE.Object3D,
+  manifest: ChibiManifest,
+  nodes: Array<{ mesh?: number; name?: string }> = [],
+): RendererTimeline | null {
+  if (!manifest.renderers) return null;
+  const meshByIndex = new Map<string, THREE.Object3D>();
+  for (const node of nodes) {
+    if (node.mesh === undefined || !node.name) continue;
+    const object = root.getObjectByName(node.name);
+    if (object) meshByIndex.set(String(node.mesh), object);
+  }
+  return { defaults: manifest.renderers.default ?? {}, meshByIndex };
+}
+
+/** Replay renderer visibility from the clip-start defaults through the active clip time. */
+export function driveRenderers(
+  timeline: RendererTimeline | null,
+  events: ChibiRendererEvent[],
+  time: number,
+): void {
+  if (!timeline) return;
+  const state = { ...timeline.defaults };
+  for (const event of events) {
+    if (event.t > time) break;
+    state[String(event.idx)] = event.on;
+  }
+  for (const [index, visible] of Object.entries(state)) {
+    const object = timeline.meshByIndex.get(index);
+    if (object) object.visible = visible;
+  }
+}
+
 /** Re-material every mesh under `root` as a plain toon (furniture: no manifest, just base maps). */
-export function applyToonMaterials(root: THREE.Object3D, grad: THREE.DataTexture): void {
+export function applyToonMaterials(
+  root: THREE.Object3D,
+  grad: THREE.DataTexture,
+  hide: string[] = [],
+): void {
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     const mat = mesh.material as THREE.Material & { map?: THREE.Texture | null };
-    mesh.material = new THREE.MeshToonMaterial({ map: mat?.map ?? null, gradientMap: grad });
+    if (hide.some((part) => mesh.name.includes(part)) || !mat?.map) {
+      mesh.visible = false;
+      return;
+    }
+    mesh.material = new THREE.MeshToonMaterial({ map: mat.map, gradientMap: grad });
   });
 }
 
@@ -332,6 +448,10 @@ export function makeHaloFollower(root: THREE.Object3D, scene: THREE.Scene): Halo
     tweakQuat: new THREE.Quaternion().setFromEuler(
       new THREE.Euler(td[0] * D, td[1] * D, td[2] * D),
     ),
+    relPos0: convVec(HALO_CFG.relPos),
+    clampMin0: new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z)),
+    clampMax0: new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z)),
+    extraTweak: null,
     posPow: HALO_CFG.posPow,
     rotPow: HALO_CFG.rotPow,
     prevPos: new THREE.Vector3(),
@@ -355,7 +475,35 @@ export function updateHaloFollower(f: HaloFollower | null): void {
   if (!f.init) f.prevQuat.copy(_htr);
   f.prevQuat.slerp(_htr, f.rotPow);
   f.halo.quaternion.copy(f.prevQuat).multiply(f.tweakQuat);
+  if (f.extraTweak) f.halo.quaternion.multiply(f.extraTweak);
   _hoff.copy(f.geomCenter).multiply(f.halo.scale).applyQuaternion(f.halo.quaternion);
   f.halo.position.copy(_hlp).sub(_hoff);
   f.init = true;
+}
+
+/** Apply or clear a scene-specific head-local halo target and orientation correction. */
+export function setHaloOverride(follower: HaloFollower | null, override: ChibiHaloOverride | null) {
+  if (!follower) return;
+  if (!override) {
+    follower.relPos.copy(follower.relPos0);
+    follower.clampMin.copy(follower.clampMin0);
+    follower.clampMax.copy(follower.clampMax0);
+    follower.extraTweak = null;
+    follower.init = false;
+    return;
+  }
+  const position = override.pos ?? [follower.relPos.x, follower.relPos.y, follower.relPos.z];
+  follower.relPos.set(position[0], position[1], position[2]);
+  follower.clampMin.set(position[0] - 10, position[1] - 10, position[2] - 10);
+  follower.clampMax.set(position[0] + 10, position[1] + 10, position[2] + 10);
+  const rotation = override.rot;
+  if (rotation?.some(Boolean)) {
+    const D = Math.PI / 180;
+    follower.extraTweak = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(rotation[0] * D, rotation[1] * D, rotation[2] * D),
+    );
+  } else {
+    follower.extraTweak = null;
+  }
+  follower.init = false;
 }

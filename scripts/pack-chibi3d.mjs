@@ -1,92 +1,118 @@
 #!/usr/bin/env node
 /**
- * Chibi3d GLB repacker (meshopt).
+ * Chibi3d deliverable sync and GLB repacker (meshopt).
  *
- * Repacks the character GLBs under public/chibi3d/ with gltfpack:
- *   EXT_meshopt_compression + KHR_mesh_quantization, ~5-10x smaller files
- *   (ch0333: 28.1 MB -> 5.2 MB) with no visible quality loss.
+ * Reads master assets from ~/Documents/Data/deliverable and writes the local
+ * development mirror under public/chibi3d. Character GLBs are packed directly
+ * from the master source with EXT_meshopt_compression and KHR_mesh_quantization.
+ * Original character GLBs are never copied into public and no _orig archive is
+ * created there. Manifests and only the external mouth textures referenced by
+ * each manifest are copied alongside the packed model.
  *
- * Furniture GLBs are excluded and ship as-is: packed furniture showed visual
- * artifacts in the interaction scene, and at well under 2 MB each there is no
- * size win worth chasing (the characters are 95% of the bytes; their size is
- * almost entirely animation keyframes, which furniture barely has).
+ * Furniture GLBs stay unpacked. Packed furniture showed visible artifacts, and
+ * these files are small compared with the animation-heavy character models.
+ * scenes.json is synced from the deliverable POC.
  *
- *   npm run chibi3d:pack               # repack in place (originals kept in _orig/)
+ *   npm run chibi3d:pack
+ *   CHIBI3D_SOURCE=/path/to/deliverable npm run chibi3d:pack
  *
- * The first run moves each original to public/chibi3d/_orig/<same relative path>
- * and writes the packed file to the live path; later runs repack from _orig, so
- * the script is idempotent. The MASTER copies of the originals live in
- * ~/Documents/Data/deliverable (characters/ + furniture/); _orig/ is only a
- * local work archive and may have been cleaned up. If _orig is missing, restore
- * the original from the deliverable first: the script refuses to archive an
- * already-packed live file as an "original" (that would double-pack it).
+ * After uploading public/chibi3d to R2, invalidate the edge with Purge
+ * Everything. The host serves Vary: Origin, so per-URL purges can miss the
+ * Origin-keyed browser variant. The runtime loader supports packed and unpacked
+ * GLBs, which keeps stale cached copies compatible during rollout.
  *
- * After uploading to the R2 bucket (assets.eriduops.com/chibi3d), invalidate the
- * edge with Purge Everything, NOT purge-by-URL: the host serves Vary: Origin, so
- * per-URL purges miss the Origin-keyed variant that real browsers hit. Browsers
- * cache the old files until their TTL runs out (a cache rule keeps browser TTL
- * short); that window is harmless because the app loader always has the meshopt
- * decoder attached (chibi3dCore.createGltfLoader) and reads both formats.
- *
- * Flag rationale (quality first, verified numerically against the originals:
- * max rotation error 0.1 deg on a hair bone, translation/scale error ~1e-4,
- * all node/material/animation names and clip durations preserved):
- *   -kn -km -ke   keep node names (halo/head/pelvis lookups), material names
- *                 (manifest material matching), and extras
- *   -ar 16        16-bit rotation quantization (default 12 visibly coarser on chibis)
- *   -af 0         no keyframe resampling: Unity-exported curves are already sparse,
- *                 resampling at 30/60 Hz is BIGGER and lossier here
- *   -ac           keep constant tracks, so switching clips still resets every bone
- *   -vpf          keep positions as floats: position quantization inserts an unnamed
- *                 dequantization child node under each mesh, which broke the halo
- *                 spring (it reads the halo geometry's local bounding box; the packed
- *                 int coordinates put the halo thousands of units off-screen). Costs
- *                 ~0.01 MB per file, geometry is a rounding error next to animation.
- *   -cc           max meshopt compression
+ * Flag rationale:
+ *   -kn -km -ke   keep node names, material names, and extras
+ *   -ar 16        use 16-bit rotation quantization
+ *   -af 0         preserve the sparse Unity-exported animation curves
+ *   -ac           retain constant tracks so clip changes reset every bone
+ *   -vpf          keep positions as floats so the halo geometry stays aligned
+ *   -cc           use maximum meshopt compression
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, globSync, mkdirSync, readFileSync, renameSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const base = join(root, 'public', 'chibi3d');
-const origBase = join(base, '_orig');
+const outputBase = join(root, 'public', 'chibi3d');
+const sourceBase =
+  process.env.CHIBI3D_SOURCE ?? join(homedir(), 'Documents', 'Data', 'deliverable');
+const characterSource = join(sourceBase, 'characters');
+const furnitureSource = join(sourceBase, 'furniture');
 
 const GLTFPACK_ARGS = ['-cc', '-kn', '-km', '-ke', '-ar', '16', '-af', '0', '-ac', '-vpf'];
+const SKIPPED_CHARACTER_IDS = new Set(['ch0114']);
+const mb = (path) => (statSync(path).size / 1048576).toFixed(2);
 
-const glbs = globSync('**/*.glb', { cwd: base, exclude: ['_orig/**', 'furniture/**'] });
-if (!glbs.length) {
-  console.error(`No GLBs found under ${base} (assets are gitignored; copy them in first).`);
+if (!existsSync(characterSource)) {
+  console.error(`Character source not found: ${characterSource}`);
   process.exit(1);
 }
 
-const mb = (path) => (statSync(path).size / 1048576).toFixed(2);
+mkdirSync(outputBase, { recursive: true });
 let failures = 0;
-for (const rel of glbs.sort()) {
-  const live = join(base, rel);
-  const orig = join(origBase, rel);
-  if (!existsSync(orig)) {
-    if (readFileSync(live).includes('EXT_meshopt_compression')) {
-      console.error(
-        `SKIP ${rel}: live file is already packed and _orig/${rel} is missing; ` +
-          'restore the original from ~/Documents/Data/deliverable first.',
-      );
+let packed = 0;
+
+for (const charId of readdirSync(characterSource).sort()) {
+  const sourceDir = join(characterSource, charId);
+  if (!statSync(sourceDir).isDirectory()) continue;
+  if (SKIPPED_CHARACTER_IDS.has(charId)) {
+    console.warn(`SKIP ${charId}: excluded from the chibi picker.`);
+    continue;
+  }
+  const manifestSource = join(sourceDir, `${charId}.manifest.json`);
+  if (!existsSync(manifestSource)) continue;
+
+  const manifest = JSON.parse(readFileSync(manifestSource, 'utf8').replace(/^\uFEFF/, ''));
+  const modelSource = join(sourceDir, manifest.model);
+  if (!existsSync(modelSource)) {
+    console.warn(`SKIP ${charId}: ${manifest.model} is missing from the deliverable.`);
+    continue;
+  }
+
+  const outputDir = join(outputBase, charId);
+  const modelOutput = join(outputDir, basename(manifest.model));
+  mkdirSync(outputDir, { recursive: true });
+  copyFileSync(manifestSource, join(outputDir, `${charId}.manifest.json`));
+
+  const eyeMouthTextures = manifest.materials?.EyeMouth?.textures ?? {};
+  for (const file of [eyeMouthTextures.mouthAtlas, eyeMouthTextures.mouthMask]) {
+    if (!file) continue;
+    const textureSource = join(sourceDir, 'textures', file);
+    if (!existsSync(textureSource)) {
+      console.error(`MISSING ${charId}/textures/${file}`);
       failures++;
       continue;
     }
-    mkdirSync(dirname(orig), { recursive: true });
-    renameSync(live, orig);
+    const textureOutput = join(outputDir, 'textures', file);
+    mkdirSync(dirname(textureOutput), { recursive: true });
+    copyFileSync(textureSource, textureOutput);
   }
-  const before = mb(orig);
-  const res = spawnSync('npx', ['-y', 'gltfpack', '-i', orig, '-o', live, ...GLTFPACK_ARGS], {
-    stdio: ['ignore', 'ignore', 'inherit'],
-  });
-  if (res.status !== 0 || !existsSync(live)) {
-    console.error(`FAILED ${rel} (original preserved at _orig/${rel})`);
+
+  const result = spawnSync(
+    'npx',
+    ['-y', 'gltfpack', '-i', modelSource, '-o', modelOutput, ...GLTFPACK_ARGS],
+    { stdio: ['ignore', 'ignore', 'inherit'] },
+  );
+  if (result.status !== 0 || !existsSync(modelOutput)) {
+    console.error(`FAILED ${charId}/${manifest.model}`);
     failures++;
     continue;
   }
-  console.log(`${rel}: ${before} MB -> ${mb(live)} MB`);
+  packed++;
+  console.log(`${charId}/${manifest.model}: ${mb(modelSource)} MB -> ${mb(modelOutput)} MB`);
 }
+
+const furnitureOutput = join(outputBase, 'furniture');
+mkdirSync(furnitureOutput, { recursive: true });
+for (const file of readdirSync(furnitureSource)
+  .filter((name) => name.endsWith('.glb'))
+  .sort()) {
+  copyFileSync(join(furnitureSource, file), join(furnitureOutput, file));
+}
+copyFileSync(join(sourceBase, 'poc', 'scenes.json'), join(outputBase, 'scenes.json'));
+
+console.log(`Packed ${packed} characters and synced furniture plus scenes.json.`);
 process.exit(failures ? 1 : 0);
