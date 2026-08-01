@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { defineAsyncComponent, ref, watch, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { getBondIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { $t } from '@/locales';
 import GlobalControls from '@/components/navbar/GlobalControls.vue';
 import ContactModal from '@/components/navbar/modals/ContactModal.vue';
 import CreditsModal from '@/components/navbar/modals/CreditsModal.vue';
+import { useWindowResize } from '@/composables/dom/useWindowResize';
 import '@/styles/navbar.css';
+
+const LandingChibi = defineAsyncComponent(() => import('@/components/chibi/Chibi3dPet.vue'));
+const router = useRouter();
 
 const { currentTheme, setTheme, sortedStudentsArray } = useStudentData();
 
@@ -27,6 +32,16 @@ const craftingIconUrls = [
   'https://schaledb.com/images/craftnode/Rairty.png',
 ] as const;
 const craftingBorderUrl = 'https://schaledb.com/images/craftnode/Node_Border.png';
+const showLandingChibi = ref(false);
+const landingChibiSize = ref(320);
+
+useWindowResize(() => {
+  landingChibiSize.value = window.innerWidth <= 576 ? 240 : 320;
+});
+
+function openChibiRoom(): void {
+  void router.push('/chibi3d');
+}
 
 /** Pick a random student portrait, avoiding an immediate repeat. */
 function cycleStudentIcon() {
@@ -60,21 +75,44 @@ watch(
 );
 
 let landingArtInterval: ReturnType<typeof setInterval> | null = null;
+let landingChibiTimer: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(() => {
   landingArtInterval = setInterval(() => {
     cycleStudentIcon();
     cycleCraftingIcon();
   }, 2000);
+  landingChibiTimer = setTimeout(() => {
+    showLandingChibi.value = true;
+  }, 600);
 });
 
 onUnmounted(() => {
   if (landingArtInterval) clearInterval(landingArtInterval);
+  if (landingChibiTimer) clearTimeout(landingChibiTimer);
 });
 </script>
 
 <template>
   <div class="landing">
+    <div class="landing-chibi-layer">
+      <LandingChibi
+        v-if="showLandingChibi"
+        char-id="ch0158"
+        :size="landingChibiSize"
+        :speed="100"
+        :zoom="2"
+        :draggable="false"
+        :voice="false"
+        :center-on-mount="false"
+        :start-x="20"
+        :start-y="20"
+        wander
+        :action-label="$t('chibi.landingLink')"
+        @activate="openChibiRoom"
+      />
+    </div>
+
     <header class="app-navbar">
       <div class="app-navbar-content lp-bar">
         <GlobalControls
@@ -246,6 +284,39 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: auto;
+}
+
+.landing-chibi-layer {
+  position: fixed;
+  top: 72px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.landing > header,
+.landing-footer {
+  position: relative;
+  z-index: 4;
+}
+
+.landing-content {
+  pointer-events: none;
+}
+
+.landing-brand,
+.landing-subtitle {
+  position: relative;
+  z-index: 2;
+}
+
+.landing-cards {
+  position: relative;
+  z-index: 4;
+  pointer-events: auto;
 }
 
 .lp-bar {
@@ -496,6 +567,10 @@ onUnmounted(() => {
 }
 
 @media (max-width: 576px) {
+  .landing-chibi-layer {
+    top: 56px;
+  }
+
   .brand-eridu,
   .brand-ops {
     font-size: 2.6rem;

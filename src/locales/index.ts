@@ -5,10 +5,22 @@ import { currentLanguage, Language } from '../lib/stores/localizationStore';
 // typecheck instead of silently falling back to English at runtime. `kr` is
 // authored in full; new keys must be added to all three blocks.
 const en = {
-  // Chibi (dev POC)
+  // Chibi 3D.
   chibi: {
+    home: 'Home',
     hint: 'Click anywhere to send the Chibi walking there.',
     idle: 'Idle',
+    itemRail: 'Items',
+    recoveryItem: 'Recovery item',
+    dragItemHint: 'Drag onto the Chibi',
+    landingLink: 'Visit the Chibi Room',
+    wandering: 'Wandering',
+    wanderingHint: 'Let the Chibi choose where to walk.',
+    wanderingActiveHint: 'Wandering automatically. Click anywhere to choose a destination.',
+    wanderingPausedInspect: 'Wandering is paused during Inspect.',
+    wanderingPausedMotion: 'Wandering is unavailable while reduced motion is enabled.',
+    orbitHintMouse: 'left-drag to rotate · right-drag to pan · wheel to zoom',
+    orbitHintTouch: 'one finger to rotate · two fingers to pan or zoom',
   },
 
   // Landing
@@ -715,10 +727,22 @@ const en = {
 type TranslationTree = typeof en;
 
 const jp: TranslationTree = {
-  // Chibi (dev POC)
+  // Chibi 3D.
   chibi: {
+    home: 'ホーム',
     hint: 'クリックした場所にリオが歩いていきます。',
     idle: '待機',
+    itemRail: 'アイテム',
+    recoveryItem: '回復アイテム',
+    dragItemHint: 'ちびキャラにドラッグ',
+    landingLink: 'ちびキャラルームへ',
+    wandering: 'お散歩',
+    wanderingHint: 'ちびキャラが自動で歩き回ります。',
+    wanderingActiveHint: '自動で歩き回ります。クリックすると行き先を指定できます。',
+    wanderingPausedInspect: 'インスペクト中はお散歩が一時停止します。',
+    wanderingPausedMotion: 'モーション軽減が有効なため、お散歩は利用できません。',
+    orbitHintMouse: '左ドラッグで回転 · 右ドラッグで移動 · ホイールでズーム',
+    orbitHintTouch: '1本指で回転 · 2本指で移動またはズーム',
   },
 
   // Landing
@@ -1425,10 +1449,22 @@ const jp: TranslationTree = {
 };
 
 const kr: TranslationTree = {
-  // Chibi (dev POC)
+  // Chibi 3D.
   chibi: {
+    home: '홈',
     hint: '아무 곳이나 클릭하면 치비가 그곳으로 걸어갑니다.',
     idle: '대기',
+    itemRail: '아이템',
+    recoveryItem: '회복 아이템',
+    dragItemHint: '치비에게 드래그',
+    landingLink: '치비 룸으로 이동',
+    wandering: '자동 산책',
+    wanderingHint: '치비가 스스로 걸어 다니게 합니다.',
+    wanderingActiveHint: '자동으로 돌아다닙니다. 클릭하여 목적지를 정할 수 있습니다.',
+    wanderingPausedInspect: 'Inspect 중에는 자동 산책이 일시 중지됩니다.',
+    wanderingPausedMotion: '동작 줄이기가 활성화되어 자동 산책을 사용할 수 없습니다.',
+    orbitHintMouse: '왼쪽 드래그로 회전 · 오른쪽 드래그로 이동 · 휠로 확대/축소',
+    orbitHintTouch: '한 손가락으로 회전 · 두 손가락으로 이동 또는 확대/축소',
   },
 
   // Landing

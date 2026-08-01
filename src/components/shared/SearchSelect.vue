@@ -129,13 +129,25 @@ function onClickOutside(event: MouseEvent) {
   }
 }
 
+function popoverHasFocus() {
+  const activeElement = document.activeElement;
+  return activeElement instanceof Node && Boolean(popoverEl.value?.contains(activeElement));
+}
+
 // Detached (fixed) popover: close on outside scroll/resize so it can't drift
-// from the trigger, but keep scrolls inside the option list alive.
+// from the trigger. Mobile keyboards resize or scroll the viewport while the
+// search input stays focused, so keep the popover open and reposition it.
 function closeOnViewportChange(event?: Event) {
   if (event?.type === 'scroll') {
     const t = event.target as Node | null;
     if (t && popoverEl.value && (t === popoverEl.value || popoverEl.value.contains(t))) return;
   }
+
+  if (open.value && popoverHasFocus()) {
+    updatePosition();
+    return;
+  }
+
   if (open.value) open.value = false;
 }
 

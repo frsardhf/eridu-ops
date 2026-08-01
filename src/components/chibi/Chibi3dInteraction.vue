@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import Chibi3dOrbitHint from '@/components/chibi/Chibi3dOrbitHint.vue';
 import { useChibi3dInteractionScene } from '@/composables/useChibi3dInteractionScene';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { CHIBI_INT_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 
-// Full-viewport orbit stage for cafe interactions (POC furniture.html): pick a scene + a clip
-// variant; the scene seats the character(s) and plays the interaction. The `kind` prop scopes it
-// to furniture (char + prop) or victory (char x char post-battle pose). Drag to spin, wheel to zoom.
+// Full-viewport orbit stage for cafe interactions: pick a scene and clip variant. The scene seats
+// the character(s) and plays the interaction. The `kind` prop scopes it to furniture (character
+// plus prop) or victory (character pair post-battle pose).
 const props = defineProps<{
   charIds: readonly string[];
   kind: 'furniture' | 'victory';
@@ -103,7 +104,7 @@ onMounted(() => {
         />
       </label>
       <!-- Level 3: controls guide. -->
-      <span class="chibi-int__hint">drag to spin · wheel to zoom · arrows to pan</span>
+      <Chibi3dOrbitHint class="chibi-int__hint" />
     </div>
 
     <div v-if="!ready || error" class="chibi-int__status">

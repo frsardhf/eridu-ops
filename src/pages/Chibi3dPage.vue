@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, watch, useTemplateRef } from 'vue';
+import { usePreferredReducedMotion } from '@vueuse/core';
 import { $t } from '@/locales';
 import Chibi3dPet from '@/components/chibi/Chibi3dPet.vue';
 import Chibi3dInteraction from '@/components/chibi/Chibi3dInteraction.vue';
+import Chibi3dOrbitHint from '@/components/chibi/Chibi3dOrbitHint.vue';
 import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
 import { useStudentData } from '@/lib/hooks/useStudentData';
-import { getStudentIconUrl } from '@/lib/utils/iconUtils';
+import { getGiftIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { useTooltip } from '@/composables/useTooltip';
+import { CHIBI_CHARACTER_IDS, getChibiStudentLookupKeys } from '@/composables/chibi3dCatalog';
 import '@/styles/tooltip.css';
+import '@/styles/navbar.css';
 
-// Dev surface for the live-3D chibi (Road 2). Mirrors /chibi but renders the GLB
-// in three.js instead of stepping sprite sheets. Not linked from nav.
+// Live-3D chibi surface. The landing-page Rio links here, while the navbar stays unchanged.
 
-// Chibi assets we ship (public/chibi3d/<id>). Names come from the IndexedDB student
-// store (matched by DevName), not hardcoded: SchaleDB is only fetched via the R2 voice.
-const CHIBI_CHAR_IDS = ['ch0158', 'ch0242', 'ch0243', 'ch0331', 'ch0333'] as const;
-
-// Copyright / fan-use notice for the ripped 3D assets. Kept in English (unlinked dev surface);
+// Copyright / fan-use notice for the ripped 3D assets. Kept in English;
 // the localized version lives in the Credits modal (creditsModal.disclaimer*).
 const LEGAL_NOTICE =
   'Blue Archive and all game assets (3D models, animations, textures, voices) are © NEXON Games / Yostar. ' +
@@ -29,34 +28,43 @@ const LEGAL_NOTICE =
 // Proper hover tooltip for the disclaimer (same primitive as GiftOption's), not a native title.
 const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<'legal'>();
 
-// Persist the selected character across reloads (dev convenience; own localStorage key,
-// not the app's AppSettings blob since this is an unlinked test surface).
+// Persist the selected character across reloads in its own localStorage key rather than
+// the app's AppSettings blob.
 const CHAR_STORAGE_KEY = 'chibi3d-char';
 const storedChar = localStorage.getItem(CHAR_STORAGE_KEY);
 const charId = ref<string>(
-  storedChar && (CHIBI_CHAR_IDS as readonly string[]).includes(storedChar)
+  storedChar && (CHIBI_CHARACTER_IDS as readonly string[]).includes(storedChar)
     ? storedChar
-    : CHIBI_CHAR_IDS[0],
+    : CHIBI_CHARACTER_IDS[0],
 );
 watch(charId, (id) => localStorage.setItem(CHAR_STORAGE_KEY, id));
 
 const { studentData } = useStudentData();
-const studentByDevName = computed(() => {
+const studentByAssetKey = computed(() => {
   const map = new Map<string, { name: string; id: number }>();
   for (const s of Object.values(studentData.value)) {
-    if (s.DevName) map.set(s.DevName.toUpperCase(), { name: s.Name, id: s.Id });
+    const summary = { name: s.Name, id: s.Id };
+    if (s.DevName) map.set(s.DevName.toLowerCase(), summary);
+    if (s.PathName) map.set(s.PathName.toLowerCase(), summary);
   }
   return map;
 });
-// Resolve a chibi cid to its student name (falls back to the cid), shared by the character
-// picker and the interaction stage's victory labels.
+function resolveCharStudent(cid: string): { name: string; id: number } | undefined {
+  for (const key of getChibiStudentLookupKeys(cid)) {
+    const student = studentByAssetKey.value.get(key);
+    if (student) return student;
+  }
+  return undefined;
+}
+
+// Resolve a chibi asset to its IndexedDB-backed student name, shared by both pickers.
 function resolveCharName(cid: string): string {
-  return studentByDevName.value.get(cid.toUpperCase())?.name ?? cid;
+  return resolveCharStudent(cid)?.name ?? cid;
 }
 // Name + portrait for the searchable character picker (no striker/special role).
 const charOptions = computed(() =>
-  CHIBI_CHAR_IDS.map((cid) => {
-    const student = studentByDevName.value.get(cid.toUpperCase());
+  CHIBI_CHARACTER_IDS.map((cid) => {
+    const student = resolveCharStudent(cid);
     return {
       value: cid,
       label: student?.name ?? cid,
@@ -75,12 +83,52 @@ const zoom = ref(1.25);
 // no separate orbit toggle). The wide canvas + resize live in the pet.
 const PET_SIZE = 540;
 const inspect = ref(false);
+const wandering = ref(false);
+const preferredMotion = usePreferredReducedMotion();
+const effectiveWandering = computed(
+  () => wandering.value && !inspect.value && preferredMotion.value !== 'reduce',
+);
 
 // Stage mode: the roaming pet, or one of the interaction stages (furniture / victory), each a
 // separate multi-object scene owning its own canvas + pickers (via Chibi3dInteraction's kind).
 const mode = ref<'pet' | 'furniture' | 'victory'>('pet');
 
 const pet = useTemplateRef<InstanceType<typeof Chibi3dPet>>('pet');
+const RECOVERY_ITEM_ID = 'item_icon_event_token_0_s44';
+const RECOVERY_ITEM_URL = getGiftIconUrl(RECOVERY_ITEM_ID, true);
+const CHIBI_ITEM_DRAG_TYPE = 'application/x-eridu-ops-chibi-item';
+const isItemDragging = ref(false);
+const isItemDropTarget = ref(false);
+
+function onItemDragStart(event: DragEvent): void {
+  const transfer = event.dataTransfer;
+  if (!transfer) return;
+  transfer.effectAllowed = 'copy';
+  transfer.setData(CHIBI_ITEM_DRAG_TYPE, RECOVERY_ITEM_ID);
+  isItemDragging.value = true;
+}
+
+function onItemDragEnd(): void {
+  isItemDragging.value = false;
+  isItemDropTarget.value = false;
+}
+
+function onItemDragOver(event: DragEvent): void {
+  if (!isItemDragging.value) return;
+  const canReceive = pet.value?.canReceiveItemAt(event.clientX, event.clientY) ?? false;
+  isItemDropTarget.value = canReceive;
+  if (!canReceive) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+}
+
+function onItemDrop(event: DragEvent): void {
+  const itemId = event.dataTransfer?.getData(CHIBI_ITEM_DRAG_TYPE);
+  if (itemId !== RECOVERY_ITEM_ID) return;
+  if (!pet.value?.giveItemAt(event.clientX, event.clientY)) return;
+  event.preventDefault();
+  isItemDropTarget.value = false;
+}
 
 // Quick-hold buttons: the common poses. Clips no-op on units that lack them (e.g.
 // Formation_* on the special). The full clip list lives in the dropdown beside these.
@@ -159,6 +207,24 @@ function onStagePointerDown(e: PointerEvent): void {
       <div class="tooltip-desc">{{ LEGAL_NOTICE }}</div>
     </div>
 
+    <RouterLink to="/" class="app-navbar-home-btn chibi-home" :aria-label="$t('chibi.home')">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    </RouterLink>
+
     <!-- Top-level mode: a segmented control (either/or between two named stages), distinct from
          the on/off view switches below. -->
     <div class="chibi-mode" @pointerdown.stop>
@@ -235,7 +301,7 @@ function onStagePointerDown(e: PointerEvent): void {
 
     <Chibi3dInteraction
       v-if="mode !== 'pet'"
-      :char-ids="CHIBI_CHAR_IDS"
+      :char-ids="CHIBI_CHARACTER_IDS"
       :kind="mode === 'victory' ? 'victory' : 'furniture'"
       :char-name="resolveCharName"
     />
@@ -243,32 +309,71 @@ function onStagePointerDown(e: PointerEvent): void {
     <div
       v-if="mode === 'pet'"
       class="chibi-stage"
-      :class="{ 'chibi-stage--orbit': inspect }"
+      :class="{ 'chibi-stage--orbit': inspect, 'chibi-stage--item-dragging': isItemDragging }"
       @pointerdown="onStagePointerDown"
+      @dragover="onItemDragOver"
+      @drop="onItemDrop"
     >
-      <!-- View cluster: Inspect toggle (folds in orbit + wide framing) + size + controls hint. -->
+      <!-- View cluster: pet behaviour toggles, size, and controls hint. -->
       <div class="chibi-orbit" @pointerdown.stop>
-        <div class="chibi-toggle">
-          <input id="inspect-toggle" type="checkbox" :checked="inspect" @change="toggleInspect" />
-          <label for="inspect-toggle" title="Toggle full-viewport inspect">
-            <span class="chibi-switch" aria-hidden="true"></span>
-            <svg
-              class="chibi-ico"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+        <div class="chibi-toggle-row">
+          <div class="chibi-toggle">
+            <input id="inspect-toggle" type="checkbox" :checked="inspect" @change="toggleInspect" />
+            <label for="inspect-toggle" title="Toggle full-viewport inspect">
+              <span class="chibi-switch" aria-hidden="true"></span>
+              <svg
+                class="chibi-ico"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+                <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+                <path d="M16 21h3a2 2 0 0 1 2-2v-3" />
+              </svg>
+              Inspect
+            </label>
+          </div>
+          <div class="chibi-toggle">
+            <input
+              id="wandering-toggle"
+              v-model="wandering"
+              type="checkbox"
+              :disabled="inspect || preferredMotion === 'reduce'"
+            />
+            <label
+              for="wandering-toggle"
+              :title="
+                inspect
+                  ? $t('chibi.wanderingPausedInspect')
+                  : preferredMotion === 'reduce'
+                    ? $t('chibi.wanderingPausedMotion')
+                    : $t('chibi.wanderingHint')
+              "
             >
-              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-              <path d="M16 3h3a2 2 0 0 1 2 2v3" />
-              <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
-              <path d="M16 21h3a2 2 0 0 1 2-2v-3" />
-            </svg>
-            Inspect
-          </label>
+              <span class="chibi-switch" aria-hidden="true"></span>
+              <svg
+                class="chibi-ico"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="5" r="2" />
+                <path d="m10 22 1-6-3-3 2-4 4 3 3 1" />
+                <path d="m14 22-1-5 4-3" />
+              </svg>
+              {{ $t('chibi.wandering') }}
+            </label>
+          </div>
         </div>
         <label class="chibi-slider">
           Size ×{{ zoom.toFixed(2) }}
@@ -280,10 +385,31 @@ function onStagePointerDown(e: PointerEvent): void {
             step="0.05"
           />
         </label>
-        <span class="chibi-orbit__hint">{{
-          inspect ? 'drag to spin · wheel to zoom' : $t('chibi.hint')
-        }}</span>
+        <Chibi3dOrbitHint v-if="inspect" class="chibi-orbit__hint" />
+        <span v-else class="chibi-orbit__hint">
+          {{ effectiveWandering ? $t('chibi.wanderingActiveHint') : $t('chibi.hint') }}
+        </span>
       </div>
+
+      <aside
+        class="chibi-item-rail"
+        :aria-label="$t('chibi.itemRail')"
+        @pointerdown.stop
+        @dragend="onItemDragEnd"
+      >
+        <div class="chibi-item-rail__title">{{ $t('chibi.itemRail') }}</div>
+        <button
+          type="button"
+          class="chibi-item"
+          draggable="true"
+          :aria-label="$t('chibi.recoveryItem')"
+          @dragstart="onItemDragStart"
+        >
+          <img :src="RECOVERY_ITEM_URL" alt="" draggable="false" />
+          <span>{{ $t('chibi.recoveryItem') }}</span>
+        </button>
+        <div class="chibi-item-rail__hint">{{ $t('chibi.dragItemHint') }}</div>
+      </aside>
 
       <div class="chibi-chars" @pointerdown.stop>
         <SearchSelect
@@ -303,6 +429,8 @@ function onStagePointerDown(e: PointerEvent): void {
         v-model:zoom="zoom"
         :orbit="inspect"
         :inspect="inspect"
+        :wander="effectiveWandering"
+        :item-drop-target="isItemDropTarget"
       />
 
       <div class="chibi-debug" @pointerdown.stop>
@@ -344,6 +472,20 @@ function onStagePointerDown(e: PointerEvent): void {
   position: relative;
 }
 
+.chibi-home {
+  position: fixed;
+  z-index: 10;
+  top: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--background-primary);
+}
+
 /* Light fan-use notice pinned bottom-right, above whichever stage is mounted. */
 .chibi-legal {
   position: fixed;
@@ -373,7 +515,7 @@ function onStagePointerDown(e: PointerEvent): void {
   transform: translateX(-50%);
 }
 
-/* Segmented control (two named modes) — the raised active segment marks the current stage. */
+/* Segmented control: the raised active segment marks the current stage. */
 .chibi-seg {
   display: inline-flex;
   gap: 3px;
@@ -439,6 +581,11 @@ function onStagePointerDown(e: PointerEvent): void {
   cursor: grabbing;
 }
 
+.chibi-stage--item-dragging,
+.chibi-stage--item-dragging:active {
+  cursor: copy;
+}
+
 .chibi-voice {
   position: absolute;
   z-index: 2; /* stay above the pet canvas, which swells over the corners in Inspect mode */
@@ -487,12 +634,15 @@ function onStagePointerDown(e: PointerEvent): void {
   border: 1px solid var(--border-color);
 }
 
-/* View cluster stacks in three levels: Inspect toggle, then size slider, then the controls hint. */
+/* View cluster stacks behaviour toggles, the size slider, and the controls hint. */
 .chibi-orbit {
   position: absolute;
   z-index: 2;
   top: 16px;
   left: 16px;
+  width: 330px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -503,17 +653,89 @@ function onStagePointerDown(e: PointerEvent): void {
   border-radius: 10px;
 }
 
+.chibi-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .chibi-orbit__hint {
   font-size: 0.8rem;
+  line-height: 1.35;
   color: var(--text-secondary);
-  white-space: nowrap;
+}
+
+.chibi-item-rail {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 16px;
+  width: 92px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--background-primary);
+  transform: translateY(-50%);
+}
+
+.chibi-item-rail__title {
+  margin-bottom: 7px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.chibi-item {
+  display: flex;
+  width: 100%;
+  padding: 5px;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: grab;
+}
+
+.chibi-item:hover {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+
+.chibi-item:active {
+  cursor: grabbing;
+}
+
+.chibi-item:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+.chibi-item img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.chibi-item-rail__hint {
+  margin-top: 6px;
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .chibi-chars {
   position: absolute;
   z-index: 2;
   top: 16px;
-  right: 16px;
+  right: 74px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -670,5 +892,26 @@ function onStagePointerDown(e: PointerEvent): void {
 .chibi-toggle input[type='checkbox']:focus-visible + label {
   outline: 2px solid var(--accent-color);
   outline-offset: 1px;
+}
+
+@media (max-width: 720px) {
+  .chibi-orbit,
+  .chibi-item-rail,
+  .chibi-voice {
+    left: 8px;
+  }
+
+  .chibi-orbit {
+    top: 58px;
+  }
+
+  .chibi-item-rail {
+    width: 82px;
+  }
+
+  .chibi-item img {
+    width: 48px;
+    height: 48px;
+  }
 }
 </style>
