@@ -41,6 +41,31 @@ export const CHIBI_FURNITURE_IDS = [
   'toytrain',
 ] as const;
 
+const POC_SHARED_VICTORY_CLIPS = ['Victory_End_Interaction', 'Victory_Start_Interaction'] as const;
+
+/** Match the POC's stage order: reverse furniture-derived duos, preserve explicit groups. */
+export function orderChibiVictoryCharacters(
+  configuredIds: readonly string[],
+  clipKeysByCharacter: ReadonlyMap<string, readonly string[]>,
+): string[] {
+  const sharesFurniture = CHIBI_FURNITURE_IDS.some((furnitureId) =>
+    configuredIds.every((characterId) =>
+      (clipKeysByCharacter.get(characterId) ?? []).some((clip) =>
+        clip.toLowerCase().includes(furnitureId),
+      ),
+    ),
+  );
+  const sharesPocVictoryClip = POC_SHARED_VICTORY_CLIPS.some((victoryClip) =>
+    configuredIds.every((characterId) =>
+      (clipKeysByCharacter.get(characterId) ?? []).includes(victoryClip),
+    ),
+  );
+
+  return sharesFurniture && sharesPocVictoryClip
+    ? [...configuredIds].reverse()
+    : [...configuredIds];
+}
+
 /** Match modern DevName ids and legacy asset folders against IndexedDB student master fields. */
 export function getChibiStudentLookupKeys(charId: string): string[] {
   const normalized = charId.toLowerCase();

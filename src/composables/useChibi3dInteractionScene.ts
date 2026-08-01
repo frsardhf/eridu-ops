@@ -40,7 +40,7 @@ import {
   updateHaloFollower,
   setHaloOverride,
 } from '@/composables/chibi3dCore';
-import { CHIBI_FURNITURE_IDS } from '@/composables/chibi3dCatalog';
+import { CHIBI_FURNITURE_IDS, orderChibiVictoryCharacters } from '@/composables/chibi3dCatalog';
 
 /**
  * Live-3D chibi interaction scene (the Vue port of the deliverable POC's `poc/furniture.html`):
@@ -237,20 +237,21 @@ export function useChibi3dInteractionScene(
       options.push({ value: label, label, kind: 'furniture' });
     }
 
-    // Victory scene keys are sorted for lookup, while their stage order is reversed so the
-    // first-character offsets target the intended interaction lead.
+    // Stage order follows the POC so offsets target the authored character. Labels keep the
+    // existing reverse presentation order independently from scene transforms.
     for (const key of Object.keys(victoryCfgAll)) {
-      const cids = key
-        .split('|')
-        .filter((c) => opts.charIds.includes(c))
-        .reverse();
+      const configuredCids = key.split('|').filter((c) => opts.charIds.includes(c));
+      const cids = orderChibiVictoryCharacters(configuredCids, keysByCid);
       if (cids.length < 2) continue;
       if (
         !cids.every((cid) => (keysByCid.get(cid) ?? []).some((k) => VICTORY_INTERACTION_RE.test(k)))
       )
         continue;
       const id = `victory:${key}`;
-      const label = cids.map((c) => opts.charName?.(c) ?? c).join(' × ');
+      const label = [...configuredCids]
+        .reverse()
+        .map((c) => opts.charName?.(c) ?? c)
+        .join(' × ');
       sceneCatalog.set(id, { id, label, type: 'victory', cids, victoryKey: key });
       options.push({ value: id, label, kind: 'victory' });
     }
