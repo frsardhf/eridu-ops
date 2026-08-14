@@ -43,7 +43,6 @@ const characterSource = join(sourceBase, 'characters');
 const furnitureSource = join(sourceBase, 'furniture');
 
 const GLTFPACK_ARGS = ['-cc', '-kn', '-km', '-ke', '-ar', '16', '-af', '0', '-ac', '-vpf'];
-const SKIPPED_CHARACTER_IDS = new Set(['ch0114']);
 const mb = (path) => (statSync(path).size / 1048576).toFixed(2);
 
 if (!existsSync(characterSource)) {
@@ -58,10 +57,6 @@ let packed = 0;
 for (const charId of readdirSync(characterSource).sort()) {
   const sourceDir = join(characterSource, charId);
   if (!statSync(sourceDir).isDirectory()) continue;
-  if (SKIPPED_CHARACTER_IDS.has(charId)) {
-    console.warn(`SKIP ${charId}: excluded from the chibi picker.`);
-    continue;
-  }
   const manifestSource = join(sourceDir, `${charId}.manifest.json`);
   if (!existsSync(manifestSource)) continue;
 

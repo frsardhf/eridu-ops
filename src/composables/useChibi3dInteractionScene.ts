@@ -298,7 +298,12 @@ export function useChibi3dInteractionScene(
       cid,
       charConfig,
     );
-    const rendererTimeline = createRendererTimeline(root, manifest, gltf.parser?.json?.nodes ?? []);
+    const rendererTimeline = createRendererTimeline(
+      root,
+      manifest,
+      gltf.parser?.json?.nodes ?? [],
+      charConfig,
+    );
     const halo = makeHaloFollower(root, scene);
     setHaloOverride(halo, charConfig?.halo ?? null);
 

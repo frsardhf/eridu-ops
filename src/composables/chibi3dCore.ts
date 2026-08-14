@@ -32,7 +32,8 @@ export interface MouthUniforms {
 
 export interface RendererTimeline {
   defaults: Record<string, boolean>;
-  meshByIndex: Map<string, THREE.Object3D>;
+  rendererByKey: Map<string, THREE.Object3D>;
+  baseVisibility: Map<THREE.Object3D, boolean>;
 }
 
 // FxFollower halo spring (BA values, identical across characters: GUIDE.md section 6a).
@@ -44,8 +45,6 @@ export interface HaloFollower {
   relRot: THREE.Quaternion;
   clampMin: THREE.Vector3;
   clampMax: THREE.Vector3;
-  geomCenter: THREE.Vector3;
-  tweakQuat: THREE.Quaternion;
   relPos0: THREE.Vector3;
   clampMin0: THREE.Vector3;
   clampMax0: THREE.Vector3;
@@ -217,6 +216,7 @@ export function applyManifestMaterials(
   config: ChibiCharacterConfig = {},
 ): MouthUniforms[] {
   const mouthUniforms: MouthUniforms[] = [];
+  const extraMeshPasses: Array<[THREE.Object3D, THREE.Mesh]> = [];
   const materialKeys = Object.keys(manifest.materials).sort((a, b) => b.length - a.length);
   const cols = manifest.mouthAtlas?.cols ?? 8;
   const rows = manifest.mouthAtlas?.rows ?? 8;
@@ -284,24 +284,135 @@ export function applyManifestMaterials(
       });
       if (seeThrough) mesh.renderOrder = 2;
     }
+    if (key) extraMeshPasses.push(...applyMeshOverrides(mesh, key, config));
   });
+  for (const [parent, pass] of extraMeshPasses) parent.add(pass);
   return mouthUniforms;
 }
 
-/** Build the glTF mesh-index lookup used by Unity child-renderer visibility timelines. */
+function connectedComponents(geometry: THREE.BufferGeometry): number[][] {
+  const source = geometry.index?.array;
+  if (!source) return [];
+  const triangleCount = Math.floor(source.length / 3);
+  const trianglesByVertex = new Map<number, number[]>();
+  for (let triangle = 0; triangle < triangleCount; triangle++) {
+    for (let corner = 0; corner < 3; corner++) {
+      const vertex = source[triangle * 3 + corner];
+      const touching = trianglesByVertex.get(vertex) ?? [];
+      touching.push(triangle);
+      trianglesByVertex.set(vertex, touching);
+    }
+  }
+
+  const visited = new Uint8Array(triangleCount);
+  const components: number[][] = [];
+  for (let seed = 0; seed < triangleCount; seed++) {
+    if (visited[seed]) continue;
+    const queue = [seed];
+    const triangles: number[] = [];
+    visited[seed] = 1;
+    while (queue.length) {
+      const triangle = queue.pop();
+      if (triangle === undefined) break;
+      triangles.push(triangle);
+      for (let corner = 0; corner < 3; corner++) {
+        for (const next of trianglesByVertex.get(source[triangle * 3 + corner]) ?? []) {
+          if (visited[next]) continue;
+          visited[next] = 1;
+          queue.push(next);
+        }
+      }
+    }
+    components.push(
+      triangles.flatMap((triangle) => [
+        source[triangle * 3],
+        source[triangle * 3 + 1],
+        source[triangle * 3 + 2],
+      ]),
+    );
+  }
+  return components;
+}
+
+function applyMeshOverrides(
+  mesh: THREE.Mesh,
+  materialKey: string,
+  config: ChibiCharacterConfig,
+): Array<[THREE.Object3D, THREE.Mesh]> {
+  const materialOverride = config.materialOverrides?.[materialKey];
+  const material = mesh.material as THREE.Material;
+  if (materialOverride) {
+    if (materialOverride.depthWrite !== undefined)
+      material.depthWrite = materialOverride.depthWrite;
+    if (materialOverride.depthTest !== undefined) material.depthTest = materialOverride.depthTest;
+    if (materialOverride.polygonOffset !== undefined) {
+      material.polygonOffset = true;
+      material.polygonOffsetFactor = materialOverride.polygonOffset;
+      material.polygonOffsetUnits = materialOverride.polygonOffset;
+    }
+    if (materialOverride.renderOrder !== undefined) mesh.renderOrder = materialOverride.renderOrder;
+  }
+
+  const layers = config.componentLayers?.[materialKey];
+  const parent = mesh.parent;
+  if (!parent || !layers || layers.length < 2) return [];
+  const components = connectedComponents(mesh.geometry);
+  if (!components.length) return [];
+
+  const claimed = new Set<number>();
+  const extraPasses: Array<[THREE.Object3D, THREE.Mesh]> = [];
+  for (let index = 0; index < layers.length; index++) {
+    const layer = layers[index];
+    const componentIds = layer.remaining
+      ? components.map((_, componentIndex) => componentIndex).filter((id) => !claimed.has(id))
+      : (layer.components ?? []);
+    componentIds.forEach((id) => claimed.add(id));
+    const indices = componentIds.flatMap((id) => components[id] ?? []);
+    if (!indices.length) continue;
+    const pass = index === layers.length - 1 ? mesh : (mesh.clone(false) as THREE.Mesh);
+    pass.geometry = mesh.geometry.clone();
+    pass.geometry.setIndex(indices);
+    pass.name = `${mesh.name}_${layer.name ?? `Layer${index}`}`;
+    if (layer.renderOrder !== undefined) pass.renderOrder = layer.renderOrder;
+    if (pass !== mesh) extraPasses.push([parent, pass]);
+  }
+  return extraPasses;
+}
+
+/** Build the renderer lookup used by Unity visibility timelines. */
 export function createRendererTimeline(
   root: THREE.Object3D,
   manifest: ChibiManifest,
   nodes: Array<{ mesh?: number; name?: string }> = [],
+  config: ChibiCharacterConfig = {},
 ): RendererTimeline | null {
   if (!manifest.renderers) return null;
-  const meshByIndex = new Map<string, THREE.Object3D>();
+  const rendererByKey = new Map<string, THREE.Object3D>();
   for (const node of nodes) {
     if (node.mesh === undefined || !node.name) continue;
     const object = root.getObjectByName(node.name);
-    if (object) meshByIndex.set(String(node.mesh), object);
+    if (object) rendererByKey.set(String(node.mesh), object);
   }
-  return { defaults: manifest.renderers.default ?? {}, meshByIndex };
+  const rendererPaths = new Set(
+    Object.values(manifest.renderers.clips)
+      .flat()
+      .flatMap((event) => (event.node ? [event.node] : [])),
+  );
+  for (const path of rendererPaths) {
+    const nodeName = path.split('/').at(-1);
+    if (!nodeName) continue;
+    const object = root.getObjectByName(nodeName);
+    if (object) rendererByKey.set(path, object);
+  }
+  for (const [index, name] of Object.entries(config.rendererNodes ?? {})) {
+    const object = root.getObjectByName(name);
+    if (object) rendererByKey.set(index, object);
+  }
+  const baseVisibility = new Map<THREE.Object3D, boolean>();
+  for (const object of rendererByKey.values()) {
+    if (!baseVisibility.has(object)) baseVisibility.set(object, object.visible);
+  }
+  return { defaults: manifest.renderers.default ?? {}, rendererByKey, baseVisibility };
 }
 
 /** Replay renderer visibility from the clip-start defaults through the active clip time. */
@@ -311,14 +422,17 @@ export function driveRenderers(
   time: number,
 ): void {
   if (!timeline) return;
-  const state = { ...timeline.defaults };
+  for (const [object, visible] of timeline.baseVisibility) object.visible = visible;
+  for (const [key, visible] of Object.entries(timeline.defaults)) {
+    const object = timeline.rendererByKey.get(key);
+    if (object) object.visible = visible;
+  }
   for (const event of events) {
     if (event.t > time) break;
-    state[String(event.idx)] = event.on;
-  }
-  for (const [index, visible] of Object.entries(state)) {
-    const object = timeline.meshByIndex.get(index);
-    if (object) object.visible = visible;
+    const key = event.node ?? (event.idx === undefined ? null : String(event.idx));
+    if (!key) continue;
+    const object = timeline.rendererByKey.get(key);
+    if (object) object.visible = event.on;
   }
 }
 
@@ -380,7 +494,6 @@ const HALO_CFG = {
   clampMax: new THREE.Vector3(-0.26, -0.07, 0.27),
   posPow: 0.1,
   rotPow: 0.07,
-  tweakDeg: [85, 0, 0] as const, // visual ring-tilt correction after the LH->RH flip
 };
 // Unity(LH) -> glTF(RH): positions negate X, quats -> (x,-y,-z,w).
 const convVec = (v: THREE.Vector3) => new THREE.Vector3(-v.x, v.y, v.z);
@@ -393,7 +506,6 @@ const _hm = new THREE.Matrix4();
 // Per-frame halo scratch: reused so updateHaloFollower allocates nothing each frame.
 const _hlp = new THREE.Vector3();
 const _htr = new THREE.Quaternion();
-const _hoff = new THREE.Vector3();
 
 /**
  * Find + detach the halo under `root` and return a follower (or null if no head/halo node).
@@ -420,43 +532,44 @@ export function makeHaloFollower(root: THREE.Object3D, scene: THREE.Scene): Halo
   // `head`/`halo` are narrowed to never by the closure above; re-assert the type.
   const headObj = head as THREE.Object3D;
   const haloObj = halo as THREE.Object3D;
-  scene.attach(haloObj);
-
-  let geom: THREE.BufferGeometry | null = null;
-  haloObj.traverse((o) => {
-    if (!geom && (o as THREE.Mesh).isMesh) geom = (o as THREE.Mesh).geometry;
-  });
-  const geomCenter = new THREE.Vector3();
-  if (geom) {
-    (geom as THREE.BufferGeometry).computeBoundingBox();
-    (geom as THREE.BufferGeometry).boundingBox?.getCenter(geomCenter);
-  }
-
+  const relPos = convVec(HALO_CFG.relPos);
   const a = convVec(HALO_CFG.clampMin);
   const b = convVec(HALO_CFG.clampMax);
-  const td = HALO_CFG.tweakDeg;
-  const D = Math.PI / 180;
+  const clampMin = new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z));
+  const clampMax = new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z));
+  const relRot = convQuat(HALO_CFG.relRot);
+
+  root.updateWorldMatrix(true, true);
+  headObj.updateWorldMatrix(true, false);
+  haloObj.updateWorldMatrix(true, true);
+  headObj.matrixWorld.decompose(_hv, _hq, _hs);
+  const targetPos = relPos.clone().applyMatrix4(headObj.matrixWorld);
+  const targetQuat = _hq.clone().multiply(relRot);
+  const followerRoot = new THREE.Group();
+  followerRoot.name = `${haloObj.name || 'Halo'}_FxFollowerRoot`;
+  followerRoot.position.copy(targetPos);
+  followerRoot.quaternion.copy(targetQuat);
+  scene.add(followerRoot);
+  followerRoot.updateWorldMatrix(true, false);
+  followerRoot.attach(haloObj);
+
   return {
     root,
     head: headObj,
-    halo: haloObj,
-    relPos: convVec(HALO_CFG.relPos),
-    relRot: convQuat(HALO_CFG.relRot),
-    clampMin: new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z)),
-    clampMax: new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z)),
-    geomCenter,
-    tweakQuat: new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(td[0] * D, td[1] * D, td[2] * D),
-    ),
-    relPos0: convVec(HALO_CFG.relPos),
-    clampMin0: new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z)),
-    clampMax0: new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z)),
+    halo: followerRoot,
+    relPos,
+    relRot,
+    clampMin,
+    clampMax,
+    relPos0: relPos.clone(),
+    clampMin0: clampMin.clone(),
+    clampMax0: clampMax.clone(),
     extraTweak: null,
     posPow: HALO_CFG.posPow,
     rotPow: HALO_CFG.rotPow,
-    prevPos: new THREE.Vector3(),
-    prevQuat: new THREE.Quaternion(),
-    init: false,
+    prevPos: targetPos.clone(),
+    prevQuat: targetQuat.clone(),
+    init: true,
   };
 }
 
@@ -474,10 +587,9 @@ export function updateHaloFollower(f: HaloFollower | null): void {
   _htr.copy(_hq).multiply(f.relRot);
   if (!f.init) f.prevQuat.copy(_htr);
   f.prevQuat.slerp(_htr, f.rotPow);
-  f.halo.quaternion.copy(f.prevQuat).multiply(f.tweakQuat);
+  f.halo.quaternion.copy(f.prevQuat);
   if (f.extraTweak) f.halo.quaternion.multiply(f.extraTweak);
-  _hoff.copy(f.geomCenter).multiply(f.halo.scale).applyQuaternion(f.halo.quaternion);
-  f.halo.position.copy(_hlp).sub(_hoff);
+  f.halo.position.copy(_hlp);
   f.init = true;
 }
 

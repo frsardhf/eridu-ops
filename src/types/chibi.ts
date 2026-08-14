@@ -21,8 +21,10 @@ export interface ChibiMouthEvent {
 export interface ChibiRendererEvent {
   /** Clip-local time in seconds. */
   t: number;
-  /** glTF mesh index. */
-  idx: number;
+  /** Game child-renderer index. */
+  idx?: number;
+  /** Unity hierarchy path used by authored renderer-enabled curves. */
+  node?: string;
   /** Whether the mesh is visible after this event. */
   on: boolean;
 }
@@ -40,8 +42,28 @@ export interface ChibiCharacterConfig {
   hide?: string[];
   /** Ancestor node containing the eye-only half of a split EyeMouth face. */
   eyeNode?: string;
+  /** Game child-renderer indices mapped to exported GLB node names. */
+  rendererNodes?: Record<string, string>;
+  /** Generic render-state overrides keyed by manifest material name. */
+  materialOverrides?: Record<string, ChibiMaterialOverride>;
+  /** Connected-component render passes keyed by manifest material name. */
+  componentLayers?: Record<string, ChibiComponentLayer[]>;
   /** Character-wide halo correction. */
   halo?: ChibiHaloOverride;
+}
+
+interface ChibiMaterialOverride {
+  depthWrite?: boolean;
+  depthTest?: boolean;
+  polygonOffset?: number;
+  renderOrder?: number;
+}
+
+interface ChibiComponentLayer {
+  name?: string;
+  components?: number[];
+  remaining?: boolean;
+  renderOrder?: number;
 }
 
 /** Per-submesh material definition (matched against the GLB by material name). */

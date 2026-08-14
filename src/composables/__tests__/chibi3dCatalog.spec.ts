@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { orderChibiVictoryCharacters } from '../chibi3dCatalog';
+import { CHIBI_CHARACTER_IDS, orderChibiVictoryCharacters } from '../chibi3dCatalog';
+
+describe('chibi character catalog', () => {
+  it('includes every complete character in the current deliverable', () => {
+    expect(CHIBI_CHARACTER_IDS).toHaveLength(40);
+    expect(CHIBI_CHARACTER_IDS).toEqual(
+      expect.arrayContaining(['ch0114', 'ch0139', 'ch0205', 'hinata_original', 'kirara_original']),
+    );
+  });
+});
 
 describe('orderChibiVictoryCharacters', () => {
   it('preserves the explicit Aris and Kei stage order', () => {

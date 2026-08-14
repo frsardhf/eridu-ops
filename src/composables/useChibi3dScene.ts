@@ -178,7 +178,12 @@ export function useChibi3dScene(
     grad = makeGradient();
     const charConfig = scenesConfig.characters?.[charId];
     mouthUniforms = applyManifestMaterials(root, manifest, atlas, mask, grad, charId, charConfig);
-    rendererTimeline = createRendererTimeline(root, manifest, gltf.parser?.json?.nodes ?? []);
+    rendererTimeline = createRendererTimeline(
+      root,
+      manifest,
+      gltf.parser?.json?.nodes ?? [],
+      charConfig,
+    );
     haloFollower = makeHaloFollower(root, scene); // detach + drive with the FxFollower spring
     setHaloOverride(haloFollower, charConfig?.halo ?? null);
 
