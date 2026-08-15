@@ -2,8 +2,10 @@ import { createApp } from 'vue';
 import './style.css';
 import App from './App.vue';
 import router from './router';
+import { installAnalytics } from '@/lib/services/analyticsService';
 
 const app = createApp(App);
+installAnalytics(router);
 app.use(router);
 app.mount('#app');
 
