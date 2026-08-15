@@ -41,6 +41,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/Chibi3dPage.vue'),
   },
   {
+    // Hidden from public navigation. Production access to both this route and
+    // /api/activity is enforced by Cloudflare Access, not by a client gate.
+    path: '/activity',
+    name: 'Activity',
+    component: () => import('@/pages/ActivityPage.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },

@@ -55,6 +55,28 @@ VITE_PARSER_URL=/api
 
 In production, `/api` routes to the hosted parser service. In local development, Vite proxies `/api/inventory/*` to the local parser service.
 
+## Private Activity Manager
+
+`/activity` is a hidden product-analytics surface backed by Cloudflare Workers
+Analytics Engine. The public client sends aggregated, allowlisted events to
+`/api/events`; it never sends search text, imported data, screenshots, inventory
+values, friend codes, bond-plan values, or permanent visitor identifiers.
+
+Production requires these Cloudflare Pages settings:
+
+1. Add an Analytics Engine binding named `ANALYTICS` with dataset
+   `eridu_ops_events`.
+2. Add `CF_ACCOUNT_ID` as a variable.
+3. Add `CF_ANALYTICS_TOKEN` as an encrypted secret. The token needs only
+   `Account Analytics Read` permission.
+4. Protect both `/activity*` and `/api/activity*` with a Cloudflare Access policy
+   that allows only the owner's identity. The ingestion endpoint `/api/events`
+   remains public and accepts only same-origin, allowlisted batches.
+
+`ANALYTICS_DATASET` may be set when a dataset name other than
+`eridu_ops_events` is used. Local Vite development renders deterministic preview
+data because Analytics Engine bindings are unavailable there.
+
 ---
 
 ## Project Structure
