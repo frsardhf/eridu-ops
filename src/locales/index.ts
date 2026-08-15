@@ -282,6 +282,10 @@ const en = {
   returnToStudent: 'Return to student',
   expToNextLevel: 'XP to next level',
   totalExp: 'Total EXP',
+  bond100Goal: 'Bond 100',
+  bond100Progress: 'Bond 100 progress',
+  bond100ProgressHint:
+    'Muted progress starts from the minimum EXP for the current bond level. The brighter segment includes planned EXP.',
 
   // Gift options
   giftOptions: 'Gift Options',
@@ -1006,6 +1010,10 @@ const jp: TranslationTree = {
   returnToStudent: '生徒に戻る',
   expToNextLevel: '次のレベルまで',
   totalExp: '総経験値',
+  bond100Goal: '絆100',
+  bond100Progress: '絆100までの進捗',
+  bond100ProgressHint:
+    '薄い部分は現在の絆レベルに必要な最低経験値を示します。明るい部分には計画中の経験値が含まれます。',
 
   // Gift options
   giftOptions: 'ギフト設定',
@@ -1727,6 +1735,10 @@ const kr: TranslationTree = {
   returnToStudent: '학생으로 돌아가기',
   expToNextLevel: '다음 레벨까지',
   totalExp: '총 경험치',
+  bond100Goal: '인연 100',
+  bond100Progress: '인연 100 진행도',
+  bond100ProgressHint:
+    '연한 부분은 현재 인연 레벨의 최소 필요 경험치를 나타냅니다. 밝은 부분에는 계획한 경험치가 포함됩니다.',
 
   // Gift options
   giftOptions: '선물 설정',

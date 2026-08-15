@@ -4,6 +4,7 @@ import { $t } from '@/locales';
 import { useStudentInfo } from '@/composables/useStudentInfo';
 import { useStudentLevels } from '@/composables/useStudentLevels';
 import { useBondEditor } from '@/composables/useInputEditor';
+import { useTooltip } from '@/composables/useTooltip';
 import { getSchoolColor } from '@/lib/utils/colorUtils';
 import {
   getBondIconUrl,
@@ -14,6 +15,7 @@ import {
 import { MIN_BOND_LEVEL, MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 import type { CharacterLevels } from '@/types/upgrade';
+import '@/styles/tooltip.css';
 
 const props = defineProps<{
   student: StudentProps;
@@ -27,11 +29,13 @@ const props = defineProps<{
   /**
    * BondsPage mode: the level pill shows BOND progression (currentBond ->
    * newBondLevel) instead of character level. When set, `characterLevels`
-   * is ignored and `remainingXp` / `totalExp` are rendered as stat chips.
+   * is ignored and bond planning stats are rendered beside it.
    */
   bondProgress?: boolean;
   remainingXp?: number;
   totalExp?: number;
+  bond100CurrentPercent?: number;
+  bond100ProjectedPercent?: number;
   /** Suppresses the wrapping card chrome (BondsPage embeds inline). */
   flat?: boolean;
   /**
@@ -71,6 +75,18 @@ const { showLevelArrow } = useStudentLevels(
 );
 
 const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel.value);
+const currentBond100Percent = computed(() =>
+  Math.min(100, Math.max(0, props.bond100CurrentPercent ?? 0)),
+);
+const projectedBond100Percent = computed(() =>
+  Math.min(100, Math.max(currentBond100Percent.value, props.bond100ProjectedPercent ?? 0)),
+);
+const plannedBond100Percent = computed(
+  () => projectedBond100Percent.value - currentBond100Percent.value,
+);
+
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<'bond100'>();
 
 // Inline bond editor: only used when bondProgress is true (BondsPage).
 // Inert in the modal's level / navigate modes.
@@ -243,6 +259,49 @@ function onBondInlineClick() {
           <span v-if="(totalExp ?? 0) > 0" class="bond-stat-chip strong">
             {{ $t('totalExp') }}: {{ (totalExp ?? 0).toLocaleString() }}
           </span>
+
+          <div
+            class="bond-goal-progress"
+            :class="{ 'bond-goal-progress--complete': isBondMaxed }"
+            @mouseenter="showTooltip($event, 'bond100')"
+            @mouseleave="hideTooltip()"
+          >
+            <div class="bond-goal-progress__heading">
+              <span class="bond-goal-progress__label">{{ $t('bond100Goal') }}</span>
+              <span class="bond-goal-progress__value">
+                {{ Math.round(projectedBond100Percent) }}%
+              </span>
+            </div>
+            <div
+              class="bond-goal-progress__track"
+              role="progressbar"
+              :aria-label="$t('bond100Progress')"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-valuenow="Math.round(projectedBond100Percent)"
+            >
+              <span
+                class="bond-goal-progress__current"
+                :style="{ width: `${currentBond100Percent}%` }"
+              ></span>
+              <span
+                class="bond-goal-progress__planned"
+                :style="{
+                  left: `${currentBond100Percent}%`,
+                  width: `${plannedBond100Percent}%`,
+                }"
+              ></span>
+            </div>
+          </div>
+
+          <div
+            v-if="activeTooltip === 'bond100'"
+            ref="tooltipRef"
+            class="modal-tooltip"
+            :style="tooltipStyle"
+          >
+            {{ $t('bond100ProgressHint') }}
+          </div>
         </template>
       </div>
     </div>
@@ -383,8 +442,12 @@ function onBondInlineClick() {
 }
 
 .level-pill.maxed100 {
-  background: linear-gradient(135deg, rgba(255, 105, 180, 0.18), rgba(235, 51, 255, 0.18));
-  border-color: rgba(255, 105, 180, 0.55);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bond-100) 18%, transparent),
+    color-mix(in srgb, var(--color-bond-100-accent) 18%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--color-bond-100) 55%, transparent);
 }
 
 .bond-inline {
@@ -654,6 +717,66 @@ function onBondInlineClick() {
   color: var(--text-primary);
 }
 
+.bond-goal-progress {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 210px;
+  min-width: 210px;
+  max-width: 320px;
+  margin-left: auto;
+}
+
+.bond-goal-progress__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1;
+}
+
+.bond-goal-progress__label {
+  color: var(--color-bond-100);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bond-goal-progress__value {
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.bond-goal-progress__track {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--background-secondary);
+  box-shadow: inset 0 0 0 1px var(--border-color);
+}
+
+.bond-goal-progress__current,
+.bond-goal-progress__planned {
+  position: absolute;
+  inset-block: 0;
+}
+
+.bond-goal-progress__current {
+  left: 0;
+  background: linear-gradient(90deg, var(--color-bond-100), var(--color-bond-100-accent));
+  opacity: 0.35;
+}
+
+.bond-goal-progress__planned {
+  background: linear-gradient(90deg, var(--color-bond-100), var(--color-bond-100-accent));
+}
+
+.bond-goal-progress--complete .bond-goal-progress__current {
+  opacity: 1;
+}
+
 .pill-label {
   display: flex;
   align-items: center;
@@ -720,6 +843,12 @@ function onBondInlineClick() {
 @media (max-width: 768px) {
   .meta-row {
     display: block;
+  }
+
+  .bond-goal-progress {
+    flex-basis: 100%;
+    max-width: none;
+    margin-left: 0;
   }
 }
 </style>
