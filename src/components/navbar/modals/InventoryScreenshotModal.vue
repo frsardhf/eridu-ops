@@ -19,6 +19,7 @@ import { MATERIAL, EQUIPMENT } from '@/types/resource';
 import { applyFilters } from '@/lib/utils/filterUtils';
 import ResourceCard from '@/components/inventory/ResourceCard.vue';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 type InventoryType = 'items' | 'equipment';
 type Step = 'type' | 'upload' | 'review';
@@ -67,6 +68,7 @@ const isLoading = ref(false);
 const errorMessage = ref('');
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
+const { track } = useAnalytics();
 
 // Transient success banner shown on the upload step after Apply lands.
 // The modal stays open after applying so the user can scan more screenshots
@@ -331,8 +333,10 @@ async function processFiles(fileList: File[]) {
       editedQuantities.value[`${r.row}-${r.col}`] = r.quantity;
     });
 
+    track({ name: 'workflow_completed', feature: 'inventory_scanner', action: 'scanned' });
     step.value = 'review';
   } catch (e) {
+    track({ name: 'workflow_failed', feature: 'inventory_scanner', action: 'scanned' });
     const msg = e instanceof Error ? e.message : '';
     errorMessage.value = $t('parseFailed') + (msg ? ` (${msg})` : '');
   } finally {
@@ -415,6 +419,7 @@ async function applyResults() {
   step.value = 'upload';
 
   lastAppliedCount.value = appliedCount;
+  track({ name: 'workflow_completed', feature: 'inventory_scanner', action: 'applied' });
   if (appliedTimer) clearTimeout(appliedTimer);
   appliedTimer = setTimeout(() => {
     lastAppliedCount.value = 0;

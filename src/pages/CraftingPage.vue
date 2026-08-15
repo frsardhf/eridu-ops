@@ -7,6 +7,7 @@ import { useCraftingFodder } from '@/lib/hooks/useCraftingFodder';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { $t } from '@/locales';
 import type { CraftingFodderStage } from '@/types/crafting';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const GlobalInventoryModal = defineAsyncComponent(
   () => import('@/components/inventory/GlobalInventoryModal.vue'),
@@ -30,6 +31,7 @@ const {
   resetMaterial,
   setRemainingCrafts,
 } = useCraftingFodder();
+const { track } = useAnalytics();
 
 const rulesOpen = ref(false);
 const hideCompleted = ref(false);
@@ -115,6 +117,52 @@ function toggleType(subcategory: string) {
   } else {
     selectedTypes.value = [...selectedTypes.value, subcategory];
   }
+  track({ name: 'filter_changed', feature: 'crafting_plan', action: 'changed' });
+}
+
+function clearTypes(): void {
+  selectedTypes.value = [];
+  track({ name: 'filter_changed', feature: 'crafting_plan', action: 'reset' });
+}
+
+function toggleCompleted(): void {
+  hideCompleted.value = !hideCompleted.value;
+  track({ name: 'filter_changed', feature: 'crafting_plan', action: 'changed' });
+}
+
+function openInventory(): void {
+  showInventory.value = true;
+  track({ name: 'feature_opened', feature: 'inventory', action: 'opened' });
+}
+
+function refreshPlan(): void {
+  refreshSession();
+  track({ name: 'workflow_completed', feature: 'crafting_plan', action: 'refreshed' });
+}
+
+function resetAllProgress(): void {
+  resetProgress();
+  track({ name: 'plan_action', feature: 'crafting_plan', action: 'reset' });
+}
+
+function resetRuleRow(subcategory: string): void {
+  resetThresholds(subcategory);
+  track({ name: 'setting_changed', feature: 'crafting_plan', action: 'reset' });
+}
+
+function toggleStageRarity(rarity: string): void {
+  toggleRarity(rarity);
+  track({ name: 'filter_changed', feature: 'crafting_plan', action: 'changed' });
+}
+
+function updateRemaining(materialId: number, stage: CraftingFodderStage, value: number): void {
+  setRemainingCrafts(materialId, stage, value);
+  track({ name: 'plan_action', feature: 'crafting_plan', action: 'adjusted' });
+}
+
+function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): void {
+  resetMaterial(materialId, stage);
+  track({ name: 'plan_action', feature: 'crafting_plan', action: 'reset' });
 }
 </script>
 
@@ -152,7 +200,7 @@ function toggleType(subcategory: string) {
             type="button"
             :class="{ active: selectedTypes.length === 0 }"
             :aria-pressed="selectedTypes.length === 0"
-            @click="selectedTypes = []"
+            @click="clearTypes"
           >
             {{ $t('craftingFodder.allTypes') }}
           </button>
@@ -173,13 +221,13 @@ function toggleType(subcategory: string) {
           class="crafting-btn crafting-toggle"
           :class="{ active: hideCompleted }"
           :aria-pressed="hideCompleted"
-          @click="hideCompleted = !hideCompleted"
+          @click="toggleCompleted"
         >
           {{ $t('craftingFodder.hideComplete') }}
         </button>
 
         <div class="crafting-toolbar-actions">
-          <button type="button" class="crafting-btn" @click="showInventory = true">
+          <button type="button" class="crafting-btn" @click="openInventory">
             {{ $t('craftingFodder.openInventory') }}
           </button>
           <button
@@ -195,7 +243,7 @@ function toggleType(subcategory: string) {
             type="button"
             class="crafting-btn primary"
             :disabled="!isReady"
-            @click="refreshSession"
+            @click="refreshPlan"
           >
             {{ $t('craftingFodder.refreshPlan') }}
           </button>
@@ -227,7 +275,7 @@ function toggleType(subcategory: string) {
 
       <div v-if="needsRefresh" class="refresh-notice" role="status">
         <span>{{ $t('craftingFodder.refreshNotice') }}</span>
-        <button type="button" @click="refreshSession">
+        <button type="button" @click="refreshPlan">
           {{ $t('craftingFodder.refreshPlan') }}
         </button>
       </div>
@@ -239,7 +287,7 @@ function toggleType(subcategory: string) {
             type="button"
             class="crafting-btn"
             :disabled="!summary.hasProgress"
-            @click="resetProgress"
+            @click="resetAllProgress"
           >
             {{ $t('craftingFodder.resetProgress') }}
           </button>
@@ -281,7 +329,7 @@ function toggleType(subcategory: string) {
                   class="threshold-reset"
                   :title="$t('craftingFodder.resetRow')"
                   :aria-label="`${$t('craftingFodder.resetRow')}: ${subcategoryLabel(subcategory)}`"
-                  @click="resetThresholds(subcategory)"
+                  @click="resetRuleRow(subcategory)"
                 >
                   ↺
                 </button>
@@ -299,7 +347,7 @@ function toggleType(subcategory: string) {
                 class="rarity-chip"
                 :class="{ active: rarityFilter.includes(rarity) }"
                 :aria-pressed="rarityFilter.includes(rarity)"
-                @click="toggleRarity(rarity)"
+                @click="toggleStageRarity(rarity)"
               >
                 {{ rarity }}
               </button>
@@ -336,8 +384,8 @@ function toggleType(subcategory: string) {
                 :key="item.material.Id"
                 :item="item"
                 :field-id="`${stage.key}-${item.material.Id}`"
-                @update:remaining="setRemainingCrafts(item.material.Id, stage.key, $event)"
-                @reset="resetMaterial(item.material.Id, stage.key)"
+                @update:remaining="updateRemaining(item.material.Id, stage.key, $event)"
+                @reset="resetMaterialProgress(item.material.Id, stage.key)"
               />
             </div>
             <p v-else-if="stage.totalItems > 0" class="page-state">

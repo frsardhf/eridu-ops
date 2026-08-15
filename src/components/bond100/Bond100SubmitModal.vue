@@ -5,12 +5,14 @@ import { submitBond100Submission } from '@/lib/services/bond100Service';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { $t } from '@/locales';
 import type { Bond100ServerOption, Bond100ServerRegion } from '@/types/bond100';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const props = defineProps<{
   serverOptions: Bond100ServerOption[];
 }>();
 
 const emit = defineEmits<{ close: [] }>();
+const { track } = useAnalytics();
 
 // Account-level "add me": server + friend code only. The backend triggers an
 // arona /refresh (rate-limited); whichever bond-100 students the player has in
@@ -36,8 +38,10 @@ async function doSubmit() {
       serverRegion: subServer.value,
       friendCode: subFriendCode.value.trim(),
     });
+    track({ name: 'workflow_completed', feature: 'hall_submission', action: 'submitted' });
     done.value = true;
   } catch {
+    track({ name: 'workflow_failed', feature: 'hall_submission', action: 'submitted' });
     showFallback.value = true;
   } finally {
     submitting.value = false;

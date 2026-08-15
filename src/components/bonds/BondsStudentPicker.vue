@@ -9,14 +9,26 @@ import { studentDataStore } from '@/lib/stores/studentStore';
 import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { $t } from '@/locales';
 import type { StudentProps } from '@/types/student';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 const { sortedStudentsArray } = useStudentData();
 const { trackedIds, toggleTracked } = useBondsTracked();
 const { getStudentsWithGifts } = useGiftCalculation();
+const { track } = useAnalytics();
 
 const query = ref('');
+
+function toggleStudent(studentId: number): void {
+  const wasTracked = trackedIds.value.includes(studentId);
+  toggleTracked(studentId);
+  track({
+    name: 'plan_action',
+    feature: 'bond_planner',
+    action: wasTracked ? 'untracked' : 'tracked',
+  });
+}
 
 // Owned students only: picker is about planning bonds for students you have
 const ownedStudents = computed<StudentProps[]>(() =>
@@ -99,7 +111,7 @@ const restStudents = computed<StudentProps[]>(() =>
                 loading="lazy"
               />
               <span class="picker-name">{{ s.Name }}</span>
-              <button type="button" class="picker-action remove" @click="toggleTracked(s.Id)">
+              <button type="button" class="picker-action remove" @click="toggleStudent(s.Id)">
                 {{ $t('untrack') }}
               </button>
             </li>
@@ -119,7 +131,7 @@ const restStudents = computed<StudentProps[]>(() =>
                 loading="lazy"
               />
               <span class="picker-name">{{ s.Name }}</span>
-              <button type="button" class="picker-action add" @click="toggleTracked(s.Id)">
+              <button type="button" class="picker-action add" @click="toggleStudent(s.Id)">
                 +
               </button>
             </li>
@@ -159,7 +171,7 @@ const restStudents = computed<StudentProps[]>(() =>
                 loading="lazy"
               />
               <span class="picker-name">{{ s.Name }}</span>
-              <button type="button" class="picker-action add" @click="toggleTracked(s.Id)">
+              <button type="button" class="picker-action add" @click="toggleStudent(s.Id)">
                 +
               </button>
             </li>

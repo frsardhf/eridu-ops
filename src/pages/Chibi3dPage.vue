@@ -10,6 +10,7 @@ import SelectMenu from '@/components/shared/SelectMenu.vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
 import { CHIBI_VOICE_LINES } from '@/composables/useChibiVoice';
 import { useStudentData } from '@/lib/hooks/useStudentData';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import { getGiftIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { useTooltip } from '@/composables/useTooltip';
 import { CHIBI_CHARACTER_IDS, getChibiStudentLookupKeys } from '@/composables/chibi3dCatalog';
@@ -40,6 +41,7 @@ const charId = ref<string>(
 watch(charId, (id) => localStorage.setItem(CHAR_STORAGE_KEY, id));
 
 const { studentData } = useStudentData();
+const { track } = useAnalytics();
 const studentByAssetKey = computed(() => {
   const map = new Map<string, { name: string; id: number }>();
   for (const s of Object.values(studentData.value)) {
@@ -92,6 +94,18 @@ const effectiveWandering = computed(
 // Stage mode: the roaming pet, or one of the interaction stages (furniture / victory), each a
 // separate multi-object scene owning its own canvas + pickers (via Chibi3dInteraction's kind).
 const mode = ref<'pet' | 'furniture' | 'victory'>('pet');
+
+function selectMode(nextMode: typeof mode.value): void {
+  if (mode.value === nextMode) return;
+  mode.value = nextMode;
+  track({ name: 'setting_changed', feature: 'chibi_room', action: 'selected' });
+}
+
+function selectCharacter(value: string | null): void {
+  if (value === null) return;
+  charId.value = value;
+  track({ name: 'setting_changed', feature: 'chibi_room', action: 'selected' });
+}
 
 const pet = useTemplateRef<InstanceType<typeof Chibi3dPet>>('pet');
 const RECOVERY_ITEM_ID = 'item_icon_event_token_0_s44';
@@ -169,6 +183,7 @@ function playAnim(clip: string): void {
   const canonical = clipNames.value.find((c) => c.toLowerCase() === clip.toLowerCase()) ?? clip;
   selectedAnim.value = canonical;
   pet.value?.playClip(canonical);
+  track({ name: 'plan_action', feature: 'chibi_room', action: 'played' });
 }
 
 // Quick buttons are pet clips: pressing one drops back to the 540 pet framing first.
@@ -233,7 +248,7 @@ function onStagePointerDown(e: PointerEvent): void {
           type="button"
           class="chibi-seg__btn"
           :class="{ 'chibi-seg__btn--active': mode === 'pet' }"
-          @click="mode = 'pet'"
+          @click="selectMode('pet')"
         >
           <svg
             class="chibi-ico"
@@ -256,7 +271,7 @@ function onStagePointerDown(e: PointerEvent): void {
           type="button"
           class="chibi-seg__btn"
           :class="{ 'chibi-seg__btn--active': mode === 'furniture' }"
-          @click="mode = 'furniture'"
+          @click="selectMode('furniture')"
         >
           <svg
             class="chibi-ico"
@@ -277,7 +292,7 @@ function onStagePointerDown(e: PointerEvent): void {
           type="button"
           class="chibi-seg__btn"
           :class="{ 'chibi-seg__btn--active': mode === 'victory' }"
-          @click="mode = 'victory'"
+          @click="selectMode('victory')"
         >
           <svg
             class="chibi-ico"
@@ -417,7 +432,7 @@ function onStagePointerDown(e: PointerEvent): void {
           :options="charOptions"
           align="right"
           aria-label="Character"
-          @update:model-value="(v) => v !== null && (charId = v)"
+          @update:model-value="selectCharacter"
         />
       </div>
 

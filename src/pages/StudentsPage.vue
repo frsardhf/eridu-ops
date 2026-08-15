@@ -31,6 +31,7 @@ import { StudentFilters } from '@/types/filter';
 import { ModalOriginRect } from '@/types/modal';
 import { StudentProps } from '@/types/student';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const {
   studentData,
@@ -53,6 +54,7 @@ const {
   clearStudentFilters,
   isReady,
 } = useStudentData();
+const { track } = useAnalytics();
 
 const selectedStudent = ref<StudentProps | null>(null);
 const isModalVisible = ref(false);
@@ -67,6 +69,7 @@ function openInventoryFromFarming() {
   isEquipmentFarmingVisible.value = false;
   inventoryInitialTab.value = 'equipment';
   isInventoryModalVisible.value = true;
+  track({ name: 'feature_opened', feature: 'inventory', action: 'opened' });
 }
 
 const modalOriginRect = ref<ModalOriginRect | null>(null);
@@ -86,6 +89,7 @@ function openModal(payload: { student: StudentProps; originRect: ModalOriginRect
   selectedStudent.value = prepareStudentForModal(payload.student);
   modalOriginRect.value = payload.originRect;
   isModalVisible.value = true;
+  track({ name: 'feature_opened', feature: 'student_modal', action: 'opened' });
 }
 
 function closeModal() {
@@ -137,18 +141,52 @@ function handleSearchUpdate(value: string) {
 
 function updateSortOption(option: SortOption) {
   setSortOption(option);
+  track({ name: 'setting_changed', feature: 'navigation', action: 'changed' });
 }
 
 function handleToggleDirection() {
   toggleDirection();
+  track({ name: 'setting_changed', feature: 'navigation', action: 'changed' });
 }
 
 function handleUpdateFilter(key: keyof StudentFilters, value: StudentFilters[typeof key]) {
   setStudentFilters(key, value);
+  track({ name: 'filter_changed', feature: 'navigation', action: 'changed' });
 }
 
 function handleClearFilters() {
   clearStudentFilters();
+  track({ name: 'filter_changed', feature: 'navigation', action: 'reset' });
+}
+
+function toggleStudentPins(): void {
+  togglePinnedMode();
+  track({ name: 'filter_changed', feature: 'navigation', action: 'changed' });
+}
+
+function openBulkModify(): void {
+  isBulkModifyModalVisible.value = true;
+  track({ name: 'feature_opened', feature: 'bulk_modify', action: 'opened' });
+}
+
+function openDeckBuilder(): void {
+  isDeckBuilderVisible.value = true;
+  track({ name: 'feature_opened', feature: 'deck_builder', action: 'opened' });
+}
+
+function openInventory(): void {
+  isInventoryModalVisible.value = true;
+  track({ name: 'feature_opened', feature: 'inventory', action: 'opened' });
+}
+
+function openBondUpdate(): void {
+  isBondUpdateVisible.value = true;
+  track({ name: 'feature_opened', feature: 'bond_update', action: 'opened' });
+}
+
+function openEquipmentFarming(): void {
+  isEquipmentFarmingVisible.value = true;
+  track({ name: 'feature_opened', feature: 'equipment_farming', action: 'opened' });
 }
 </script>
 
@@ -164,17 +202,17 @@ function handleClearFilters() {
       @update:search-query="handleSearchUpdate"
       @update-sort="updateSortOption"
       @toggle-direction="handleToggleDirection"
-      @toggle-pinned="togglePinnedMode"
+      @toggle-pinned="toggleStudentPins"
       @update-filter="handleUpdateFilter"
       @clear-filters="handleClearFilters"
     />
 
     <ToolsRail
-      @open-bulk-modify="isBulkModifyModalVisible = true"
-      @open-deck-builder="isDeckBuilderVisible = true"
-      @open-inventory="isInventoryModalVisible = true"
-      @open-bond-update="isBondUpdateVisible = true"
-      @open-equipment-farming="isEquipmentFarmingVisible = true"
+      @open-bulk-modify="openBulkModify"
+      @open-deck-builder="openDeckBuilder"
+      @open-inventory="openInventory"
+      @open-bond-update="openBondUpdate"
+      @open-equipment-farming="openEquipmentFarming"
     />
 
     <DataLoadErrorBanner />

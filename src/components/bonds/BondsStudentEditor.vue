@@ -22,6 +22,7 @@ import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { getResourceDataByIdSync } from '@/lib/stores/resourceCacheStore';
 import { $t } from '@/locales';
 import type { StudentProps } from '@/types/student';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const props = defineProps<{
   student: StudentProps;
@@ -29,6 +30,7 @@ const props = defineProps<{
 }>();
 
 const { allGifts } = useStudentData();
+const { track } = useAnalytics();
 const {
   isGiftPlanningEnabled,
   enableGiftPlanning,
@@ -138,18 +140,72 @@ const showGiftGrid = computed(
 
 function onEnableGiftGrid() {
   enableGiftPlanning(props.student.Id);
+  track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
 }
 function onHideGiftGrid() {
   disableGiftPlanning(props.student.Id);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'changed' });
 }
 
 // --- Summary cards visibility (CONVERSION / CONSUMED / PROJECTION; hidden by default) ---
 const showSummaryCards = computed(() => isSummaryShown(props.student.Id));
 function onShowSummary() {
   showSummary(props.student.Id);
+  track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
 }
 function onHideSummary() {
   hideSummary(props.student.Id);
+}
+
+function onBondInput(value: number): void {
+  handleBondInput(value);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onGiftInput(id: number, event: Event): void {
+  handleGiftInput(id, event);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onBoxInput(id: number, event: Event): void {
+  handleBoxInput(id, event);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onNonFavorInput(id: number, event: Event): void {
+  handleNonFavorGiftInput(id, event);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onResetGifts(): void {
+  resetGifts();
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'reset' });
+}
+
+function onUndoChanges(): void {
+  undoChanges();
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onRedoChanges(): void {
+  redoChanges();
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onConfirmConversion(selection: Record<number, number>): void {
+  confirmConversion(selection);
+  track({ name: 'workflow_completed', feature: 'bond_planner', action: 'converted' });
+}
+
+function onSyncGifts(mode: 'greedy' | 'aware'): void {
+  showSyncGiftsModal.value = false;
+  syncGifts(mode);
+  track({ name: 'workflow_completed', feature: 'bond_planner', action: 'synced' });
+}
+
+function openOtherExp(): void {
+  showOtherExpPanel.value = true;
+  track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
 }
 
 // Reverse deep-link: jump back to /students with this student's modal opened.
@@ -180,7 +236,7 @@ function returnToStudentPage() {
           :bond100-current-percent="currentBond100Percent"
           :bond100-projected-percent="projectedBond100Percent"
           bond-progress
-          @update-bond="handleBondInput"
+          @update-bond="onBondInput"
         />
         <div v-if="!collapsed" class="be-header-divider" aria-hidden="true"></div>
         <GiftOption
@@ -191,10 +247,10 @@ function returnToStudentPage() {
           :can-redo="canRedo"
           @toggle-convert="convertBoxes"
           @sync-gifts="showSyncGiftsModal = true"
-          @reset-gifts="resetGifts"
-          @undo-changes="undoChanges"
-          @redo-changes="redoChanges"
-          @open-other-exp="showOtherExpPanel = true"
+          @reset-gifts="onResetGifts"
+          @undo-changes="onUndoChanges"
+          @redo-changes="onRedoChanges"
+          @open-other-exp="openOtherExp"
         />
       </div>
     </div>
@@ -209,7 +265,7 @@ function returnToStudentPage() {
                 :item="yellowStoneItem"
                 :value="boxFormData[YELLOW_STONE_ID] ?? 0"
                 :is-box="true"
-                @update:value="(e) => handleBoxInput(YELLOW_STONE_ID, e)"
+                @update:value="(e) => onBoxInput(YELLOW_STONE_ID, e)"
               />
             </div>
           </section>
@@ -275,9 +331,9 @@ function returnToStudentPage() {
           :non-favor-values="nonFavorGiftsMap"
           :should-show-gift-grade="shouldShowGiftGrade"
           show-favored-label
-          @update-gift="handleGiftInput"
-          @update-box="handleBoxInput"
-          @update-nonfavor="handleNonFavorGiftInput"
+          @update-gift="onGiftInput"
+          @update-box="onBoxInput"
+          @update-nonfavor="onNonFavorInput"
         />
         <div v-if="!hasAllocations" class="be-grid-footer">
           <button type="button" class="be-link-btn" @click="onHideGiftGrid">
@@ -294,18 +350,13 @@ function returnToStudentPage() {
       v-if="showConvertModal"
       :needed-count="convertModalNeeded"
       :non-favor-gifts-map="nonFavorGiftsMap"
-      @confirm="confirmConversion"
+      @confirm="onConfirmConversion"
       @cancel="cancelConversion"
     />
 
     <SyncGiftsModeModal
       v-if="showSyncGiftsModal"
-      @confirm="
-        (mode) => {
-          showSyncGiftsModal = false;
-          syncGifts(mode);
-        }
-      "
+      @confirm="onSyncGifts"
       @cancel="showSyncGiftsModal = false"
     />
 

@@ -5,6 +5,7 @@ import { StudentProps } from '@/types/student';
 import { useBondBulkUpdate } from '@/lib/hooks/useBondBulkUpdate';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 type EntryStatus = 'matched' | 'ambiguous' | 'unmatched' | 'skipped';
 
@@ -26,6 +27,7 @@ const props = defineProps<{ students: StudentProps[] }>();
 const emit = defineEmits<{ close: [] }>();
 
 const { applyBulkBondUpdates, currentBondOf } = useBondBulkUpdate();
+const { track } = useAnalytics();
 
 const step = ref<'input' | 'review'>('input');
 const rawText = ref('');
@@ -170,7 +172,11 @@ async function handleApply() {
   try {
     const updates = matchedEntries.value.map((e) => ({ studentId: e.resolved!.Id, bond: e.bond }));
     await applyBulkBondUpdates(updates);
+    track({ name: 'workflow_completed', feature: 'bond_update', action: 'applied' });
     emit('close');
+  } catch (error) {
+    track({ name: 'workflow_failed', feature: 'bond_update', action: 'applied' });
+    throw error;
   } finally {
     isApplying.value = false;
   }

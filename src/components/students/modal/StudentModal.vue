@@ -10,6 +10,7 @@ import { useStudentForm } from '@/lib/hooks/useStudentForm';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import { initializeStudentFormData } from '@/lib/services/studentFormService';
 import { setStudentDataDirect } from '@/lib/stores/studentStore';
 import { hasLinkedPartner, getLinkedPartnerId } from '@/lib/constants/linkedStudents';
@@ -88,6 +89,7 @@ const emit = defineEmits<{
 }>();
 
 const { setOwned } = useStudentOwnership();
+const { track } = useAnalytics();
 
 // --- State ---
 const activeTab = ref<ModalTab>('info');
@@ -511,6 +513,7 @@ function doApplyUpgrade(selectedIds: SectionId[]) {
   }
 
   showApplyModal.value = false;
+  track({ name: 'workflow_completed', feature: 'apply_upgrade', action: 'applied' });
 }
 
 // --- Tab & ownership management ---
@@ -524,6 +527,12 @@ function setActiveTab(nextTab: ModalTab) {
 async function toggleOwnership() {
   if (!displayedStudent.value) return;
   await setOwned(displayedStudent.value.Id, !isOwned.value);
+  track({ name: 'plan_action', feature: 'student_modal', action: 'changed' });
+}
+
+function openInventory(): void {
+  isInventoryOpen.value = true;
+  track({ name: 'feature_opened', feature: 'inventory', action: 'opened' });
 }
 
 // Auto-reset to Info tab when a student becomes unowned or when unowned student is opened
@@ -631,7 +640,7 @@ watch(
         {{ $t('studentDetails') }}
       </div>
       <div class="modal-header-actions">
-        <button class="header-action-btn inventory-btn" @click="isInventoryOpen = true">
+        <button class="header-action-btn inventory-btn" @click="openInventory">
           <svg viewBox="0 0 24 24" width="18" height="18">
             <path
               fill="currentColor"

@@ -9,6 +9,7 @@ import { CHANGELOG } from '@/lib/constants/changelog';
 import { getLastSeenChangelogId, setLastSeenChangelogId } from '@/lib/utils/settingsStorage';
 import GlobalControls from './GlobalControls.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import ContactModal from './modals/ContactModal.vue';
 import CreditsModal from './modals/CreditsModal.vue';
 import '@/styles/navbar.css';
@@ -28,6 +29,7 @@ defineProps<{
 
 const { currentTheme, setTheme, reinitializeData } = useStudentData();
 const { exportData, currentLanguage, setLanguage, languageOptions } = useNavbarSettings();
+const { track } = useAnalytics();
 
 // Language picker is mirrored into the mobile menu (the top-bar one hides <=480).
 function onSelectLanguage(lang: Language) {
@@ -72,17 +74,24 @@ function toggleMobileMenu() {
 }
 
 async function handleExportData() {
-  await exportData();
+  try {
+    await exportData();
+    track({ name: 'export_completed', feature: 'data_transfer', action: 'exported' });
+  } catch {
+    track({ name: 'workflow_failed', feature: 'data_transfer', action: 'exported' });
+  }
   mobileMenuOpen.value = false;
 }
 
 function openImportModal() {
   showImportModal.value = true;
+  track({ name: 'feature_opened', feature: 'data_transfer', action: 'opened' });
   mobileMenuOpen.value = false;
 }
 
 function openScreenshotModal() {
   showScreenshotModal.value = true;
+  track({ name: 'feature_opened', feature: 'inventory_scanner', action: 'opened' });
   mobileMenuOpen.value = false;
 }
 

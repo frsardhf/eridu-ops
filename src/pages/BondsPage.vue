@@ -13,6 +13,7 @@ import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
 import { computeStudentBondExpTotal } from '@/lib/utils/bondExpUtils';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 import { $t } from '@/locales';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import type { StudentProps } from '@/types/student';
 
 // Lazy in every importer (here, StudentsPage, StudentModal) so the inventory
@@ -25,10 +26,14 @@ const route = useRoute();
 const router = useRouter();
 const { studentData, favoredGift, giftBoxData, isReady } = useStudentData();
 const { trackedIds, removeStudent, seedIfNeeded } = useBondsTracked();
+const { track } = useAnalytics();
 
 // --- Layout (tabs/cards) ---
 const layout = ref<'tabs' | 'cards'>(getSettings().bondsLayout);
-watch(layout, (v) => updateSetting('bondsLayout', v));
+watch(layout, (v) => {
+  updateSetting('bondsLayout', v);
+  track({ name: 'setting_changed', feature: 'bond_planner', action: 'changed' });
+});
 
 // --- Picker modal ---
 const showPicker = ref(false);
@@ -149,6 +154,17 @@ function onSelectStudent(s: StudentProps) {
 
 function onRemoveStudent(id: number) {
   removeStudent(id);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'untracked' });
+}
+
+function openStudentPicker(): void {
+  showPicker.value = true;
+  track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
+}
+
+function openInventory(): void {
+  showInventory.value = true;
+  track({ name: 'feature_opened', feature: 'inventory', action: 'opened' });
 }
 </script>
 
@@ -160,11 +176,11 @@ function onRemoveStudent(id: number) {
       <DataLoadErrorBanner />
 
       <div class="bonds-toolbar">
-        <button type="button" class="bonds-btn primary" @click="showPicker = true">
+        <button type="button" class="bonds-btn primary" @click="openStudentPicker">
           + {{ $t('addStudent') }}
         </button>
 
-        <button type="button" class="bonds-btn inventory-btn" @click="showInventory = true">
+        <button type="button" class="bonds-btn inventory-btn" @click="openInventory">
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path
               fill="currentColor"
@@ -200,7 +216,7 @@ function onRemoveStudent(id: number) {
 
       <div v-if="isReady && !trackedStudents.length" class="bonds-empty">
         <p>{{ $t('noTrackedStudents') }}</p>
-        <button type="button" class="bonds-btn primary" @click="showPicker = true">
+        <button type="button" class="bonds-btn primary" @click="openStudentPicker">
           + {{ $t('addStudent') }}
         </button>
       </div>

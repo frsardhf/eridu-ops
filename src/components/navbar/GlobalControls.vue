@@ -5,6 +5,7 @@ import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { $t } from '@/locales';
 import { ThemeId } from '@/types/theme';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 // --- Props / emits ---
 const props = defineProps<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 // --- State ---
 const { currentLanguage, setLanguage, languageOptions, THEME_OPTIONS } = useNavbarSettings();
+const { track } = useAnalytics();
 
 const showThemeTray = ref(false);
 const trayEl = ref<HTMLElement | null>(null);
@@ -38,7 +40,13 @@ function toggleThemeTray(event: Event) {
 
 function onSelectTheme(themeId: ThemeId) {
   emit('setTheme', themeId);
+  track({ name: 'setting_changed', feature: 'preferences', action: 'changed' });
   showThemeTray.value = false;
+}
+
+function onSelectLanguage(language: typeof currentLanguage.value) {
+  setLanguage(language);
+  track({ name: 'setting_changed', feature: 'preferences', action: 'changed' });
 }
 
 // Two-tone swatch of the CURRENT theme's own colors (same source as the tray
@@ -73,7 +81,7 @@ useClickOutside(handleClickOutside);
         :options="languageOptions"
         aria-label="Language"
         align="right"
-        @update:model-value="setLanguage"
+        @update:model-value="onSelectLanguage"
       />
     </div>
 

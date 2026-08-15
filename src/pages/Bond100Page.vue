@@ -32,8 +32,10 @@ import type {
   Bond100View,
 } from '@/types/bond100';
 import type { StudentProps } from '@/types/student';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const { studentData, isReady } = useStudentData();
+const { track } = useAnalytics();
 
 const summary = ref<Bond100SummaryResponse | null>(null);
 const isSummaryLoading = ref(false);
@@ -41,20 +43,35 @@ const summaryError = ref('');
 
 const searchQuery = ref('');
 const selectedServer = ref<Bond100ServerFilter>('all');
+watch(selectedServer, () =>
+  track({ name: 'filter_changed', feature: 'hall_entries', action: 'changed' }),
+);
 const showSubmit = ref(false);
 
 const sortMode = ref<Bond100SortMode>(getSettings().bond100Sort ?? 'default');
-watch(sortMode, (v) => updateSetting('bond100Sort', v));
+watch(sortMode, (v) => {
+  updateSetting('bond100Sort', v);
+  track({ name: 'setting_changed', feature: 'hall_entries', action: 'changed' });
+});
 
 const selectedSchool = ref<Bond100SchoolFilter>(getSettings().bond100School ?? 'all');
-watch(selectedSchool, (v) => updateSetting('bond100School', v));
+watch(selectedSchool, (v) => {
+  updateSetting('bond100School', v);
+  track({ name: 'filter_changed', feature: 'hall_entries', action: 'changed' });
+});
 
 const hideEmpty = ref<boolean>(getSettings().bond100HideEmpty ?? false);
-watch(hideEmpty, (v) => updateSetting('bond100HideEmpty', v));
+watch(hideEmpty, (v) => {
+  updateSetting('bond100HideEmpty', v);
+  track({ name: 'filter_changed', feature: 'hall_entries', action: 'changed' });
+});
 
 // --- Players view (the wall's player-centric inversion) ---
 const view = ref<Bond100View>(getSettings().bond100View ?? 'wall');
-watch(view, (v) => updateSetting('bond100View', v));
+watch(view, (v) => {
+  updateSetting('bond100View', v);
+  track({ name: 'setting_changed', feature: 'hall_entries', action: 'changed' });
+});
 
 const playersResponse = ref<Bond100PlayersResponse | null>(null);
 const isPlayersLoading = ref(false);
@@ -254,6 +271,7 @@ async function loadSummary() {
 let entriesToken = 0;
 
 async function openEntries(student: StudentProps) {
+  track({ name: 'feature_opened', feature: 'hall_entries', action: 'opened' });
   const token = ++entriesToken;
   selectedStudent.value = student;
   selectedEntries.value = null;
@@ -335,6 +353,10 @@ async function exportWall() {
       backgroundColor: '#ffffff', // always a clean white sheet, theme-independent
       fileName: `bond100-hall-${date}.png`,
     });
+    track({ name: 'export_completed', feature: 'hall_export', action: 'exported' });
+  } catch (error) {
+    track({ name: 'workflow_failed', feature: 'hall_export', action: 'exported' });
+    throw error;
   } finally {
     creditClone.remove();
     wrap.style.removeProperty('--background-primary');
@@ -343,6 +365,11 @@ async function exportWall() {
     wrap.style.maxWidth = prev.maxWidth;
     if (wall) wall.style.gridTemplateColumns = prev.cols;
   }
+}
+
+function openSubmission(): void {
+  showSubmit.value = true;
+  track({ name: 'feature_opened', feature: 'hall_submission', action: 'opened' });
 }
 
 onMounted(loadSummary);
@@ -391,7 +418,7 @@ onMounted(loadSummary);
           />
         </label>
 
-        <button type="button" class="bond100-submit-btn" @click="showSubmit = true">
+        <button type="button" class="bond100-submit-btn" @click="openSubmission">
           + {{ $t('bond100.submit') }}
         </button>
 

@@ -24,6 +24,7 @@ import {
   MAX_SKILL_LEVEL,
   MAX_POTENTIAL_LEVEL,
 } from '@/lib/constants/gameConstants';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 type OwnershipFilter = 'all' | 'owned' | 'unowned';
 
@@ -61,6 +62,7 @@ type BulkFieldValues = {
 
 // --- Setup ---
 const { bulkSetOwnership: applyOwnershipBulk, submitBulkPatch } = useBulkStudentModify();
+const { track } = useAnalytics();
 
 const isSubmitting = ref(false);
 const selectedStudentIds = ref<number[]>([]);
@@ -335,6 +337,7 @@ async function bulkSetOwnership(owned: boolean) {
     const updates = await applyOwnershipBulk(ids, owned, allFormData.value);
     // Reflect in local allFormData so ownership filter updates immediately
     Object.assign(allFormData.value, updates);
+    track({ name: 'workflow_completed', feature: 'bulk_modify', action: 'applied' });
   } catch (error) {
     // The schaledb image cache can fill the origin's storage budget, after
     // which even tiny IndexedDB writes throw QuotaExceededError. Free that
@@ -343,6 +346,7 @@ async function bulkSetOwnership(owned: boolean) {
       try {
         const updates = await applyOwnershipBulk(ids, owned, allFormData.value);
         Object.assign(allFormData.value, updates);
+        track({ name: 'workflow_completed', feature: 'bulk_modify', action: 'applied' });
         return;
       } catch (retryError) {
         console.error('Failed to bulk-update ownership after freeing storage:', retryError);
@@ -357,6 +361,7 @@ async function bulkSetOwnership(owned: boolean) {
           'other site data for this browser, then reload and try again.',
       );
     }
+    track({ name: 'workflow_failed', feature: 'bulk_modify', action: 'applied' });
   } finally {
     isSubmitting.value = false;
   }
@@ -378,9 +383,11 @@ async function submitBulkModify() {
 
   try {
     await submitBulkPatch(props.students, selectedStudentIds.value, patch);
+    track({ name: 'workflow_completed', feature: 'bulk_modify', action: 'applied' });
     emit('close');
   } catch (error) {
     console.error('Failed to apply bulk student form update:', error);
+    track({ name: 'workflow_failed', feature: 'bulk_modify', action: 'applied' });
   } finally {
     isSubmitting.value = false;
   }

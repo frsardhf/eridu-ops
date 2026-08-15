@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useDeckBuilder } from '@/lib/hooks/useDeckBuilder';
 import { useDragReorder } from '@/composables/useDragReorder';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import StudentCard from '@/components/students/StudentCard.vue';
 import type { StudentProps } from '@/types/student';
 import { useImageExport } from '@/composables/useImageExport';
@@ -28,6 +29,7 @@ const {
   copyTeamToPreset,
   reorderTeam,
 } = useDeckBuilder();
+const { track } = useAnalytics();
 onMounted(() => initDecks());
 
 // --- State ---
@@ -165,6 +167,10 @@ async function exportDeckImage() {
   el.style.maxHeight = 'none';
   try {
     await captureToPng(el, { scale: 2, backgroundColor: '#0d1117', output: 'open' });
+    track({ name: 'export_completed', feature: 'deck_builder', action: 'exported' });
+  } catch (error) {
+    track({ name: 'workflow_failed', feature: 'deck_builder', action: 'exported' });
+    throw error;
   } finally {
     el.style.overflow = prev.overflow;
     el.style.height = prev.height;

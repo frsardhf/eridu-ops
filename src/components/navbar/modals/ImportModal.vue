@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { importLocalStorageData, importFromOtherSite } from '@/lib/services/importExportService';
 import { $t } from '@/locales';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const emit = defineEmits<{
   close: [];
@@ -14,6 +15,7 @@ const showStatus = ref(false);
 const isLoading = ref(false);
 const importText = ref('');
 const showTextInput = ref(false);
+const { track } = useAnalytics();
 
 function handleDragOver(event: DragEvent) {
   event.preventDefault();
@@ -58,6 +60,7 @@ async function handleFiles(files: FileList) {
 
     if (success) {
       importStatus.value = $t('importSuccessful');
+      track({ name: 'workflow_completed', feature: 'data_transfer', action: 'imported' });
       emit('import-success');
 
       // Reload page after short delay
@@ -65,10 +68,12 @@ async function handleFiles(files: FileList) {
         window.location.reload();
       }, 1500);
     } else {
+      track({ name: 'workflow_failed', feature: 'data_transfer', action: 'imported' });
       showImportError($t('importFailed'));
     }
   } catch (error) {
     console.error('Error importing data:', error);
+    track({ name: 'workflow_failed', feature: 'data_transfer', action: 'imported' });
     showImportError($t('importFileFormatError'));
   } finally {
     isLoading.value = false;
@@ -90,6 +95,7 @@ async function handleTextImport() {
 
     if (success) {
       importStatus.value = $t('importSuccessful');
+      track({ name: 'workflow_completed', feature: 'data_transfer', action: 'imported' });
       emit('import-success');
 
       // Reload page after short delay
@@ -97,10 +103,12 @@ async function handleTextImport() {
         window.location.reload();
       }, 1500);
     } else {
+      track({ name: 'workflow_failed', feature: 'data_transfer', action: 'imported' });
       showImportError($t('importFailed'));
     }
   } catch (error) {
     console.error('Error importing data:', error);
+    track({ name: 'workflow_failed', feature: 'data_transfer', action: 'imported' });
     showImportError($t('importFileFormatError'));
   } finally {
     isLoading.value = false;

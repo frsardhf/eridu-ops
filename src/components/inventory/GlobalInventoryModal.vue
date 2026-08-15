@@ -5,6 +5,7 @@ import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
 import ResourceGrid from './ResourceGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
+import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
 const props = withDefaults(
   defineProps<{
@@ -18,6 +19,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
+const { track } = useAnalytics();
 
 // Modal mounts only when visible (v-if), so isVisible is always true here.
 const { itemFormData, handleItemInput, loadItems } = useStudentItems({ isVisible: true });
@@ -109,6 +111,16 @@ const toggleSummaryMode = () => {
   contentDirection.value = nextIndex >= previousIndex ? 'forward' : 'backward';
   summaryMode.value = next;
 };
+
+function updateItem(id: string, event: Event): void {
+  handleItemInput(id, event);
+  track({ name: 'plan_action', feature: 'inventory', action: 'adjusted' });
+}
+
+function updateEquipment(id: string, event: Event): void {
+  handleEquipmentInput(id, event);
+  track({ name: 'plan_action', feature: 'inventory', action: 'adjusted' });
+}
 </script>
 
 <template>
@@ -252,14 +264,14 @@ const toggleSummaryMode = () => {
               v-if="!summaryMode && activeTab === 'items'"
               variant="items"
               :form-data="itemFormData"
-              @update="handleItemInput"
+              @update="updateItem"
             />
 
             <ResourceGrid
               v-else-if="!summaryMode && activeTab === 'equipment'"
               variant="equipment"
               :form-data="equipmentFormData"
-              @update="handleEquipmentInput"
+              @update="updateEquipment"
             />
 
             <ResourceSummary
