@@ -51,8 +51,8 @@ export async function onRequestGet(context) {
     SELECT
       SUM(_sample_interval * double1) AS events,
       COUNT(DISTINCT index1) AS sessions,
-      SUM(if(blob1 = 'workflow_completed', _sample_interval * double1, 0)) AS completed,
-      SUM(if(blob1 = 'workflow_failed', _sample_interval * double1, 0)) AS failed
+      SUM(if(blob1 = 'workflow_completed', _sample_interval * double1, 0.0)) AS completed,
+      SUM(if(blob1 = 'workflow_failed', _sample_interval * double1, 0.0)) AS failed
     FROM ${dataset}
     WHERE ${period}
   `;
