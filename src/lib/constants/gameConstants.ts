@@ -4,6 +4,7 @@ export const MAX_POTENTIAL_LEVEL = 25;
 
 // Bond
 export const MIN_BOND_LEVEL = 1;
+export const BOND_MILESTONE_LEVEL = 50;
 export const MAX_BOND_LEVEL = 100;
 
 // Cafe tap bond EXP (fixed per-tap, capped at 8 invites/day)

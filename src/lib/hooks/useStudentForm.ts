@@ -31,7 +31,12 @@ import { updateGearsData, getAllGearsData } from '../stores/gearsStore';
 import { calculateAllMaterials } from '../utils/upgradeMaterialUtils';
 import { calculateAllGears, getMaxTierForTypeSync } from '../utils/gearMaterialUtils';
 import { MAX_POTENTIAL_LEVEL } from '../utils/upgradeUtils';
-import { MAX_BOND_LEVEL, MAX_GRADE, MAX_EXCLUSIVE_GEAR_LEVEL } from '../constants/gameConstants';
+import {
+  BOND_MILESTONE_LEVEL,
+  MAX_BOND_LEVEL,
+  MAX_GRADE,
+  MAX_EXCLUSIVE_GEAR_LEVEL,
+} from '../constants/gameConstants';
 import { calculateGiftStackExp, computeCafeDays, computeCafeExp } from '../utils/bondExpUtils';
 import { getAllItemsFromCache, getResourceDataByIdSync } from '../stores/resourceCacheStore';
 import {
@@ -339,28 +344,35 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     () => giftsExp.value + boxesExp.value + cafeExp.value + bonusExp.value,
   );
 
-  const bond100TargetExp = bondXpTable[MAX_BOND_LEVEL - 1] ?? 0;
+  const bondGoalLevel = computed(() =>
+    bondDetailData.value.currentBond < BOND_MILESTONE_LEVEL ? BOND_MILESTONE_LEVEL : MAX_BOND_LEVEL,
+  );
+  const bondGoalTargetExp = computed(() => bondXpTable[bondGoalLevel.value - 1] ?? 0);
   const currentBondCumulativeExp = computed(
     () => bondXpTable[bondDetailData.value.currentBond - 1] ?? 0,
   );
   const projectedBondCumulativeExp = computed(() =>
-    Math.min(bond100TargetExp, currentBondCumulativeExp.value + totalCumulativeExp.value),
+    Math.min(bondGoalTargetExp.value, currentBondCumulativeExp.value + totalCumulativeExp.value),
   );
-  const currentBond100Percent = computed(() =>
-    bond100TargetExp > 0 ? (currentBondCumulativeExp.value / bond100TargetExp) * 100 : 0,
+  const currentBondGoalPercent = computed(() =>
+    bondGoalTargetExp.value > 0
+      ? (currentBondCumulativeExp.value / bondGoalTargetExp.value) * 100
+      : 0,
   );
-  const projectedBond100Percent = computed(() =>
-    bond100TargetExp > 0 ? (projectedBondCumulativeExp.value / bond100TargetExp) * 100 : 0,
+  const projectedBondGoalPercent = computed(() =>
+    bondGoalTargetExp.value > 0
+      ? (projectedBondCumulativeExp.value / bondGoalTargetExp.value) * 100
+      : 0,
   );
 
   const newBondLevel = computed(() => {
-    if (bondDetailData.value.currentBond >= 100) return 100;
+    if (bondDetailData.value.currentBond >= MAX_BOND_LEVEL) return MAX_BOND_LEVEL;
     if (totalCumulativeExp.value <= 0) return bondDetailData.value.currentBond;
 
     const totalXp = currentBondCumulativeExp.value + totalCumulativeExp.value;
 
     let newLevel = bondDetailData.value.currentBond;
-    for (let i = bondDetailData.value.currentBond; i < 100; i++) {
+    for (let i = bondDetailData.value.currentBond; i < MAX_BOND_LEVEL; i++) {
       if (totalXp >= bondXpTable[i]) newLevel = i + 1;
       else break;
     }
@@ -839,8 +851,9 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     cafeExp,
     bonusExp,
     totalCumulativeExp,
-    currentBond100Percent,
-    projectedBond100Percent,
+    bondGoalLevel,
+    currentBondGoalPercent,
+    projectedBondGoalPercent,
     newBondLevel,
     remainingXp,
 

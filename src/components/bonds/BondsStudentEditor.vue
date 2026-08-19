@@ -44,8 +44,9 @@ const {
   currentBond,
   newBondLevel,
   totalCumulativeExp,
-  currentBond100Percent,
-  projectedBond100Percent,
+  bondGoalLevel,
+  currentBondGoalPercent,
+  projectedBondGoalPercent,
   remainingXp,
   giftsExp,
   boxesExp,
@@ -233,8 +234,9 @@ function returnToStudentPage() {
           :new-bond-level="newBondLevel"
           :remaining-xp="remainingXp"
           :total-exp="totalCumulativeExp"
-          :bond100-current-percent="currentBond100Percent"
-          :bond100-projected-percent="projectedBond100Percent"
+          :bond-goal-level="bondGoalLevel"
+          :bond-goal-current-percent="currentBondGoalPercent"
+          :bond-goal-projected-percent="projectedBondGoalPercent"
           bond-progress
           @update-bond="onBondInput"
         />

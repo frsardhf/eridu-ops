@@ -12,7 +12,11 @@ import {
   getRoleIconUrl,
   getSchoolIconUrl,
 } from '@/lib/utils/iconUtils';
-import { MIN_BOND_LEVEL, MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
+import {
+  BOND_MILESTONE_LEVEL,
+  MIN_BOND_LEVEL,
+  MAX_BOND_LEVEL,
+} from '@/lib/constants/gameConstants';
 import { StudentProps } from '@/types/student';
 import type { CharacterLevels } from '@/types/upgrade';
 import '@/styles/tooltip.css';
@@ -34,8 +38,9 @@ const props = defineProps<{
   bondProgress?: boolean;
   remainingXp?: number;
   totalExp?: number;
-  bond100CurrentPercent?: number;
-  bond100ProjectedPercent?: number;
+  bondGoalLevel?: number;
+  bondGoalCurrentPercent?: number;
+  bondGoalProjectedPercent?: number;
   /** Suppresses the wrapping card chrome (BondsPage embeds inline). */
   flat?: boolean;
   /**
@@ -75,18 +80,20 @@ const { showLevelArrow } = useStudentLevels(
 );
 
 const showBondArrow = computed(() => props.currentBond !== effectiveNewBondLevel.value);
-const currentBond100Percent = computed(() =>
-  Math.min(100, Math.max(0, props.bond100CurrentPercent ?? 0)),
+const bondGoalLevel = computed(() => props.bondGoalLevel ?? MAX_BOND_LEVEL);
+const isBondMilestoneGoal = computed(() => bondGoalLevel.value === BOND_MILESTONE_LEVEL);
+const currentBondGoalPercent = computed(() =>
+  Math.min(100, Math.max(0, props.bondGoalCurrentPercent ?? 0)),
 );
-const projectedBond100Percent = computed(() =>
-  Math.min(100, Math.max(currentBond100Percent.value, props.bond100ProjectedPercent ?? 0)),
+const projectedBondGoalPercent = computed(() =>
+  Math.min(100, Math.max(currentBondGoalPercent.value, props.bondGoalProjectedPercent ?? 0)),
 );
-const plannedBond100Percent = computed(
-  () => projectedBond100Percent.value - currentBond100Percent.value,
+const plannedBondGoalPercent = computed(
+  () => projectedBondGoalPercent.value - currentBondGoalPercent.value,
 );
 
 const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
-  useTooltip<'bond100'>();
+  useTooltip<'bondGoal'>();
 
 // Inline bond editor: only used when bondProgress is true (BondsPage).
 // Inert in the modal's level / navigate modes.
@@ -104,8 +111,8 @@ const {
 );
 
 const levelPillClass = computed(() => ({
-  maxed50: props.currentBond >= 50 && props.currentBond < 100,
-  maxed100: props.currentBond >= 100,
+  maxed50: props.currentBond >= BOND_MILESTONE_LEVEL && props.currentBond < MAX_BOND_LEVEL,
+  maxed100: props.currentBond >= MAX_BOND_LEVEL,
 }));
 
 const styleModeLabel = computed(() => {
@@ -120,7 +127,7 @@ const styleModeLabel = computed(() => {
   return props.activeStyleId === 2 ? 'II' : 'I';
 });
 
-const isBondMaxed = computed(() => props.currentBond >= 100);
+const isBondMaxed = computed(() => props.currentBond >= MAX_BOND_LEVEL);
 const isBondInteractive = computed(
   () => !!props.bondProgress || (!!props.enableBondNavigate && !isBondMaxed.value),
 );
@@ -262,45 +269,50 @@ function onBondInlineClick() {
 
           <div
             class="bond-goal-progress"
-            :class="{ 'bond-goal-progress--complete': isBondMaxed }"
-            @mouseenter="showTooltip($event, 'bond100')"
+            :class="{
+              'bond-goal-progress--milestone': isBondMilestoneGoal,
+              'bond-goal-progress--complete': isBondMaxed,
+            }"
+            @mouseenter="showTooltip($event, 'bondGoal')"
             @mouseleave="hideTooltip()"
           >
             <div class="bond-goal-progress__heading">
-              <span class="bond-goal-progress__label">{{ $t('bond100Goal') }}</span>
+              <span class="bond-goal-progress__label">
+                {{ $t('bondGoal', { level: bondGoalLevel }) }}
+              </span>
               <span class="bond-goal-progress__value">
-                {{ Math.round(projectedBond100Percent) }}%
+                {{ Math.round(projectedBondGoalPercent) }}%
               </span>
             </div>
             <div
               class="bond-goal-progress__track"
               role="progressbar"
-              :aria-label="$t('bond100Progress')"
+              :aria-label="$t('bondGoalProgress', { level: bondGoalLevel })"
               aria-valuemin="0"
               aria-valuemax="100"
-              :aria-valuenow="Math.round(projectedBond100Percent)"
+              :aria-valuenow="Math.round(projectedBondGoalPercent)"
             >
               <span
                 class="bond-goal-progress__current"
-                :style="{ width: `${currentBond100Percent}%` }"
+                :style="{ width: `${currentBondGoalPercent}%` }"
               ></span>
               <span
                 class="bond-goal-progress__planned"
                 :style="{
-                  left: `${currentBond100Percent}%`,
-                  width: `${plannedBond100Percent}%`,
+                  left: `${currentBondGoalPercent}%`,
+                  width: `${plannedBondGoalPercent}%`,
                 }"
               ></span>
             </div>
           </div>
 
           <div
-            v-if="activeTooltip === 'bond100'"
+            v-if="activeTooltip === 'bondGoal'"
             ref="tooltipRef"
             class="modal-tooltip"
             :style="tooltipStyle"
           >
-            {{ $t('bond100ProgressHint') }}
+            {{ $t('bondGoalProgressHint', { level: bondGoalLevel }) }}
           </div>
         </template>
       </div>
@@ -718,12 +730,19 @@ function onBondInlineClick() {
 }
 
 .bond-goal-progress {
+  --bond-goal-color: var(--color-bond-100);
+  --bond-goal-accent: var(--color-bond-100-accent);
   display: grid;
   gap: 4px;
   flex: 1 1 210px;
   min-width: 210px;
   max-width: 320px;
   margin-left: auto;
+}
+
+.bond-goal-progress--milestone {
+  --bond-goal-color: var(--color-grade-gold);
+  --bond-goal-accent: color-mix(in srgb, var(--color-grade-gold) 72%, var(--background-primary));
 }
 
 .bond-goal-progress__heading {
@@ -735,7 +754,7 @@ function onBondInlineClick() {
 }
 
 .bond-goal-progress__label {
-  color: var(--color-bond-100);
+  color: var(--bond-goal-color);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -765,12 +784,12 @@ function onBondInlineClick() {
 
 .bond-goal-progress__current {
   left: 0;
-  background: linear-gradient(90deg, var(--color-bond-100), var(--color-bond-100-accent));
+  background: linear-gradient(90deg, var(--bond-goal-color), var(--bond-goal-accent));
   opacity: 0.35;
 }
 
 .bond-goal-progress__planned {
-  background: linear-gradient(90deg, var(--color-bond-100), var(--color-bond-100-accent));
+  background: linear-gradient(90deg, var(--bond-goal-color), var(--bond-goal-accent));
 }
 
 .bond-goal-progress--complete .bond-goal-progress__current {
