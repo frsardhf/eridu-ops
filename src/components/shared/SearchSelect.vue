@@ -85,11 +85,26 @@ function toggle(event: Event) {
     open.value = true;
     query.value = '';
     highlighted.value = 0;
-    nextTick(() => inputEl.value?.focus());
   } else {
     open.value = false;
   }
 }
+
+// Match SelectMenu's long-list behavior: opening starts at the current selection instead of
+// the top. Keep the keyboard highlight on the same row and scroll only the list container.
+watch(open, (isOpen) => {
+  if (!isOpen) return;
+  nextTick(() => {
+    inputEl.value?.focus();
+    const selectedIndex = filtered.value.findIndex((option) => option.value === props.modelValue);
+    highlighted.value = selectedIndex >= 0 ? selectedIndex : 0;
+
+    const list = listEl.value;
+    const active = list?.querySelector<HTMLElement>('.search-select-option.active');
+    if (!list || !active) return;
+    list.scrollTop = active.offsetTop - list.clientHeight / 2 + active.clientHeight / 2;
+  });
+});
 
 function pick(value: T | null) {
   emit('update:modelValue', value);
