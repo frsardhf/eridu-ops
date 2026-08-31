@@ -7,6 +7,7 @@ import {
   type AvailabilityFilter,
 } from '../services/bulkStudentFormService';
 import { batchSetStudentData } from '../stores/studentStore';
+import { preloadAllStudentsData } from '../utils/materialUtils';
 import type { FormRecord } from '../db/database';
 import type { StudentProps } from '@/types/student';
 
@@ -38,6 +39,12 @@ export function useBulkStudentModify() {
     const updatedRecords = await applyBulkStudentFormPatch(students, selectedIds, patch);
     if (Object.keys(updatedRecords).length > 0) {
       batchSetStudentData(updatedRecords);
+
+      const updatedStudents: Record<string, StudentProps> = {};
+      for (const student of students) {
+        if (student.Id in updatedRecords) updatedStudents[student.Id] = student;
+      }
+      preloadAllStudentsData(updatedStudents, updatedRecords);
     }
     return updatedRecords;
   }

@@ -2,8 +2,6 @@ import {
   Material,
   MaterialType,
   MaterialWithRemaining,
-  SkillLevels,
-  PotentialLevels,
   DEFAULT_SKILL_LEVELS,
   DEFAULT_POTENTIAL_LEVELS,
   DEFAULT_CHARACTER_LEVELS,
@@ -107,67 +105,26 @@ export function preloadAllStudentsData(
       const gradeInfos = formData.gradeInfos ?? {};
       const exclusiveGearLevel = formData.exclusiveGearLevel ?? {};
 
-      const hasAnyUpgrades =
-        hasTargetUpgrades(characterLevels) ||
-        hasTargetUpgrades(skillLevels) ||
-        hasTargetUpgrades(potentialLevels) ||
-        hasTargetUpgrades(equipmentLevels) ||
-        hasTargetUpgrades(gradeLevels) ||
-        hasTargetUpgrades(exclusiveGearLevel);
+      const materials = calculateAllMaterials(
+        student,
+        characterLevels,
+        skillLevels,
+        potentialLevels,
+      );
+      updateMaterialsData(studentId, materials);
 
-      if (hasAnyUpgrades) {
-        const materials = calculateAllMaterials(
-          student,
-          characterLevels,
-          skillLevels,
-          potentialLevels,
-        );
-
-        if (materials.length > 0) {
-          updateMaterialsData(studentId, materials);
-        }
-
-        const gears = calculateAllGears(
-          student,
-          equipmentLevels,
-          gradeLevels,
-          gradeInfos,
-          exclusiveGearLevel,
-        );
-
-        if (gears.length > 0) {
-          updateGearsData(studentId, gears);
-        }
-      }
+      const gears = calculateAllGears(
+        student,
+        equipmentLevels,
+        gradeLevels,
+        gradeInfos,
+        exclusiveGearLevel,
+      );
+      updateGearsData(studentId, gears);
     });
   } catch (error) {
     console.error('Error preloading students data:', error);
   }
-}
-
-/**
- * Helper function to check if a student has any target upgrades
- */
-function hasTargetUpgrades(
-  levels:
-    | { current?: number; target?: number }
-    | { [key: string]: { current?: number; target?: number } }
-    | SkillLevels
-    | PotentialLevels,
-): boolean {
-  // Handle single level object (like CharacterLevels or ExclusiveGearLevel)
-  if ('current' in levels && 'target' in levels) {
-    const current = (levels as { current?: number; target?: number }).current ?? 0;
-    const target = (levels as { current?: number; target?: number }).target ?? 0;
-    return target > current;
-  }
-  // Handle record of levels (like SkillLevels, PotentialLevels, EquipmentLevels)
-  return Object.values(levels).some((level) => {
-    if (level && typeof level === 'object' && 'current' in level && 'target' in level) {
-      return (level.target ?? 0) > (level.current ?? 0);
-    }
-    return false;
-  });
 }
 
 /** Base number formatter: K/M suffixes above 10k/1M, with an optional prefix. */
