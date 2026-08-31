@@ -1,4 +1,4 @@
-import { ref, watch, onUnmounted, type Ref, type WatchSource } from 'vue';
+import { nextTick, ref, watch, onUnmounted, type Ref, type WatchSource } from 'vue';
 
 export type RefMap = Record<string, Ref<unknown>>;
 type Defaults<R extends RefMap> = { [K in keyof R]: R[K] extends Ref<infer V> ? V : never };
@@ -28,6 +28,7 @@ export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts:
   let pendingSave: Promise<void> | null = null;
   let loadToken = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let lastSaveFailed = false;
 
   /**
    * Flush immediately: cancel any pending debounce, await prior save,
@@ -40,13 +41,32 @@ export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts:
       timer = null;
     }
     if (pendingSave) await pendingSave;
-    pendingSave = (async () => {
+    const currentSave = (async () => {
       const saved = await opts.saveFn();
       if (saved != null) opts.onSaved?.(saved);
       await opts.afterFlush?.();
     })();
-    await pendingSave;
-    pendingSave = null;
+    pendingSave = currentSave;
+    try {
+      await currentSave;
+      lastSaveFailed = false;
+    } catch (error) {
+      lastSaveFailed = true;
+      throw error;
+    } finally {
+      if (pendingSave === currentSave) pendingSave = null;
+    }
+  }
+
+  /** Flushes only when a watched change is waiting or currently saving. */
+  async function flushPendingNow(): Promise<void> {
+    await nextTick();
+    if (timer) {
+      await flushNow();
+      return;
+    }
+    if (pendingSave) await pendingSave;
+    else if (lastSaveFailed) await flushNow();
   }
 
   watch(
@@ -60,7 +80,7 @@ export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts:
         flushNow().catch((error) => console.error('Debounced form save failed:', error));
       }, opts.debounceMs ?? 250);
     },
-    { deep: true },
+    { deep: true, flush: 'sync' },
   );
 
   /**
@@ -98,5 +118,5 @@ export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts:
     if (timer) clearTimeout(timer);
   });
 
-  return { isLoading, loadNow, flushNow };
+  return { isLoading, loadNow, flushNow, flushPendingNow };
 }

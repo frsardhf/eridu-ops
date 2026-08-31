@@ -150,7 +150,11 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   };
 
   // --- Persistence (single debounced flush, single load, single token guard) ---
-  const { loadNow: loadFromIndexedDB, flushNow: saveToIndexedDB } = useDebouncedFormPersistence({
+  const {
+    loadNow: loadFromIndexedDB,
+    flushNow: saveToIndexedDB,
+    flushPendingNow: savePendingChanges,
+  } = useDebouncedFormPersistence({
     isVisible: opts.isVisible ?? (() => true),
     refs: {
       characterLevels,
@@ -168,8 +172,8 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     },
     defaults: FORM_DEFAULTS,
     loadFn: (staged) => loadFormDataToRefs(student().Id, staged, FORM_DEFAULTS),
-    saveFn: () =>
-      saveFormData(student().Id, {
+    saveFn: async () => {
+      const saved = await saveFormData(student().Id, {
         characterLevels: characterLevels.value,
         skillLevels: skillLevels.value,
         potentialLevels: potentialLevels.value,
@@ -182,7 +186,10 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
         nonFavorGiftsMap: nonFavorGiftsMap.value,
         bondDetailData: bondDetailData.value,
         otherExpData: otherExpData.value,
-      }),
+      });
+      if (!saved) throw new Error('Failed to save student changes.');
+      return saved;
+    },
     onSaved: (saved) => setStudentDataDirect(student().Id, saved),
     afterLoad: () => {
       // Clear undo history so loaded state isn't undoable.
@@ -901,7 +908,7 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
 
     // --- Lifecycle ---
     loadFromIndexedDB,
-    saveBeforeClose: saveToIndexedDB,
+    saveBeforeClose: savePendingChanges,
     closeModal,
   };
 }

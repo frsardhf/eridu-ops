@@ -65,6 +65,7 @@ const step = ref<Step>('type');
 const inventoryType = ref<InventoryType>('items');
 const isDragging = ref(false);
 const isLoading = ref(false);
+const isApplying = ref(false);
 const errorMessage = ref('');
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
@@ -371,6 +372,10 @@ function goReupload() {
 }
 
 async function applyResults() {
+  if (isApplying.value) return;
+
+  isApplying.value = true;
+  errorMessage.value = '';
   const quantityMap: Record<string, number> = {};
   parsedResults.value.forEach((r) => {
     const pk = posKey(r);
@@ -381,7 +386,13 @@ async function applyResults() {
   const appliedCount = Object.keys(quantityMap).length;
 
   if (inventoryType.value === 'items') {
-    await saveItemsInventory(quantityMap);
+    const saved = await saveItemsInventory(quantityMap);
+    if (!saved) {
+      errorMessage.value = $t('saveChangesFailed');
+      isApplying.value = false;
+      track({ name: 'workflow_failed', feature: 'inventory_scanner', action: 'applied' });
+      return;
+    }
     const cache = getAllItemsFromCache();
     for (const [id, item] of Object.entries(cache)) {
       if (quantityMap[id] !== undefined) {
@@ -392,7 +403,13 @@ async function applyResults() {
       }
     }
   } else {
-    await saveEquipmentInventory(quantityMap);
+    const saved = await saveEquipmentInventory(quantityMap);
+    if (!saved) {
+      errorMessage.value = $t('saveChangesFailed');
+      isApplying.value = false;
+      track({ name: 'workflow_failed', feature: 'inventory_scanner', action: 'applied' });
+      return;
+    }
     const cache = getAllEquipmentFromCache();
     for (const [id, item] of Object.entries(cache)) {
       if (quantityMap[id] !== undefined) {
@@ -419,6 +436,7 @@ async function applyResults() {
   step.value = 'upload';
 
   lastAppliedCount.value = appliedCount;
+  isApplying.value = false;
   track({ name: 'workflow_completed', feature: 'inventory_scanner', action: 'applied' });
   if (appliedTimer) clearTimeout(appliedTimer);
   appliedTimer = setTimeout(() => {
@@ -962,9 +980,17 @@ useDocumentListener('paste', onPaste);
             </div>
           </div>
 
+          <p v-if="errorMessage" class="review-save-error" role="alert">
+            {{ errorMessage }}
+          </p>
+
           <div class="review-actions">
             <button class="reupload-btn" @click="goReupload">{{ $t('reupload') }}</button>
-            <button class="apply-btn" :disabled="parsedResults.length === 0" @click="applyResults">
+            <button
+              class="apply-btn"
+              :disabled="parsedResults.length === 0 || isApplying"
+              @click="applyResults"
+            >
               {{ $t('applyInventory') }}
             </button>
           </div>
@@ -1655,6 +1681,13 @@ useDocumentListener('paste', onPaste);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.review-save-error {
+  margin: 0;
+  color: var(--color-negative);
+  font-size: 0.85rem;
+  text-align: right;
 }
 
 .reupload-btn {

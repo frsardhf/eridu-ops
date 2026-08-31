@@ -14,7 +14,7 @@ export function useStudentItems(props: { isVisible?: boolean }) {
     itemFormData.value[id] = value;
   }
 
-  const { loadNow: loadItems } = useDebouncedFormPersistence({
+  const { loadNow: loadItems, flushPendingNow: flushPendingItems } = useDebouncedFormPersistence({
     isVisible: () => props.isVisible,
     refs: { itemFormData },
     defaults: { itemFormData: {} as Record<string, number> },
@@ -23,7 +23,8 @@ export function useStudentItems(props: { isVisible?: boolean }) {
       staged.itemFormData.value = { ...inventories };
     },
     saveFn: async () => {
-      await saveItemsInventory(itemFormData.value);
+      const saved = await saveItemsInventory(itemFormData.value);
+      if (!saved) throw new Error('Failed to save item inventory.');
 
       // Sync the in-memory cache so gift-auto-fill and leftover calculations
       // see current quantities without waiting for a full reload.
@@ -46,5 +47,6 @@ export function useStudentItems(props: { isVisible?: boolean }) {
     itemFormData,
     handleItemInput,
     loadItems,
+    flushPendingItems,
   };
 }

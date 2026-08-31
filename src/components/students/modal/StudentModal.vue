@@ -101,6 +101,7 @@ const activeTabTransitionKey = computed(() => activeTab.value);
 
 const isInventoryOpen = ref(false);
 const showApplyModal = ref(false);
+const isPersistingNavigation = ref(false);
 
 const displayedStudent = ref<StudentProps | null>(null);
 
@@ -209,9 +210,9 @@ const {
   isVisible: () => !!props.isVisible,
 });
 
-const { itemFormData, handleItemInput, loadItems } = useStudentItems(props);
+const { itemFormData, loadItems, flushPendingItems } = useStudentItems(props);
 
-const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment(props);
+const { equipmentFormData, loadEquipments, flushPendingEquipments } = useStudentEquipment(props);
 
 // --- Navigation & handlers ---
 // Image preloading for neighbor students
@@ -222,33 +223,54 @@ function preloadStudentImages(s: StudentProps) {
   }
 }
 
-// Navigation
-function navigateToPrevious() {
+async function flushPendingStudentChanges(): Promise<boolean> {
+  if (isPersistingNavigation.value) return false;
+
+  isPersistingNavigation.value = true;
+  try {
+    await Promise.all([saveBeforeClose(), flushPendingItems(), flushPendingEquipments()]);
+    return true;
+  } catch (error) {
+    console.error('Failed to save student changes before navigation:', error);
+    window.alert($t('saveChangesFailed'));
+    return false;
+  } finally {
+    isPersistingNavigation.value = false;
+  }
+}
+
+async function navigateToStudent(student: StudentProps): Promise<void> {
+  if (!(await flushPendingStudentChanges())) return;
+  emit('navigate', student);
+}
+
+function navigateToPrevious(): void {
   if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
   const currentIndex = props.studentsArray.findIndex((s) => s.Id === props.student?.Id);
   const previousIndex = currentIndex > 0 ? currentIndex - 1 : props.studentsArray.length - 1;
-  emit('navigate', props.studentsArray[previousIndex]);
+  void navigateToStudent(props.studentsArray[previousIndex]);
 }
 
-function navigateToNext() {
+function navigateToNext(): void {
   if (!props.studentsArray || !props.student || props.studentsArray.length <= 1) return;
   const currentIndex = props.studentsArray.findIndex((s) => s.Id === props.student?.Id);
   const nextIndex = currentIndex < props.studentsArray.length - 1 ? currentIndex + 1 : 0;
-  emit('navigate', props.studentsArray[nextIndex]);
+  void navigateToStudent(props.studentsArray[nextIndex]);
 }
 
 async function handleClose() {
   (document.activeElement as HTMLElement)?.blur();
-  await saveBeforeClose();
+  if (!(await flushPendingStudentChanges())) return;
   emit('close');
 }
 
 // Bond chip -> /bonds deep-link. Ensure the student is in the tracked list
 // so the focus query param actually lands on their card, then route.
 // Skip adding if bond is already maxed (mirrors BondsStudentPicker disabled state).
-function handleNavigateToBonds() {
+async function handleNavigateToBonds() {
   const id = displayedStudent.value?.Id;
   if (!id) return;
+  if (!(await flushPendingStudentChanges())) return;
   if (currentBond.value < MAX_BOND_LEVEL) addBondsTracked(id);
   emit('close');
   router.push(`/bonds?focus=${id}`);
@@ -535,6 +557,16 @@ function openInventory(): void {
   track({ name: 'feature_opened', feature: 'inventory', action: 'opened' });
 }
 
+async function handleInventoryClose(): Promise<void> {
+  isInventoryOpen.value = false;
+  try {
+    await Promise.all([loadItems(), loadEquipments()]);
+  } catch (error) {
+    console.error('Failed to refresh inventory after closing inventory modal:', error);
+    window.alert($t('saveChangesFailed'));
+  }
+}
+
 // Auto-reset to Info tab when a student becomes unowned or when unowned student is opened
 watch(isOwned, (owned) => {
   if (!owned && activeTab.value !== 'info') {
@@ -555,12 +587,8 @@ function handleKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  // If inventory modal is open, Escape closes it first
+  // The nested inventory modal owns Escape so it can flush before closing.
   if (isInventoryOpen.value) {
-    if (event.key === 'Escape') {
-      isInventoryOpen.value = false;
-      event.preventDefault();
-    }
     return;
   }
 
@@ -845,21 +873,14 @@ watch(
       v-if="studentsArray && studentsArray.length > 0"
       :students="studentsArray"
       :active-student-id="displayedStudent?.Id"
-      @select-student="(s) => emit('navigate', s)"
+      @select-student="navigateToStudent"
       @navigate-prev="navigateToPrevious"
       @navigate-next="navigateToNext"
     />
 
     <!-- Level 2: Global Inventory Modal -->
     <Transition name="inventory-modal-shell">
-      <GlobalInventoryModal
-        v-if="isInventoryOpen"
-        :resource-form-data="itemFormData"
-        :equipment-form-data="equipmentFormData"
-        @close="isInventoryOpen = false"
-        @update-resource="handleItemInput"
-        @update-equipment="handleEquipmentInput"
-      />
+      <GlobalInventoryModal v-if="isInventoryOpen" @close="handleInventoryClose" />
     </Transition>
 
     <!-- Apply Upgrade modal: combined section selection + material preview -->

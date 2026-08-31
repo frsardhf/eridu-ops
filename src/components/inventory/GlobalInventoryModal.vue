@@ -3,6 +3,7 @@ import { computed, ref, onMounted } from 'vue';
 import { $t } from '@/locales';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
+import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import ResourceGrid from './ResourceGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
@@ -22,10 +23,13 @@ const emit = defineEmits<{
 const { track } = useAnalytics();
 
 // Modal mounts only when visible (v-if), so isVisible is always true here.
-const { itemFormData, handleItemInput, loadItems } = useStudentItems({ isVisible: true });
-const { equipmentFormData, handleEquipmentInput, loadEquipments } = useStudentEquipment({
+const { itemFormData, handleItemInput, loadItems, flushPendingItems } = useStudentItems({
   isVisible: true,
 });
+const { equipmentFormData, handleEquipmentInput, loadEquipments, flushPendingEquipments } =
+  useStudentEquipment({
+    isVisible: true,
+  });
 
 onMounted(async () => {
   await Promise.all([loadItems(), loadEquipments()]);
@@ -58,6 +62,8 @@ const summaryTab = ref<SummaryTab>('materials');
 const summaryViewMode = ref<SummaryViewMode>('needed');
 const contentDirection = ref<'forward' | 'backward'>('forward');
 const viewType = ref<'aggregate' | 'per-student'>('aggregate');
+const isClosing = ref(false);
+const saveError = ref('');
 
 const contentTransitionName = computed(() =>
   contentDirection.value === 'forward' ? 'inventory-pane-forward' : 'inventory-pane-backward',
@@ -121,10 +127,33 @@ function updateEquipment(id: string, event: Event): void {
   handleEquipmentInput(id, event);
   track({ name: 'plan_action', feature: 'inventory', action: 'adjusted' });
 }
+
+async function closeModal(): Promise<void> {
+  if (isClosing.value) return;
+
+  isClosing.value = true;
+  saveError.value = '';
+  try {
+    await Promise.all([flushPendingItems(), flushPendingEquipments()]);
+    emit('close');
+  } catch (error) {
+    console.error('Failed to save inventory before closing:', error);
+    saveError.value = $t('saveChangesFailed');
+    isClosing.value = false;
+  }
+}
+
+function handleKeyDown(event: KeyboardEvent): void {
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  void closeModal();
+}
+
+useDocumentListener('keydown', handleKeyDown);
 </script>
 
 <template>
-  <div class="inventory-backdrop" @click.self="emit('close')">
+  <div class="inventory-backdrop" @click.self="closeModal">
     <div class="inventory-modal">
       <!-- Header row (above tabs) -->
       <div class="inventory-header">
@@ -171,7 +200,12 @@ function updateEquipment(id: string, event: Event): void {
             </svg>
             <span>{{ $t('summary') }}</span>
           </button>
-          <button class="inventory-close" @click="emit('close')" :title="$t('close')">
+          <button
+            class="inventory-close"
+            :disabled="isClosing"
+            @click="closeModal"
+            :title="$t('close')"
+          >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path
                 fill="currentColor"
@@ -180,6 +214,10 @@ function updateEquipment(id: string, event: Event): void {
             </svg>
           </button>
         </div>
+      </div>
+
+      <div v-if="saveError" class="inventory-save-error" role="alert">
+        {{ saveError }}
       </div>
 
       <!-- Tab bar: hidden entirely in per-student view -->
@@ -327,6 +365,15 @@ function updateEquipment(id: string, event: Event): void {
   color: var(--text-primary);
 }
 
+.inventory-save-error {
+  padding: 8px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-negative) 45%, var(--border-color));
+  background: color-mix(in srgb, var(--color-negative) 10%, var(--background-primary));
+  color: var(--color-negative);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .inventory-header-actions {
   display: inline-flex;
   align-items: center;
@@ -378,6 +425,11 @@ function updateEquipment(id: string, event: Event): void {
 .inventory-close:hover {
   background: rgba(255, 80, 80, 0.1);
   color: #ff5050;
+}
+
+.inventory-close:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .inventory-tabs {
