@@ -485,6 +485,14 @@ const en = {
   noLeftoverResources: 'No leftover resources',
   perStudentView: 'Per Student',
   aggregateView: 'Aggregate',
+  inventoryLayout: 'Inventory layout',
+  pagedLayout: 'Pages',
+  continuousLayout: 'Scroll',
+  generalMaterials: 'General materials',
+  academyMaterials: 'Academy materials',
+  materialGroups: 'Material groups',
+  general: 'General',
+  academy: 'Academy',
 
   // Equipment types and gear component
   equipmentTypes: {
@@ -1304,6 +1312,14 @@ const jp: TranslationTree = {
   noLeftoverResources: '余っている素材はありません',
   perStudentView: '生徒別',
   aggregateView: 'まとめ表示',
+  inventoryLayout: 'インベントリ表示',
+  pagedLayout: 'ページ',
+  continuousLayout: 'スクロール',
+  generalMaterials: '一般素材',
+  academyMaterials: '学園素材',
+  materialGroups: '素材グループ',
+  general: '一般',
+  academy: '学園',
 
   // Equipment types and gear component
   equipmentTypes: {
@@ -2121,6 +2137,14 @@ const kr: TranslationTree = {
   noLeftoverResources: '잉여 재료가 없습니다',
   perStudentView: '학생별',
   aggregateView: '전체',
+  inventoryLayout: '인벤토리 보기',
+  pagedLayout: '페이지',
+  continuousLayout: '스크롤',
+  generalMaterials: '일반 재료',
+  academyMaterials: '학원 재료',
+  materialGroups: '재료 그룹',
+  general: '일반',
+  academy: '학원',
 
   // Equipment types and gear component
   equipmentTypes: {

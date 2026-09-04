@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, nextTick } from 'vue';
 import { $t } from '@/locales';
 import { useStudentItems } from '@/lib/hooks/useStudentItems';
 import { useStudentEquipment } from '@/lib/hooks/useStudentEquipment';
@@ -7,6 +7,8 @@ import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import ResourceGrid from './ResourceGrid.vue';
 import ResourceSummary from './ResourceSummary.vue';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
+import { useInventoryLayout } from '@/lib/hooks/useInventoryLayout';
+import type { InventoryLayout } from '@/types/resource';
 
 const props = withDefaults(
   defineProps<{
@@ -21,6 +23,7 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 const { track } = useAnalytics();
+const { inventoryLayout, setInventoryLayout: persistInventoryLayout } = useInventoryLayout();
 
 // Modal mounts only when visible (v-if), so isVisible is always true here.
 const { itemFormData, handleItemInput, loadItems, flushPendingItems } = useStudentItems({
@@ -64,6 +67,7 @@ const contentDirection = ref<'forward' | 'backward'>('forward');
 const viewType = ref<'aggregate' | 'per-student'>('aggregate');
 const isClosing = ref(false);
 const saveError = ref('');
+const inventoryContentRef = ref<HTMLElement | null>(null);
 
 const contentTransitionName = computed(() =>
   contentDirection.value === 'forward' ? 'inventory-pane-forward' : 'inventory-pane-backward',
@@ -76,30 +80,36 @@ const contentTransitionKey = computed(() => {
     : `inventory-${activeTab.value}`;
 });
 
-function setInventoryTab(nextTab: InventoryTab) {
+async function setInventoryTab(nextTab: InventoryTab) {
   if (nextTab === activeTab.value) return;
   contentDirection.value =
     INVENTORY_TAB_ORDER[nextTab] >= INVENTORY_TAB_ORDER[activeTab.value] ? 'forward' : 'backward';
   activeTab.value = nextTab;
+  await nextTick();
+  resetInventoryScroll();
 }
 
-function setSummaryTab(nextTab: SummaryTab) {
+async function setSummaryTab(nextTab: SummaryTab) {
   if (nextTab === summaryTab.value) return;
   contentDirection.value =
     SUMMARY_TAB_ORDER[nextTab] >= SUMMARY_TAB_ORDER[summaryTab.value] ? 'forward' : 'backward';
   summaryTab.value = nextTab;
+  await nextTick();
+  resetInventoryScroll();
 }
 
-function setSummaryViewMode(nextMode: SummaryViewMode) {
+async function setSummaryViewMode(nextMode: SummaryViewMode) {
   if (nextMode === summaryViewMode.value) return;
   contentDirection.value =
     SUMMARY_MODE_ORDER[nextMode] >= SUMMARY_MODE_ORDER[summaryViewMode.value]
       ? 'forward'
       : 'backward';
   summaryViewMode.value = nextMode;
+  await nextTick();
+  resetInventoryScroll();
 }
 
-const toggleSummaryMode = () => {
+const toggleSummaryMode = async () => {
   const previousIndex = summaryMode.value ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
   const next = !summaryMode.value;
 
@@ -116,7 +126,20 @@ const toggleSummaryMode = () => {
   const nextIndex = next ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
   contentDirection.value = nextIndex >= previousIndex ? 'forward' : 'backward';
   summaryMode.value = next;
+  await nextTick();
+  resetInventoryScroll();
 };
+
+async function setInventoryLayout(layout: InventoryLayout) {
+  if (layout === inventoryLayout.value) return;
+  persistInventoryLayout(layout);
+  await nextTick();
+  resetInventoryScroll();
+}
+
+function resetInventoryScroll() {
+  if (inventoryContentRef.value) inventoryContentRef.value.scrollTop = 0;
+}
 
 function updateItem(id: string, event: Event): void {
   handleItemInput(id, event);
@@ -159,6 +182,42 @@ useDocumentListener('keydown', handleKeyDown);
       <div class="inventory-header">
         <div class="inventory-title">{{ $t('inventory') }}</div>
         <div class="inventory-header-actions">
+          <div
+            v-if="!summaryMode"
+            class="inventory-layout-segmented"
+            role="group"
+            :aria-label="$t('inventoryLayout')"
+          >
+            <button
+              type="button"
+              class="inventory-layout-btn"
+              :class="{ active: inventoryLayout === 'paged' }"
+              :title="$t('pagedLayout')"
+              :aria-pressed="inventoryLayout === 'paged'"
+              @click="setInventoryLayout('paged')"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M3 4h18v16H3V4zm2 2v12h14V6H5z" />
+              </svg>
+              <span>{{ $t('pagedLayout') }}</span>
+            </button>
+            <button
+              type="button"
+              class="inventory-layout-btn"
+              :class="{ active: inventoryLayout === 'continuous' }"
+              :title="$t('continuousLayout')"
+              :aria-pressed="inventoryLayout === 'continuous'"
+              @click="setInventoryLayout('continuous')"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M4 5h3v3H4V5zm5 0h11v3H9V5zM4 10.5h3v3H4v-3zm5 0h11v3H9v-3zM4 16h3v3H4v-3zm5 0h11v3H9v-3z"
+                />
+              </svg>
+              <span>{{ $t('continuousLayout') }}</span>
+            </button>
+          </div>
           <button
             v-if="summaryMode"
             class="inventory-view-toggle"
@@ -295,21 +354,25 @@ useDocumentListener('keydown', handleKeyDown);
       </div>
 
       <!-- Content -->
-      <div class="inventory-content">
+      <div ref="inventoryContentRef" class="inventory-content">
         <Transition :name="contentTransitionName" mode="out-in">
           <div :key="contentTransitionKey" class="inventory-tab-content inventory-pane-state">
             <ResourceGrid
               v-if="!summaryMode && activeTab === 'items'"
               variant="items"
               :form-data="itemFormData"
+              :layout="inventoryLayout"
               @update="updateItem"
+              @page-change="resetInventoryScroll"
             />
 
             <ResourceGrid
               v-else-if="!summaryMode && activeTab === 'equipment'"
               variant="equipment"
               :form-data="equipmentFormData"
+              :layout="inventoryLayout"
               @update="updateEquipment"
+              @page-change="resetInventoryScroll"
             />
 
             <ResourceSummary
@@ -378,6 +441,49 @@ useDocumentListener('keydown', handleKeyDown);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.inventory-layout-segmented {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-background);
+}
+
+.inventory-layout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.inventory-layout-btn + .inventory-layout-btn {
+  border-left: 1px solid var(--border-color);
+}
+
+.inventory-layout-btn:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.inventory-layout-btn.active {
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 14%, var(--card-background));
+}
+
+.inventory-layout-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
 }
 
 .inventory-summary-toggle,
@@ -631,12 +737,17 @@ useDocumentListener('keydown', handleKeyDown);
   }
 
   .inventory-summary-toggle span,
-  .inventory-view-toggle span {
+  .inventory-view-toggle span,
+  .inventory-layout-btn span {
     display: none;
   }
 
   .inventory-summary-toggle,
   .inventory-view-toggle {
+    padding: 6px;
+  }
+
+  .inventory-layout-btn {
     padding: 6px;
   }
 

@@ -26,6 +26,8 @@ export interface CachedResource extends ResourceProps {
   QuantityOwned: number;
 }
 
+export type InventoryLayout = 'paged' | 'continuous';
+
 export const SECRET_TECH_NOTE_ID = 9999;
 
 export const MATERIAL = {

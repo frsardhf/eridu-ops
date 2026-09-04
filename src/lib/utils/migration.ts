@@ -248,6 +248,7 @@ function consolidateSettings(): void {
       pinnedStudents,
       isPinnedMode: false,
       bondsLayout: 'tabs',
+      inventoryLayout: 'paged',
     };
 
     saveSettings(consolidatedSettings);

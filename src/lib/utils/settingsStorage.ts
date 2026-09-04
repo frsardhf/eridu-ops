@@ -4,6 +4,7 @@ import type { SortOption, SortDirection } from '../../types/header';
 import type { ThemeId } from '@/types/theme';
 import type { StudentFilters } from '@/types/filter';
 import type { CardOverlayId } from '@/types/card';
+import type { InventoryLayout } from '@/types/resource';
 import type { Language } from '../stores/localizationStore';
 import type { CraftingFodderSession } from '../../types/crafting';
 import { DEFAULT_THEME } from './themeUtils';
@@ -46,6 +47,8 @@ export interface AppSettings {
   lastSeenChangelogId?: string;
   /** Card overlays pinned to always-display (undefined = all shown by default). */
   cardOverlays?: CardOverlayId[];
+  /** Global inventory presentation: grouped pages or one continuous scroll. */
+  inventoryLayout: InventoryLayout;
 }
 
 // Default settings
@@ -59,6 +62,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pinnedStudents: [],
   isPinnedMode: false,
   bondsLayout: 'tabs',
+  inventoryLayout: 'paged',
 };
 
 // Every key we currently persist. Anything else found in the stored blob is a
@@ -82,6 +86,7 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'bond100View',
   'lastSeenChangelogId',
   'cardOverlays',
+  'inventoryLayout',
 ];
 
 /**
