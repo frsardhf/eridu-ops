@@ -26,11 +26,17 @@ export interface CachedResource extends ResourceProps {
   QuantityOwned: number;
 }
 
+export const SECRET_TECH_NOTE_ID = 9999;
+
 export const MATERIAL = {
   category: ['CharacterExpGrowth', 'Favor'],
   subcategory: ['Artifact', 'CDItem', 'BookItem'],
-  id: ['5', '23', '2000', '2001', '2002', '9999'],
+  id: ['5', '23', '2000', '2001', '2002', String(SECRET_TECH_NOTE_ID)],
 };
+
+export const SCHOOL_MATERIAL_SUBCATEGORIES = ['CDItem', 'BookItem'] as const;
+
+export const GIFT_CATEGORY = 'Favor';
 
 // Equipment inventory = the 'Exp' enhancement balls PLUS craftable gear pieces,
 // the latter selected by their RecipeCost (each value is a gear-tier credit cost).

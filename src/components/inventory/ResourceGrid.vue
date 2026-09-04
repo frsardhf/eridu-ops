@@ -2,7 +2,13 @@
 import { computed } from 'vue';
 import ResourceCard from './ResourceCard.vue';
 import { applyFilters } from '@/lib/utils/filterUtils';
-import { MATERIAL, EQUIPMENT } from '@/types/resource';
+import {
+  MATERIAL,
+  EQUIPMENT,
+  GIFT_CATEGORY,
+  SECRET_TECH_NOTE_ID,
+  SCHOOL_MATERIAL_SUBCATEGORIES,
+} from '@/types/resource';
 import { getAllItemsFromCache, getAllEquipmentFromCache } from '@/lib/stores/resourceCacheStore';
 import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import '@/styles/resourceDisplay.css';
@@ -21,11 +27,8 @@ const emit = defineEmits<{
   (e: 'update', id: string, event: Event): void;
 }>();
 
-// Items paginate as two explicit pages (89 + 88) then group the long tail into
-// one final page; equipment paginates uniformly. Behaviour preserved verbatim
-// from the original two components.
-const ITEMS_PAGE_PLAN = [89, 88];
 const EQUIPMENT_PER_PAGE = 98;
+const schoolMaterialSubcategories = new Set<string>(SCHOOL_MATERIAL_SUBCATEGORIES);
 
 const itemType = computed(() => (props.variant === 'equipment' ? 'equipment' : 'resource'));
 
@@ -52,14 +55,24 @@ const pagedResources = computed(() => {
     return pages;
   }
 
-  let start = 0;
-  for (const size of ITEMS_PAGE_PLAN) {
-    if (start >= all.length) break;
-    pages.push(all.slice(start, start + size));
-    start += size;
+  const generalMaterials: typeof all = [];
+  const schoolMaterials: typeof all = [];
+  const gifts: typeof all = [];
+
+  for (const item of all) {
+    if (item.Category === GIFT_CATEGORY) {
+      gifts.push(item);
+    } else if (
+      item.Id !== SECRET_TECH_NOTE_ID &&
+      schoolMaterialSubcategories.has(item.SubCategory ?? '')
+    ) {
+      schoolMaterials.push(item);
+    } else {
+      generalMaterials.push(item);
+    }
   }
-  if (start < all.length) pages.push(all.slice(start));
-  return pages;
+
+  return [generalMaterials, schoolMaterials, gifts].filter((page) => page.length > 0);
 });
 
 const { currentPage, totalPages, sliderStyle, setPageRef, goToPage, handleBoundaryTab } =
