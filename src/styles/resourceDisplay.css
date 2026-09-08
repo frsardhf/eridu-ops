@@ -119,11 +119,114 @@
   margin: 0;
 }
 
+/* Inventory group navigation */
+.resource-group-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  background: var(--background-primary);
+  overflow-x: auto;
+  flex: 0 0 auto;
+}
+
+.resource-group-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-background);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resource-group-tab:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.resource-group-tab.active {
+  color: var(--text-primary);
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 14%, var(--card-background));
+}
+
+.resource-group-tab:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.resource-group-count,
+.resource-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--background-primary));
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.resource-group-tab.active .resource-group-count {
+  color: var(--accent-color);
+  background: var(--background-primary);
+}
+
+.resources-continuous {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resource-section {
+  overflow: hidden;
+  scroll-margin-top: 68px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-background);
+}
+
+.resource-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--accent-color) 5%, var(--card-background));
+}
+
+.resource-section-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 /* Responsive adjustments */
 @media (max-width: 600px) {
   .resources-grid {
     grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
     gap: 2px;
+  }
+
+  .resource-group-tab {
+    padding-inline: 8px;
   }
 }
 

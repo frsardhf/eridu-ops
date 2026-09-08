@@ -38,33 +38,7 @@ export interface StudentMaterialRow {
 export type ViewTab = 'materials' | 'equipment' | 'gifts';
 export type ViewMode = 'needed' | 'missing' | 'leftover';
 
-const MATERIALS_PER_PAGE = 89;
-const MATERIAL_PAGE_SIZE_PLAN: number[] = [89, 88];
-const EQUIPMENT_PER_PAGE = 98;
-const GIFTS_PER_PAGE = 89;
-
-function paginateResources<T>(all: T[], pageSize: number, plannedFirstPages: number[] = []): T[][] {
-  if (all.length === 0) return [];
-
-  const pages: T[][] = [];
-  let start = 0;
-
-  for (const rawSize of plannedFirstPages) {
-    const size = Math.max(1, Math.floor(rawSize));
-    if (start >= all.length) break;
-    pages.push(all.slice(start, start + size));
-    start += size;
-  }
-
-  const normalizedPageSize = Math.max(1, Math.floor(pageSize));
-  for (let i = start; i < all.length; i += normalizedPageSize) {
-    pages.push(all.slice(i, i + normalizedPageSize));
-  }
-
-  return pages;
-}
-
-export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<ViewMode>) {
+export function useResourceSummary(activeMode: Ref<ViewMode>) {
   const { totalMaterialsNeeded, calculateExpNeeds } = useMaterialCalculation();
   const { totalEquipmentsNeeded, calculateExpNeeds: calculateEquipmentExpNeeds } =
     useGearCalculation();
@@ -239,44 +213,37 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
 
   // --- Display selection (tab x mode multiplexer) ---
 
-  const displayResources = computed(() => {
-    // Needed mode yields Material[]; missing/leftover yield MaterialWithRemaining[].
-    let resources: (Material & { remaining?: number })[] = [];
-
-    if (activeTab.value === 'materials') {
-      if (activeMode.value === 'needed') {
-        resources = totalMaterialsNeeded.value;
-      } else if (activeMode.value === 'missing') {
-        resources = missingMaterials.value;
-      } else {
-        resources = leftoverMaterials.value;
-      }
-    } else if (activeTab.value === 'equipment') {
-      if (activeMode.value === 'needed') {
-        resources = totalEquipmentsNeeded.value;
-      } else if (activeMode.value === 'missing') {
-        resources = missingEquipments.value;
-      } else {
-        resources = leftoverEquipments.value;
-      }
-    } else if (activeTab.value === 'gifts' && activeMode.value === 'leftover') {
-      resources = leftoverGifts.value;
-    }
-    // Gifts needed/missing uses studentsWithGifts, not displayResources
-
+  function prepareResources(resources: (Material & { remaining?: number })[]) {
     const filtered =
       activeMode.value === 'leftover'
         ? resources
-        : resources.filter((r) => (r.materialQuantity ?? 0) > 0);
-    return filtered.sort((a, b) => sortMaterials(a, b));
-  });
+        : resources.filter((resource) => (resource.materialQuantity ?? 0) > 0);
+    return [...filtered].sort((a, b) => sortMaterials(a, b));
+  }
 
-  const hasDisplayResources = computed(() => {
-    if (activeTab.value === 'gifts' && activeMode.value !== 'leftover') {
-      return studentsWithGifts.value.length > 0;
-    }
-    return displayResources.value.length > 0;
-  });
+  const materialResourcesForMode = computed(() =>
+    prepareResources(
+      activeMode.value === 'needed'
+        ? totalMaterialsNeeded.value
+        : activeMode.value === 'missing'
+          ? missingMaterials.value
+          : leftoverMaterials.value,
+    ),
+  );
+
+  const equipmentResourcesForMode = computed(() =>
+    prepareResources(
+      activeMode.value === 'needed'
+        ? totalEquipmentsNeeded.value
+        : activeMode.value === 'missing'
+          ? missingEquipments.value
+          : leftoverEquipments.value,
+    ),
+  );
+
+  const giftResourcesForMode = computed(() =>
+    activeMode.value === 'leftover' ? prepareResources(leftoverGifts.value) : [],
+  );
 
   const noResourcesText = computed(() => {
     if (activeMode.value === 'needed') return $t('noResourcesNeeded');
@@ -284,49 +251,12 @@ export function useResourceSummary(activeTab: Ref<ViewTab>, activeMode: Ref<View
     return $t('noLeftoverResources');
   });
 
-  // --- Leftover pagination ---
-
-  const pagedLeftoverResources = computed(() => {
-    if (activeMode.value !== 'leftover') return [] as MaterialWithRemaining[][];
-
-    if (activeTab.value === 'materials') {
-      return paginateResources(displayResources.value, MATERIALS_PER_PAGE, MATERIAL_PAGE_SIZE_PLAN);
-    }
-
-    if (activeTab.value === 'equipment') {
-      return paginateResources(displayResources.value, EQUIPMENT_PER_PAGE);
-    }
-
-    return paginateResources(displayResources.value, GIFTS_PER_PAGE);
-  });
-
-  // --- Tooltip support ---
-
-  const leftoverByMaterialId = computed(() => {
-    const values = new Map<number, number>();
-    if (activeMode.value !== 'leftover') return values;
-
-    displayResources.value.forEach((item) => {
-      const materialId = item.material?.Id;
-      if (!materialId) return;
-      values.set(materialId, Math.max(0, item.remaining ?? item.materialQuantity ?? 0));
-    });
-
-    return values;
-  });
-
   return {
-    missingMaterials,
-    missingEquipments,
-    leftoverMaterials,
-    leftoverEquipments,
-    leftoverGifts,
     studentsWithGifts,
-    displayResources,
-    hasDisplayResources,
+    materialResourcesForMode,
+    equipmentResourcesForMode,
+    giftResourcesForMode,
     noResourcesText,
-    pagedLeftoverResources,
-    leftoverByMaterialId,
     allStudentMaterialRows,
   };
 }

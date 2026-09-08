@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import {
   formatLargeNumber,
   formatLargeNumberAmount,
@@ -10,34 +10,44 @@ import {
 } from '@/lib/utils/materialUtils';
 import type { Material } from '@/types/upgrade';
 import { formatUsageQuantity } from '@/lib/utils/tooltipUtils';
-import { usePaginatedGrid } from '@/composables/usePaginatedGrid';
 import { useResourceTooltip } from '@/composables/useResourceTooltip';
 import { useResourceSummary, type ViewTab, type ViewMode } from '@/composables/useResourceSummary';
 import { $t } from '@/locales';
 import { getModeQuantityClass, getResourceQuantityClass } from '@/lib/utils/colorUtils';
 import { getStudentIconUrl, getItemIconUrl } from '@/lib/utils/iconUtils';
+import {
+  getInventoryGroupId,
+  type InventoryGroupId,
+  type InventoryResourceType,
+} from '@/lib/utils/resourceGroupUtils';
+import type { InventoryLayout } from '@/types/resource';
 import '@/styles/resourceDisplay.css';
 
 const props = withDefaults(
   defineProps<{
-    activeTabExternal?: ViewTab | null;
-    activeModeExternal?: ViewMode | null;
-    showCategoryTabs?: boolean;
-    showModeTabs?: boolean;
+    activeGroup: InventoryGroupId;
+    activeMode: ViewMode;
+    layout?: InventoryLayout;
     viewType?: 'aggregate' | 'per-student';
   }>(),
   {
-    activeTabExternal: null,
-    activeModeExternal: null,
-    showCategoryTabs: true,
-    showModeTabs: true,
+    layout: 'paged',
     viewType: 'aggregate',
   },
 );
 
-// UI state
-const activeTab = ref<ViewTab>('materials');
-const activeMode = ref<ViewMode>('needed');
+const emit = defineEmits<{
+  (e: 'group-change', group: InventoryGroupId): void;
+}>();
+
+const activeTab = computed<ViewTab>(() => {
+  if (props.activeGroup === 'equipment') return 'equipment';
+  if (props.activeGroup === 'gifts') return 'gifts';
+  return 'materials';
+});
+const activeMode = computed(() => props.activeMode);
+const tooltipTab = ref<ViewTab>(activeTab.value);
+const summaryRef = ref<HTMLElement | null>(null);
 
 // Animation state (exp-report and exp-ball icon cycling)
 const currentExpIcon = ref(10); // Start with Novice report (ID: 10)
@@ -45,12 +55,12 @@ const currentExpBall = ref(1); // Start with Novice exp ball (ID: 1)
 
 const {
   studentsWithGifts,
-  pagedLeftoverResources,
-  displayResources,
-  hasDisplayResources,
+  materialResourcesForMode,
+  equipmentResourcesForMode,
+  giftResourcesForMode,
   noResourcesText,
   allStudentMaterialRows,
-} = useResourceSummary(activeTab, activeMode);
+} = useResourceSummary(activeMode);
 
 const {
   hoveredItemId,
@@ -73,15 +83,7 @@ const {
   hideStudentTooltip,
   getMaterialLeftover,
   clearHoverState,
-} = useResourceTooltip(activeTab, activeMode);
-
-const {
-  currentPage: leftoverCurrentPage,
-  totalPages: leftoverTotalPages,
-  sliderStyle: leftoverSliderStyle,
-  setPageRef: setLeftoverPageRef,
-  goToPage: goToLeftoverPage,
-} = usePaginatedGrid(pagedLeftoverResources);
+} = useResourceTooltip(tooltipTab, activeMode);
 
 let expReportInterval: ReturnType<typeof setInterval> | null = null;
 let expBallInterval: ReturnType<typeof setInterval> | null = null;
@@ -118,144 +120,120 @@ function hideChipTooltip() {
   chipTooltipData.value = null;
 }
 
-// Helper function to get material icon source and alt text (Materials and Equipment tabs)
-const getMaterialIconSrcAndAlt = (item: Material): { src: string; alt: string } => {
-  const isEquipmentTab = activeTab.value === 'equipment';
+const getMaterialIconSrcAndAlt = (
+  item: Material,
+  itemType: InventoryResourceType,
+): { src: string; alt: string } => {
   return {
-    src: getMaterialIconSrc(item, isEquipmentTab, currentExpIcon.value, currentExpBall.value),
+    src: getMaterialIconSrc(
+      item,
+      itemType === 'equipment',
+      currentExpIcon.value,
+      currentExpBall.value,
+    ),
     alt: getMaterialName(item),
   };
 };
 
-// Pre-compute icon src/alt and quantity text per item for needed and missing mode
-const displayResourceStates = computed(() =>
-  displayResources.value.map((item) => {
-    const { src, alt } = getMaterialIconSrcAndAlt(item);
-    const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
-    const quantity = isExp
-      ? 0
-      : activeMode.value === 'needed'
-        ? item.materialQuantity || 0
-        : activeMode.value === 'missing'
-          ? Math.abs(item.remaining || 0)
-          : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
-    return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
-  }),
-);
+interface SummaryGroup {
+  id: InventoryGroupId;
+  labelKey: 'general' | 'academy' | 'gifts' | 'equipment';
+  itemType: InventoryResourceType;
+  resources: (Material & { remaining?: number })[];
+  showsStudents?: boolean;
+}
 
-// Pre-compute icon src/alt and quantity text per item for leftover mode
-const pagedLeftoverResourceStates = computed(() =>
-  pagedLeftoverResources.value.map((page) =>
-    page.map((item) => {
-      const { src, alt } = getMaterialIconSrcAndAlt(item);
-      const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
-      const quantity = isExp ? 0 : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
-      return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
-    }),
-  ),
-);
+const summaryGroups = computed<SummaryGroup[]>(() => {
+  const materialGroups = materialResourcesForMode.value.reduce(
+    (groups, resource) => {
+      if (!resource.material) return groups;
+      const groupId = getInventoryGroupId(resource.material, 'resource');
+      if (groupId === 'general' || groupId === 'academy') groups[groupId].push(resource);
+      return groups;
+    },
+    {
+      general: [] as (Material & { remaining?: number })[],
+      academy: [] as (Material & { remaining?: number })[],
+    },
+  );
 
-const setTab = (tab: ViewTab) => {
-  if (activeTab.value !== tab) {
-    clearHoverState();
-  }
-  activeTab.value = tab;
-};
+  const groups: SummaryGroup[] = [
+    { id: 'general', labelKey: 'general', itemType: 'resource', resources: materialGroups.general },
+    { id: 'academy', labelKey: 'academy', itemType: 'resource', resources: materialGroups.academy },
+    {
+      id: 'gifts',
+      labelKey: 'gifts',
+      itemType: 'resource',
+      resources: giftResourcesForMode.value,
+      showsStudents: activeMode.value !== 'leftover',
+    },
+    {
+      id: 'equipment',
+      labelKey: 'equipment',
+      itemType: 'equipment',
+      resources: equipmentResourcesForMode.value,
+    },
+  ];
 
-const setMode = (mode: ViewMode) => {
-  if (mode === activeMode.value) return;
-  activeMode.value = mode;
-  clearHoverState();
-};
-
-watch([activeTab, activeMode], () => {
-  if (activeMode.value !== 'leftover') return;
-  void goToLeftoverPage(0, undefined, true);
+  return groups.filter((group) =>
+    group.showsStudents ? studentsWithGifts.value.length > 0 : group.resources.length > 0,
+  );
 });
 
+const summaryGroupStates = computed(() =>
+  summaryGroups.value.map((group) => ({
+    ...group,
+    resourceStates: group.resources.map((item) => {
+      const { src, alt } = getMaterialIconSrcAndAlt(item, group.itemType);
+      const isExp = isExpReport(item.material?.Id) || isExpBall(item.material?.Id);
+      const quantity = isExp
+        ? 0
+        : activeMode.value === 'needed'
+          ? item.materialQuantity || 0
+          : activeMode.value === 'missing'
+            ? Math.abs(item.remaining || 0)
+            : Math.max(0, item.remaining ?? item.materialQuantity ?? 0);
+      return { ...item, iconSrc: src, iconAlt: alt, quantityText: formatLargeNumber(quantity) };
+    }),
+  })),
+);
+
+const visibleGroupStates = computed(() =>
+  props.layout === 'continuous'
+    ? summaryGroupStates.value
+    : summaryGroupStates.value.filter((group) => group.id === props.activeGroup),
+);
+
 watch(
-  () => props.activeTabExternal,
-  (tab) => {
-    if (!tab || tab === activeTab.value) return;
+  [summaryGroups, () => props.activeGroup, () => props.activeMode],
+  ([groups, activeGroup]) => {
     clearHoverState();
-    activeTab.value = tab;
+    if (groups.length > 0 && !groups.some((group) => group.id === activeGroup)) {
+      emit('group-change', groups[0].id);
+    }
   },
   { immediate: true },
 );
 
-watch(
-  () => props.activeModeExternal,
-  (mode) => {
-    if (!mode || mode === activeMode.value) return;
-    clearHoverState();
-    activeMode.value = mode;
-  },
-  { immediate: true },
-);
+async function selectGroup(groupId: InventoryGroupId) {
+  emit('group-change', groupId);
+  clearHoverState();
+  if (props.layout !== 'continuous') return;
+  await nextTick();
+  summaryRef.value
+    ?.querySelector<HTMLElement>(`#summary-resource-section-${groupId}`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showGroupTooltip(event: MouseEvent, itemId: number, group: SummaryGroup) {
+  tooltipTab.value =
+    group.id === 'equipment' ? 'equipment' : group.id === 'gifts' ? 'gifts' : 'materials';
+  showTooltip(event, itemId);
+}
 </script>
 
 <template>
-  <div class="resource-summary">
-    <div class="summary-toolbar">
-      <div
-        v-if="showCategoryTabs"
-        class="view-segmented"
-        role="tablist"
-        aria-label="Summary category"
-      >
-        <button
-          type="button"
-          class="view-segment-btn"
-          :class="{ active: activeTab === 'materials' }"
-          @click="setTab('materials')"
-        >
-          {{ $t('items') }}
-        </button>
-        <button
-          type="button"
-          class="view-segment-btn"
-          :class="{ active: activeTab === 'equipment' }"
-          @click="setTab('equipment')"
-        >
-          {{ $t('equipment') }}
-        </button>
-        <button
-          type="button"
-          class="view-segment-btn"
-          :class="{ active: activeTab === 'gifts' }"
-          @click="setTab('gifts')"
-        >
-          {{ $t('gifts') }}
-        </button>
-      </div>
-
-      <span v-if="showCategoryTabs" class="toolbar-divider" aria-hidden="true"></span>
-
-      <div v-if="showModeTabs" class="mode-segmented" role="tablist" aria-label="Summary mode">
-        <button
-          type="button"
-          :class="['mode-segment-btn', 'mode-needed', { active: activeMode === 'needed' }]"
-          @click="setMode('needed')"
-        >
-          {{ $t('needed') }}
-        </button>
-        <button
-          type="button"
-          :class="['mode-segment-btn', 'mode-missing', { active: activeMode === 'missing' }]"
-          @click="setMode('missing')"
-        >
-          {{ $t('missing') }}
-        </button>
-        <button
-          type="button"
-          :class="['mode-segment-btn', 'mode-leftover', { active: activeMode === 'leftover' }]"
-          @click="setMode('leftover')"
-        >
-          {{ $t('leftover') }}
-        </button>
-      </div>
-    </div>
-
+  <div ref="summaryRef" class="resource-summary">
     <div class="resources-content">
       <!-- Per-student view -->
       <template v-if="props.viewType === 'per-student'">
@@ -271,8 +249,8 @@ watch(
             </div>
             <div class="student-materials">
               <div
-                v-for="mat in row.materials"
-                :key="mat.material?.Id"
+                v-for="(mat, materialIndex) in row.materials"
+                :key="`${mat.type}-${mat.material?.Id ?? materialIndex}`"
                 class="resource-item per-student-mat-item"
                 :title="
                   mat.type !== 'xp' && mat.material?.Id !== 5 ? mat.material?.Name : undefined
@@ -330,116 +308,95 @@ watch(
 
       <!-- Aggregate view -->
       <template v-else>
-        <div v-if="!hasDisplayResources" class="no-resources">
+        <div
+          v-if="summaryGroups.length > 0"
+          class="resource-group-tabs"
+          :role="layout === 'paged' ? 'tablist' : 'navigation'"
+          :aria-label="$t('inventory')"
+        >
+          <button
+            v-for="group in summaryGroups"
+            :id="`summary-resource-tab-${group.id}`"
+            :key="group.id"
+            type="button"
+            :role="layout === 'paged' ? 'tab' : undefined"
+            class="resource-group-tab"
+            :class="{ active: activeGroup === group.id }"
+            :aria-selected="layout === 'paged' ? activeGroup === group.id : undefined"
+            :aria-controls="`summary-resource-section-${group.id}`"
+            @click="selectGroup(group.id)"
+          >
+            {{ $t(group.labelKey) }}
+          </button>
+        </div>
+
+        <div v-if="summaryGroups.length === 0" class="no-resources">
           <span>{{ noResourcesText }}</span>
         </div>
 
-        <!-- Leftover mode: show full paginated catalog-style grids -->
-        <div v-else-if="activeMode === 'leftover'" class="resources-tab">
-          <div class="resources-container">
-            <div class="resources-slider" :style="leftoverSliderStyle">
-              <div
-                v-for="(pageItems, pageIndex) in pagedLeftoverResourceStates"
-                :key="`leftover-page-${pageIndex}`"
-                :ref="(el) => setLeftoverPageRef(el, pageIndex)"
-                class="resources-page"
-                :aria-hidden="leftoverCurrentPage !== pageIndex"
-              >
-                <div class="resources-grid">
-                  <div
-                    v-for="(item, itemIndex) in pageItems"
-                    :key="`resource-${item.material?.Id || pageIndex}-${itemIndex}`"
-                    class="resource-item"
-                    :title="getMaterialName(item)"
-                    @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
-                    @mouseleave="hideTooltip()"
-                  >
-                    <div class="resource-content">
-                      <img
-                        v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-                        :src="item.iconSrc"
-                        :alt="item.iconAlt"
-                        class="resource-icon"
-                      />
-                      <div v-else class="resource-icon missing-icon">?</div>
+        <div v-else class="summary-groups" :class="{ continuous: layout === 'continuous' }">
+          <section
+            v-for="group in visibleGroupStates"
+            :id="`summary-resource-section-${group.id}`"
+            :key="group.id"
+            :class="{ 'resource-section': layout === 'continuous' }"
+            :role="layout === 'paged' ? 'tabpanel' : undefined"
+            :aria-labelledby="`summary-resource-tab-${group.id}`"
+          >
+            <header v-if="layout === 'continuous'" class="resource-section-header">
+              <h3>{{ $t(group.labelKey) }}</h3>
+            </header>
 
-                      <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
-                        {{ item.quantityText }}
-                      </div>
+            <div class="resources-grid">
+              <template v-if="group.showsStudents">
+                <div
+                  v-for="studentGift in studentsWithGifts"
+                  :key="`student-${studentGift.student.Id}`"
+                  class="resource-item student-gift-item"
+                  :title="studentGift.student.Name"
+                  @mousemove="showStudentTooltip($event, studentGift.student.Id)"
+                  @mouseleave="hideStudentTooltip()"
+                >
+                  <div class="resource-content">
+                    <img
+                      :src="getStudentIconUrl(studentGift.student.Id)"
+                      :alt="studentGift.student.Name"
+                      class="resource-icon student-icon-gift"
+                    />
+                    <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
+                      {{ formatLargeNumber(studentGift.totalGifts) }}
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </template>
 
-          <div v-if="leftoverTotalPages > 1" class="resources-pagination">
-            <div class="page-indicator">
-              <button
-                v-for="page in leftoverTotalPages"
-                :key="`leftover-dot-${page}`"
-                type="button"
-                class="page-dot"
-                :class="{ active: leftoverCurrentPage === page - 1 }"
-                :aria-label="`Go to page ${page}`"
-                :aria-current="leftoverCurrentPage === page - 1 ? 'page' : undefined"
-                @click="goToLeftoverPage(page - 1)"
-              ></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Needed/Missing materials and equipment -->
-        <div v-else-if="activeTab !== 'gifts'" class="resources-grid-wrap">
-          <div class="resources-grid">
-            <div
-              v-for="(item, index) in displayResourceStates"
-              :key="`resource-${item.material?.Id || index}`"
-              class="resource-item"
-              :title="getMaterialName(item)"
-              @mousemove="item.material?.Id && showTooltip($event, item.material.Id)"
-              @mouseleave="hideTooltip()"
-            >
-              <div class="resource-content">
-                <img
-                  v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
-                  :src="item.iconSrc"
-                  :alt="item.iconAlt"
-                  class="resource-icon"
-                />
-                <div v-else class="resource-icon missing-icon">?</div>
-
-                <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
-                  {{ item.quantityText }}
+              <template v-else>
+                <div
+                  v-for="(item, itemIndex) in group.resourceStates"
+                  :key="`${group.itemType}-${item.material?.Id ?? itemIndex}`"
+                  class="resource-item"
+                  :title="getMaterialName(item)"
+                  @mousemove="
+                    item.material?.Id && showGroupTooltip($event, item.material.Id, group)
+                  "
+                  @mouseleave="hideTooltip()"
+                >
+                  <div class="resource-content">
+                    <img
+                      v-if="item.material?.Icon && item.material.Icon !== 'unknown'"
+                      :src="item.iconSrc"
+                      :alt="item.iconAlt"
+                      class="resource-icon"
+                    />
+                    <div v-else class="resource-icon missing-icon">?</div>
+                    <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
+                      {{ item.quantityText }}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </template>
             </div>
-          </div>
-        </div>
-
-        <!-- Gifts tab: Show student icons (Student -> Gifts pattern) -->
-        <div v-else class="resources-grid-wrap">
-          <div class="resources-grid">
-            <div
-              v-for="studentGift in studentsWithGifts"
-              :key="`student-${studentGift.student.Id}`"
-              class="resource-item student-gift-item"
-              :title="studentGift.student.Name"
-              @mousemove="showStudentTooltip($event, studentGift.student.Id)"
-              @mouseleave="hideStudentTooltip()"
-            >
-              <div class="resource-content">
-                <img
-                  :src="getStudentIconUrl(studentGift.student.Id)"
-                  :alt="studentGift.student.Name"
-                  class="resource-icon student-icon-gift"
-                />
-                <div class="resource-quantity" :class="getModeQuantityClass(activeMode)">
-                  {{ formatLargeNumber(studentGift.totalGifts) }}
-                </div>
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
 
         <!-- Material Usage Tooltip -->
@@ -672,117 +629,6 @@ watch(
   width: 100%;
 }
 
-.summary-toolbar {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--background-secondary);
-}
-
-.view-segmented,
-.mode-segmented {
-  display: flex;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-}
-
-.view-segment-btn,
-.mode-segment-btn {
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  padding: 7px 12px;
-  cursor: pointer;
-  font-size: 0.86em;
-  font-weight: 600;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.view-segment-btn:hover,
-.mode-segment-btn:hover {
-  color: var(--text-primary);
-}
-
-.view-segment-btn.active {
-  background: var(--accent-color);
-  color: #fff;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 28px;
-  background: var(--border-color);
-  opacity: 0.9;
-  border-radius: 999px;
-}
-
-.view-segmented {
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
-}
-
-.mode-segmented {
-  background: color-mix(in srgb, var(--card-background) 86%, var(--background-secondary));
-}
-
-.view-segment-btn {
-  font-weight: 700;
-}
-
-.mode-segment-btn {
-  font-size: 0.82em;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.mode-segment-btn.active {
-  border-left-color: transparent;
-}
-
-.mode-segment-btn.mode-needed.active {
-  color: #1f4fd6;
-  background: color-mix(in srgb, #1f4fd6 18%, var(--card-background));
-}
-
-.mode-segment-btn.mode-missing.active {
-  color: #c62828;
-  background: color-mix(in srgb, #c62828 16%, var(--card-background));
-}
-
-.mode-segment-btn.mode-leftover.active {
-  color: #2e7d32;
-  background: color-mix(in srgb, #2e7d32 18%, var(--card-background));
-}
-
-.view-segment-btn + .view-segment-btn,
-.mode-segment-btn + .mode-segment-btn {
-  border-left: 1px solid var(--border-color);
-}
-
-.view-segment-btn.active,
-.mode-segment-btn.active {
-  border-left-color: transparent;
-}
-
-.view-segment-btn:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 1px;
-  border: 1px solid var(--border-color);
-}
-
-.mode-segment-btn:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 1px;
-  border: 1px solid var(--border-color);
-}
-
 .resources-content {
   flex: 1;
   background: var(--card-background);
@@ -791,53 +637,10 @@ watch(
   overflow-y: auto;
 }
 
-.resources-grid-wrap {
-  display: flex;
-  justify-content: center;
-}
-
-.resources-tab {
+.summary-groups.continuous {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  width: 100%;
-}
-
-.resources-container {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  min-height: 0;
-}
-
-.resources-slider {
-  display: flex;
-  height: 100%;
-  width: 100%;
-}
-
-.resources-page {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-}
-
-.resources-page .resources-grid {
-  width: 100%;
-}
-
-.resources-pagination {
-  padding-top: 12px;
-  display: flex;
-  justify-content: center;
-}
-/* .page-indicator / .page-dot live in styles/resourceDisplay.css (shared) */
-
-.resources-grid-wrap :deep(.resources-grid) {
-  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-  justify-content: stretch;
-  width: 100%;
-  gap: 0;
+  gap: 14px;
 }
 
 .no-resources {
@@ -973,15 +776,6 @@ watch(
 }
 
 @media (max-width: 768px) {
-  .summary-toolbar {
-    position: static;
-    padding-top: 2px;
-  }
-
-  .toolbar-divider {
-    display: none;
-  }
-
   .student-icons-grid {
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   }

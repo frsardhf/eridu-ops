@@ -9,13 +9,14 @@ import ResourceSummary from './ResourceSummary.vue';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import { useInventoryLayout } from '@/lib/hooks/useInventoryLayout';
 import type { InventoryLayout } from '@/types/resource';
+import type { InventoryGroupId } from '@/lib/utils/resourceGroupUtils';
 
 const props = withDefaults(
   defineProps<{
     initialTab?: InventoryTab;
   }>(),
   {
-    initialTab: 'items',
+    initialTab: 'all',
   },
 );
 
@@ -38,20 +39,8 @@ onMounted(async () => {
   await Promise.all([loadItems(), loadEquipments()]);
 });
 
-type InventoryTab = 'items' | 'equipment';
-type SummaryTab = 'materials' | 'equipment' | 'gifts';
+type InventoryTab = 'all' | 'items' | 'equipment';
 type SummaryViewMode = 'needed' | 'missing' | 'leftover';
-
-const INVENTORY_TAB_ORDER: Record<InventoryTab, number> = {
-  items: 0,
-  equipment: 1,
-};
-
-const SUMMARY_TAB_ORDER: Record<SummaryTab, number> = {
-  materials: 0,
-  equipment: 1,
-  gifts: 2,
-};
 
 const SUMMARY_MODE_ORDER: Record<SummaryViewMode, number> = {
   needed: 0,
@@ -59,13 +48,15 @@ const SUMMARY_MODE_ORDER: Record<SummaryViewMode, number> = {
   leftover: 2,
 };
 
-const activeTab = ref<InventoryTab>(props.initialTab);
 const summaryMode = ref(false);
-const summaryTab = ref<SummaryTab>('materials');
+const selectedGroup = ref<InventoryGroupId>(
+  props.initialTab === 'equipment' ? 'equipment' : 'general',
+);
 const summaryViewMode = ref<SummaryViewMode>('needed');
 const contentDirection = ref<'forward' | 'backward'>('forward');
 const viewType = ref<'aggregate' | 'per-student'>('aggregate');
 const isClosing = ref(false);
+const isSwitchingSummary = ref(false);
 const saveError = ref('');
 const inventoryContentRef = ref<HTMLElement | null>(null);
 
@@ -75,28 +66,8 @@ const contentTransitionName = computed(() =>
 
 const contentTransitionKey = computed(() => {
   if (summaryMode.value && viewType.value === 'per-student') return 'summary-per-student';
-  return summaryMode.value
-    ? `summary-${summaryTab.value}-${summaryViewMode.value}`
-    : `inventory-${activeTab.value}`;
+  return summaryMode.value ? `summary-${summaryViewMode.value}` : 'inventory-all';
 });
-
-async function setInventoryTab(nextTab: InventoryTab) {
-  if (nextTab === activeTab.value) return;
-  contentDirection.value =
-    INVENTORY_TAB_ORDER[nextTab] >= INVENTORY_TAB_ORDER[activeTab.value] ? 'forward' : 'backward';
-  activeTab.value = nextTab;
-  await nextTick();
-  resetInventoryScroll();
-}
-
-async function setSummaryTab(nextTab: SummaryTab) {
-  if (nextTab === summaryTab.value) return;
-  contentDirection.value =
-    SUMMARY_TAB_ORDER[nextTab] >= SUMMARY_TAB_ORDER[summaryTab.value] ? 'forward' : 'backward';
-  summaryTab.value = nextTab;
-  await nextTick();
-  resetInventoryScroll();
-}
 
 async function setSummaryViewMode(nextMode: SummaryViewMode) {
   if (nextMode === summaryViewMode.value) return;
@@ -110,25 +81,36 @@ async function setSummaryViewMode(nextMode: SummaryViewMode) {
 }
 
 const toggleSummaryMode = async () => {
-  const previousIndex = summaryMode.value ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
+  if (isSwitchingSummary.value) return;
+  const previousIndex = summaryMode.value ? 2 : 0;
   const next = !summaryMode.value;
 
   if (next) {
-    if (activeTab.value === 'equipment') {
-      summaryTab.value = 'equipment';
-    } else if (summaryTab.value === 'equipment') {
-      summaryTab.value = 'materials';
+    isSwitchingSummary.value = true;
+    saveError.value = '';
+    try {
+      await Promise.all([flushPendingItems(), flushPendingEquipments()]);
+    } catch (error) {
+      console.error('Failed to save inventory before opening summary:', error);
+      saveError.value = $t('saveChangesFailed');
+      return;
+    } finally {
+      isSwitchingSummary.value = false;
     }
   } else {
     viewType.value = 'aggregate';
   }
 
-  const nextIndex = next ? 2 : INVENTORY_TAB_ORDER[activeTab.value];
+  const nextIndex = next ? 2 : 0;
   contentDirection.value = nextIndex >= previousIndex ? 'forward' : 'backward';
   summaryMode.value = next;
   await nextTick();
   resetInventoryScroll();
 };
+
+function setSelectedGroup(group: InventoryGroupId) {
+  selectedGroup.value = group;
+}
 
 async function setInventoryLayout(layout: InventoryLayout) {
   if (layout === inventoryLayout.value) return;
@@ -141,13 +123,16 @@ function resetInventoryScroll() {
   if (inventoryContentRef.value) inventoryContentRef.value.scrollTop = 0;
 }
 
-function updateItem(id: string, event: Event): void {
-  handleItemInput(id, event);
-  track({ name: 'plan_action', feature: 'inventory', action: 'adjusted' });
-}
-
-function updateEquipment(id: string, event: Event): void {
-  handleEquipmentInput(id, event);
+function updateInventory(
+  id: string,
+  event: Event,
+  itemType: 'resource' | 'equipment' = 'resource',
+): void {
+  if (itemType === 'equipment') {
+    handleEquipmentInput(id, event);
+  } else {
+    handleItemInput(id, event);
+  }
   track({ name: 'plan_action', feature: 'inventory', action: 'adjusted' });
 }
 
@@ -180,10 +165,12 @@ useDocumentListener('keydown', handleKeyDown);
     <div class="inventory-modal">
       <!-- Header row (above tabs) -->
       <div class="inventory-header">
-        <div class="inventory-title">{{ $t('inventory') }}</div>
+        <div class="inventory-header-context">
+          <div class="inventory-title">{{ summaryMode ? $t('summary') : $t('inventory') }}</div>
+        </div>
         <div class="inventory-header-actions">
           <div
-            v-if="!summaryMode"
+            v-if="viewType !== 'per-student'"
             class="inventory-layout-segmented"
             role="group"
             :aria-label="$t('inventoryLayout')"
@@ -250,6 +237,7 @@ useDocumentListener('keydown', handleKeyDown);
           <button
             class="inventory-summary-toggle"
             :class="{ active: summaryMode }"
+            :disabled="isSwitchingSummary"
             @click="toggleSummaryMode"
             :title="$t('summary')"
             :aria-pressed="summaryMode"
@@ -279,73 +267,43 @@ useDocumentListener('keydown', handleKeyDown);
         {{ saveError }}
       </div>
 
-      <!-- Tab bar: hidden entirely in per-student view -->
-      <div v-if="!summaryMode" class="inventory-tabs">
-        <button
-          :class="['inv-tab-btn', { active: activeTab === 'items' }]"
-          @click="setInventoryTab('items')"
-        >
-          {{ $t('items') }}
-        </button>
-        <button
-          :class="['inv-tab-btn', { active: activeTab === 'equipment' }]"
-          @click="setInventoryTab('equipment')"
-        >
-          {{ $t('equipment') }}
-        </button>
-      </div>
-      <div v-else-if="viewType !== 'per-student'" class="inventory-tabs">
-        <div class="inventory-tab-group">
-          <button
-            :class="['inv-tab-btn', { active: summaryTab === 'materials' }]"
-            @click="setSummaryTab('materials')"
-          >
-            {{ $t('items') }}
-          </button>
-          <button
-            :class="['inv-tab-btn', { active: summaryTab === 'equipment' }]"
-            @click="setSummaryTab('equipment')"
-          >
-            {{ $t('equipment') }}
-          </button>
-          <button
-            :class="['inv-tab-btn', { active: summaryTab === 'gifts' }]"
-            @click="setSummaryTab('gifts')"
-          >
-            {{ $t('gifts') }}
-          </button>
-        </div>
-
+      <div v-if="summaryMode && viewType !== 'per-student'" class="inventory-tabs">
         <div class="inventory-mode-segmented" role="tablist" :aria-label="$t('summary')">
           <button
             type="button"
+            role="tab"
             :class="[
               'inventory-mode-btn',
               'inventory-mode-needed',
               { active: summaryViewMode === 'needed' },
             ]"
+            :aria-selected="summaryViewMode === 'needed'"
             @click="setSummaryViewMode('needed')"
           >
             {{ $t('needed') }}
           </button>
           <button
             type="button"
+            role="tab"
             :class="[
               'inventory-mode-btn',
               'inventory-mode-missing',
               { active: summaryViewMode === 'missing' },
             ]"
+            :aria-selected="summaryViewMode === 'missing'"
             @click="setSummaryViewMode('missing')"
           >
             {{ $t('missing') }}
           </button>
           <button
             type="button"
+            role="tab"
             :class="[
               'inventory-mode-btn',
               'inventory-mode-leftover',
               { active: summaryViewMode === 'leftover' },
             ]"
+            :aria-selected="summaryViewMode === 'leftover'"
             @click="setSummaryViewMode('leftover')"
           >
             {{ $t('leftover') }}
@@ -358,30 +316,24 @@ useDocumentListener('keydown', handleKeyDown);
         <Transition :name="contentTransitionName" mode="out-in">
           <div :key="contentTransitionKey" class="inventory-tab-content inventory-pane-state">
             <ResourceGrid
-              v-if="!summaryMode && activeTab === 'items'"
-              variant="items"
+              v-if="!summaryMode"
+              variant="all"
               :form-data="itemFormData"
+              :equipment-form-data="equipmentFormData"
+              :active-group="selectedGroup"
               :layout="inventoryLayout"
-              @update="updateItem"
+              @update="updateInventory"
               @page-change="resetInventoryScroll"
-            />
-
-            <ResourceGrid
-              v-else-if="!summaryMode && activeTab === 'equipment'"
-              variant="equipment"
-              :form-data="equipmentFormData"
-              :layout="inventoryLayout"
-              @update="updateEquipment"
-              @page-change="resetInventoryScroll"
+              @group-change="setSelectedGroup"
             />
 
             <ResourceSummary
               v-else
-              :active-tab-external="summaryTab"
-              :active-mode-external="summaryViewMode"
-              :show-category-tabs="false"
-              :show-mode-tabs="false"
+              :active-group="selectedGroup"
+              :active-mode="viewType === 'per-student' ? 'needed' : summaryViewMode"
+              :layout="inventoryLayout"
               :view-type="viewType"
+              @group-change="setSelectedGroup"
             />
           </div>
         </Transition>
@@ -422,6 +374,12 @@ useDocumentListener('keydown', handleKeyDown);
   flex-shrink: 0;
 }
 
+.inventory-header-context {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .inventory-title {
   font-size: 1.1rem;
   font-weight: 600;
@@ -441,6 +399,7 @@ useDocumentListener('keydown', handleKeyDown);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .inventory-layout-segmented {
@@ -508,6 +467,11 @@ useDocumentListener('keydown', handleKeyDown);
   color: var(--text-primary);
 }
 
+.inventory-summary-toggle:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .inventory-summary-toggle.active,
 .inventory-view-toggle.active {
   border-color: var(--accent-color);
@@ -548,32 +512,6 @@ useDocumentListener('keydown', handleKeyDown);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-}
-
-.inventory-tab-group {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-}
-
-.inv-tab-btn {
-  padding: 8px 16px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
-}
-
-.inv-tab-btn.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--accent-color);
-}
-
-.inv-tab-btn:hover {
-  background-color: var(--hover-bg);
 }
 
 .inventory-mode-segmented {
