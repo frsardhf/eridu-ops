@@ -15,7 +15,7 @@ import {
   getEquipmentDataByIdSync,
 } from '@/lib/stores/resourceCacheStore';
 import type { CachedResource } from '@/types/resource';
-import { MATERIAL, EQUIPMENT } from '@/types/resource';
+import { MATERIAL, EQUIPMENT, isGeneralEquipmentBlueprint } from '@/types/resource';
 import { applyFilters } from '@/lib/utils/filterUtils';
 import ResourceCard from '@/components/inventory/ResourceCard.vue';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
@@ -152,8 +152,10 @@ const searchResults = computed<CachedResource[]>(() => {
   return (
     (Object.values(eligible) as CachedResource[])
       .filter((item) => item.Name.toLowerCase().includes(q))
-      // For equipment, skip Tier <= 1 (exp items + T1 pieces per user preference).
-      .filter((item) => !isEquipment || (item.Tier ?? 0) > 1)
+      // Keep general blueprints searchable even though SchaleDB assigns them Tier 0.
+      .filter(
+        (item) => !isEquipment || (item.Tier ?? 0) > 1 || isGeneralEquipmentBlueprint(item.Id),
+      )
       .slice(0, 8)
   );
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { filterByProperty, applyFilters } from '../filterUtils';
-import type { ResourceProps } from '@/types/resource';
+import { EQUIPMENT, type ResourceProps } from '@/types/resource';
 
 function res(over: Partial<ResourceProps> & { Id: number }): ResourceProps {
   return {
@@ -20,6 +20,7 @@ const items: Record<string, ResourceProps> = {
   '100': res({ Id: 100, Category: 'Misc', SubCategory: 'Artifact' }),
   '200': res({ Id: 200, Category: 'Exp' }),
   '1008': res({ Id: 1008, Category: 'Hat', RecipeCost: 150000 }),
+  '501000': res({ Id: 501000, Category: 'Hat', Tier: 0 }),
 };
 
 describe('filterByProperty', () => {
@@ -55,6 +56,10 @@ describe('applyFilters', () => {
   it('dedups items matched by more than one criterion', () => {
     const out = applyFilters(items, { category: ['Favor'], id: ['5'] });
     expect(Object.keys(out)).toEqual(['5']);
+  });
+
+  it('includes general equipment blueprints by id', () => {
+    expect(Object.keys(applyFilters(items, EQUIPMENT))).toContain('501000');
   });
 
   it('ignores empty/undefined criteria', () => {

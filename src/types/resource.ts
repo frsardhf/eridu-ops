@@ -40,11 +40,32 @@ export const SCHOOL_MATERIAL_SUBCATEGORIES = ['CDItem', 'BookItem'] as const;
 
 export const GIFT_CATEGORY = 'Favor';
 
+export const GENERAL_EQUIPMENT_BLUEPRINT_ID_BY_CATEGORY: Readonly<Record<string, number>> = {
+  Hat: 501000,
+  Gloves: 502000,
+  Shoes: 503000,
+  Bag: 504000,
+  Badge: 505000,
+  Hairpin: 506000,
+  Charm: 507000,
+  Watch: 508000,
+  Necklace: 509000,
+};
+
+export const GENERAL_EQUIPMENT_BLUEPRINT_IDS = Object.values(
+  GENERAL_EQUIPMENT_BLUEPRINT_ID_BY_CATEGORY,
+);
+
+export function isGeneralEquipmentBlueprint(id: number): boolean {
+  return GENERAL_EQUIPMENT_BLUEPRINT_IDS.includes(id);
+}
+
 // Equipment inventory = the 'Exp' enhancement balls PLUS craftable gear pieces,
 // the latter selected by their RecipeCost (each value is a gear-tier credit cost).
 export const EQUIPMENT = {
   category: ['Exp'],
   recipecost: ['1500', '10000', '25000', '50000', '75000', '100000', '125000', '150000', '175000'],
+  id: GENERAL_EQUIPMENT_BLUEPRINT_IDS.map(String),
 };
 
 export const ALL_RARITIES = ['N', 'R', 'SR', 'SSR'] as const;
