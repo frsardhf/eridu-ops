@@ -58,8 +58,13 @@ import {
 } from '@/lib/utils/gearMaterialUtils';
 import { deductXpItems, simulateXpDeduction } from '@/lib/utils/upgradeUtils';
 import { sortMaterials } from '@/lib/utils/materialUtils';
+import { allocateEquipmentBlueprints } from '@/lib/utils/equipmentBlueprintUtils';
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
-import { getResourceDataByIdSync, getEquipmentDataByIdSync } from '@/lib/stores/resourceCacheStore';
+import {
+  getResourceDataByIdSync,
+  getEquipmentDataByIdSync,
+  getAllEquipmentFromCache,
+} from '@/lib/stores/resourceCacheStore';
 import '@/styles/studentModal.css';
 
 // Lazy in every importer (here, StudentsPage, BondsPage) so the inventory
@@ -285,9 +290,20 @@ function handleStyleToggle() {
 
 // --- Apply Upgrade ---
 
+function getCurrentEquipmentResources() {
+  const resources = getAllEquipmentFromCache();
+  return Object.fromEntries(
+    Object.entries(resources).map(([id, resource]) => [
+      id,
+      { ...resource, QuantityOwned: equipmentFormData.value[Number(id)] ?? 0 },
+    ]),
+  );
+}
+
 // Conservative material check: all pending materials vs inventory
 const insufficientList = computed<string[]>(() => {
   const allMats = [...allMaterialsNeeded.value, ...equipmentMaterialsNeeded.value];
+  const equipmentAllocation = allocateEquipmentBlueprints(allMats, getCurrentEquipmentResources());
   // Aggregate quantities by ID
   const needed = new Map<number, { name: string; qty: number; isEquip: boolean }>();
   for (const mat of allMats) {
@@ -302,6 +318,10 @@ const insufficientList = computed<string[]>(() => {
   }
   const out: string[] = [];
   for (const [id, { name, qty, isEquip }] of needed.entries()) {
+    if (isEquip) {
+      if ((equipmentAllocation.remainingById.get(id) ?? -qty) < 0) out.push(name);
+      continue;
+    }
     const owned = isEquip ? (equipmentFormData.value[id] ?? 0) : (itemFormData.value[id] ?? 0);
     if (owned < qty) out.push(name);
   }
@@ -367,19 +387,35 @@ function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
     else map.set(id, { ...m });
   }
 
+  const equipmentAllocation = allocateEquipmentBlueprints(
+    [...map.values()],
+    getCurrentEquipmentResources(),
+  );
   const result: MaterialPreviewItem[] = [];
   for (const m of map.values()) {
     if (m.materialQuantity <= 0) continue;
     const id = m.material.Id;
+    const needed =
+      m.type === 'equipments'
+        ? (equipmentAllocation.normalUsedById.get(id) ?? 0)
+        : m.materialQuantity;
+    if (needed <= 0) continue;
     const owned =
       m.type === 'equipments' ? (equipmentFormData.value[id] ?? 0) : (itemFormData.value[id] ?? 0);
     result.push({
       material: m.material,
-      needed: m.materialQuantity,
+      needed,
       owned,
-      remaining: owned - m.materialQuantity,
+      remaining: owned - needed,
       type: m.type ?? 'materials',
     });
+  }
+
+  for (const [generalId, needed] of equipmentAllocation.generalUsedById) {
+    const material = getEquipmentDataByIdSync(generalId);
+    if (!material) continue;
+    const owned = equipmentFormData.value[generalId] ?? 0;
+    result.push({ material, needed, owned, remaining: owned - needed, type: 'equipments' });
   }
 
   // XP items for level (activity reports)
@@ -448,15 +484,30 @@ const hasAnyPendingUpgrade = computed(() => {
 });
 
 function applyMaterialDelta(snapshot: Material[], afterMap: Map<number, number>) {
+  const deltas: Material[] = [];
   for (const mat of snapshot) {
     const deducted = mat.materialQuantity - (afterMap.get(mat.material.Id) ?? 0);
     if (deducted <= 0) continue;
+    deltas.push({ ...mat, materialQuantity: deducted });
+  }
+
+  const equipmentAllocation = allocateEquipmentBlueprints(deltas, getCurrentEquipmentResources());
+  for (const mat of deltas) {
     const id = mat.material.Id;
     if (mat.type === 'equipments') {
+      const deducted = equipmentAllocation.normalUsedById.get(id) ?? 0;
       equipmentFormData.value[id] = Math.max(0, (equipmentFormData.value[id] ?? 0) - deducted);
     } else {
+      const deducted = mat.materialQuantity;
       itemFormData.value[id] = Math.max(0, (itemFormData.value[id] ?? 0) - deducted);
     }
+  }
+
+  for (const [generalId, deducted] of equipmentAllocation.generalUsedById) {
+    equipmentFormData.value[generalId] = Math.max(
+      0,
+      (equipmentFormData.value[generalId] ?? 0) - deducted,
+    );
   }
 }
 

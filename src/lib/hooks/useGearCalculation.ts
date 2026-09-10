@@ -10,11 +10,16 @@ import { getAllGearsData } from '../stores/gearsStore';
 import { isExpBall } from '../utils/materialUtils';
 import { computeEquipmentSlotXpCost, getEquipXpItems } from '../utils/gearMaterialUtils';
 import { toNumericId } from '../utils/idCoercion';
+import {
+  allocateEquipmentBlueprints,
+  type EquipmentBlueprintAllocation,
+} from '../utils/equipmentBlueprintUtils';
 
 // Singleton state
 let _allGearsData: ComputedRef<Record<string, Material[]>>;
 let _totalEquipmentsNeeded: ComputedRef<Material[]>;
 let _equipmentsLeftover: ComputedRef<Material[]>;
+let _equipmentBlueprintAllocation: ComputedRef<EquipmentBlueprintAllocation>;
 
 export function useGearCalculation() {
   const { studentData } = useStudentData();
@@ -132,6 +137,14 @@ export function useGearCalculation() {
 
   const totalEquipmentsNeeded = _totalEquipmentsNeeded;
 
+  if (!_equipmentBlueprintAllocation) {
+    _equipmentBlueprintAllocation = computed(() =>
+      allocateEquipmentBlueprints(totalEquipmentsNeeded.value, getAllEquipmentFromCache()),
+    );
+  }
+
+  const equipmentBlueprintAllocation = _equipmentBlueprintAllocation;
+
   // Calculate materials leftover
   if (!_equipmentsLeftover) {
     _equipmentsLeftover = computed(() => {
@@ -161,8 +174,9 @@ export function useGearCalculation() {
         const resource = resources[materialId];
         if (!resource) return;
 
-        const owned = resource.QuantityOwned ?? 0;
-        const remaining = owned - needed.materialQuantity;
+        const remaining =
+          equipmentBlueprintAllocation.value.remainingById.get(materialId) ??
+          (resource.QuantityOwned ?? 0) - needed.materialQuantity;
 
         leftover.push({
           material: resource,
@@ -269,7 +283,6 @@ export function useGearCalculation() {
         { quantity: number; equipmentTypes: EquipmentType[] }
       >();
       const equipments = getAllEquipmentFromCache();
-      const ownedQuantity = equipments[materialId]?.QuantityOwned ?? 0;
 
       // First pass: collect all needed quantities
       Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
@@ -303,7 +316,13 @@ export function useGearCalculation() {
       );
 
       // Calculate remaining quantity for each student
-      let remainingQuantity = Math.max(0, totalNeededQuantity - ownedQuantity);
+      let remainingQuantity = Math.max(
+        0,
+        -(
+          equipmentBlueprintAllocation.value.remainingById.get(materialId) ??
+          (equipments[materialId]?.QuantityOwned ?? 0) - totalNeededQuantity
+        ),
+      );
       const studentRemainingQuantities = new Map<string, number>();
 
       // Distribute remaining quantity to students with highest needs first

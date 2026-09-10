@@ -28,6 +28,7 @@ import {
 } from '@/lib/utils/materialUtils';
 import { isSecondaryStudent } from '@/lib/constants/linkedStudents';
 import { $t } from '@/locales';
+import { allocateEquipmentBlueprints } from '@/lib/utils/equipmentBlueprintUtils';
 
 export interface StudentMaterialRow {
   student: StudentProps;
@@ -94,6 +95,10 @@ export function useResourceSummary(activeMode: Ref<ViewMode>) {
 
   const giftNeededById = computed(() => getGiftNeededById());
 
+  const equipmentBlueprintAllocation = computed(() =>
+    allocateEquipmentBlueprints(totalEquipmentsNeeded.value, getAllEquipmentFromCache()),
+  );
+
   // --- XP surplus ---
 
   const materialXpRemaining = computed(() => {
@@ -117,14 +122,23 @@ export function useResourceSummary(activeMode: Ref<ViewMode>) {
     ),
   );
 
-  const missingEquipments = computed<MaterialWithRemaining[]>(() =>
-    calculateMissingItems(
+  const missingEquipments = computed<MaterialWithRemaining[]>(() => {
+    const missing = calculateMissingItems(
       totalEquipmentsNeeded.value,
       getAllEquipmentFromCache,
       isExpBall,
       calculateEquipmentExpNeeds,
-    ),
-  );
+    );
+
+    return missing
+      .map((item) => {
+        if (isExpBall(item.material.Id)) return item;
+        const remaining =
+          equipmentBlueprintAllocation.value.remainingById.get(item.material.Id) ?? item.remaining;
+        return { ...item, remaining };
+      })
+      .filter((item) => item.remaining < 0);
+  });
 
   // --- Leftover (surplus) ---
 
@@ -141,7 +155,10 @@ export function useResourceSummary(activeMode: Ref<ViewMode>) {
   const leftoverEquipments = computed<MaterialWithRemaining[]>(() =>
     calculateLeftoverItems(
       equipmentCatalog.value,
-      (id) => equipmentNeededById.value.get(id) ?? 0,
+      (id) =>
+        equipmentBlueprintAllocation.value.generalUsedById.get(id) ??
+        equipmentNeededById.value.get(id) ??
+        0,
       'equipments',
       isExpBall,
       () => equipmentXpRemaining.value,
