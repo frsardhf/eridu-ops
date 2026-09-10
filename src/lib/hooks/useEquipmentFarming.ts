@@ -1,6 +1,10 @@
 import { computed, ref } from 'vue';
 import { useGearCalculation } from '@/lib/hooks/useGearCalculation';
 import { EQUIPMENT_FARM_STAGES, type FarmStage } from '@/lib/constants/equipmentDrops';
+import {
+  getGeneralBlueprintCategory,
+  getGeneralBlueprintCost,
+} from '@/lib/utils/equipmentBlueprintUtils';
 
 export type FarmMultiplier = 1 | 2 | 3;
 
@@ -97,14 +101,23 @@ export function useEquipmentFarming() {
     // 2x and 3x for any rate >= 0.5.
     const eff = (r: number) => r * mult;
 
-    // Best (highest effective rate) normal stage that drops a given piece;
+    // Best normal stage for a concrete piece. A matching general blueprint drop
+    // contributes its concrete-piece equivalent at the target tier's exchange rate.
     // ties broken toward the higher stage number ("farm the highest stage").
     const bestStageFor = (equipId: number): { stage: FarmStage; rate: number } | null => {
       let best: { stage: FarmStage; rate: number } | null = null;
+      const target = want.get(equipId);
+      if (!target) return null;
+      const generalCost = getGeneralBlueprintCost(target.tier);
       for (const s of EQUIPMENT_FARM_STAGES) {
-        const d = s.drops.find((x) => x.equipId === equipId);
-        if (!d) continue;
-        const r = eff(d.rate);
+        const directRate = s.drops.find((x) => x.equipId === equipId)?.rate ?? 0;
+        const generalRate = generalCost
+          ? s.generalDrops
+              .filter((drop) => getGeneralBlueprintCategory(drop.blueprintId) === target.category)
+              .reduce((sum, drop) => sum + drop.rate / generalCost, 0)
+          : 0;
+        const r = eff(directRate + generalRate);
+        if (r <= 0) continue;
         const rank = s.area * 1000 + s.stage;
         if (
           !best ||
@@ -118,7 +131,10 @@ export function useEquipmentFarming() {
     };
 
     const remaining = new Map<number, number>([...want].map(([id, p]) => [id, p.qty]));
-    const runsByStage = new Map<number, { stage: FarmStage; runs: number }>();
+    const runsByStage = new Map<
+      number,
+      { stage: FarmStage; runs: number; creditedById: Map<number, number> }
+    >();
 
     for (let guard = 0; guard < 2000; guard++) {
       // highest-tier still-missing piece (tie-break: larger remaining qty)
@@ -141,32 +157,62 @@ export function useEquipmentFarming() {
       } // not farmable in normal
 
       const runs = Math.ceil(remaining.get(target)! / pick.rate);
-      const acc = runsByStage.get(pick.stage.id) ?? { stage: pick.stage, runs: 0 };
+      const acc = runsByStage.get(pick.stage.id) ?? {
+        stage: pick.stage,
+        runs: 0,
+        creditedById: new Map<number, number>(),
+      };
       acc.runs += runs;
       runsByStage.set(pick.stage.id, acc);
 
       // credit this stage's drops (incl. lower-tier byproducts) against remaining needs
       for (const d of pick.stage.drops) {
         if (remaining.has(d.equipId)) {
-          remaining.set(d.equipId, Math.max(0, remaining.get(d.equipId)! - runs * eff(d.rate)));
+          const before = remaining.get(d.equipId)!;
+          const after = Math.max(0, before - runs * eff(d.rate));
+          remaining.set(d.equipId, after);
+          acc.creditedById.set(d.equipId, (acc.creditedById.get(d.equipId) ?? 0) + before - after);
+        }
+      }
+
+      for (const drop of pick.stage.generalDrops) {
+        const category = getGeneralBlueprintCategory(drop.blueprintId);
+        if (!category) continue;
+        let generalUnits = runs * eff(drop.rate);
+        const candidates = [...remaining.keys()]
+          .filter((id) => (remaining.get(id) ?? 0) > 0 && want.get(id)?.category === category)
+          .sort((a, b) => {
+            if (a === target) return -1;
+            if (b === target) return 1;
+            return (want.get(b)?.tier ?? 0) - (want.get(a)?.tier ?? 0);
+          });
+
+        for (const id of candidates) {
+          const cost = getGeneralBlueprintCost(want.get(id)?.tier ?? 0);
+          if (!cost || generalUnits <= 0) continue;
+          const before = remaining.get(id) ?? 0;
+          const covered = Math.min(before, generalUnits / cost);
+          remaining.set(id, before - covered);
+          generalUnits -= covered * cost;
+          acc.creditedById.set(id, (acc.creditedById.get(id) ?? 0) + covered);
         }
       }
     }
 
     const result: FarmStagePlan[] = [];
-    for (const { stage, runs } of runsByStage.values()) {
+    for (const { stage, runs, creditedById } of runsByStage.values()) {
       const covers: FarmCover[] = [];
-      for (const d of stage.drops) {
-        const p = want.get(d.equipId);
+      for (const [equipId, expected] of creditedById) {
+        const p = want.get(equipId);
         if (!p) continue;
         covers.push({
-          equipId: d.equipId,
+          equipId,
           name: p.name,
           category: p.category,
           icon: p.icon,
           tier: p.tier,
           need: p.qty,
-          expected: Math.round(runs * eff(d.rate)),
+          expected: Math.round(expected),
         });
       }
       covers.sort((a, b) => b.tier - a.tier);
