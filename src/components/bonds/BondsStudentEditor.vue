@@ -76,7 +76,10 @@ const {
   redoChanges,
   resetGifts,
   loadFromIndexedDB,
+  saveBeforeClose,
 } = useStudentForm(toRef(props, 'student'));
+
+defineExpose({ saveBeforeClose });
 
 // Other-EXP panel visibility (modal)
 const showOtherExpPanel = ref(false);

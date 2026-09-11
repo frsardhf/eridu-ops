@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, defineAsyncComponent } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
 import { getSettings, updateSetting } from '@/lib/utils/settingsStorage';
@@ -30,6 +30,33 @@ const { track } = useAnalytics();
 
 // --- Layout (tabs/cards) ---
 const layout = ref<'tabs' | 'cards'>(getSettings().bondsLayout);
+const activeEditor = ref<InstanceType<typeof BondsStudentEditor> | null>(null);
+const cardEditors = ref<InstanceType<typeof BondsStudentEditor>[]>([]);
+let isSavingEditors = false;
+
+async function saveEditorsBeforeLeaving(): Promise<boolean> {
+  if (isSavingEditors) return false;
+  isSavingEditors = true;
+  try {
+    const editors = activeEditor.value ? [activeEditor.value] : cardEditors.value;
+    await Promise.all(editors.map((editor) => editor.saveBeforeClose()));
+    return true;
+  } catch (error) {
+    console.error('Failed to save bond changes before leaving:', error);
+    window.alert($t('saveChangesFailed'));
+    return false;
+  } finally {
+    isSavingEditors = false;
+  }
+}
+
+onBeforeRouteLeave(saveEditorsBeforeLeaving);
+
+async function setLayout(next: 'tabs' | 'cards') {
+  if (next === layout.value || !(await saveEditorsBeforeLeaving())) return;
+  layout.value = next;
+}
+
 watch(layout, (v) => {
   updateSetting('bondsLayout', v);
   track({ name: 'setting_changed', feature: 'bond_planner', action: 'changed' });
@@ -148,11 +175,13 @@ onMounted(async () => {
   }
 });
 
-function onSelectStudent(s: StudentProps) {
+async function onSelectStudent(s: StudentProps) {
+  if (s.Id === activeStudent.value?.Id || !(await saveEditorsBeforeLeaving())) return;
   activeStudentId.value = s.Id;
 }
 
-function onRemoveStudent(id: number) {
+async function onRemoveStudent(id: number) {
+  if (!(await saveEditorsBeforeLeaving())) return;
   removeStudent(id);
   track({ name: 'plan_action', feature: 'bond_planner', action: 'untracked' });
 }
@@ -197,7 +226,7 @@ function openInventory(): void {
             :class="{ active: layout === 'tabs' }"
             role="tab"
             :aria-selected="layout === 'tabs'"
-            @click="layout = 'tabs'"
+            @click="setLayout('tabs')"
           >
             {{ $t('layoutTabs') }}
           </button>
@@ -207,7 +236,7 @@ function openInventory(): void {
             :class="{ active: layout === 'cards' }"
             role="tab"
             :aria-selected="layout === 'cards'"
-            @click="layout = 'cards'"
+            @click="setLayout('cards')"
           >
             {{ $t('layoutCards') }}
           </button>
@@ -231,7 +260,11 @@ function openInventory(): void {
         />
 
         <div v-if="activeStudent" :key="activeStudent.Id" class="bonds-active">
-          <BondsStudentEditor :student="activeStudent" :collapsed="isCollapsed(activeStudent.Id)" />
+          <BondsStudentEditor
+            ref="activeEditor"
+            :student="activeStudent"
+            :collapsed="isCollapsed(activeStudent.Id)"
+          />
           <div class="bonds-actions">
             <button
               type="button"
@@ -261,7 +294,7 @@ function openInventory(): void {
             :id="`bonds-card-${s.Id}`"
             class="bonds-card-slot"
           >
-            <BondsStudentEditor :student="s" :collapsed="isCollapsed(s.Id)" />
+            <BondsStudentEditor ref="cardEditors" :student="s" :collapsed="isCollapsed(s.Id)" />
             <div class="bonds-actions">
               <button type="button" class="bonds-btn ghost" @click="toggleCollapsed(s.Id)">
                 {{ isCollapsed(s.Id) ? $t('showEditor') : $t('hideEditor') }}
