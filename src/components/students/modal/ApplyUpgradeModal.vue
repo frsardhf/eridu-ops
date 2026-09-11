@@ -7,6 +7,7 @@ import {
   CharacterLevels,
   SectionId,
   MaterialPreviewItem,
+  UpgradePreview,
 } from '@/types/upgrade';
 import type { EquipmentLevels, GradeLevels, ExclusiveGearLevel } from '@/types/gear';
 import { StudentProps } from '@/types/student';
@@ -24,9 +25,7 @@ const props = defineProps<{
   equipmentLevels: EquipmentLevels;
   gradeLevels: GradeLevels;
   exclusiveGearLevel: ExclusiveGearLevel;
-  hasSufficientMaterials: boolean;
-  insufficientList: string[];
-  computePreview: (ids: SectionId[]) => MaterialPreviewItem[];
+  computePreview: (ids: SectionId[]) => UpgradePreview;
 }>();
 
 const emit = defineEmits<{
@@ -82,9 +81,12 @@ function toggleSection(id: SectionId) {
 type ViewMode = 'consumed' | 'remaining';
 const viewMode = ref<ViewMode>('consumed');
 
-const previewItems = computed(() => props.computePreview(Array.from(selectedIds.value)));
+const preview = computed(() => props.computePreview(Array.from(selectedIds.value)));
+const previewItems = computed(() => preview.value.items);
+const insufficientList = computed(() => preview.value.insufficientList);
+const hasSufficientMaterials = computed(() => insufficientList.value.length === 0);
 
-const canApply = computed(() => selectedIds.value.size > 0 && props.hasSufficientMaterials);
+const canApply = computed(() => selectedIds.value.size > 0 && hasSufficientMaterials.value);
 
 function handleApply() {
   if (!canApply.value) return;

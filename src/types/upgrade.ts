@@ -43,6 +43,11 @@ export interface MaterialPreviewItem {
   type: MaterialType;
 }
 
+export interface UpgradePreview {
+  items: MaterialPreviewItem[];
+  insufficientList: string[];
+}
+
 export interface CharacterLevels {
   current: number;
   target: number;

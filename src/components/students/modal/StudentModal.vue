@@ -2,6 +2,7 @@
 import { ref, computed, defineAsyncComponent, watch, toRef, CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
+import { computeUpgradePreview } from '@/composables/useApplyUpgrade';
 import { $t } from '@/locales';
 import { studentDataStore } from '@/lib/stores/studentStore';
 import { useStudentOwnership } from '@/lib/hooks/useStudentOwnership';
@@ -35,36 +36,20 @@ import {
   SkillType,
   PotentialType,
   Material,
-  MaterialPreviewItem,
+  UpgradePreview,
   type SectionId,
 } from '@/types/upgrade';
 import type { EquipmentType } from '@/types/gear';
-import {
-  computeCharacterXpCost,
-  getCharXpItems,
-  calculateLevelMaterials,
-  calculateSkillMaterials,
-  calculatePotentialMaterials,
-} from '@/lib/utils/upgradeMaterialUtils';
+import { computeCharacterXpCost, getCharXpItems } from '@/lib/utils/upgradeMaterialUtils';
 import {
   computeEquipmentXpCost,
   getEquipXpItems,
-  calculateEquipmentMaterials,
-  calculateEquipmentCredits,
-  calculateGradeMaterials,
-  calculateGradeCredits,
-  calculateExclusiveGearMaterials,
   getElephsForGrade,
 } from '@/lib/utils/gearMaterialUtils';
-import { deductXpItems, simulateXpDeduction } from '@/lib/utils/upgradeUtils';
-import { sortMaterials } from '@/lib/utils/materialUtils';
+import { deductXpItems } from '@/lib/utils/upgradeUtils';
 import { allocateEquipmentBlueprints } from '@/lib/utils/equipmentBlueprintUtils';
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
-import {
-  getResourceDataByIdSync,
-  getEquipmentDataByIdSync,
-  getAllEquipmentFromCache,
-} from '@/lib/stores/resourceCacheStore';
+import { getAllEquipmentFromCache } from '@/lib/stores/resourceCacheStore';
 import '@/styles/studentModal.css';
 
 // Lazy in every importer (here, StudentsPage, BondsPage) so the inventory
@@ -300,177 +285,20 @@ function getCurrentEquipmentResources() {
   );
 }
 
-// Conservative material check: all pending materials vs inventory
-const insufficientList = computed<string[]>(() => {
-  const allMats = [...allMaterialsNeeded.value, ...equipmentMaterialsNeeded.value];
-  const equipmentAllocation = allocateEquipmentBlueprints(allMats, getCurrentEquipmentResources());
-  // Aggregate quantities by ID
-  const needed = new Map<number, { name: string; qty: number; isEquip: boolean }>();
-  for (const mat of allMats) {
-    const id = mat.material.Id;
-    const isEquip = mat.type === 'equipments';
-    const ex = needed.get(id);
-    if (ex) {
-      ex.qty += mat.materialQuantity;
-    } else {
-      needed.set(id, { name: mat.material.Name, qty: mat.materialQuantity, isEquip });
-    }
-  }
-  const out: string[] = [];
-  for (const [id, { name, qty, isEquip }] of needed.entries()) {
-    if (isEquip) {
-      if ((equipmentAllocation.remainingById.get(id) ?? -qty) < 0) out.push(name);
-      continue;
-    }
-    const owned = isEquip ? (equipmentFormData.value[id] ?? 0) : (itemFormData.value[id] ?? 0);
-    if (owned < qty) out.push(name);
-  }
-  // Check EXP sufficiency (activity reports for level, XP balls for equipment)
-  const levelPending = (characterLevels.value.current ?? 1) < (characterLevels.value.target ?? 1);
-  if (levelPending) {
-    const xpNeeded = computeCharacterXpCost(
-      characterLevels.value.current,
-      characterLevels.value.target,
-    );
-    const ownedXp = getCharXpItems((id) => itemFormData.value[id] ?? 0).reduce(
-      (s, item) => s + item.owned * item.xpValue,
-      0,
-    );
-    if (ownedXp < xpNeeded) out.push($t('activityReport'));
-  }
-
-  const equipPending = Object.values(equipmentLevels.value).some((e) => e && e.current < e.target);
-  if (equipPending) {
-    const xpNeeded = computeEquipmentXpCost(equipmentLevels.value);
-    const ownedXp = getEquipXpItems((id) => equipmentFormData.value[id] ?? 0).reduce(
-      (s, item) => s + item.owned * item.xpValue,
-      0,
-    );
-    if (ownedXp < xpNeeded) out.push($t('equipmentXp'));
-  }
-
-  return out;
-});
-
-const hasSufficientMaterials = computed(() => insufficientList.value.length === 0);
-
-function computePreview(selectedIds: SectionId[]): MaterialPreviewItem[] {
-  const student = displayedStudent.value;
-  if (!student) return [];
-
-  // Collect raw materials for selected sections only
-  const raw: Material[] = [];
-
-  if (selectedIds.includes('level'))
-    raw.push(...calculateLevelMaterials(student, characterLevels.value));
-  if (selectedIds.includes('skills'))
-    raw.push(...calculateSkillMaterials(student, skillLevels.value));
-  if (selectedIds.includes('potential'))
-    raw.push(...calculatePotentialMaterials(student, potentialLevels.value));
-  if (selectedIds.includes('equipment')) {
-    raw.push(...calculateEquipmentMaterials(student, equipmentLevels.value));
-    raw.push(...calculateEquipmentCredits(equipmentLevels.value));
-  }
-  if (selectedIds.includes('grade')) {
-    raw.push(...calculateGradeMaterials(gradeLevels.value, gradeInfos.value));
-    raw.push(...calculateGradeCredits(gradeLevels.value));
-  }
-  if (selectedIds.includes('exclusive'))
-    raw.push(...calculateExclusiveGearMaterials(student, exclusiveGearLevel.value));
-
-  // Aggregate by material ID
-  const map = new Map<number, Material>();
-  for (const m of raw) {
-    const id = m.material.Id;
-    const ex = map.get(id);
-    if (ex) ex.materialQuantity += m.materialQuantity;
-    else map.set(id, { ...m });
-  }
-
-  const equipmentAllocation = allocateEquipmentBlueprints(
-    [...map.values()],
-    getCurrentEquipmentResources(),
-  );
-  const result: MaterialPreviewItem[] = [];
-  for (const m of map.values()) {
-    if (m.materialQuantity <= 0) continue;
-    const id = m.material.Id;
-    const needed =
-      m.type === 'equipments'
-        ? (equipmentAllocation.normalUsedById.get(id) ?? 0)
-        : m.materialQuantity;
-    if (needed <= 0) continue;
-    const owned =
-      m.type === 'equipments' ? (equipmentFormData.value[id] ?? 0) : (itemFormData.value[id] ?? 0);
-    result.push({
-      material: m.material,
-      needed,
-      owned,
-      remaining: owned - needed,
-      type: m.type ?? 'materials',
-    });
-  }
-
-  for (const [generalId, needed] of equipmentAllocation.generalUsedById) {
-    const material = getEquipmentDataByIdSync(generalId);
-    if (!material) continue;
-    const owned = equipmentFormData.value[generalId] ?? 0;
-    result.push({ material, needed, owned, remaining: owned - needed, type: 'equipments' });
-  }
-
-  // XP items for level (activity reports)
-  if (selectedIds.includes('level')) {
-    const cost = computeCharacterXpCost(
-      characterLevels.value.current,
-      characterLevels.value.target,
-    );
-    if (cost > 0) {
-      const charItems = getCharXpItems((id) => itemFormData.value[id] ?? 0);
-      const consumed = simulateXpDeduction(cost, charItems);
-      charItems.forEach((item, i) => {
-        if (consumed[i] <= 0) return;
-        const mat = getResourceDataByIdSync(item.id);
-        if (!mat) return;
-        result.push({
-          material: mat,
-          needed: consumed[i],
-          owned: item.owned,
-          remaining: item.owned - consumed[i],
-          type: 'xp',
-        });
-      });
-    }
-  }
-
-  // XP items for equipment (XP balls)
-  if (selectedIds.includes('equipment')) {
-    const cost = computeEquipmentXpCost(equipmentLevels.value);
-    if (cost > 0) {
-      const equipItems = getEquipXpItems((id) => equipmentFormData.value[id] ?? 0);
-      const consumed = simulateXpDeduction(cost, equipItems);
-      equipItems.forEach((item, i) => {
-        if (consumed[i] <= 0) return;
-        const mat = getEquipmentDataByIdSync(item.id);
-        if (!mat) return;
-        result.push({
-          material: mat,
-          needed: consumed[i],
-          owned: item.owned,
-          remaining: item.owned - consumed[i],
-          type: 'xp',
-        });
-      });
-    }
-  }
-
-  result.sort((a, b) =>
-    sortMaterials(
-      { material: a.material, materialQuantity: a.needed, type: a.type },
-      { material: b.material, materialQuantity: b.needed, type: b.type },
-    ),
-  );
-
-  return result;
+function computePreview(selectedIds: SectionId[]): UpgradePreview {
+  if (!displayedStudent.value) return { items: [], insufficientList: [] };
+  return computeUpgradePreview(selectedIds, {
+    student: displayedStudent.value,
+    characterLevels: characterLevels.value,
+    skillLevels: skillLevels.value,
+    potentialLevels: potentialLevels.value,
+    equipmentLevels: equipmentLevels.value,
+    gradeLevels: gradeLevels.value,
+    gradeInfos: gradeInfos.value,
+    exclusiveGearLevel: exclusiveGearLevel.value,
+    itemFormData: itemFormData.value,
+    equipmentFormData: equipmentFormData.value,
+  });
 }
 
 const hasAnyPendingUpgrade = computed(() => {
@@ -512,6 +340,8 @@ function applyMaterialDelta(snapshot: Material[], afterMap: Map<number, number>)
 }
 
 function doApplyUpgrade(selectedIds: SectionId[]) {
+  if (!selectedIds.length || computePreview(selectedIds).insufficientList.length > 0) return;
+
   // 0. Snapshot XP costs BEFORE levels change (step 2 sets current = target)
   const charXpCost = selectedIds.includes('level')
     ? computeCharacterXpCost(characterLevels.value.current, characterLevels.value.target)
@@ -944,8 +774,6 @@ watch(
       :equipment-levels="equipmentLevels"
       :grade-levels="gradeLevels"
       :exclusive-gear-level="exclusiveGearLevel"
-      :has-sufficient-materials="hasSufficientMaterials"
-      :insufficient-list="insufficientList"
       :compute-preview="computePreview"
       @apply="doApplyUpgrade"
       @close="showApplyModal = false"
