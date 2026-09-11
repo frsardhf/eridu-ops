@@ -234,6 +234,28 @@ function showGroupTooltip(event: MouseEvent, itemId: number, group: SummaryGroup
 
 <template>
   <div ref="summaryRef" class="resource-summary">
+    <div
+      v-if="props.viewType !== 'per-student' && summaryGroups.length > 0"
+      class="resource-group-tabs"
+      :role="layout === 'paged' ? 'tablist' : 'navigation'"
+      :aria-label="$t('inventory')"
+    >
+      <button
+        v-for="group in summaryGroups"
+        :id="`summary-resource-tab-${group.id}`"
+        :key="group.id"
+        type="button"
+        :role="layout === 'paged' ? 'tab' : undefined"
+        class="resource-group-tab"
+        :class="{ active: activeGroup === group.id }"
+        :aria-selected="layout === 'paged' ? activeGroup === group.id : undefined"
+        :aria-controls="`summary-resource-section-${group.id}`"
+        @click="selectGroup(group.id)"
+      >
+        {{ $t(group.labelKey) }}
+      </button>
+    </div>
+
     <div class="resources-content">
       <!-- Per-student view -->
       <template v-if="props.viewType === 'per-student'">
@@ -308,28 +330,6 @@ function showGroupTooltip(event: MouseEvent, itemId: number, group: SummaryGroup
 
       <!-- Aggregate view -->
       <template v-else>
-        <div
-          v-if="summaryGroups.length > 0"
-          class="resource-group-tabs"
-          :role="layout === 'paged' ? 'tablist' : 'navigation'"
-          :aria-label="$t('inventory')"
-        >
-          <button
-            v-for="group in summaryGroups"
-            :id="`summary-resource-tab-${group.id}`"
-            :key="group.id"
-            type="button"
-            :role="layout === 'paged' ? 'tab' : undefined"
-            class="resource-group-tab"
-            :class="{ active: activeGroup === group.id }"
-            :aria-selected="layout === 'paged' ? activeGroup === group.id : undefined"
-            :aria-controls="`summary-resource-section-${group.id}`"
-            @click="selectGroup(group.id)"
-          >
-            {{ $t(group.labelKey) }}
-          </button>
-        </div>
-
         <div v-if="summaryGroups.length === 0" class="no-resources">
           <span>{{ noResourcesText }}</span>
         </div>
@@ -625,7 +625,7 @@ function showGroupTooltip(event: MouseEvent, itemId: number, group: SummaryGroup
 .resource-summary {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
   width: 100%;
 }
 
@@ -634,7 +634,6 @@ function showGroupTooltip(event: MouseEvent, itemId: number, group: SummaryGroup
   background: var(--card-background);
   border-radius: 8px;
   padding: 5px;
-  overflow-y: auto;
 }
 
 .summary-groups.continuous {
