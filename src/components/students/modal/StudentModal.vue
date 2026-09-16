@@ -198,6 +198,7 @@ const {
   loadFromIndexedDB: loadFormData,
 } = useStudentForm(toRef(props, 'student'), {
   isVisible: () => !!props.isVisible,
+  historySource: 'students',
 });
 
 const { itemFormData, loadItems, flushPendingItems } = useStudentItems(props);

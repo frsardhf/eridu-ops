@@ -49,6 +49,7 @@ import { BOX_ITEM_IDS } from '../constants/giftConstants';
 import { getAllocatedGifts } from './useGiftCalculation';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 import bondData from '../../data/data.json';
+import type { PlanHistorySource } from '../db/database';
 
 /**
  * Consolidated per-student form hook.
@@ -82,6 +83,8 @@ export interface UseStudentFormOptions {
   isVisible?: () => boolean;
   /** Optional close hook fired by `closeModal()`. */
   onClose?: () => void;
+  /** Surface that created the persisted plan edit. */
+  historySource?: Extract<PlanHistorySource, 'students' | 'bonds'>;
 }
 
 export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFormOptions = {}) {
@@ -173,20 +176,24 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     defaults: FORM_DEFAULTS,
     loadFn: (staged) => loadFormDataToRefs(student().Id, staged, FORM_DEFAULTS),
     saveFn: async () => {
-      const saved = await saveFormData(student().Id, {
-        characterLevels: characterLevels.value,
-        skillLevels: skillLevels.value,
-        potentialLevels: potentialLevels.value,
-        equipmentLevels: { ...equipmentLevels.value },
-        gradeLevels: { ...gradeLevels.value },
-        gradeInfos: { ...gradeInfos.value },
-        exclusiveGearLevel: { ...exclusiveGearLevel.value },
-        giftFormData: giftFormData.value,
-        boxFormData: boxFormData.value,
-        nonFavorGiftsMap: nonFavorGiftsMap.value,
-        bondDetailData: bondDetailData.value,
-        otherExpData: otherExpData.value,
-      });
+      const saved = await saveFormData(
+        student().Id,
+        {
+          characterLevels: characterLevels.value,
+          skillLevels: skillLevels.value,
+          potentialLevels: potentialLevels.value,
+          equipmentLevels: { ...equipmentLevels.value },
+          gradeLevels: { ...gradeLevels.value },
+          gradeInfos: { ...gradeInfos.value },
+          exclusiveGearLevel: { ...exclusiveGearLevel.value },
+          giftFormData: giftFormData.value,
+          boxFormData: boxFormData.value,
+          nonFavorGiftsMap: nonFavorGiftsMap.value,
+          bondDetailData: bondDetailData.value,
+          otherExpData: otherExpData.value,
+        },
+        opts.historySource ?? 'students',
+      );
       if (!saved) throw new Error('Failed to save student changes.');
       return saved;
     },

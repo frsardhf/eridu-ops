@@ -1,5 +1,5 @@
-import { db } from '@/lib/db/database';
 import { studentDataStore } from '@/lib/stores/studentStore';
+import { saveFormData } from '@/lib/services/studentPersistenceService';
 
 /**
  * Read/update student ownership (recruited/not recruited). Stored as
@@ -7,19 +7,13 @@ import { studentDataStore } from '@/lib/stores/studentStore';
  * default), `false` = not recruited. The canonical check is `isOwned !== false`.
  */
 export function useStudentOwnership() {
-  /**
-   * Persist a new ownership value for a student and update the in-memory store.
-   * Assumes the student already has a FormRecord (created by initializeStudentFormData).
-   */
+  /** Persists ownership with plan history and updates the in-memory store. */
   async function setOwned(studentId: number, owned: boolean) {
-    await db.forms.where('studentId').equals(studentId).modify({ isOwned: owned });
-
-    // Update in-memory store so all reactive consumers (computed, templates) update
-    const current = studentDataStore.value[studentId];
-    if (current) {
+    const saved = await saveFormData(studentId, { isOwned: owned }, 'students');
+    if (saved) {
       studentDataStore.value = {
         ...studentDataStore.value,
-        [studentId]: { ...current, isOwned: owned },
+        [studentId]: saved,
       };
     }
   }

@@ -77,7 +77,7 @@ const {
   resetGifts,
   loadFromIndexedDB,
   saveBeforeClose,
-} = useStudentForm(toRef(props, 'student'));
+} = useStudentForm(toRef(props, 'student'), { historySource: 'bonds' });
 
 defineExpose({ saveBeforeClose });
 

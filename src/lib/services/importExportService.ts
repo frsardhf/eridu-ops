@@ -12,6 +12,7 @@ import {
 import type { ItemsInventoryRecord, FormRecord } from '../db/database';
 import { getSettings, saveSettings, type AppSettings } from '../utils/settingsStorage';
 import { db } from '../db/database';
+import { clearPlanHistory } from './planHistoryService';
 
 /**
  * Schema for the third-party "other site" (justin163) JSON import format.
@@ -167,6 +168,7 @@ async function importV3Format(importData: ImportV3Blob): Promise<void> {
         : Promise.resolve(),
     ]);
   });
+  await clearPlanHistory();
 
   // Merge settings with existing ones to preserve new/default keys (localStorage, outside transaction)
   if (settings) {
@@ -300,6 +302,8 @@ export async function importFromOtherSite(importText: string): Promise<boolean> 
     if (itemInventoryRows.length > 0) {
       await db.items_inventory.bulkPut(itemInventoryRows);
     }
+
+    await clearPlanHistory();
 
     return true;
   } catch (error) {

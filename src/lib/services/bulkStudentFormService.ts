@@ -2,6 +2,7 @@ import { FormRecord, db } from '@/lib/db/database';
 import { buildDefaultFormData } from '@/lib/services/studentFormService';
 import { StudentProps } from '@/types/student';
 import { DEFAULT_SKILL_LEVELS, DEFAULT_POTENTIAL_LEVELS } from '@/types/upgrade';
+import { recordPlanHistoryEvent } from './planHistoryService';
 
 export type AvailabilityFilter = 'fest' | 'unique' | 'regular' | 'event';
 
@@ -320,6 +321,14 @@ export async function applyBondUpdates(
   });
 
   await db.forms.bulkPut(updatedRows);
+  await recordPlanHistoryEvent(
+    'bulk',
+    updatedRows.map((after, index) => ({
+      studentId: after.studentId,
+      before: existingForms[index] ?? { studentId: after.studentId },
+      after,
+    })),
+  );
 
   return updatedMap;
 }
@@ -336,6 +345,9 @@ export async function applyBulkStudentFormPatch(
     students.map((student) => [student.Id, student]),
   );
   const existingForms = await db.forms.bulkGet(uniqueIds);
+  const existingFormsById = new Map<number, FormRecord | undefined>(
+    uniqueIds.map((studentId, index) => [studentId, existingForms[index]]),
+  );
 
   const updatedRows: FormRecord[] = [];
   const updatedMap: Record<number, FormRecord> = {};
@@ -357,6 +369,14 @@ export async function applyBulkStudentFormPatch(
       await db.forms.bulkPut(updatedRows.slice(i, i + BULK_WRITE_CHUNK_SIZE));
     }
   });
+  await recordPlanHistoryEvent(
+    'bulk',
+    updatedRows.map((after) => ({
+      studentId: after.studentId,
+      before: existingFormsById.get(after.studentId) ?? { studentId: after.studentId },
+      after,
+    })),
+  );
 
   return updatedMap;
 }
@@ -372,21 +392,24 @@ export async function bulkSetStudentOwnership(
 ): Promise<Record<number, FormRecord>> {
   if (ids.length === 0) return {};
 
-  await db.transaction('rw', db.forms, async () => {
-    for (const studentId of ids) {
-      const existing = await db.forms.get(studentId);
-      if (existing) {
-        await db.forms.update(studentId, { isOwned: owned });
-      } else {
-        await db.forms.put({ studentId, isOwned: owned });
-      }
-    }
+  const existingForms = await db.forms.bulkGet(ids);
+  const updates: Record<number, FormRecord> = {};
+  const updatedRows = ids.map((studentId, index) => {
+    const current = existingForms[index] ?? currentForms[studentId] ?? { studentId };
+    const next = { ...current, studentId, isOwned: owned };
+    updates[studentId] = next;
+    return next;
   });
 
-  const updates: Record<number, FormRecord> = {};
-  for (const studentId of ids) {
-    const current = currentForms[studentId] ?? { studentId };
-    updates[studentId] = { ...current, isOwned: owned } as FormRecord;
-  }
+  await db.forms.bulkPut(updatedRows);
+  await recordPlanHistoryEvent(
+    'bulk',
+    updatedRows.map((after, index) => ({
+      studentId: after.studentId,
+      before: existingForms[index] ?? { studentId: after.studentId },
+      after,
+    })),
+  );
+
   return updates;
 }

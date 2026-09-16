@@ -13,20 +13,28 @@ import {
   getAllEquipmentAsRecord,
 } from './dbService';
 import type { ItemsInventoryRecord, EquipmentInventoryRecord, FormRecord } from '../db/database';
+import type { PlanHistorySource } from '../db/database';
 import type { CachedResource } from '../../types/resource';
 import { toNumericId } from '../utils/idCoercion';
 import { SYNTHETIC_ENTITIES } from '../constants/syntheticEntities';
+import { recordPlanHistoryEvent } from './planHistoryService';
 
 /** Saves a student's form data to IndexedDB (id coerced to numeric). */
 export async function saveFormData(
   studentId: string | number,
   data: Partial<FormRecord>,
+  historySource: PlanHistorySource,
 ): Promise<FormRecord | null> {
   if (!studentId) return null;
 
   try {
     const numericId = toNumericId(studentId);
-    return await dbSaveFormData(numericId, data);
+    const before = (await dbGetFormData(numericId)) ?? { studentId: numericId };
+    const saved = await dbSaveFormData(numericId, data);
+    if (saved) {
+      await recordPlanHistoryEvent(historySource, [{ studentId: numericId, before, after: saved }]);
+    }
+    return saved;
   } catch (error) {
     console.error('Error saving form data to IndexedDB:', error);
     return null;

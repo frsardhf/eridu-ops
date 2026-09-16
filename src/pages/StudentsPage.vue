@@ -23,6 +23,9 @@ const DeckBuilderModal = defineAsyncComponent(
 const EquipmentFarmingModal = defineAsyncComponent(
   () => import('@/components/students/tools/EquipmentFarmingModal.vue'),
 );
+const PlanHistoryModal = defineAsyncComponent(
+  () => import('@/components/students/tools/PlanHistoryModal.vue'),
+);
 const GlobalInventoryModal = defineAsyncComponent(
   () => import('@/components/inventory/GlobalInventoryModal.vue'),
 );
@@ -64,6 +67,7 @@ const isDeckBuilderVisible = ref(false);
 const isInventoryModalVisible = ref(false);
 const inventoryInitialTab = ref<'items' | 'equipment'>('items');
 const isEquipmentFarmingVisible = ref(false);
+const isPlanHistoryVisible = ref(false);
 
 function openInventoryFromFarming() {
   isEquipmentFarmingVisible.value = false;
@@ -188,6 +192,14 @@ function openEquipmentFarming(): void {
   isEquipmentFarmingVisible.value = true;
   track({ name: 'feature_opened', feature: 'equipment_farming', action: 'opened' });
 }
+
+function openPlanHistory(): void {
+  isPlanHistoryVisible.value = true;
+}
+
+function handlePlanRestored(): void {
+  closeModal();
+}
 </script>
 
 <template>
@@ -213,6 +225,7 @@ function openEquipmentFarming(): void {
       @open-inventory="openInventory"
       @open-bond-update="openBondUpdate"
       @open-equipment-farming="openEquipmentFarming"
+      @open-plan-history="openPlanHistory"
     />
 
     <DataLoadErrorBanner />
@@ -268,6 +281,13 @@ function openEquipmentFarming(): void {
       v-if="isEquipmentFarmingVisible"
       @close="isEquipmentFarmingVisible = false"
       @open-inventory="openInventoryFromFarming"
+    />
+
+    <PlanHistoryModal
+      v-if="isPlanHistoryVisible"
+      :students="allStudentsArray"
+      @close="isPlanHistoryVisible = false"
+      @restored="handlePlanRestored"
     />
   </div>
 </template>

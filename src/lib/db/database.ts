@@ -75,6 +75,21 @@ export interface DeckRecord {
   updatedAt: number;
 }
 
+export type PlanHistorySource = 'students' | 'bonds' | 'bulk' | 'restore';
+
+export interface PlanHistoryChange {
+  studentId: number;
+  before: FormRecord;
+  after: FormRecord;
+}
+
+export interface PlanHistoryRecord {
+  id?: number;
+  createdAt: number;
+  source: PlanHistorySource;
+  changes: PlanHistoryChange[];
+}
+
 // Define the database class (only the `db` singleton below is exported)
 class EriduOpsDatabase extends Dexie {
   // Declare tables
@@ -86,6 +101,7 @@ class EriduOpsDatabase extends Dexie {
   items_inventory!: Table<ItemsInventoryRecord, number>;
   equipment_inventory!: Table<EquipmentInventoryRecord, number>;
   decks!: Table<DeckRecord, number>;
+  plan_history!: Table<PlanHistoryRecord, number>;
 
   constructor() {
     super('eridu-ops-db');
@@ -147,6 +163,11 @@ class EriduOpsDatabase extends Dexie {
     // Version 3: Add decks table
     this.version(3).stores({
       decks: 'id, updatedAt',
+    });
+
+    // Version 4: Add bounded student plan history.
+    this.version(4).stores({
+      plan_history: '++id, createdAt',
     });
   }
 }
