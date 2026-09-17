@@ -62,6 +62,7 @@
   --color-grade-blue: hsl(192, 100%, 60%); /* blue ★ / grade pill */
   --color-warning: #f59e0b; /* advisory / OCR low-confidence */
   --color-convert: #f7ac4a; /* gift convert-to-credits accent */
+  --text-on-accent: #fff;
 
   /* Shared motion tokens */
   --motion-duration-fast: 180ms;

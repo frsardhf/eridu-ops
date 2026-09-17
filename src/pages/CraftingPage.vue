@@ -8,6 +8,8 @@ import { useStudentData } from '@/lib/hooks/useStudentData';
 import { $t } from '@/locales';
 import type { CraftingFodderStage } from '@/types/crafting';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
+import { useTooltip } from '@/composables/useTooltip';
+import '@/styles/tooltip.css';
 
 const GlobalInventoryModal = defineAsyncComponent(
   () => import('@/components/inventory/GlobalInventoryModal.vue'),
@@ -32,6 +34,9 @@ const {
   setRemainingCrafts,
 } = useCraftingFodder();
 const { track } = useAnalytics();
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<
+  'rulesHint' | 'stage1Hint'
+>();
 
 const rulesOpen = ref(false);
 const hideCompleted = ref(false);
@@ -282,20 +287,47 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
 
       <section v-if="rulesOpen" class="plan-settings">
         <div class="plan-settings-header">
-          <span>{{ $t('craftingFodder.rulesHint') }}</span>
-          <button
-            type="button"
-            class="crafting-btn"
-            :disabled="!summary.hasProgress"
-            @click="resetAllProgress"
-          >
-            {{ $t('craftingFodder.resetProgress') }}
-          </button>
+          <span class="plan-settings-title">{{ $t('craftingFodder.keepAtLeast') }}</span>
+          <div class="plan-settings-actions">
+            <div
+              class="header-stage1-filter"
+              role="group"
+              :aria-label="$t('craftingFodder.stage1Filter')"
+              @mouseenter="showTooltip($event, 'stage1Hint')"
+              @mouseleave="hideTooltip"
+            >
+              <button
+                v-for="rarity in allRarities"
+                :key="rarity"
+                type="button"
+                class="rarity-chip header-rarity-chip"
+                :class="{ active: rarityFilter.includes(rarity) }"
+                :aria-label="`${$t('craftingFodder.stage1Filter')}: ${rarity}`"
+                :aria-pressed="rarityFilter.includes(rarity)"
+                @click="toggleStageRarity(rarity)"
+              >
+                {{ rarity }}
+              </button>
+            </div>
+            <span
+              class="reset-progress-tooltip-anchor"
+              @mouseenter="showTooltip($event, 'rulesHint')"
+              @mouseleave="hideTooltip"
+            >
+              <button
+                type="button"
+                class="crafting-btn"
+                :disabled="!summary.hasProgress"
+                @click="resetAllProgress"
+              >
+                {{ $t('craftingFodder.resetProgress') }}
+              </button>
+            </span>
+          </div>
         </div>
 
         <div class="rules-content">
           <div class="threshold-section">
-            <div class="section-label">{{ $t('craftingFodder.keepAtLeast') }}</div>
             <div class="threshold-grid">
               <div class="threshold-cell threshold-corner"></div>
               <div
@@ -336,25 +368,16 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
               </template>
             </div>
           </div>
-
-          <div class="rarity-section">
-            <div class="section-label">{{ $t('craftingFodder.stage1Filter') }}</div>
-            <div class="rarity-chips">
-              <button
-                v-for="rarity in allRarities"
-                :key="rarity"
-                type="button"
-                class="rarity-chip"
-                :class="{ active: rarityFilter.includes(rarity) }"
-                :aria-pressed="rarityFilter.includes(rarity)"
-                @click="toggleStageRarity(rarity)"
-              >
-                {{ rarity }}
-              </button>
-            </div>
-          </div>
         </div>
       </section>
+      <div v-if="activeTooltip" ref="tooltipRef" class="modal-tooltip" :style="tooltipStyle">
+        <template v-if="activeTooltip === 'rulesHint'">
+          {{ $t('craftingFodder.rulesHint') }}
+        </template>
+        <template v-else>
+          {{ $t('craftingFodder.stage1FilterHint') }}
+        </template>
+      </div>
 
       <div v-if="!isReady" class="page-state">{{ $t('loading') }}...</div>
 
@@ -595,7 +618,9 @@ button:disabled {
 }
 
 .plan-settings {
-  margin-bottom: 14px;
+  width: min(100%, 920px);
+  margin: 0 auto 14px;
+  box-sizing: border-box;
   overflow: hidden;
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -603,6 +628,7 @@ button:disabled {
 }
 
 .plan-settings-header {
+  position: relative;
   min-height: 38px;
   padding: 4px 10px 4px 14px;
   display: flex;
@@ -614,25 +640,47 @@ button:disabled {
   font-size: 0.75rem;
 }
 
-.rules-content {
-  padding: 12px 14px 14px;
-  display: grid;
-  grid-template-columns: minmax(460px, 2fr) minmax(170px, 1fr);
-  gap: 28px;
-}
-
-.section-label {
-  margin-bottom: 7px;
-  color: var(--text-secondary);
-  font-size: 0.7rem;
+.plan-settings-title {
+  color: var(--text-primary);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
+.plan-settings-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-stage1-filter {
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-color) 8%, var(--background-secondary));
+}
+
+.reset-progress-tooltip-anchor {
+  display: inline-flex;
+}
+
+.rules-content {
+  padding: 10px 12px 12px;
+}
+
+.threshold-section {
+  width: min(100%, 880px);
+  margin: 0 auto;
+}
+
 .threshold-grid {
   display: grid;
-  grid-template-columns: minmax(86px, auto) repeat(4, minmax(56px, 1fr)) 42px;
+  grid-template-columns: 108px repeat(4, minmax(110px, 150px)) 48px;
+  justify-content: center;
   gap: 5px;
   align-items: center;
 }
@@ -651,6 +699,7 @@ button:disabled {
 
 .threshold-reset-heading {
   font-size: 0.62rem;
+  white-space: nowrap;
 }
 
 .threshold-input {
@@ -688,12 +737,6 @@ button:disabled {
   color: var(--accent-color);
 }
 
-.rarity-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
 .rarity-chip {
   min-width: 48px;
   padding: 5px 12px;
@@ -710,6 +753,12 @@ button:disabled {
   border-color: var(--accent-color);
   background: color-mix(in srgb, var(--accent-color) 14%, var(--background-primary));
   color: var(--accent-color);
+}
+
+.header-rarity-chip {
+  min-width: 38px;
+  padding: 3px 7px;
+  font-size: 0.7rem;
 }
 
 .stages-grid {
@@ -784,6 +833,10 @@ button:disabled {
   .stages-grid {
     grid-template-columns: 1fr;
   }
+
+  .fodder-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -796,17 +849,20 @@ button:disabled {
     margin-left: 0;
   }
 
-  .rules-content {
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
   .fodder-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 700px) {
+  .plan-settings-header {
+    flex-wrap: wrap;
+  }
+
+  .plan-settings-actions {
+    margin-left: auto;
+  }
+
   .crafting-search {
     max-width: none;
     flex-basis: 100%;
@@ -838,10 +894,6 @@ button:disabled {
 
   .crafting-metrics {
     gap: 5px 7px;
-  }
-
-  .plan-settings-header {
-    align-items: flex-start;
   }
 
   .rules-content {
@@ -882,12 +934,12 @@ button:disabled {
   }
 
   .fodder-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 7px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
   .crafting-body {
     padding: 12px;
   }
@@ -897,6 +949,12 @@ button:disabled {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .fodder-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 390px) {
   .fodder-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

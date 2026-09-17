@@ -3,7 +3,7 @@ import { getAllItemsFromCache } from '../stores/resourceCacheStore';
 import { useMaterialCalculation } from './useMaterialCalculation';
 import { applyFilters } from '../utils/filterUtils';
 import { calculateLeftoverItems } from '../utils/materialUtils';
-import { createCraftingStagePlan } from '../utils/craftingUtils';
+import { createCraftingFodderSession } from '../utils/craftingUtils';
 import { getSettings, updateSetting } from '../utils/settingsStorage';
 import { getItemIconUrl } from '../utils/iconUtils';
 import { MATERIAL, ALL_RARITIES } from '../../types/resource';
@@ -13,7 +13,6 @@ import type {
   CraftingFodderSession,
   CraftingFodderSessionEntry,
   CraftingFodderStage,
-  CraftingFodderStageProgress,
 } from '../../types/crafting';
 
 const CRAFTING_SUBCATEGORIES = ['Artifact', 'CDItem', 'BookItem'] as const;
@@ -44,6 +43,8 @@ export interface CraftingFodderDisplayMaterial {
   remainingCrafts: number;
   recyclableQty: number;
   excessItems: number;
+  canUndo: boolean;
+  canReset: boolean;
 }
 
 function computeCraftStats(recyclableQty: number, craftQuality: number): CraftStats {
@@ -71,7 +72,12 @@ function cloneThresholds(
   return next;
 }
 
-function isStageProgress(value: unknown): value is CraftingFodderStageProgress {
+interface LegacyStageProgress {
+  plannedCrafts: number;
+  remainingCrafts: number;
+}
+
+function isStageProgress(value: unknown): value is LegacyStageProgress {
   if (!value || typeof value !== 'object') return false;
   const progress = value as Record<string, unknown>;
   return (
@@ -82,13 +88,22 @@ function isStageProgress(value: unknown): value is CraftingFodderStageProgress {
   );
 }
 
+function isNonNegativeFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function clampCrafts(value: number, capacity: number): number {
+  return Math.min(capacity, Math.max(0, Math.round(value)));
+}
+
 function cloneSession(session?: unknown): CraftingFodderSession | null {
   if (!session || typeof session !== 'object') return null;
   const saved = session as Record<string, unknown>;
   const isVersion2 = saved.version === 2;
   const isVersion3 = saved.version === 3;
+  const isVersion4 = saved.version === 4;
   if (
-    (!isVersion2 && !isVersion3) ||
+    (!isVersion2 && !isVersion3 && !isVersion4) ||
     typeof saved.sourceSignature !== 'string' ||
     !saved.entries ||
     typeof saved.entries !== 'object'
@@ -96,47 +111,103 @@ function cloneSession(session?: unknown): CraftingFodderSession | null {
     return null;
   }
   if (
-    isVersion3 &&
-    (typeof saved.stage1Capacity !== 'number' ||
-      !Number.isFinite(saved.stage1Capacity) ||
-      typeof saved.stage2Capacity !== 'number' ||
-      !Number.isFinite(saved.stage2Capacity))
+    (isVersion3 || isVersion4) &&
+    (!isNonNegativeFiniteNumber(saved.stage1Capacity) ||
+      !isNonNegativeFiniteNumber(saved.stage2Capacity))
   ) {
     return null;
   }
+  if (isVersion4 && !isNonNegativeFiniteNumber(saved.fullCraftCapacity)) return null;
 
   const entries: Record<number, CraftingFodderSessionEntry> = {};
   for (const value of Object.values(saved.entries)) {
     if (!value || typeof value !== 'object') return null;
     const entry = value as Record<string, unknown>;
+    if (!isNonNegativeFiniteNumber(entry.materialId)) return null;
+
+    if (isVersion4) {
+      if (
+        !isNonNegativeFiniteNumber(entry.craftCapacity) ||
+        !isNonNegativeFiniteNumber(entry.excessItems) ||
+        !isNonNegativeFiniteNumber(entry.itemsPerCraft) ||
+        typeof entry.stage1Eligible !== 'boolean' ||
+        typeof entry.stage2Eligible !== 'boolean' ||
+        !isNonNegativeFiniteNumber(entry.stage1Crafts) ||
+        !isNonNegativeFiniteNumber(entry.stage2Crafts)
+      ) {
+        return null;
+      }
+
+      const craftCapacity = Math.round(entry.craftCapacity);
+      const stage1Crafts = clampCrafts(entry.stage1Crafts, craftCapacity);
+      const stage2Crafts = clampCrafts(entry.stage2Crafts, craftCapacity - stage1Crafts);
+      entries[entry.materialId] = {
+        materialId: entry.materialId,
+        craftCapacity,
+        excessItems: entry.excessItems,
+        itemsPerCraft: entry.itemsPerCraft,
+        stage1Eligible: entry.stage1Eligible,
+        stage2Eligible: entry.stage2Eligible,
+        stage1Crafts,
+        stage2Crafts,
+      };
+      continue;
+    }
+
     if (
-      typeof entry.materialId !== 'number' ||
-      typeof entry.excessItems !== 'number' ||
-      typeof entry.itemsPerCraft !== 'number' ||
+      !isNonNegativeFiniteNumber(entry.excessItems) ||
+      !isNonNegativeFiniteNumber(entry.itemsPerCraft) ||
       !isStageProgress(entry.stage1) ||
       !isStageProgress(entry.stage2)
     ) {
       return null;
     }
 
+    const plannedCrafts = entry.stage1.plannedCrafts + entry.stage2.plannedCrafts;
+    const recyclableQty = entry.excessItems + plannedCrafts * entry.itemsPerCraft;
+    const craftCapacity =
+      entry.itemsPerCraft > 0 ? Math.floor(recyclableQty / entry.itemsPerCraft) : 0;
+    const stage1Crafts = clampCrafts(
+      entry.stage1.plannedCrafts - entry.stage1.remainingCrafts,
+      craftCapacity,
+    );
+    const stage2Crafts = clampCrafts(
+      entry.stage2.plannedCrafts - entry.stage2.remainingCrafts,
+      craftCapacity - stage1Crafts,
+    );
     entries[entry.materialId] = {
       materialId: entry.materialId,
-      excessItems: entry.excessItems,
+      craftCapacity,
+      excessItems: recyclableQty - craftCapacity * entry.itemsPerCraft,
       itemsPerCraft: entry.itemsPerCraft,
-      stage1: { ...entry.stage1 },
-      stage2: { ...entry.stage2 },
+      stage1Eligible: entry.stage1.plannedCrafts > 0,
+      stage2Eligible: entry.stage2.plannedCrafts > 0,
+      stage1Crafts,
+      stage2Crafts,
     };
   }
 
+  const legacyStage1Planned = Object.values(saved.entries).reduce((sum, value) => {
+    if (!value || typeof value !== 'object') return sum;
+    const progress = (value as Record<string, unknown>).stage1;
+    return sum + (isStageProgress(progress) ? progress.plannedCrafts : 0);
+  }, 0);
+  const legacyStage2Planned = Object.values(saved.entries).reduce((sum, value) => {
+    if (!value || typeof value !== 'object') return sum;
+    const progress = (value as Record<string, unknown>).stage2;
+    return sum + (isStageProgress(progress) ? progress.plannedCrafts : 0);
+  }, 0);
+
   return {
-    version: 3,
+    version: 4,
     sourceSignature: saved.sourceSignature,
-    stage1Capacity: isVersion3
-      ? (saved.stage1Capacity as number)
-      : Object.values(entries).reduce((sum, entry) => sum + entry.stage1.plannedCrafts, 0),
-    stage2Capacity: isVersion3
-      ? (saved.stage2Capacity as number)
-      : Object.values(entries).reduce((sum, entry) => sum + entry.stage2.plannedCrafts, 0),
+    fullCraftCapacity: isVersion4
+      ? (saved.fullCraftCapacity as number)
+      : Math.min(legacyStage1Planned, legacyStage2Planned),
+    stage1Capacity:
+      isVersion3 || isVersion4 ? (saved.stage1Capacity as number) : legacyStage1Planned,
+    stage2Capacity:
+      isVersion3 || isVersion4 ? (saved.stage2Capacity as number) : legacyStage2Planned,
     entries,
   };
 }
@@ -208,7 +279,7 @@ export function useCraftingFodder() {
           ...computeCraftStats(recyclableQty, item.material.CraftQuality ?? 0),
         };
       })
-      .filter((item) => item.recyclableQty > 0);
+      .filter((item) => item.craftCount > 0);
   }
 
   const currentStage1 = computed(() => toRecyclable(surplusMaterials.value, rarityFilter.value));
@@ -241,20 +312,9 @@ export function useCraftingFodder() {
     });
   });
 
-  const currentPlan = computed(() =>
-    createCraftingStagePlan(
-      currentSource.value.map(({ item, stage1, stage2 }) => ({
-        materialId: item.material.Id,
-        craftCapacity: item.craftCount,
-        stage1Eligible: stage1,
-        stage2Eligible: stage2,
-      })),
-    ),
-  );
-
   const currentSourceSignature = computed(() =>
     JSON.stringify([
-      3,
+      4,
       currentSource.value.map(({ item, stage1, stage2 }) => [
         item.material.Id,
         item.craftCount,
@@ -268,37 +328,20 @@ export function useCraftingFodder() {
   );
 
   function refreshSession() {
-    const entries: Record<number, CraftingFodderSessionEntry> = {};
-
-    for (const { item } of currentSource.value) {
-      const allocation = currentPlan.value.allocations[item.material.Id];
-      if (!allocation) continue;
-
-      const plannedCrafts = allocation.stage1Crafts + allocation.stage2Crafts;
-      const isLegacyComplete = legacyMarkedIds.has(item.material.Id);
-      entries[item.material.Id] = {
+    session.value = createCraftingFodderSession(
+      currentSourceSignature.value,
+      currentSource.value.map(({ item, stage1, stage2 }) => ({
         materialId: item.material.Id,
-        excessItems: item.recyclableQty - plannedCrafts * item.itemsPerCraft,
+        craftCapacity: item.craftCount,
+        excessItems: item.excessItems,
         itemsPerCraft: item.itemsPerCraft,
-        stage1: {
-          plannedCrafts: allocation.stage1Crafts,
-          remainingCrafts: isLegacyComplete ? 0 : allocation.stage1Crafts,
-        },
-        stage2: {
-          plannedCrafts: allocation.stage2Crafts,
-          remainingCrafts: isLegacyComplete ? 0 : allocation.stage2Crafts,
-        },
-      };
-    }
+        stage1Eligible: stage1,
+        stage2Eligible: stage2,
+      })),
+      legacyMarkedIds,
+    );
 
     legacyMarkedIds.clear();
-    session.value = {
-      version: 3,
-      sourceSignature: currentSourceSignature.value,
-      stage1Capacity: currentPlan.value.stage1Capacity,
-      stage2Capacity: currentPlan.value.stage2Capacity,
-      entries,
-    };
   }
 
   function setRemainingCrafts(materialId: number, stage: CraftingFodderStage, value: number) {
@@ -306,23 +349,40 @@ export function useCraftingFodder() {
     const entry = currentSession?.entries[materialId];
     if (!currentSession || !entry) return;
 
-    const progress = entry[stage];
-    const remainingCrafts = Math.min(progress.plannedCrafts, Math.max(0, Math.round(value || 0)));
+    const stageKey = stage === 'stage1' ? 'stage1Crafts' : 'stage2Crafts';
+    const currentRemaining = entry.craftCapacity - entry.stage1Crafts - entry.stage2Crafts;
+    const desiredRemaining = clampCrafts(value || 0, entry.craftCapacity);
+    const difference = desiredRemaining - currentRemaining;
+    const currentStageCrafts = entry[stageKey];
+    const nextStageCrafts =
+      difference < 0
+        ? currentStageCrafts + Math.min(-difference, currentRemaining)
+        : currentStageCrafts - Math.min(difference, currentStageCrafts);
     session.value = {
       ...currentSession,
       entries: {
         ...currentSession.entries,
         [materialId]: {
           ...entry,
-          [stage]: { ...progress, remainingCrafts },
+          [stageKey]: nextStageCrafts,
         },
       },
     };
   }
 
   function resetMaterial(materialId: number, stage: CraftingFodderStage) {
-    const entry = session.value?.entries[materialId];
-    if (entry) setRemainingCrafts(materialId, stage, entry[stage].plannedCrafts);
+    const currentSession = session.value;
+    const entry = currentSession?.entries[materialId];
+    if (!currentSession || !entry) return;
+
+    const stageKey = stage === 'stage1' ? 'stage1Crafts' : 'stage2Crafts';
+    session.value = {
+      ...currentSession,
+      entries: {
+        ...currentSession.entries,
+        [materialId]: { ...entry, [stageKey]: 0 },
+      },
+    };
   }
 
   function resetProgress() {
@@ -336,8 +396,8 @@ export function useCraftingFodder() {
           entry.materialId,
           {
             ...entry,
-            stage1: { ...entry.stage1, remainingCrafts: entry.stage1.plannedCrafts },
-            stage2: { ...entry.stage2, remainingCrafts: entry.stage2.plannedCrafts },
+            stage1Crafts: 0,
+            stage2Crafts: 0,
           },
         ]),
       ),
@@ -346,19 +406,22 @@ export function useCraftingFodder() {
 
   function getStageMaterials(stage: CraftingFodderStage) {
     return Object.values(session.value?.entries ?? {})
-      .filter((entry) => entry[stage].plannedCrafts > 0)
+      .filter((entry) => (stage === 'stage1' ? entry.stage1Eligible : entry.stage2Eligible))
       .map((entry): CraftingFodderDisplayMaterial | undefined => {
         const material = catalogById.value.get(entry.materialId);
         if (!material) return undefined;
 
-        const totalRemainingCrafts = entry.stage1.remainingCrafts + entry.stage2.remainingCrafts;
+        const remainingCrafts = entry.craftCapacity - entry.stage1Crafts - entry.stage2Crafts;
+        const stageCrafts = stage === 'stage1' ? entry.stage1Crafts : entry.stage2Crafts;
         return {
           material,
           iconUrl: getItemIconUrl(material.Icon, 'item', material.Tier),
-          plannedCrafts: entry[stage].plannedCrafts,
-          remainingCrafts: entry[stage].remainingCrafts,
-          recyclableQty: entry.excessItems + totalRemainingCrafts * entry.itemsPerCraft,
+          plannedCrafts: entry.craftCapacity,
+          remainingCrafts,
+          recyclableQty: entry.excessItems + remainingCrafts * entry.itemsPerCraft,
           excessItems: entry.excessItems,
+          canUndo: stageCrafts > 0,
+          canReset: stageCrafts > 0,
         };
       })
       .filter((item): item is CraftingFodderDisplayMaterial => Boolean(item));
@@ -369,22 +432,35 @@ export function useCraftingFodder() {
 
   const summary = computed(() => {
     const entries = Object.values(session.value?.entries ?? {});
-    const stage1Planned = entries.reduce((sum, entry) => sum + entry.stage1.plannedCrafts, 0);
-    const stage2Planned = entries.reduce((sum, entry) => sum + entry.stage2.plannedCrafts, 0);
-    const stage1Remaining = entries.reduce((sum, entry) => sum + entry.stage1.remainingCrafts, 0);
-    const stage2Remaining = entries.reduce((sum, entry) => sum + entry.stage2.remainingCrafts, 0);
-    const stage1Completed = stage1Planned - stage1Remaining;
-    const stage2Completed = stage2Planned - stage2Remaining;
-    const planned = Math.min(stage1Planned, stage2Planned);
+    const stage1Completed = entries.reduce((sum, entry) => sum + entry.stage1Crafts, 0);
+    const stage2Completed = entries.reduce((sum, entry) => sum + entry.stage2Crafts, 0);
     const completed = Math.min(stage1Completed, stage2Completed);
+    const remainingCapacity = entries.map((entry) => ({
+      entry,
+      remaining: entry.craftCapacity - entry.stage1Crafts - entry.stage2Crafts,
+    }));
+    const totalRemaining = remainingCapacity.reduce((sum, item) => sum + item.remaining, 0);
+    const stage1RemainingCapacity = remainingCapacity.reduce(
+      (sum, item) => sum + (item.entry.stage1Eligible ? item.remaining : 0),
+      0,
+    );
+    const stage2RemainingCapacity = remainingCapacity.reduce(
+      (sum, item) => sum + (item.entry.stage2Eligible ? item.remaining : 0),
+      0,
+    );
+    const maximumCompleted = Math.min(
+      stage1Completed + stage1RemainingCapacity,
+      stage2Completed + stage2RemainingCapacity,
+      Math.floor((stage1Completed + stage2Completed + totalRemaining) / 2),
+    );
 
     return {
-      remaining: planned - completed,
+      remaining: Math.max(0, maximumCompleted - completed),
       completed,
       stage1Capacity: session.value?.stage1Capacity ?? 0,
       stage2Capacity: session.value?.stage2Capacity ?? 0,
-      stage1Planned,
-      stage2Planned,
+      stage1Planned: session.value?.fullCraftCapacity ?? 0,
+      stage2Planned: session.value?.fullCraftCapacity ?? 0,
       hasProgress: stage1Completed > 0 || stage2Completed > 0,
     };
   });

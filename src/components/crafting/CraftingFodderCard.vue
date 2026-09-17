@@ -25,7 +25,28 @@ function updateRemaining(event: Event) {
   <article class="crafting-card" :class="{ 'is-complete': isComplete }">
     <div class="crafting-portrait">
       <img :src="item.iconUrl" :alt="item.material.Name" loading="lazy" />
-      <span v-if="isComplete" class="complete-badge" :title="$t('craftingFodder.complete')">✓</span>
+      <button
+        v-if="item.canReset"
+        type="button"
+        class="card-status card-status--action"
+        :class="{ 'is-complete': isComplete }"
+        :title="$t('craftingFodder.resetMaterial')"
+        :aria-label="$t('craftingFodder.resetMaterial')"
+        @click="emit('reset')"
+      >
+        <span class="status-icon status-icon--default" aria-hidden="true">
+          {{ isComplete ? '✓' : '↺' }}
+        </span>
+        <span v-if="isComplete" class="status-icon status-icon--reset" aria-hidden="true">↺</span>
+      </button>
+      <span
+        v-else-if="isComplete"
+        class="card-status card-status--complete"
+        :title="$t('craftingFodder.complete')"
+        aria-hidden="true"
+      >
+        ✓
+      </span>
     </div>
 
     <div class="material-name" :title="item.material.Name">
@@ -61,7 +82,7 @@ function updateRemaining(event: Event) {
         <button
           type="button"
           class="step-btn"
-          :disabled="item.remainingCrafts >= item.plannedCrafts"
+          :disabled="!item.canUndo"
           :title="$t('craftingFodder.undoOne')"
           :aria-label="$t('craftingFodder.undoOne')"
           @click="emit('update:remaining', item.remainingCrafts + 1)"
@@ -78,19 +99,7 @@ function updateRemaining(event: Event) {
 
     <div class="metric-row">
       <span class="metric-label">{{ $t('craftingFodder.finalExcess') }}</span>
-      <div class="excess-value">
-        <strong>+{{ item.excessItems.toLocaleString() }}</strong>
-        <button
-          v-if="item.remainingCrafts < item.plannedCrafts"
-          type="button"
-          class="card-reset"
-          :title="$t('craftingFodder.resetMaterial')"
-          :aria-label="$t('craftingFodder.resetMaterial')"
-          @click="emit('reset')"
-        >
-          ↺
-        </button>
-      </div>
+      <strong>+{{ item.excessItems.toLocaleString() }}</strong>
     </div>
   </article>
 </template>
@@ -135,19 +144,56 @@ function updateRemaining(event: Event) {
   opacity: 0.78;
 }
 
-.complete-badge {
+.card-status {
   position: absolute;
   top: 6px;
   right: 6px;
   width: 24px;
   height: 24px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--color-positive);
-  color: #fff;
   font-weight: 800;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.card-status--action {
+  background: var(--background-secondary);
+  color: var(--accent-color);
+  cursor: pointer;
+}
+
+.card-status--action:hover,
+.card-status--action:focus-visible {
+  background: var(--accent-color);
+  color: var(--text-on-accent);
+  outline: none;
+}
+
+.card-status--complete,
+.card-status--action.is-complete {
+  background: var(--color-positive);
+  color: var(--text-on-accent);
+}
+
+.status-icon {
+  grid-area: 1 / 1;
+}
+
+.status-icon--reset {
+  opacity: 0;
+}
+
+.card-status--action.is-complete:hover .status-icon--default,
+.card-status--action.is-complete:focus-visible .status-icon--default {
+  opacity: 0;
+}
+
+.card-status--action.is-complete:hover .status-icon--reset,
+.card-status--action.is-complete:focus-visible .status-icon--reset {
+  opacity: 1;
 }
 
 .material-name {
@@ -206,8 +252,7 @@ function updateRemaining(event: Event) {
   gap: 4px;
 }
 
-.step-btn,
-.card-reset {
+.step-btn {
   border: 0;
   color: var(--text-primary);
   background: transparent;
@@ -275,26 +320,6 @@ function updateRemaining(event: Event) {
 .craft-count input::-webkit-outer-spin-button {
   margin: 0;
   appearance: none;
-}
-
-.excess-value {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.card-reset {
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border-radius: 4px;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.card-reset:hover {
-  color: var(--accent-color);
-  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
 }
 
 @media (max-width: 520px) {

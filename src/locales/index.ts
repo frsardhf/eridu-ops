@@ -806,6 +806,8 @@ const en = {
     subtitle: 'Track a stable crafting session without changing the inventory behind your plan.',
     keepAtLeast: 'Keep at least',
     stage1Filter: 'Show in Stage 1',
+    stage1FilterHint:
+      'Choose which rarities can be used in Stage 1. SR and SSR always remain available for Stage 2.',
     stage1: 'Stage 1 Fodder',
     stage2: 'Stage 2 Fodder (SR / SSR)',
     artifact: 'Artifact',
@@ -1687,6 +1689,8 @@ const jp: TranslationTree = {
     subtitle: '現在の在庫を変更せず、固定されたクラフトセッションの進捗を管理します。',
     keepAtLeast: '最低限キープ',
     stage1Filter: 'ステージ1に表示',
+    stage1FilterHint:
+      'ステージ1で使用するレアリティを選択します。SRとSSRは常にステージ2でも使用できます。',
     stage1: 'ステージ1素材',
     stage2: 'ステージ2素材 (SR / SSR)',
     artifact: 'オーパーツ',
@@ -2560,6 +2564,8 @@ const kr: TranslationTree = {
     subtitle: '계획의 기준이 되는 인벤토리를 변경하지 않고 고정된 제작 세션을 관리합니다.',
     keepAtLeast: '최소 보유량',
     stage1Filter: '1단계에 표시',
+    stage1FilterHint:
+      '1단계에서 사용할 희귀도를 선택합니다. SR과 SSR은 항상 2단계에서도 사용할 수 있습니다.',
     stage1: '1단계 재료',
     stage2: '2단계 재료 (SR / SSR)',
     artifact: '오파츠',

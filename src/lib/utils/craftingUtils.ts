@@ -1,3 +1,5 @@
+import type { CraftingFodderSession } from '../../types/crafting';
+
 export interface CraftingStageCapacity {
   materialId: number;
   craftCapacity: number;
@@ -5,72 +7,72 @@ export interface CraftingStageCapacity {
   stage2Eligible: boolean;
 }
 
-export interface CraftingStageAllocation {
-  stage1Crafts: number;
-  stage2Crafts: number;
-}
-
 export interface CraftingStagePlan {
   fullCrafts: number;
   stage1Capacity: number;
   stage2Capacity: number;
-  allocations: Record<number, CraftingStageAllocation>;
 }
 
-interface WorkingCapacity extends CraftingStageCapacity {
-  available: number;
+export interface CraftingSessionMaterial extends CraftingStageCapacity {
+  excessItems: number;
+  itemsPerCraft: number;
 }
 
-function sumCapacity(capacities: WorkingCapacity[], predicate: (item: WorkingCapacity) => boolean) {
+function sumCapacity(
+  capacities: CraftingStageCapacity[],
+  predicate: (item: CraftingStageCapacity) => boolean,
+) {
   return capacities.reduce((sum, item) => sum + (predicate(item) ? item.craftCapacity : 0), 0);
 }
 
-function allocate(
-  capacities: WorkingCapacity[],
-  stage: keyof CraftingStageAllocation,
-  requested: number,
-  allocations: Record<number, CraftingStageAllocation>,
-): number {
-  let remaining = requested;
-
-  for (const item of capacities) {
-    if (remaining === 0) break;
-
-    const assigned = Math.min(item.available, remaining);
-    if (assigned === 0) continue;
-
-    const allocation = allocations[item.materialId] ?? {
-      stage1Crafts: 0,
-      stage2Crafts: 0,
-    };
-    allocation[stage] += assigned;
-    allocations[item.materialId] = allocation;
-    item.available -= assigned;
-    remaining -= assigned;
-  }
-
-  return remaining;
-}
-
 export function createCraftingStagePlan(capacities: CraftingStageCapacity[]): CraftingStagePlan {
-  const working: WorkingCapacity[] = capacities
-    .filter((item) => item.craftCapacity > 0 && (item.stage1Eligible || item.stage2Eligible))
-    .map((item) => ({ ...item, available: item.craftCapacity }));
+  const working = capacities.filter(
+    (item) => item.craftCapacity > 0 && (item.stage1Eligible || item.stage2Eligible),
+  );
 
   const stage1Capacity = sumCapacity(working, (item) => item.stage1Eligible);
   const stage2Capacity = sumCapacity(working, (item) => item.stage2Eligible);
   const totalCapacity = working.reduce((sum, item) => sum + item.craftCapacity, 0);
   const fullCrafts = Math.min(stage1Capacity, stage2Capacity, Math.floor(totalCapacity / 2));
 
-  const stage1Only = working.filter((item) => item.stage1Eligible && !item.stage2Eligible);
-  const stage2Only = working.filter((item) => item.stage2Eligible && !item.stage1Eligible);
-  const shared = working.filter((item) => item.stage1Eligible && item.stage2Eligible);
-  const allocations: Record<number, CraftingStageAllocation> = {};
+  return { fullCrafts, stage1Capacity, stage2Capacity };
+}
 
-  const stage1SharedNeed = allocate(stage1Only, 'stage1Crafts', fullCrafts, allocations);
-  const stage2SharedNeed = allocate(stage2Only, 'stage2Crafts', fullCrafts, allocations);
-  allocate(shared, 'stage2Crafts', stage2SharedNeed, allocations);
-  allocate(shared, 'stage1Crafts', stage1SharedNeed, allocations);
+/** Creates a stable session containing every material eligible for either stage. */
+export function createCraftingFodderSession(
+  sourceSignature: string,
+  materials: CraftingSessionMaterial[],
+  completedMaterialIds: ReadonlySet<number> = new Set(),
+): CraftingFodderSession {
+  const plan = createCraftingStagePlan(materials);
+  const entries = Object.fromEntries(
+    materials.map((material) => {
+      const isLegacyComplete = completedMaterialIds.has(material.materialId);
+      return [
+        material.materialId,
+        {
+          materialId: material.materialId,
+          craftCapacity: material.craftCapacity,
+          excessItems: material.excessItems,
+          itemsPerCraft: material.itemsPerCraft,
+          stage1Eligible: material.stage1Eligible,
+          stage2Eligible: material.stage2Eligible,
+          stage1Crafts: isLegacyComplete && material.stage1Eligible ? material.craftCapacity : 0,
+          stage2Crafts:
+            isLegacyComplete && !material.stage1Eligible && material.stage2Eligible
+              ? material.craftCapacity
+              : 0,
+        },
+      ];
+    }),
+  );
 
-  return { fullCrafts, stage1Capacity, stage2Capacity, allocations };
+  return {
+    version: 4,
+    sourceSignature,
+    fullCraftCapacity: plan.fullCrafts,
+    stage1Capacity: plan.stage1Capacity,
+    stage2Capacity: plan.stage2Capacity,
+    entries,
+  };
 }
