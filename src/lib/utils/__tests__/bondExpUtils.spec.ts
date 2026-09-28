@@ -23,6 +23,7 @@ function makeOtherExp(overrides: Partial<OtherExpDataProps> = {}): OtherExpDataP
     cafeTargetDateIso: '',
     cafeDateInclusive: false,
     bonusExp: 0,
+    lessonExpRate: 25,
     ...overrides,
   };
 }

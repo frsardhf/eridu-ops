@@ -32,39 +32,6 @@ function materialsContainFavor(materials: Material[] | undefined): boolean {
   return materials.some((m) => m.material?.Category === 'Favor');
 }
 
-/**
- * Aggregated Favor-category material needs for one student across both their
- * gear and upgrade material plans. Keyed by item ID with the summed quantity.
- *
- * Powers the "Consumed" cards in BondsStudentEditor.
- */
-export interface StudentFavorMaterialNeed {
-  material: Material['material'];
-  quantity: number;
-}
-
-export function getStudentFavorMaterialNeeds(studentId: number): StudentFavorMaterialNeed[] {
-  const id = getPrimaryStudentId(studentId);
-  const byId = new Map<number, StudentFavorMaterialNeed>();
-
-  const collect = (materials: Material[] | undefined) => {
-    if (!materials?.length) return;
-    for (const m of materials) {
-      if (m.material?.Category !== 'Favor') continue;
-      const mid = m.material?.Id;
-      if (!mid) continue;
-      const existing = byId.get(mid);
-      if (existing) existing.quantity += m.materialQuantity;
-      else byId.set(mid, { material: m.material, quantity: m.materialQuantity });
-    }
-  };
-
-  collect(getAllGearsData()[id]);
-  collect(getAllMaterialsData()[id]);
-
-  return [...byId.values()].sort((a, b) => b.quantity - a.quantity);
-}
-
 function computeAutoSeed(): number[] {
   const seed = new Set<number>();
 
@@ -99,8 +66,7 @@ function computeAutoSeed(): number[] {
 }
 
 // --- Settings-backed ID set factory (keyed by primary student ID) ---
-// Used for tracked-students, gift-planning opt-in, and summary-cards opt-in:
-// same CRUD shape.
+// Used for tracked-students and gift-planning opt-in, which share one CRUD shape.
 
 interface SettingsBackedSet {
   ids: ComputedRef<number[]>;
@@ -166,7 +132,6 @@ let _seeded = false;
 export function useBondsTracked() {
   const tracked = createSettingsBackedSet('bondsTrackedStudents');
   const planning = createSettingsBackedSet('bondsGiftPlanningEnabled');
-  const summary = createSettingsBackedSet('bondsSummaryShown');
 
   // First-call seed (deferred until after data has loaded: call site decides
   // when to invoke). Safe to call multiple times; only runs once per session.
@@ -197,10 +162,5 @@ export function useBondsTracked() {
     isGiftPlanningEnabled: planning.has,
     enableGiftPlanning: planning.add,
     disableGiftPlanning: planning.remove,
-
-    // Summary cards opt-in (CONVERSION / CONSUMED / PROJECTION; hidden by default)
-    isSummaryShown: summary.has,
-    showSummary: summary.add,
-    hideSummary: summary.remove,
   };
 }

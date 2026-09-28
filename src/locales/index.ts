@@ -237,6 +237,9 @@ const en = {
 
   // BondsPage
   otherGifts: 'Other gifts',
+  showOtherGifts: 'Show other gifts',
+  hideOtherGifts: 'Hide other gifts',
+  selectedGiftCount: '{count} selected',
   favoredGifts: 'Favorite Gifts',
   exp: 'EXP',
   total: 'Total',
@@ -256,14 +259,23 @@ const en = {
   showEditor: 'Show',
   planGifts: 'Plan gifts for this student',
   hideGiftGrid: 'Hide gift grid',
-  showSummary: 'Show summary',
-  hideSummary: 'Hide summary',
-  yellowStones: 'Yellow stones',
-  conversion: 'Conversion',
-  consumed: 'Consumed',
+  bondPlan: 'Bond plan',
+  levelProgress: 'Level progress',
+  expRemaining: '{count} EXP remaining',
+  goalCovered: 'Goal covered by this plan',
+  plannedExp: '{count} EXP planned',
+  helperEquivalents: 'Helper equivalents',
+  cafeTapCount: '{count} cafe taps',
+  lessonRunCount: '{count} lessons at {exp} EXP',
+  plannedSources: 'Planned sources',
+  addPlannedSources: 'Add cafe taps or lesson EXP',
+  lessonsAndOtherExp: 'Lessons',
+  lessonExpRate: 'Lesson EXP rate',
+  automaticGoal: 'Smart goal',
+  targetExp: 'Target EXP',
 
-  // BondsPage: Other EXP sources panel
-  otherExpSources: 'Other EXP',
+  // BondsPage: lesson EXP sources panel.
+  otherExpSources: 'Lessons',
   otherExpTooltip: 'Plan cafe taps and add bonus EXP from lessons',
   cafeTaps: 'Cafe taps',
   tapsPerDay: 'Taps / day',
@@ -285,9 +297,8 @@ const en = {
   clear: 'Clear',
   clearAll: 'Clear all',
   done: 'Done',
-  projection: 'Projection',
-  reachesBondN: '→ Bond {n}',
-  reachesBondMax: '→ Bond 100',
+  afterPlan: 'After plan',
+  expUntilBond: '{count} EXP until Bond {level}',
 
   // Data load failure banner
   dataLoadError: 'Could not load student data from SchaleDB. Check your connection and try again.',
@@ -387,7 +398,7 @@ const en = {
   undoChanges: 'Undo',
   redoChanges: 'Redo',
   convertGiftBoxTooltip:
-    'Convert SR gift materials into selector boxes. Each box costs 1 fusion keystone and 2 SR gift materials. Requires at least 1 fusion keystone and 2 SR gift materials.',
+    'Convert planned SR gift materials into selector boxes. Choose the number of boxes in the conversion dialog.',
   syncGiftsTooltip:
     'Fill gift quantities from your current inventory, reserving amounts already allocated to other students.',
   resetGiftsTooltip: 'Reset all gift quantities to zero.',
@@ -404,7 +415,9 @@ const en = {
   syncGiftsModeAwareDesc:
     "Reserves gifts needed for other students' exclusive gear upgrades before filling.",
   // Convert material selection dialog
-  convertMaterialTitle: 'Select Conversion Materials',
+  convertMaterialTitle: 'Convert Selector Boxes',
+  convertMaterialAmount: 'Boxes to create',
+  convertMaterialCost: 'Fusion keystones: {stones} · SR gifts: {gifts}',
   convertMaterialDesc: 'Select which gifts to use as materials ({needed} needed):',
   convertMaterialSelected: '{current} / {needed} selected',
   convertMaterialConfirm: 'Convert',
@@ -533,6 +546,7 @@ const en = {
 
   // Linked students
   switchStyle: 'Switch Style',
+  openInSchaleDb: 'Open on SchaleDB',
 
   // Inventory modal
   inventory: 'Inventory',
@@ -595,7 +609,7 @@ const en = {
       exclusiveGear: 'Exclusive gear',
       bond: 'Bond',
       gifts: 'Gift plan',
-      otherExp: 'Other EXP',
+      otherExp: 'Lessons',
     },
     details: {
       transition: '{before} → {after}',
@@ -1119,6 +1133,9 @@ const jp: TranslationTree = {
 
   // BondsPage
   otherGifts: 'その他のギフト',
+  showOtherGifts: 'その他のギフトを表示',
+  hideOtherGifts: 'その他のギフトを隠す',
+  selectedGiftCount: '{count}個選択済み',
   favoredGifts: 'お気に入りの贈り物',
   exp: 'EXP',
   total: '合計',
@@ -1138,14 +1155,23 @@ const jp: TranslationTree = {
   showEditor: '表示',
   planGifts: 'この生徒にギフトを計画する',
   hideGiftGrid: 'ギフトグリッドを隠す',
-  showSummary: '概要を表示',
-  hideSummary: '概要を隠す',
-  yellowStones: '黄色の石',
-  conversion: '変換',
-  consumed: '消費',
+  bondPlan: '絆プラン',
+  levelProgress: 'レベル内進捗',
+  expRemaining: '残り{count} EXP',
+  goalCovered: 'このプランで目標達成',
+  plannedExp: '{count} EXP計画済み',
+  helperEquivalents: '必要回数の目安',
+  cafeTapCount: 'カフェタップ{count}回',
+  lessonRunCount: 'レッスン{count}回（{exp} EXP）',
+  plannedSources: '計画済みEXP',
+  addPlannedSources: 'カフェタップまたはレッスンEXPを追加',
+  lessonsAndOtherExp: 'レッスン',
+  lessonExpRate: 'レッスンEXP',
+  automaticGoal: '自動目標',
+  targetExp: '目標EXP',
 
-  // BondsPage: Other EXP sources panel
-  otherExpSources: 'その他EXP',
+  // BondsPage: lesson EXP sources panel.
+  otherExpSources: 'レッスン',
   otherExpTooltip: 'カフェタップとレッスンEXPを計画',
   cafeTaps: 'カフェタップ',
   tapsPerDay: 'タップ/日',
@@ -1167,9 +1193,8 @@ const jp: TranslationTree = {
   clear: 'クリア',
   clearAll: '全てクリア',
   done: '完了',
-  projection: '予測',
-  reachesBondN: '→ 絆 {n}',
-  reachesBondMax: '→ 絆 100',
+  afterPlan: '計画後',
+  expUntilBond: '絆{level}まであと{count} EXP',
 
   // Data load failure banner
   dataLoadError:
@@ -1270,7 +1295,7 @@ const jp: TranslationTree = {
   undoChanges: '元に戻す',
   redoChanges: 'やり直し',
   convertGiftBoxTooltip:
-    'SRギフト素材をセレクターボックスに変換します。1ボックスにつき融合キーストーン1つとSRギフト素材2つが必要です。使用するには融合キーストーンとSRギフト素材がそれぞれ1つ以上必要です。',
+    '計画中のSRギフト素材をセレクターボックスに変換します。変換数はダイアログで選択します。',
   syncGiftsTooltip:
     '現在のインベントリからギフト数量を設定します。他のキャラクターに割り当て済みの数量は除外されます。',
   resetGiftsTooltip: 'ギフトの数量をゼロにリセットします。',
@@ -1285,7 +1310,9 @@ const jp: TranslationTree = {
   syncGiftsModeAware: 'ギア強化分を優先確保',
   syncGiftsModeAwareDesc: '他のキャラクターの専用ギア強化に必要なギフトを確保してから設定します。',
   // Convert material selection dialog
-  convertMaterialTitle: '変換素材の選択',
+  convertMaterialTitle: 'セレクターボックス変換',
+  convertMaterialAmount: '作成するボックス数',
+  convertMaterialCost: '融合キーストーン: {stones}個 · SRギフト: {gifts}個',
   convertMaterialDesc: '素材として使用するギフトを選択してください（{needed}個必要）：',
   convertMaterialSelected: '{current} / {needed} 個選択済み',
   convertMaterialConfirm: '変換',
@@ -1414,6 +1441,7 @@ const jp: TranslationTree = {
 
   // Linked students
   switchStyle: 'スタイル切替',
+  openInSchaleDb: 'SchaleDBで開く',
 
   // Inventory modal
   inventory: '所持品',
@@ -1476,7 +1504,7 @@ const jp: TranslationTree = {
       exclusiveGear: '固有装備',
       bond: '絆',
       gifts: 'ギフトプラン',
-      otherExp: 'その他のEXP',
+      otherExp: 'レッスン',
     },
     details: {
       transition: '{before} → {after}',
@@ -1999,6 +2027,9 @@ const kr: TranslationTree = {
 
   // BondsPage
   otherGifts: '기타 선물',
+  showOtherGifts: '기타 선물 표시',
+  hideOtherGifts: '기타 선물 숨기기',
+  selectedGiftCount: '{count}개 선택됨',
   favoredGifts: '좋아하는 선물',
   exp: 'EXP',
   total: '합계',
@@ -2018,14 +2049,23 @@ const kr: TranslationTree = {
   showEditor: '표시',
   planGifts: '이 학생의 선물 계획하기',
   hideGiftGrid: '선물 그리드 숨기기',
-  showSummary: '요약 표시',
-  hideSummary: '요약 숨기기',
-  yellowStones: '노란 돌',
-  conversion: '변환',
-  consumed: '소비',
+  bondPlan: '인연 계획',
+  levelProgress: '레벨 내 진행도',
+  expRemaining: '{count} EXP 남음',
+  goalCovered: '이 계획으로 목표 달성',
+  plannedExp: '{count} EXP 계획됨',
+  helperEquivalents: '필요 횟수 환산',
+  cafeTapCount: '카페 터치 {count}회',
+  lessonRunCount: '과외 {count}회 ({exp} EXP)',
+  plannedSources: '계획된 EXP',
+  addPlannedSources: '카페 터치 또는 과외 EXP 추가',
+  lessonsAndOtherExp: '과외',
+  lessonExpRate: '과외 EXP',
+  automaticGoal: '자동 목표',
+  targetExp: '목표 EXP',
 
-  // BondsPage: Other EXP sources panel
-  otherExpSources: '기타 EXP',
+  // BondsPage: lesson EXP sources panel.
+  otherExpSources: '과외',
   otherExpTooltip: '카페 터치와 과외 EXP를 계획',
   cafeTaps: '카페 터치',
   tapsPerDay: '터치/일',
@@ -2047,9 +2087,8 @@ const kr: TranslationTree = {
   clear: '지우기',
   clearAll: '전체 지우기',
   done: '완료',
-  projection: '예측',
-  reachesBondN: '→ 인연 {n}',
-  reachesBondMax: '→ 인연 100',
+  afterPlan: '계획 후',
+  expUntilBond: '인연 {level}까지 {count} EXP',
 
   // Data load failure banner
   dataLoadError:
@@ -2150,7 +2189,7 @@ const kr: TranslationTree = {
   undoChanges: '실행 취소',
   redoChanges: '다시 실행',
   convertGiftBoxTooltip:
-    'SR 선물 재료를 선택 상자로 변환합니다. 상자 1개당 융합 키스톤 1개와 SR 선물 재료 2개가 필요합니다. 사용하려면 융합 키스톤 1개와 SR 선물 재료 2개 이상이 필요합니다.',
+    '계획한 SR 선물 재료를 선택 상자로 변환합니다. 변환할 상자 수는 대화 상자에서 선택합니다.',
   syncGiftsTooltip:
     '현재 인벤토리에서 선물 수량을 채웁니다. 다른 학생에게 이미 배분된 수량은 제외합니다.',
   resetGiftsTooltip: '모든 선물 수량을 0으로 초기화합니다.',
@@ -2164,7 +2203,9 @@ const kr: TranslationTree = {
   syncGiftsModeAware: '장비 필요량 우선 확보',
   syncGiftsModeAwareDesc: '다른 학생의 전용 장비 강화에 필요한 선물을 먼저 확보한 뒤 채웁니다.',
   // Convert material selection dialog
-  convertMaterialTitle: '변환 재료 선택',
+  convertMaterialTitle: '선택 상자 변환',
+  convertMaterialAmount: '만들 상자 수',
+  convertMaterialCost: '융합 키스톤: {stones}개 · SR 선물: {gifts}개',
   convertMaterialDesc: '재료로 사용할 선물을 선택하세요({needed}개 필요):',
   convertMaterialSelected: '{current} / {needed}개 선택됨',
   convertMaterialConfirm: '변환',
@@ -2293,6 +2334,7 @@ const kr: TranslationTree = {
 
   // Linked students
   switchStyle: '스타일 전환',
+  openInSchaleDb: 'SchaleDB에서 열기',
 
   // Inventory modal
   inventory: '소지품',
@@ -2355,7 +2397,7 @@ const kr: TranslationTree = {
       exclusiveGear: '고유 장비',
       bond: '인연',
       gifts: '선물 플랜',
-      otherExp: '기타 EXP',
+      otherExp: '과외',
     },
     details: {
       transition: '{before} → {after}',

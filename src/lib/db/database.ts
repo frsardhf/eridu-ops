@@ -33,6 +33,9 @@ export interface FormRecord {
   studentId: number; // Primary key
   bondDetailData?: {
     currentBond: number;
+    currentBondExp?: number;
+    targetBond?: number | null;
+    targetBondExp?: number;
   };
   characterLevels?: CharacterLevels;
   skillLevels?: SkillLevels;
@@ -49,6 +52,7 @@ export interface FormRecord {
     cafeTargetDateIso: string;
     cafeDateInclusive: boolean;
     bonusExp: number;
+    lessonExpRate?: number;
   };
   exclusiveGearLevel?: ExclusiveGearLevel;
   isOwned?: boolean;

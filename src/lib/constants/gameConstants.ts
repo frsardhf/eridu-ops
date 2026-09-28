@@ -11,6 +11,8 @@ export const MAX_BOND_LEVEL = 100;
 export const CAFE_TAP_EXP = 15;
 export const MAX_CAFE_TAPS_PER_DAY = 8;
 export const DEFAULT_CAFE_TAPS_PER_DAY = 3;
+export const LESSON_EXP_RATES = [15, 20, 25] as const;
+export const DEFAULT_LESSON_EXP_RATE = 25;
 
 // Exclusive weapon grades (1–9)
 export const MAX_GRADE = 9;

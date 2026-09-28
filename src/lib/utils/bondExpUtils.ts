@@ -52,7 +52,8 @@ export interface BondExpSources {
   giftFormData?: Record<string, number>;
   boxFormData?: Record<string, number>;
   /** Cafe taps + manual bonus EXP (lessons, events). */
-  otherExp?: OtherExpDataProps;
+  otherExp?: Omit<OtherExpDataProps, 'lessonExpRate'> &
+    Partial<Pick<OtherExpDataProps, 'lessonExpRate'>>;
   // Add future EXP-source fields here (e.g. fruits, affection items).
 }
 
@@ -110,7 +111,11 @@ export function computeCafeExp(tapsPerDay: number, days: number): number {
 }
 
 /** Combined cafe + manual bonus EXP. Pure: no clock read. */
-export function computeOtherExpTotal(other: OtherExpDataProps | undefined): number {
+export function computeOtherExpTotal(
+  other:
+    | (Omit<OtherExpDataProps, 'lessonExpRate'> & Partial<Pick<OtherExpDataProps, 'lessonExpRate'>>)
+    | undefined,
+): number {
   if (!other) return 0;
   const days = computeCafeDays(
     other.cafeStartDateIso,

@@ -36,11 +36,11 @@ const props = defineProps<{
    * is ignored and bond planning stats are rendered beside it.
    */
   bondProgress?: boolean;
-  remainingXp?: number;
-  totalExp?: number;
   bondGoalLevel?: number;
   bondGoalCurrentPercent?: number;
   bondGoalProjectedPercent?: number;
+  /** Uses the compact identity treatment for the bond-planning surface. */
+  compactBond?: boolean;
   /** Suppresses the wrapping card chrome (BondsPage embeds inline). */
   flat?: boolean;
   /**
@@ -58,6 +58,10 @@ const emit = defineEmits<{
 }>();
 
 const effectiveNewBondLevel = computed(() => props.newBondLevel ?? props.currentBond);
+const schaleDbStudentUrl = computed(() => {
+  const pathName = props.student.PathName?.trim();
+  return pathName ? `https://schaledb.com/student/${encodeURIComponent(pathName)}` : undefined;
+});
 
 const studentRef = toRef(() => props.student);
 
@@ -147,12 +151,46 @@ function onBondInlineClick() {
 
 <template>
   <section
-    :class="['student-meta-header', { 'student-meta-header--flat': flat }]"
+    :class="[
+      'student-meta-header',
+      {
+        'student-meta-header--flat': flat,
+        'student-meta-header--bond-compact': compactBond,
+      },
+    ]"
     aria-label="Student Summary"
   >
     <div class="identity-row">
-      <h2 class="student-name">{{ student.Name }}</h2>
-      <div class="identity-actions">
+      <h2 class="student-name">
+        <a
+          v-if="schaleDbStudentUrl"
+          class="student-name-link"
+          :href="schaleDbStudentUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          :title="$t('openInSchaleDb')"
+          :aria-label="`${student.Name}: ${$t('openInSchaleDb')}`"
+        >
+          <span>{{ student.Name }}</span>
+          <svg class="student-name-link-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M7 17 17 7M9 7h8v8"
+            />
+          </svg>
+        </a>
+        <template v-else>{{ student.Name }}</template>
+      </h2>
+      <div
+        v-if="
+          hasStyleSwitch || (!compactBond && (bulletTypeName || armorTypeName || squadTypeName))
+        "
+        class="identity-actions"
+      >
         <button
           v-if="hasStyleSwitch"
           class="style-toggle-btn"
@@ -165,7 +203,7 @@ function onBondInlineClick() {
           <span class="style-mode-label">{{ styleModeLabel }}</span>
         </button>
 
-        <div v-if="bulletTypeName" class="type-pill-divided">
+        <div v-if="!compactBond && bulletTypeName" class="type-pill-divided">
           <span class="pill-label" :style="{ backgroundColor: bulletTypeColorLight }">
             <img :src="getTypeIconUrl('Attack')" alt="ATK" class="type-icon icon-white" />
           </span>
@@ -174,7 +212,7 @@ function onBondInlineClick() {
           </span>
         </div>
 
-        <div v-if="armorTypeName" class="type-pill-divided">
+        <div v-if="!compactBond && armorTypeName" class="type-pill-divided">
           <span class="pill-label" :style="{ backgroundColor: armorTypeColorLight }">
             <img :src="getTypeIconUrl('Defense')" alt="DEF" class="type-icon icon-white" />
           </span>
@@ -184,7 +222,7 @@ function onBondInlineClick() {
         </div>
 
         <span
-          v-if="squadTypeName"
+          v-if="!compactBond && squadTypeName"
           class="role-chip font-nexon"
           :style="{ backgroundColor: squadTypeColor }"
         >
@@ -256,17 +294,6 @@ function onBondInlineClick() {
         </div>
 
         <template v-if="bondProgress">
-          <!-- Remaining-XP chip is intentionally not gated on showBondArrow so
-               users see "X EXP to next level" the moment they set a bond, even
-               before allocating gifts: otherwise an unprojected BOND pill is
-               visually indistinguishable from the modal's LEVEL pill. -->
-          <span v-if="(remainingXp ?? 0) > 0" class="bond-stat-chip">
-            {{ remainingXp }} {{ $t('expToNextLevel') }}
-          </span>
-          <span v-if="(totalExp ?? 0) > 0" class="bond-stat-chip strong">
-            {{ $t('totalExp') }}: {{ (totalExp ?? 0).toLocaleString() }}
-          </span>
-
           <div
             class="bond-goal-progress"
             :class="{
@@ -318,7 +345,7 @@ function onBondInlineClick() {
       </div>
     </div>
 
-    <div v-if="schoolName || clubName || tacticRoleName" class="affiliation-row">
+    <div v-if="!compactBond && (schoolName || clubName || tacticRoleName)" class="affiliation-row">
       <span v-if="tacticRoleName" class="affiliation-pill affiliation-pill--role">
         <img
           :src="getRoleIconUrl(student.TacticRole)"
@@ -376,6 +403,38 @@ function onBondInlineClick() {
   line-height: 1;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.student-name-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12em;
+  border-radius: 4px;
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.student-name-link:hover {
+  color: var(--accent-color);
+}
+
+.student-name-link:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+.student-name-link-icon {
+  width: 0.72em;
+  height: 0.72em;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.student-name-link:hover .student-name-link-icon,
+.student-name-link:focus-visible .student-name-link-icon {
+  opacity: 1;
 }
 
 .identity-actions {
@@ -715,20 +774,6 @@ function onBondInlineClick() {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.bond-stat-chip {
-  font-size: 0.82rem;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  padding: 4px 10px;
-  background: var(--background-primary);
-  color: var(--text-secondary);
-}
-
-.bond-stat-chip.strong {
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
 .bond-goal-progress {
   --bond-goal-color: var(--color-bond-100);
   --bond-goal-accent: var(--color-bond-100-accent);
@@ -853,6 +898,41 @@ function onBondInlineClick() {
   color: white;
 }
 
+.student-meta-header--bond-compact {
+  display: grid;
+  grid-template-columns: minmax(0, auto) auto minmax(210px, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.student-meta-header--bond-compact .identity-row {
+  grid-column: 1;
+  grid-row: 1;
+  flex-wrap: nowrap;
+}
+
+.student-meta-header--bond-compact .student-name {
+  font-size: 1.45rem;
+}
+
+.student-meta-header--bond-compact .meta-row {
+  grid-column: 2 / 4;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.student-meta-header--bond-compact .meta-chips {
+  flex-wrap: nowrap;
+}
+
+.student-meta-header--bond-compact .level-pill {
+  min-width: 158px;
+}
+
+.student-meta-header--bond-compact .bond-goal-progress {
+  max-width: none;
+}
+
 @media (max-width: 1024px) {
   .student-name {
     font-size: 1.45rem;
@@ -868,6 +948,20 @@ function onBondInlineClick() {
     flex-basis: 100%;
     max-width: none;
     margin-left: 0;
+  }
+
+  .student-meta-header--bond-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .student-meta-header--bond-compact .identity-row,
+  .student-meta-header--bond-compact .meta-row {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .student-meta-header--bond-compact .meta-chips {
+    flex-wrap: wrap;
   }
 }
 </style>

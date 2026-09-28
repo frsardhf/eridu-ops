@@ -3,19 +3,23 @@ import { computed, ref } from 'vue';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
 import { $t } from '@/locales';
-import { CAFE_TAP_EXP, MAX_CAFE_TAPS_PER_DAY } from '@/lib/constants/gameConstants';
+import SelectMenu from '@/components/shared/SelectMenu.vue';
+import {
+  CAFE_TAP_EXP,
+  LESSON_EXP_RATES,
+  MAX_CAFE_TAPS_PER_DAY,
+} from '@/lib/constants/gameConstants';
 import { computeCafeDays, computeCafeExp, isoToDate, dateToIso } from '@/lib/utils/bondExpUtils';
 import type { OtherExpDataProps } from '@/types/gift';
-import '@/styles/modalActions.css';
 
 const props = defineProps<{
+  studentId: number;
   data: OtherExpDataProps;
 }>();
 
 const emit = defineEmits<{
   (e: 'update', patch: Partial<OtherExpDataProps>): void;
   (e: 'reset'): void;
-  (e: 'close'): void;
 }>();
 
 // Datepicker min = today's Date object (VueDatePicker uses Date, our model
@@ -93,214 +97,185 @@ const lessonRates = [
   { rank: '11', exp: 20, bonus: '25%' },
   { rank: '12', exp: 25, bonus: '25%' },
 ];
+
+const lessonRateOptions = LESSON_EXP_RATES.map((rate) => ({
+  value: rate,
+  label: `${rate} EXP`,
+}));
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="oe-backdrop" @click.self="emit('close')">
-      <div class="oe-modal" role="dialog" :aria-label="$t('otherExpSources')">
-        <div class="oe-header">
-          <span class="oe-title">{{ $t('otherExpSources') }}</span>
-          <button class="oe-close" :title="$t('close')" @click="emit('close')">✕</button>
+  <div class="oe-panel">
+    <div class="oe-grid">
+      <section class="oe-section">
+        <h3 class="oe-section-title">
+          {{ $t('cafeTaps') }}
+          <img src="/assets/headpat.png" alt="" class="oe-section-icon" aria-hidden="true" />
+        </h3>
+        <div class="oe-row">
+          <label class="oe-field">
+            <span class="oe-label">{{ $t('tapsPerDay') }}</span>
+            <input
+              :id="`cafe-taps-${studentId}`"
+              :name="`cafe-taps-${studentId}`"
+              type="number"
+              class="oe-input oe-input--num"
+              :min="0"
+              :max="MAX_CAFE_TAPS_PER_DAY"
+              :value="data.cafeTapsPerDay"
+              @input="onTapsChange"
+            />
+          </label>
+
+          <label class="oe-field oe-field--half">
+            <span class="oe-label">{{ $t('startDate') }}</span>
+            <VueDatePicker
+              v-model="cafeStartDate"
+              :enable-time-picker="false"
+              auto-apply
+              :formats="dpFormats"
+              :placeholder="$t('startDate')"
+              :clearable="true"
+              :input-attrs="{
+                id: `cafe-start-date-${studentId}`,
+                name: `cafe-start-date-${studentId}`,
+              }"
+              class="oe-datepicker"
+            />
+          </label>
+
+          <label class="oe-field oe-field--half">
+            <span class="oe-label">{{ $t('endDate') }}</span>
+            <VueDatePicker
+              v-model="cafeEndDate"
+              :min-date="endMinDate"
+              :enable-time-picker="false"
+              auto-apply
+              :formats="dpFormats"
+              :placeholder="$t('endDate')"
+              :clearable="true"
+              :input-attrs="{
+                id: `cafe-end-date-${studentId}`,
+                name: `cafe-end-date-${studentId}`,
+              }"
+              class="oe-datepicker"
+            />
+          </label>
         </div>
 
-        <!-- Cafe taps -->
-        <section class="oe-section">
-          <h3 class="oe-section-title">
-            {{ $t('cafeTaps') }}
-            <img src="/assets/headpat.png" alt="" class="oe-section-icon" aria-hidden="true" />
-          </h3>
-          <div class="oe-row">
-            <label class="oe-field">
-              <span class="oe-label">{{ $t('tapsPerDay') }}</span>
-              <input
-                type="number"
-                class="oe-input oe-input--num"
-                :min="0"
-                :max="MAX_CAFE_TAPS_PER_DAY"
-                :value="data.cafeTapsPerDay"
-                @input="onTapsChange"
-              />
-            </label>
-
-            <label class="oe-field oe-field--half">
-              <span class="oe-label">{{ $t('startDate') }}</span>
-              <VueDatePicker
-                v-model="cafeStartDate"
-                :enable-time-picker="false"
-                auto-apply
-                :formats="dpFormats"
-                :placeholder="$t('startDate')"
-                :clearable="true"
-                class="oe-datepicker"
-              />
-            </label>
-
-            <label class="oe-field oe-field--half">
-              <span class="oe-label">{{ $t('endDate') }}</span>
-              <VueDatePicker
-                v-model="cafeEndDate"
-                :min-date="endMinDate"
-                :enable-time-picker="false"
-                auto-apply
-                :formats="dpFormats"
-                :placeholder="$t('endDate')"
-                :clearable="true"
-                class="oe-datepicker"
-              />
-            </label>
-          </div>
-
-          <div class="oe-cafe-total">
-            <span class="oe-cafe-total-label">{{ $t('total') }}</span>
-            <span class="oe-cafe-total-value">
-              {{ cafeExp.toLocaleString() }} {{ $t('exp') }}
+        <div class="oe-cafe-total">
+          <span class="oe-cafe-total-label">{{ $t('total') }}</span>
+          <span class="oe-cafe-total-value"> {{ cafeExp.toLocaleString() }} {{ $t('exp') }} </span>
+          <span class="oe-cafe-total-formula">
+            · {{ data.cafeTapsPerDay }} × {{ cafeDays }} × {{ CAFE_TAP_EXP }}
+          </span>
+          <span class="oe-cafe-total-meta">
+            <span class="oe-derived-days">
+              {{ cafeDays }} {{ cafeDays === 1 ? $t('day') : $t('days') }}
             </span>
-            <span class="oe-cafe-total-formula">
-              · {{ data.cafeTapsPerDay }} × {{ cafeDays }} × {{ CAFE_TAP_EXP }}
-            </span>
-            <span class="oe-cafe-total-meta">
-              <span class="oe-derived-days">
-                {{ cafeDays }} {{ cafeDays === 1 ? $t('day') : $t('days') }}
-              </span>
-              <button
-                type="button"
-                class="oe-chip"
-                :class="{ 'oe-chip--active': data.cafeDateInclusive }"
-                :title="$t('includeTodayTooltip')"
-                @click="toggleInclusive"
-              >
-                {{ data.cafeDateInclusive ? $t('inclusiveAbbr') : $t('exclusiveAbbr') }}
-              </button>
-            </span>
-          </div>
-        </section>
-
-        <!-- Bonus EXP -->
-        <section class="oe-section">
-          <h3 class="oe-section-title">
-            {{ $t('bonusExp') }}
             <button
               type="button"
-              class="oe-section-toggle"
-              :aria-expanded="showLessonRates"
-              @click="showLessonRates = !showLessonRates"
+              class="oe-chip"
+              :class="{ 'oe-chip--active': data.cafeDateInclusive }"
+              :title="$t('includeTodayTooltip')"
+              @click="toggleInclusive"
             >
-              <span class="oe-section-toggle-arrow" :class="{ 'is-open': showLessonRates }">▸</span>
-              {{ $t('lessonRates') }}
+              {{ data.cafeDateInclusive ? $t('inclusiveAbbr') : $t('exclusiveAbbr') }}
             </button>
-          </h3>
-          <div class="oe-row">
-            <div class="oe-field oe-field--grow">
-              <div class="oe-date-wrap">
-                <input
-                  type="number"
-                  class="oe-input"
-                  min="0"
-                  :value="data.bonusExp || 0"
-                  @input="onBonusChange"
-                />
-                <button
-                  v-if="data.bonusExp > 0"
-                  type="button"
-                  class="oe-inline-clear"
-                  :title="$t('clear')"
-                  @click="onClearBonus"
-                >
-                  ✕
-                </button>
-              </div>
+          </span>
+        </div>
+      </section>
+
+      <section class="oe-section">
+        <h3 class="oe-section-title">
+          {{ $t('lessonsAndOtherExp') }}
+          <button
+            type="button"
+            class="oe-section-toggle"
+            :aria-expanded="showLessonRates"
+            @click="showLessonRates = !showLessonRates"
+          >
+            <span class="oe-section-toggle-arrow" :class="{ 'is-open': showLessonRates }">▸</span>
+            {{ $t('lessonRates') }}
+          </button>
+        </h3>
+        <div class="oe-row">
+          <label class="oe-field oe-field--rate">
+            <span class="oe-label">{{ $t('lessonExpRate') }}</span>
+            <SelectMenu
+              :model-value="data.lessonExpRate"
+              :options="lessonRateOptions"
+              :aria-label="$t('lessonExpRate')"
+              block
+              @update:model-value="emit('update', { lessonExpRate: $event })"
+            />
+          </label>
+          <div class="oe-field oe-field--grow">
+            <span class="oe-label">{{ $t('manualExp') }}</span>
+            <div class="oe-date-wrap">
+              <input
+                :id="`bonus-exp-${studentId}`"
+                :name="`bonus-exp-${studentId}`"
+                type="number"
+                class="oe-input"
+                min="0"
+                :value="data.bonusExp || 0"
+                :aria-label="$t('manualExp')"
+                @input="onBonusChange"
+              />
+              <button
+                v-if="data.bonusExp > 0"
+                type="button"
+                class="oe-inline-clear"
+                :title="$t('clear')"
+                @click="onClearBonus"
+              >
+                ✕
+              </button>
             </div>
           </div>
-
-          <table v-if="showLessonRates" class="oe-rate-table">
-            <thead>
-              <tr>
-                <th>{{ $t('areaRank') }}</th>
-                <th>{{ $t('expPerLesson') }}</th>
-                <th>{{ $t('bonusChance') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in lessonRates" :key="row.rank">
-                <td>{{ row.rank }}</td>
-                <td>{{ row.exp }}</td>
-                <td>{{ row.bonus }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <!-- Totals -->
-        <div class="oe-total-row">
-          <span class="oe-total-label">{{ $t('total') }}</span>
-          <span class="oe-total-value">{{ totalExp.toLocaleString() }} {{ $t('exp') }}</span>
         </div>
 
-        <!-- Footer -->
-        <div class="oe-footer">
-          <button class="modal-btn modal-btn-cancel" @click="emit('reset')">
-            {{ $t('clearAll') }}
-          </button>
-          <button class="modal-btn modal-btn-confirm" @click="emit('close')">
-            {{ $t('done') }}
-          </button>
-        </div>
-      </div>
+        <table v-if="showLessonRates" class="oe-rate-table">
+          <thead>
+            <tr>
+              <th>{{ $t('areaRank') }}</th>
+              <th>{{ $t('expPerLesson') }}</th>
+              <th>{{ $t('bonusChance') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in lessonRates" :key="row.rank">
+              <td>{{ row.rank }}</td>
+              <td>{{ row.exp }}</td>
+              <td>{{ row.bonus }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
     </div>
-  </Teleport>
+
+    <div class="oe-total-row">
+      <span class="oe-total-label">{{ $t('total') }}</span>
+      <span class="oe-total-value">{{ totalExp.toLocaleString() }} {{ $t('exp') }}</span>
+      <button class="oe-clear" type="button" @click="emit('reset')">
+        {{ $t('clearAll') }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.oe-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.oe-modal {
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 18px 20px;
-  min-width: 320px;
-  max-width: 460px;
-  width: 92%;
+.oe-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  gap: 10px;
 }
 
-.oe-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.oe-title {
-  font-size: 1.05em;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.oe-close {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-
-.oe-close:hover {
-  color: var(--color-negative);
-  background: rgba(255, 80, 80, 0.08);
+.oe-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(240px, 0.7fr);
+  gap: 10px;
 }
 
 .oe-section {
@@ -417,6 +392,10 @@ const lessonRates = [
   flex: 1;
 }
 
+.oe-field--rate {
+  width: 130px;
+}
+
 /* Two date fields share the row, each taking half the remaining space
    after tapsPerDay's fixed column. min-width: 0 lets them shrink when
    the picker's intrinsic width would otherwise force a wrap. */
@@ -432,6 +411,9 @@ const lessonRates = [
 }
 
 .oe-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   padding: 6px 10px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -447,6 +429,8 @@ const lessonRates = [
 /* Vue Datepicker: map their CSS vars to our theme so the calendar popup
    matches our colors instead of the library's default blue/light theme. */
 .oe-datepicker {
+  width: 100%;
+  min-width: 0;
   --dp-background-color: var(--background-secondary);
   --dp-text-color: var(--text-primary);
   --dp-hover-color: color-mix(in srgb, var(--accent-color) 14%, transparent);
@@ -463,6 +447,14 @@ const lessonRates = [
   --dp-cell-border-radius: 6px;
   --dp-font-family: inherit;
   --dp-font-size: 0.9rem;
+}
+
+.oe-datepicker :deep(.dp__main),
+.oe-datepicker :deep(.dp__input_wrap),
+.oe-datepicker :deep(.dp__input) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 
 .oe-input:focus {
@@ -558,10 +550,29 @@ const lessonRates = [
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 8px;
   padding: 10px 12px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent-color) 10%, var(--background-primary));
   border: 1px solid color-mix(in srgb, var(--accent-color) 30%, var(--border-color));
+}
+
+.oe-clear {
+  margin-left: auto;
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oe-clear:hover {
+  border-color: var(--color-negative);
+  color: var(--color-negative);
 }
 
 .oe-total-label {
@@ -578,9 +589,29 @@ const lessonRates = [
   color: var(--accent-color);
 }
 
-.oe-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+@media (max-width: 760px) {
+  .oe-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .oe-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .oe-field--rate {
+    width: auto;
+  }
+
+  .oe-input--num {
+    width: 100%;
+  }
+
+  .oe-cafe-total-meta {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 </style>

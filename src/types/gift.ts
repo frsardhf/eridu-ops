@@ -1,5 +1,5 @@
 import type { ResourceProps } from '@/types/resource';
-import { DEFAULT_CAFE_TAPS_PER_DAY } from '@/lib/constants/gameConstants';
+import { DEFAULT_CAFE_TAPS_PER_DAY, DEFAULT_LESSON_EXP_RATE } from '@/lib/constants/gameConstants';
 
 export interface GiftProps {
   gift: ResourceProps;
@@ -10,10 +10,16 @@ export interface GiftProps {
 
 export interface BondDetailDataProps {
   currentBond: number;
+  currentBondExp: number;
+  targetBond: number | null;
+  targetBondExp: number;
 }
 
 export const DEFAULT_BOND_DETAIL: BondDetailDataProps = {
   currentBond: 1,
+  currentBondExp: 0,
+  targetBond: null,
+  targetBondExp: 0,
 };
 
 /**
@@ -23,6 +29,7 @@ export const DEFAULT_BOND_DETAIL: BondDetailDataProps = {
  *   cafeTargetDateIso : YYYY-MM-DD end date from the picker
  *   cafeDateInclusive : whether to count end date in the day delta
  *   bonusExp          : manual catch-all (lessons, events, future sources)
+ *   lessonExpRate     : selected lesson EXP used for helper estimates
  */
 export interface OtherExpDataProps {
   cafeTapsPerDay: number;
@@ -30,6 +37,7 @@ export interface OtherExpDataProps {
   cafeTargetDateIso: string;
   cafeDateInclusive: boolean;
   bonusExp: number;
+  lessonExpRate: number;
 }
 
 export const DEFAULT_OTHER_EXP: OtherExpDataProps = {
@@ -38,4 +46,5 @@ export const DEFAULT_OTHER_EXP: OtherExpDataProps = {
   cafeTargetDateIso: '',
   cafeDateInclusive: false,
   bonusExp: 0,
+  lessonExpRate: DEFAULT_LESSON_EXP_RATE,
 };

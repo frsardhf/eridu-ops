@@ -3,23 +3,21 @@ import { computed, defineAsyncComponent, onMounted, ref, toRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStudentForm } from '@/lib/hooks/useStudentForm';
 import { useStudentData } from '@/lib/hooks/useStudentData';
-import { useBondsTracked, getStudentFavorMaterialNeeds } from '@/lib/hooks/useBondsTracked';
-import GiftCard from '@/components/bonds/gift/GiftCard.vue';
+import { useBondsTracked } from '@/lib/hooks/useBondsTracked';
 import GiftOption from '@/components/bonds/gift/GiftOption.vue';
 import GiftGrid from '@/components/bonds/gift/GiftGrid.vue';
+import BondPlanPanel from '@/components/bonds/BondPlanPanel.vue';
 import ConvertMaterialModal from '@/components/bonds/gift/ConvertMaterialModal.vue';
 import SyncGiftsModeModal from '@/components/bonds/gift/SyncGiftsModeModal.vue';
 import MetaHeader from '@/components/shared/MetaHeader.vue';
 
-// Lazy: the cafe planner pulls in @vuepic/vue-datepicker (a large dependency)
-// that should only load when someone actually opens the Other EXP modal.
+// Lazy: the cafe planner pulls in @vuepic/vue-datepicker and only renders when
+// someone expands the planned-sources section.
 const OtherExpPanel = defineAsyncComponent(() => import('@/components/bonds/OtherExpPanel.vue'));
-import type { GiftProps } from '@/types/gift';
-import { YELLOW_STONE_ID, SR_GIFT_MATERIAL_ID } from '@/types/resource';
+import type { OtherExpDataProps } from '@/types/gift';
+import { SR_GIFT_MATERIAL_ID } from '@/types/resource';
 import { HIDDEN_BOX_IDS } from '@/lib/constants/giftConstants';
-import { MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
 import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
-import { getResourceDataByIdSync } from '@/lib/stores/resourceCacheStore';
 import { $t } from '@/locales';
 import type { StudentProps } from '@/types/student';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
@@ -31,25 +29,21 @@ const props = defineProps<{
 
 const { allGifts } = useStudentData();
 const { track } = useAnalytics();
-const {
-  isGiftPlanningEnabled,
-  enableGiftPlanning,
-  disableGiftPlanning,
-  isSummaryShown,
-  showSummary,
-  hideSummary,
-} = useBondsTracked();
+const { isGiftPlanningEnabled, enableGiftPlanning, disableGiftPlanning } = useBondsTracked();
 
 const {
   currentBond,
   newBondLevel,
   totalCumulativeExp,
   bondGoalLevel,
+  currentBondExp,
+  currentBondExpMax,
+  targetBondExp,
+  targetBondExpMax,
+  goalRemainingExp,
   currentBondGoalPercent,
   projectedBondGoalPercent,
   remainingXp,
-  giftsExp,
-  boxesExp,
   cafeExp,
   bonusExp,
   giftFormData,
@@ -59,13 +53,15 @@ const {
   shouldShowGiftGrade,
   convertBoxes,
   handleBondInput,
+  handleCurrentBondExp,
+  handleTargetBond,
+  handleTargetBondExp,
   handleGiftInput,
   handleBoxInput,
   handleNonFavorGiftInput,
   updateOtherExp,
   resetOtherExp,
   showConvertModal,
-  convertModalNeeded,
   confirmConversion,
   cancelConversion,
   showSyncGiftsModal,
@@ -81,16 +77,7 @@ const {
 
 defineExpose({ saveBeforeClose });
 
-// Other-EXP panel visibility (modal)
-const showOtherExpPanel = ref(false);
-
 onMounted(() => loadFromIndexedDB());
-
-// --- Projection card visibility + bond cap ---
-// Show the breakdown card only when there's non-gift EXP to break down; the
-// gifts-only path is already covered by the MetaHeader's current -> new arrow.
-const hasNonGiftExp = computed(() => cafeExp.value > 0 || bonusExp.value > 0);
-const reachesMax = computed(() => newBondLevel.value >= MAX_BOND_LEVEL);
 
 const filteredBoxes = computed(() =>
   (props.student.Boxes ?? []).filter((b) => !HIDDEN_BOX_IDS.has(b.gift.Id)),
@@ -109,29 +96,17 @@ const nonFavorGifts = computed(() => {
 });
 
 // --- Convert button gating ---
-const canConvert = computed(
-  () =>
-    (boxFormData.value[YELLOW_STONE_ID] ?? 0) > 0 &&
-    (boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) >= 2,
+const maxConversions = computed(() =>
+  Math.floor((boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0) / 2),
 );
-
-// --- Yellow stone item (rendered as a GiftCard) ---
-const yellowStoneItem = computed<GiftProps | null>(() => {
-  const res = getResourceDataByIdSync(YELLOW_STONE_ID);
-  return res ? { gift: res, exp: 0, grade: 0 } : null;
-});
-
-// --- Material needs (banner data) ---
-const materialNeeds = computed(() => getStudentFavorMaterialNeeds(props.student.Id));
-
-const materialNeedItems = computed<{ item: GiftProps; qty: number }[]>(() =>
-  materialNeeds.value.map((n) => ({
-    item: { gift: n.material, exp: 0, grade: 0 },
-    qty: n.quantity,
-  })),
-);
+const canConvert = computed(() => maxConversions.value > 0);
 
 // --- Gift planning visibility ---
+const showOtherGifts = ref(false);
+const otherGiftAllocationCount = computed(() =>
+  Object.values(nonFavorGiftsMap.value).reduce((total, value) => total + Math.max(0, value), 0),
+);
+
 const hasAllocations = computed(() => {
   for (const v of Object.values(giftFormData.value)) if (v > 0) return true;
   for (const v of Object.values(boxFormData.value)) if (v > 0) return true;
@@ -143,22 +118,14 @@ const showGiftGrid = computed(
 );
 
 function onEnableGiftGrid() {
+  showOtherGifts.value = false;
   enableGiftPlanning(props.student.Id);
   track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
 }
 function onHideGiftGrid() {
+  showOtherGifts.value = false;
   disableGiftPlanning(props.student.Id);
   track({ name: 'plan_action', feature: 'bond_planner', action: 'changed' });
-}
-
-// --- Summary cards visibility (CONVERSION / CONSUMED / PROJECTION; hidden by default) ---
-const showSummaryCards = computed(() => isSummaryShown(props.student.Id));
-function onShowSummary() {
-  showSummary(props.student.Id);
-  track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
-}
-function onHideSummary() {
-  hideSummary(props.student.Id);
 }
 
 function onBondInput(value: number): void {
@@ -196,8 +163,8 @@ function onRedoChanges(): void {
   track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
 }
 
-function onConfirmConversion(selection: Record<number, number>): void {
-  confirmConversion(selection);
+function onConfirmConversion(count: number, selection: Record<number, number>): void {
+  confirmConversion(count, selection);
   track({ name: 'workflow_completed', feature: 'bond_planner', action: 'converted' });
 }
 
@@ -207,9 +174,29 @@ function onSyncGifts(mode: 'greedy' | 'aware'): void {
   track({ name: 'workflow_completed', feature: 'bond_planner', action: 'synced' });
 }
 
-function openOtherExp(): void {
-  showOtherExpPanel.value = true;
-  track({ name: 'feature_opened', feature: 'bond_planner', action: 'opened' });
+function onCurrentBondExp(value: number): void {
+  handleCurrentBondExp(value);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onTargetBond(value: number): void {
+  handleTargetBond(value);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onTargetBondExp(value: number): void {
+  handleTargetBondExp(value);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onUpdateOtherExp(patch: Partial<OtherExpDataProps>): void {
+  updateOtherExp(patch);
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'adjusted' });
+}
+
+function onResetOtherExp(): void {
+  resetOtherExp();
+  track({ name: 'plan_action', feature: 'bond_planner', action: 'reset' });
 }
 
 // Reverse deep-link: jump back to /students with this student's modal opened.
@@ -235,104 +222,91 @@ function returnToStudentPage() {
           :student="student"
           :current-bond="currentBond"
           :new-bond-level="newBondLevel"
-          :remaining-xp="remainingXp"
-          :total-exp="totalCumulativeExp"
           :bond-goal-level="bondGoalLevel"
           :bond-goal-current-percent="currentBondGoalPercent"
           :bond-goal-projected-percent="projectedBondGoalPercent"
           bond-progress
+          compact-bond
           @update-bond="onBondInput"
         />
-        <div v-if="!collapsed" class="be-header-divider" aria-hidden="true"></div>
+      </div>
+      <BondPlanPanel
+        v-if="!collapsed"
+        class="be-bond-plan"
+        :student-id="student.Id"
+        :current-bond="currentBond"
+        :current-bond-exp="currentBondExp"
+        :current-bond-exp-max="currentBondExpMax"
+        :target-bond="bondGoalLevel"
+        :target-bond-exp="targetBondExp"
+        :target-bond-exp-max="targetBondExpMax"
+        :lesson-exp-rate="otherExpData.lessonExpRate"
+        :remaining-exp="goalRemainingExp"
+        :remaining-xp="remainingXp"
+        :planned-exp="totalCumulativeExp"
+        :cafe-exp="cafeExp"
+        :bonus-exp="bonusExp"
+        :projected-bond="newBondLevel"
+        @update-current-exp="onCurrentBondExp"
+        @update-target-bond="onTargetBond"
+        @update-target-exp="onTargetBondExp"
+      >
+        <template #sources>
+          <OtherExpPanel
+            :student-id="student.Id"
+            :data="otherExpData"
+            @update="onUpdateOtherExp"
+            @reset="onResetOtherExp"
+          />
+        </template>
+      </BondPlanPanel>
+    </div>
+
+    <template v-if="!collapsed">
+      <div class="be-actions-row">
+        <div class="be-view-actions">
+          <button
+            v-if="!showGiftGrid || !hasAllocations"
+            type="button"
+            class="be-plan-gifts-btn"
+            @click="showGiftGrid ? onHideGiftGrid() : onEnableGiftGrid()"
+          >
+            {{ showGiftGrid ? $t('hideGiftGrid') : `+ ${$t('planGifts')}` }}
+          </button>
+          <button
+            v-if="showGiftGrid"
+            type="button"
+            class="be-plan-gifts-btn"
+            :aria-pressed="showOtherGifts"
+            @click="showOtherGifts = !showOtherGifts"
+          >
+            {{ showOtherGifts ? $t('hideOtherGifts') : $t('showOtherGifts') }}
+            <template v-if="!showOtherGifts && otherGiftAllocationCount > 0">
+              · {{ $t('selectedGiftCount', { count: otherGiftAllocationCount }) }}
+            </template>
+          </button>
+        </div>
+
         <GiftOption
-          v-if="!collapsed"
           class="be-options"
           :can-convert="canConvert"
           :can-undo="canUndo"
           :can-redo="canRedo"
+          flat
           @toggle-convert="convertBoxes"
           @sync-gifts="showSyncGiftsModal = true"
           @reset-gifts="onResetGifts"
           @undo-changes="onUndoChanges"
           @redo-changes="onRedoChanges"
-          @open-other-exp="openOtherExp"
         />
       </div>
-    </div>
 
-    <template v-if="!collapsed">
-      <template v-if="showSummaryCards">
-        <div class="be-cards-row">
-          <section v-if="yellowStoneItem" class="be-card-group">
-            <h3 class="be-card-label">{{ $t('conversion') }}</h3>
-            <div class="be-card-group-items">
-              <GiftCard
-                :item="yellowStoneItem"
-                :value="boxFormData[YELLOW_STONE_ID] ?? 0"
-                :is-box="true"
-                @update:value="(e) => onBoxInput(YELLOW_STONE_ID, e)"
-              />
-            </div>
-          </section>
-
-          <section v-if="materialNeedItems.length" class="be-card-group be-card-group--consumed">
-            <h3 class="be-card-label">{{ $t('consumed') }}</h3>
-            <div class="be-card-group-items">
-              <GiftCard
-                v-for="need in materialNeedItems"
-                :key="need.item.gift.Id"
-                :item="need.item"
-                :value="need.qty"
-                readonly
-                hide-grade
-              />
-            </div>
-          </section>
-
-          <section v-if="hasNonGiftExp" class="be-card-group be-card-group--projection">
-            <div class="be-projection-header">
-              <h3 class="be-card-label">{{ $t('projection') }}</h3>
-              <span class="be-projection-reaches">
-                {{ reachesMax ? $t('reachesBondMax') : $t('reachesBondN', { n: newBondLevel }) }}
-              </span>
-            </div>
-            <div class="be-projection">
-              <div class="be-projection-row">
-                <span>{{ $t('gifts') }}</span>
-                <span>+{{ (giftsExp + boxesExp).toLocaleString() }}</span>
-              </div>
-              <div v-if="cafeExp > 0" class="be-projection-row">
-                <span>{{ $t('cafeTaps') }}</span>
-                <span>+{{ cafeExp.toLocaleString() }}</span>
-              </div>
-              <div v-if="bonusExp > 0" class="be-projection-row">
-                <span>{{ $t('bonusExp') }}</span>
-                <span>+{{ bonusExp.toLocaleString() }}</span>
-              </div>
-              <div class="be-projection-row be-projection-total">
-                <span>{{ $t('total') }}</span>
-                <span>{{ totalCumulativeExp.toLocaleString() }} {{ $t('exp') }}</span>
-              </div>
-            </div>
-          </section>
-        </div>
-        <div class="be-summary-footer">
-          <button type="button" class="be-link-btn" @click="onHideSummary">
-            {{ $t('hideSummary') }}
-          </button>
-        </div>
-      </template>
-      <button v-else type="button" class="be-plan-gifts-btn" @click="onShowSummary">
-        + {{ $t('showSummary') }}
-      </button>
-
-      <!-- Gift grid OR opt-in toggle -->
       <template v-if="showGiftGrid">
         <GiftGrid
           :student="editorStudent"
           :gift-form-data="giftFormData"
           :box-form-data="boxFormData"
-          :non-favor-gifts="nonFavorGifts"
+          :non-favor-gifts="showOtherGifts ? nonFavorGifts : undefined"
           :non-favor-values="nonFavorGiftsMap"
           :should-show-gift-grade="shouldShowGiftGrade"
           show-favored-label
@@ -340,20 +314,12 @@ function returnToStudentPage() {
           @update-box="onBoxInput"
           @update-nonfavor="onNonFavorInput"
         />
-        <div v-if="!hasAllocations" class="be-grid-footer">
-          <button type="button" class="be-link-btn" @click="onHideGiftGrid">
-            {{ $t('hideGiftGrid') }}
-          </button>
-        </div>
       </template>
-      <button v-else type="button" class="be-plan-gifts-btn" @click="onEnableGiftGrid">
-        + {{ $t('planGifts') }}
-      </button>
     </template>
 
     <ConvertMaterialModal
       v-if="showConvertModal"
-      :needed-count="convertModalNeeded"
+      :max-count="maxConversions"
       :non-favor-gifts-map="nonFavorGiftsMap"
       @confirm="onConfirmConversion"
       @cancel="cancelConversion"
@@ -363,14 +329,6 @@ function returnToStudentPage() {
       v-if="showSyncGiftsModal"
       @confirm="onSyncGifts"
       @cancel="showSyncGiftsModal = false"
-    />
-
-    <OtherExpPanel
-      v-if="showOtherExpPanel"
-      :data="otherExpData"
-      @update="updateOtherExp"
-      @reset="resetOtherExp"
-      @close="showOtherExpPanel = false"
     />
   </div>
 </template>
@@ -386,17 +344,21 @@ function returnToStudentPage() {
   background: var(--card-background);
 }
 
-/* --- Header: full-width row, icon stretches to match MetaHeader's height --- */
 .be-header {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: start;
   gap: 14px;
   min-width: 0;
 }
 
 .be-icon-wrap {
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin-top: 14px;
   flex-shrink: 0;
   width: 200px;
+  aspect-ratio: 200 / 226;
   border-radius: 12px;
   overflow: hidden;
   background: var(--background-primary);
@@ -417,120 +379,34 @@ function returnToStudentPage() {
   gap: 8px;
 }
 
-.be-header-divider {
-  flex: 1;
-  min-height: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.be-header-divider::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: 1px;
-  background: var(--border-color);
-}
-
 .be-meta {
   min-width: 0;
 }
 
-/* --- Card row: two labelled groups, full width --- */
-.be-cards-row {
+.be-bond-plan {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.be-actions-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
 }
 
-.be-card-group {
+.be-view-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px dashed var(--border-color);
-  background: var(--background-primary);
-}
-
-.be-card-group--consumed {
-  border-color: color-mix(in srgb, var(--accent-color) 40%, var(--border-color));
-  background: color-mix(in srgb, var(--accent-color) 6%, transparent);
-}
-
-/* Projection card: solid border (vs dashed) to mark it as a derived summary
-   rather than an interactive group; same accent tint as CONSUMED. */
-.be-card-group--projection {
-  border-style: solid;
-  border-color: color-mix(in srgb, var(--accent-color) 40%, var(--border-color));
-  background: color-mix(in srgb, var(--accent-color) 4%, transparent);
-  min-width: 220px;
-}
-
-.be-projection {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-}
-
-.be-projection-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--text-secondary);
-}
-
-.be-projection-row > span:last-child {
-  color: var(--text-primary);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.be-projection-total {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border-color);
-  font-weight: 700;
-}
-
-.be-projection-total > span:last-child {
-  color: var(--accent-color);
-}
-
-/* Card-label aside: the bond-level conclusion sits beside PROJECTION in the
-   header so it doesn't add a row at the bottom of the card. */
-.be-projection-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.be-projection-reaches {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--accent-color);
-  white-space: nowrap;
-}
-
-.be-card-label {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-}
-
-.be-card-group-items {
-  display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.be-options {
+  min-width: 0;
+  margin-left: auto;
 }
 
 /* --- Opt-in toggle --- */
@@ -556,27 +432,6 @@ function returnToStudentPage() {
   background-color: color-mix(in srgb, var(--accent-color) 8%, transparent);
 }
 
-.be-grid-footer,
-.be-summary-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.be-link-btn {
-  background: transparent;
-  border: none;
-  padding: 4px 6px;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-}
-
-.be-link-btn:hover {
-  color: var(--accent-color);
-}
-
 .be-return-link {
   align-self: flex-start;
   background: transparent;
@@ -593,16 +448,48 @@ function returnToStudentPage() {
 }
 
 /* --- Responsive --- */
+@media (max-width: 1100px) {
+  .be-icon-wrap {
+    grid-row: 1;
+    align-self: start;
+    margin-top: 0;
+    width: 140px;
+  }
+
+  .be-header {
+    grid-template-columns: 140px minmax(0, 1fr);
+  }
+
+  .be-bond-plan {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .be-actions-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .be-options {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 480px) {
   .be-header {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   .be-icon-wrap {
+    grid-column: 1;
     align-self: flex-start;
     width: 96px;
-    height: 108px; /* matches collection portrait's ~200/226 aspect at 96px wide */
+  }
+
+  .be-header-content,
+  .be-bond-plan {
+    grid-column: 1;
   }
 }
 </style>

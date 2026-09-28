@@ -64,10 +64,8 @@ import type { PlanHistorySource } from '../db/database';
  * so a single save writes the full row atomically. No cross-hook race exists
  * because there are no cross-hooks anymore.
  *
- * The exposed API is a union of the three predecessors' surfaces with two
- * disambiguating renames:
- *   - `characterRemainingXp` (was `remainingXp` in useStudentUpgrade)
- *   - `remainingXp` (kept the gifts hook's meaning: bond XP to next level)
+ * The exposed API is a union of the three predecessors' surfaces. Gift-planning
+ * `remainingXp` keeps its original meaning: bond XP to the next level.
  */
 
 const HISTORY_LIMIT = 10;
@@ -89,8 +87,40 @@ export interface UseStudentFormOptions {
 
 export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFormOptions = {}) {
   const student = () => studentRef.value;
-  const characterXpTable = bondData.character_xp;
   const bondXpTable = bondData.bond_xp;
+
+  function bondLevelExpMax(level: number): number {
+    if (level >= MAX_BOND_LEVEL) return 0;
+    const current = bondXpTable[level - 1] ?? 0;
+    const next = bondXpTable[level] ?? current;
+    return Math.max(0, next - current - 1);
+  }
+
+  function smartBondGoal(level: number): number {
+    return level < BOND_MILESTONE_LEVEL ? BOND_MILESTONE_LEVEL : MAX_BOND_LEVEL;
+  }
+
+  function normalizeBondDetail(data: BondDetailDataProps): BondDetailDataProps {
+    const currentBond = Math.max(1, Math.min(MAX_BOND_LEVEL, data.currentBond || 1));
+    const currentBondExp = Math.max(
+      0,
+      Math.min(bondLevelExpMax(currentBond), data.currentBondExp || 0),
+    );
+    const requestedTarget =
+      data.targetBond != null && Number.isFinite(data.targetBond) ? data.targetBond : null;
+    const targetBond =
+      requestedTarget == null
+        ? null
+        : Math.max(currentBond, Math.min(MAX_BOND_LEVEL, requestedTarget));
+    const effectiveTarget = targetBond ?? smartBondGoal(currentBond);
+    const minimumTargetExp = effectiveTarget === currentBond ? currentBondExp : 0;
+    const targetBondExp = Math.max(
+      minimumTargetExp,
+      Math.min(bondLevelExpMax(effectiveTarget), data.targetBondExp || 0),
+    );
+
+    return { currentBond, currentBondExp, targetBond, targetBondExp };
+  }
 
   // --- Form refs (everything that persists to `forms[studentId]`) ---
   // Upgrade slice
@@ -119,9 +149,7 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   const allGearsMaxed = ref(false);
   const targetGearsMaxed = ref(false);
 
-  const isCalculating = ref(false);
   const showConvertModal = ref(false);
-  const convertModalNeeded = ref(0);
   const showSyncGiftsModal = ref(false);
   const undoStack = ref<GiftSnapshot[]>([]);
   const redoStack = ref<GiftSnapshot[]>([]);
@@ -199,6 +227,7 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     },
     onSaved: (saved) => setStudentDataDirect(student().Id, saved),
     afterLoad: () => {
+      bondDetailData.value = normalizeBondDetail(bondDetailData.value);
       // Clear undo history so loaded state isn't undoable.
       undoStack.value = [];
       redoStack.value = [];
@@ -336,12 +365,6 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   });
 
   // --- XP / Bond computeds ---
-  const characterRemainingXp = computed(() => {
-    const currentXp = characterXpTable[characterLevels.value.current - 1] ?? 0;
-    const targetXp = characterXpTable[characterLevels.value.target - 1] ?? 0;
-    return Math.max(0, targetXp - currentXp);
-  });
-
   const giftsExp = computed(() => calculateGiftStackExp(student().Gifts, giftFormData.value));
   const boxesExp = computed(() => calculateGiftStackExp(student().Boxes, boxFormData.value));
   const cafeDays = computed(() =>
@@ -358,12 +381,18 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     () => giftsExp.value + boxesExp.value + cafeExp.value + bonusExp.value,
   );
 
-  const bondGoalLevel = computed(() =>
-    bondDetailData.value.currentBond < BOND_MILESTONE_LEVEL ? BOND_MILESTONE_LEVEL : MAX_BOND_LEVEL,
+  const currentBondExpMax = computed(() => bondLevelExpMax(bondDetailData.value.currentBond));
+  const bondGoalLevel = computed(
+    () => bondDetailData.value.targetBond ?? smartBondGoal(bondDetailData.value.currentBond),
   );
-  const bondGoalTargetExp = computed(() => bondXpTable[bondGoalLevel.value - 1] ?? 0);
+  const targetBondExpMax = computed(() => bondLevelExpMax(bondGoalLevel.value));
+  const currentBondExp = computed(() => bondDetailData.value.currentBondExp);
+  const targetBondExp = computed(() => bondDetailData.value.targetBondExp);
+  const bondGoalTargetExp = computed(
+    () => (bondXpTable[bondGoalLevel.value - 1] ?? 0) + targetBondExp.value,
+  );
   const currentBondCumulativeExp = computed(
-    () => bondXpTable[bondDetailData.value.currentBond - 1] ?? 0,
+    () => (bondXpTable[bondDetailData.value.currentBond - 1] ?? 0) + currentBondExp.value,
   );
   const projectedBondCumulativeExp = computed(() =>
     Math.min(bondGoalTargetExp.value, currentBondCumulativeExp.value + totalCumulativeExp.value),
@@ -377,6 +406,12 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     bondGoalTargetExp.value > 0
       ? (projectedBondCumulativeExp.value / bondGoalTargetExp.value) * 100
       : 0,
+  );
+  const goalRemainingExp = computed(() =>
+    Math.max(
+      0,
+      bondGoalTargetExp.value - currentBondCumulativeExp.value - totalCumulativeExp.value,
+    ),
   );
 
   const newBondLevel = computed(() => {
@@ -404,7 +439,7 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   const currentBond = computed({
     get: () => bondDetailData.value.currentBond,
     set: (v) => {
-      bondDetailData.value.currentBond = v;
+      handleBondInput(v);
     },
   });
 
@@ -642,7 +677,34 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   }
 
   function handleBondInput(value: number) {
-    bondDetailData.value.currentBond = value;
+    const currentBond = Math.max(1, Math.min(MAX_BOND_LEVEL, value));
+    const targetBond = bondDetailData.value.targetBond;
+    bondDetailData.value = normalizeBondDetail({
+      ...bondDetailData.value,
+      currentBond,
+      targetBond: targetBond != null && targetBond < currentBond ? null : targetBond,
+    });
+  }
+
+  function handleCurrentBondExp(value: number) {
+    bondDetailData.value = normalizeBondDetail({
+      ...bondDetailData.value,
+      currentBondExp: value,
+    });
+  }
+
+  function handleTargetBond(value: number) {
+    bondDetailData.value = normalizeBondDetail({
+      ...bondDetailData.value,
+      targetBond: value,
+    });
+  }
+
+  function handleTargetBondExp(value: number) {
+    bondDetailData.value = normalizeBondDetail({
+      ...bondDetailData.value,
+      targetBondExp: value,
+    });
   }
 
   function updateOtherExp(patch: Partial<OtherExpDataProps>) {
@@ -658,23 +720,39 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     if (!student()?.Boxes?.length) return;
 
     const srCount = boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0;
-    const stoneCount = boxFormData.value[YELLOW_STONE_ID] ?? 0;
-    if (srCount <= 0 || stoneCount <= 0) return;
-
-    const convertedCount = Math.min(Math.floor(srCount / 2), stoneCount);
-    const giftsNeeded = convertedCount * 2;
-
-    const hasIndividualTracking = Object.keys(nonFavorGiftsMap.value).length > 0;
-    if (hasIndividualTracking) {
-      convertModalNeeded.value = giftsNeeded;
-      showConvertModal.value = true;
-    } else {
-      savePreviousState();
-      calculateOptimalConversion();
-    }
+    if (srCount < 2) return;
+    showConvertModal.value = true;
   }
 
-  function confirmConversion(selection: Record<number, number>) {
+  function confirmConversion(conversionCount: number, selection: Record<number, number>) {
+    const srCount = boxFormData.value[SR_GIFT_MATERIAL_ID] ?? 0;
+    const maxCount = Math.floor(srCount / 2);
+    if (!Number.isInteger(conversionCount) || conversionCount < 1 || conversionCount > maxCount) {
+      return;
+    }
+
+    const trackedSrEntries = Object.entries(nonFavorGiftsMap.value).filter(
+      ([id]) => getResourceDataByIdSync(Number(id))?.Rarity === 'SR',
+    );
+    if (trackedSrEntries.length > 0) {
+      const trackedSrIds = new Set(trackedSrEntries.map(([id]) => Number(id)));
+      let selectedCount = 0;
+      for (const [id, quantity] of Object.entries(selection)) {
+        const giftId = Number(id);
+        const available = nonFavorGiftsMap.value[giftId] ?? 0;
+        if (
+          !trackedSrIds.has(giftId) ||
+          !Number.isInteger(quantity) ||
+          quantity < 0 ||
+          quantity > available
+        ) {
+          return;
+        }
+        selectedCount += quantity;
+      }
+      if (selectedCount !== conversionCount * 2) return;
+    }
+
     showConvertModal.value = false;
     savePreviousState();
 
@@ -690,37 +768,15 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
       }
     }
 
-    // Do not pre-subtract the SR aggregate here: calculateOptimalConversion
-    // reads SR_GIFT_MATERIAL_ID directly and subtracts convertedCount * 2 itself.
-    calculateOptimalConversion();
+    const nextBoxData = { ...boxFormData.value };
+    delete nextBoxData[YELLOW_STONE_ID];
+    nextBoxData[SR_GIFT_MATERIAL_ID] = srCount - conversionCount * 2;
+    nextBoxData[SELECTOR_BOX_ID] = (nextBoxData[SELECTOR_BOX_ID] ?? 0) + conversionCount;
+    boxFormData.value = nextBoxData;
   }
 
   function cancelConversion() {
     showConvertModal.value = false;
-  }
-
-  function calculateOptimalConversion() {
-    if (isCalculating.value) return;
-    try {
-      isCalculating.value = true;
-      const yellowStoneQuantity = boxFormData.value[YELLOW_STONE_ID] || 0;
-      const srGiftMaterialQuantity = boxFormData.value[SR_GIFT_MATERIAL_ID] || 0;
-      const selectorBoxQuantity = boxFormData.value[SELECTOR_BOX_ID] || 0;
-      if (yellowStoneQuantity <= 0 || srGiftMaterialQuantity <= 0) return;
-
-      const maxConvertibleByMaterials = Math.floor(srGiftMaterialQuantity / 2);
-      const maxConvertibleByStones = yellowStoneQuantity;
-      const convertedQuantity = Math.min(maxConvertibleByMaterials, maxConvertibleByStones);
-
-      boxFormData.value = {
-        ...boxFormData.value,
-        [YELLOW_STONE_ID]: yellowStoneQuantity - convertedQuantity,
-        [SR_GIFT_MATERIAL_ID]: srGiftMaterialQuantity - convertedQuantity * 2,
-        [SELECTOR_BOX_ID]: selectorBoxQuantity + convertedQuantity,
-      };
-    } finally {
-      isCalculating.value = false;
-    }
   }
 
   // Yellow stones lack an exp value so their grade icon would be missing.
@@ -858,7 +914,6 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     equipmentMaterialsNeeded,
 
     // --- XP / Bond computeds ---
-    characterRemainingXp,
     giftsExp,
     boxesExp,
     cafeDays,
@@ -866,6 +921,11 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     bonusExp,
     totalCumulativeExp,
     bondGoalLevel,
+    currentBondExp,
+    currentBondExpMax,
+    targetBondExp,
+    targetBondExpMax,
+    goalRemainingExp,
     currentBondGoalPercent,
     projectedBondGoalPercent,
     newBondLevel,
@@ -873,7 +933,6 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
 
     // --- Convert/sync modal state ---
     showConvertModal,
-    convertModalNeeded,
     confirmConversion,
     cancelConversion,
     showSyncGiftsModal,
@@ -907,6 +966,9 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
     handleBoxInput,
     handleNonFavorGiftInput,
     handleBondInput,
+    handleCurrentBondExp,
+    handleTargetBond,
+    handleTargetBondExp,
     updateOtherExp,
     resetOtherExp,
     convertBoxes,

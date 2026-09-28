@@ -17,11 +17,10 @@ const emit = defineEmits([
   'reset-gifts',
   'undo-changes',
   'redo-changes',
-  'open-other-exp',
 ]);
 
 const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = useTooltip<
-  'convert' | 'sync' | 'reset' | 'undo' | 'redo' | 'otherExp'
+  'convert' | 'sync' | 'reset' | 'undo' | 'redo'
 >();
 </script>
 
@@ -55,17 +54,6 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
 
         <button
           class="button button-secondary"
-          @click="emit('reset-gifts')"
-          @mouseenter="showTooltip($event, 'reset')"
-          @mouseleave="hideTooltip()"
-          :aria-label="$t('resetGifts')"
-          :title="$t('resetGifts')"
-        >
-          <span class="button-text">{{ $t('resetGifts') }}</span>
-        </button>
-
-        <button
-          class="button button-secondary"
           :class="{ 'button-disabled': !props.canUndo }"
           :disabled="!props.canUndo"
           @click="emit('undo-changes')"
@@ -91,14 +79,14 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
         </button>
 
         <button
-          class="button button-other-exp"
-          @click="emit('open-other-exp')"
-          @mouseenter="showTooltip($event, 'otherExp')"
+          class="button button-secondary"
+          @click="emit('reset-gifts')"
+          @mouseenter="showTooltip($event, 'reset')"
           @mouseleave="hideTooltip()"
-          :aria-label="$t('otherExpSources')"
-          :title="$t('otherExpSources')"
+          :aria-label="$t('resetGifts')"
+          :title="$t('resetGifts')"
         >
-          <span class="button-text">{{ $t('otherExpSources') }}</span>
+          <span class="button-text">{{ $t('resetGifts') }}</span>
         </button>
       </div>
 
@@ -124,9 +112,6 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
         <template v-else-if="activeTooltip === 'redo'">
           {{ $t('redoChangesTooltip') }}
         </template>
-        <template v-else-if="activeTooltip === 'otherExp'">
-          {{ $t('otherExpTooltip') }}
-        </template>
       </div>
     </div>
   </div>
@@ -148,6 +133,12 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.modal-section-card--flat .options-container,
+.modal-section-card--flat .button-group {
+  justify-content: flex-end;
+  margin: 0;
 }
 
 .button {
@@ -187,16 +178,6 @@ const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } = us
 
 .button-convert:hover:not(:disabled) {
   background-color: color-mix(in srgb, var(--color-convert) 82%, black);
-}
-
-.button-other-exp {
-  background-color: var(--color-positive);
-  color: white;
-  border: 1px solid var(--color-positive);
-}
-
-.button-other-exp:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--color-positive) 82%, black);
 }
 
 .button-disabled {
