@@ -8,15 +8,12 @@ import NumberStepper from '@/components/students/modal/shared/NumberStepper.vue'
 
 const props = defineProps<{
   potentialLevels: PotentialLevels;
-  allPotentialsMaxed: boolean;
-  targetPotentialsMaxed: boolean;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update-potential', type: PotentialType, current: number, target: number): void;
-  (e: 'toggle-max-potentials', checked: boolean): void;
-  (e: 'toggle-max-target-potentials', checked: boolean): void;
-}>();
+const emit =
+  defineEmits<
+    (e: 'update-potential', type: PotentialType, current: number, target: number) => void
+  >();
 
 // Static icon mapping for potential types
 const POTENTIAL_ICONS: Record<PotentialType, string> = {
@@ -66,32 +63,6 @@ const potentialPairs = Object.fromEntries(
 <template>
   <div class="modal-section-card">
     <h3 class="sr-only">{{ $t('talent') }}</h3>
-
-    <div class="modal-options-rail">
-      <div class="modal-toggle-item">
-        <input
-          type="checkbox"
-          id="max-all-potentials"
-          name="max-all-potentials"
-          :checked="props.allPotentialsMaxed"
-          @change="(e) => emit('toggle-max-potentials', (e.target as HTMLInputElement).checked)"
-        />
-        <label for="max-all-potentials">{{ $t('maxAll') }}</label>
-      </div>
-      <div class="modal-toggle-item">
-        <input
-          type="checkbox"
-          id="max-target-potentials"
-          name="max-target-potentials"
-          :checked="props.targetPotentialsMaxed"
-          :disabled="props.allPotentialsMaxed"
-          @change="
-            (e) => emit('toggle-max-target-potentials', (e.target as HTMLInputElement).checked)
-          "
-        />
-        <label for="max-target-potentials">{{ $t('maxTarget') }}</label>
-      </div>
-    </div>
 
     <div class="potential-grid">
       <div v-for="state in potentialStates" :key="state.type" class="modal-grid-item">

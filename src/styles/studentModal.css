@@ -405,90 +405,9 @@
   outline-offset: 1px;
 }
 
-/* --- Shared Number Input Controls --- */
+/* --- Shared Number Input Wrapper --- */
 .level-control {
   width: 100%;
-}
-
-.custom-number-input {
-  display: flex;
-  align-items: center;
-  background-color: var(--background-primary);
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  height: 36px;
-}
-
-.level-input {
-  flex: 1;
-  height: 100%;
-  padding: 0 0.25rem;
-  border: none;
-  background-color: transparent;
-  color: var(--text-primary);
-  text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
-  min-width: 0;
-}
-
-.level-input::-webkit-outer-spin-button,
-.level-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.level-input:focus {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.level-input.max-level {
-  color: var(--accent-color);
-}
-
-.control-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 36px;
-  border: none;
-  background-color: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: 0;
-  font-size: 1.1rem;
-  transition:
-    background-color 0.2s,
-    color 0.2s;
-  flex-shrink: 0;
-}
-
-.control-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--accent-color);
-}
-
-.control-button:active {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.control-button.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.control-button.disabled:hover {
-  background-color: transparent;
-  color: var(--text-primary);
-}
-
-.min-button,
-.max-button {
-  font-size: 0.9rem;
-  font-weight: bold;
 }
 
 /* --- Shared Skill Icon & Tooltip --- */
@@ -621,10 +540,6 @@
 
   .modal-toggle-item label {
     width: 100%;
-  }
-
-  .control-button {
-    width: 20px;
   }
 }
 

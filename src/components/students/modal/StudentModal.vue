@@ -28,6 +28,7 @@ import ApplyUpgradeModal from '@/components/students/modal/ApplyUpgradeModal.vue
 import LevelSection from '@/components/students/modal/upgrade/LevelSection.vue';
 import PotentialSection from '@/components/students/modal/upgrade/PotentialSection.vue';
 import SkillSection from '@/components/students/modal/upgrade/SkillSection.vue';
+import UpgradeQuickActions from '@/components/students/modal/upgrade/UpgradeQuickActions.vue';
 import ModalHeader from '@/components/students/modal/ModalHeader.vue';
 import StudentStrip from '@/components/shared/StudentStrip.vue';
 import { ModalOriginRect } from '@/types/modal';
@@ -169,7 +170,6 @@ const {
   targetSkillsMaxed,
   allPotentialsMaxed,
   targetPotentialsMaxed,
-  characterRemainingXp,
   handleLevelUpdate,
   handleSkillUpdate,
   handlePotentialUpdate,
@@ -671,30 +671,33 @@ watch(
 
                 <template v-else-if="activeTab === 'upgrade'">
                   <div class="tab-pane-scroll tab-pane-scroll--upgrade">
-                    <LevelSection
-                      class="upgrade-level-panel"
-                      :character-levels="characterLevels"
-                      :total-xp-needed="characterRemainingXp"
-                      @update-level="handleLevelUpdate"
-                    />
+                    <div class="upgrade-overview-grid">
+                      <LevelSection
+                        :character-levels="characterLevels"
+                        @update-level="handleLevelUpdate"
+                      />
+
+                      <UpgradeQuickActions
+                        :all-skills-maxed="allSkillsMaxed"
+                        :target-skills-maxed="targetSkillsMaxed"
+                        :all-potentials-maxed="allPotentialsMaxed"
+                        :target-potentials-maxed="targetPotentialsMaxed"
+                        @toggle-max-skills="toggleMaxAllSkills"
+                        @toggle-max-target-skills="toggleMaxTargetSkills"
+                        @toggle-max-potentials="toggleMaxAllPotentials"
+                        @toggle-max-target-potentials="toggleMaxTargetPotentials"
+                      />
+                    </div>
 
                     <SkillSection
                       :student="activeStyleStudent!"
                       :skill-levels="skillLevels"
-                      :all-skills-maxed="allSkillsMaxed"
-                      :target-skills-maxed="targetSkillsMaxed"
                       @update-skill="handleSkillUpdate"
-                      @toggle-max-skills="toggleMaxAllSkills"
-                      @toggle-max-target="toggleMaxTargetSkills"
                     />
 
                     <PotentialSection
                       :potential-levels="potentialLevels"
-                      :all-potentials-maxed="allPotentialsMaxed"
-                      :target-potentials-maxed="targetPotentialsMaxed"
                       @update-potential="handlePotentialUpdate"
-                      @toggle-max-potentials="toggleMaxAllPotentials"
-                      @toggle-max-target-potentials="toggleMaxTargetPotentials"
                     />
 
                     <MaterialsSection :materials="allMaterialsNeeded" />
@@ -861,6 +864,17 @@ watch(
   width: 100%;
 }
 
+.upgrade-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  gap: var(--student-modal-gap);
+  align-items: stretch;
+}
+
+.upgrade-overview-grid > * {
+  min-width: 0;
+}
+
 /* Status bars row: Recruitment + Apply Upgrade side-by-side */
 .status-bars-row {
   display: flex;
@@ -978,6 +992,12 @@ watch(
 
   .inventory-btn span {
     display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .upgrade-overview-grid {
+    grid-template-columns: 1fr;
   }
 }
 

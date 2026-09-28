@@ -13,15 +13,10 @@ import '@/styles/tooltip.css';
 const props = defineProps<{
   student: StudentProps;
   skillLevels: SkillLevels;
-  allSkillsMaxed: boolean;
-  targetSkillsMaxed: boolean;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update-skill', type: SkillType, current: number, target: number): void;
-  (e: 'toggle-max-skills', checked: boolean): void;
-  (e: 'toggle-max-target', checked: boolean): void;
-}>();
+const emit =
+  defineEmits<(e: 'update-skill', type: SkillType, current: number, target: number) => void>();
 
 const studentRef = toRef(() => props.student);
 
@@ -73,30 +68,6 @@ const skillPairs = Object.fromEntries(
 <template>
   <div class="modal-section-card">
     <h3 class="sr-only">{{ $t('skills') }}</h3>
-
-    <div class="modal-options-rail">
-      <div class="modal-toggle-item">
-        <input
-          type="checkbox"
-          id="max-all-skills"
-          name="max-all-skills"
-          :checked="props.allSkillsMaxed"
-          @change="(e) => emit('toggle-max-skills', (e.target as HTMLInputElement).checked)"
-        />
-        <label for="max-all-skills">{{ $t('maxAll') }}</label>
-      </div>
-      <div class="modal-toggle-item">
-        <input
-          type="checkbox"
-          id="max-target-skills"
-          name="max-target-skills"
-          :checked="props.targetSkillsMaxed"
-          :disabled="props.allSkillsMaxed"
-          @change="(e) => emit('toggle-max-target', (e.target as HTMLInputElement).checked)"
-        />
-        <label for="max-target-skills">{{ $t('maxTarget') }}</label>
-      </div>
-    </div>
 
     <div class="skill-grid">
       <div v-for="state in skillStates" :key="state.type" class="modal-grid-item">

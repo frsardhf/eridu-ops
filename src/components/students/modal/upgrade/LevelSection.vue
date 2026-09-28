@@ -7,7 +7,6 @@ import type { CharacterLevels } from '@/types/upgrade';
 
 const props = defineProps<{
   characterLevels: CharacterLevels;
-  totalXpNeeded: number;
 }>();
 
 const emit = defineEmits<(e: 'update-level', current: number, target: number) => void>();
@@ -29,76 +28,64 @@ const {
 </script>
 
 <template>
-  <div class="modal-section-card" :class="{ 'student-level-section-max': isMaxLevel }">
-    <div class="student-level-row" :class="{ 'student-level-row-max': isMaxLevel }">
-      <div class="student-level-progress-pill">
-        <span class="student-level-label">LEVEL</span>
+  <div class="modal-section-card student-level-section">
+    <div class="student-level-progress-pill">
+      <span class="student-level-label">{{ $t('level') }}</span>
 
+      <button
+        v-if="editingField !== 'current'"
+        type="button"
+        class="student-level-value-button"
+        :aria-label="$t('currentLevel')"
+        @click="startEdit('current')"
+      >
+        {{ levelState.current }}
+      </button>
+      <input
+        v-else
+        ref="currentEditorRef"
+        v-model="editValue"
+        name="current-level-input"
+        type="number"
+        class="student-level-editor-input"
+        min="1"
+        :max="MAX_LEVEL"
+        @blur="commitEdit"
+        @keydown="handleEditorKeydown"
+      />
+
+      <template v-if="!isMaxLevel">
+        <div class="student-level-arrow">→</div>
         <button
-          v-if="editingField !== 'current'"
+          v-if="editingField !== 'target'"
           type="button"
-          class="student-level-value-button"
-          :aria-label="$t('currentLevel')"
-          @click="startEdit('current')"
+          class="student-level-value-button target"
+          :aria-label="$t('targetLevel')"
+          @click="startEdit('target')"
         >
-          {{ levelState.current }}
+          {{ levelState.target }}
         </button>
         <input
           v-else
-          ref="currentEditorRef"
+          ref="targetEditorRef"
           v-model="editValue"
-          name="current-level-input"
+          name="target-level-input"
           type="number"
-          class="student-level-editor-input"
-          min="1"
+          class="student-level-editor-input target"
+          :min="levelState.current"
           :max="MAX_LEVEL"
           @blur="commitEdit"
           @keydown="handleEditorKeydown"
         />
-
-        <template v-if="!isMaxLevel">
-          <div class="student-level-arrow">→</div>
-          <button
-            v-if="editingField !== 'target'"
-            type="button"
-            class="student-level-value-button target"
-            :aria-label="$t('targetLevel')"
-            @click="startEdit('target')"
-          >
-            {{ levelState.target }}
-          </button>
-          <input
-            v-else
-            ref="targetEditorRef"
-            v-model="editValue"
-            name="target-level-input"
-            type="number"
-            class="student-level-editor-input target"
-            :min="levelState.current"
-            :max="MAX_LEVEL"
-            @blur="commitEdit"
-            @keydown="handleEditorKeydown"
-          />
-        </template>
-      </div>
-
-      <div v-if="!isMaxLevel" class="student-level-chip">
-        {{ $t('xpRequired') }}: {{ totalXpNeeded.toLocaleString() }}
-      </div>
+      </template>
     </div>
   </div>
 </template>
 
 <style scoped>
-.student-level-row {
-  display: grid;
-  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
-  gap: 8px;
-  align-items: stretch;
-}
-
-.student-level-row.student-level-row-max {
-  grid-template-columns: 1fr;
+.student-level-section {
+  display: flex;
+  align-items: center;
 }
 
 .student-level-progress-pill {
@@ -106,7 +93,8 @@ const {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  width: 100%;
+  min-height: 32px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-grade-gold) 35%, transparent);
   background: linear-gradient(
@@ -123,6 +111,7 @@ const {
   font-size: 0.74rem;
   color: var(--text-secondary);
   letter-spacing: 0.45px;
+  text-transform: uppercase;
 }
 
 .student-level-value-button {
@@ -179,32 +168,5 @@ const {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.student-level-chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 700;
-
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  padding: 4px 10px;
-
-  background: var(--background-primary);
-  color: var(--text-primary);
-
-  min-height: 42px;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 768px) {
-  .student-level-row {
-    grid-template-columns: 1fr;
-  }
 }
 </style>
