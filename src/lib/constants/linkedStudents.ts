@@ -18,7 +18,10 @@ interface LinkedStudentPair {
  * All linked student pairs.
  * To add a future pair, just add an entry here.
  */
-const LINKED_STUDENT_PAIRS: LinkedStudentPair[] = [{ primaryId: 10098, secondaryId: 10099 }];
+const LINKED_STUDENT_PAIRS: LinkedStudentPair[] = [
+  { primaryId: 10098, secondaryId: 10099 },
+  { primaryId: 10143, secondaryId: 10144 },
+];
 
 /** Set of all secondary IDs for O(1) lookup */
 const SECONDARY_STUDENT_IDS: Set<number> = new Set(
