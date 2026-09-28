@@ -63,102 +63,97 @@ function clampedNumberFromEvent(
 
 <template>
   <section class="bond-plan" :aria-label="$t('bondPlan')">
-    <div class="bond-plan__positions">
-      <div class="bond-plan__position">
-        <span class="bond-plan__eyebrow">{{ $t('current') }}</span>
-        <strong class="bond-plan__level">{{ $t('bond') }} {{ currentBond }}</strong>
-        <div v-if="currentBond >= MAX_BOND_LEVEL" class="bond-plan__exp-field">
-          <span>{{ $t('levelProgress') }}</span>
-          <strong class="bond-plan__maxed">{{ $t('bondMaxed') }}</strong>
+    <div class="bond-plan__content">
+      <div class="bond-plan__positions">
+        <div class="bond-plan__position">
+          <span class="bond-plan__eyebrow">{{ $t('current') }}</span>
+          <strong class="bond-plan__level">{{ $t('bond') }} {{ currentBond }}</strong>
+          <div v-if="currentBond >= MAX_BOND_LEVEL" class="bond-plan__exp-field">
+            <span>{{ $t('levelProgress') }}</span>
+            <strong class="bond-plan__maxed">{{ $t('bondMaxed') }}</strong>
+          </div>
+          <label v-else class="bond-plan__exp-field" :for="`current-bond-exp-${studentId}`">
+            <span>{{ $t('levelProgress') }}</span>
+            <span class="bond-plan__exp-control">
+              <input
+                :id="`current-bond-exp-${studentId}`"
+                :name="`current-bond-exp-${studentId}`"
+                type="number"
+                :min="0"
+                :max="currentBondExpMax"
+                :value="currentBondExp"
+                @change="
+                  emit(
+                    'update-current-exp',
+                    clampedNumberFromEvent($event, currentBondExp, 0, currentBondExpMax),
+                  )
+                "
+              />
+              <span>/ {{ currentExpRequired.toLocaleString() }} {{ $t('exp') }}</span>
+            </span>
+          </label>
         </div>
-        <label v-else class="bond-plan__exp-field" :for="`current-bond-exp-${studentId}`">
-          <span>{{ $t('levelProgress') }}</span>
-          <span class="bond-plan__exp-control">
+
+        <div class="bond-plan__position bond-plan__position--target">
+          <span class="bond-plan__eyebrow">{{ $t('target') }}</span>
+          <label class="bond-plan__level-input" :for="`target-bond-${studentId}`">
+            <span>{{ $t('bond') }}</span>
             <input
-              :id="`current-bond-exp-${studentId}`"
-              :name="`current-bond-exp-${studentId}`"
+              :id="`target-bond-${studentId}`"
+              :name="`target-bond-${studentId}`"
               type="number"
-              :min="0"
-              :max="currentBondExpMax"
-              :value="currentBondExp"
+              :min="currentBond"
+              :max="MAX_BOND_LEVEL"
+              :value="targetBond"
               @change="
                 emit(
-                  'update-current-exp',
-                  clampedNumberFromEvent($event, currentBondExp, 0, currentBondExpMax),
+                  'update-target-bond',
+                  clampedNumberFromEvent($event, targetBond, currentBond, MAX_BOND_LEVEL),
                 )
               "
             />
-            <span>/ {{ currentExpRequired.toLocaleString() }} {{ $t('exp') }}</span>
-          </span>
-        </label>
-      </div>
-
-      <div class="bond-plan__position bond-plan__position--target">
-        <span class="bond-plan__eyebrow">{{ $t('target') }}</span>
-        <label class="bond-plan__level-input" :for="`target-bond-${studentId}`">
-          <span>{{ $t('bond') }}</span>
-          <input
-            :id="`target-bond-${studentId}`"
-            :name="`target-bond-${studentId}`"
-            type="number"
-            :min="currentBond"
-            :max="MAX_BOND_LEVEL"
-            :value="targetBond"
-            @change="
-              emit(
-                'update-target-bond',
-                clampedNumberFromEvent($event, targetBond, currentBond, MAX_BOND_LEVEL),
-              )
-            "
-          />
-        </label>
-        <div v-if="targetBond >= MAX_BOND_LEVEL" class="bond-plan__exp-field">
-          <span>{{ $t('levelProgress') }}</span>
-          <strong class="bond-plan__maxed">{{ $t('bondMaxed') }}</strong>
+          </label>
+          <div v-if="targetBond >= MAX_BOND_LEVEL" class="bond-plan__exp-field">
+            <span>{{ $t('levelProgress') }}</span>
+            <strong class="bond-plan__maxed">{{ $t('bondMaxed') }}</strong>
+          </div>
+          <label v-else class="bond-plan__exp-field" :for="`target-bond-exp-${studentId}`">
+            <span>{{ $t('levelProgress') }}</span>
+            <span class="bond-plan__exp-control">
+              <input
+                :id="`target-bond-exp-${studentId}`"
+                :name="`target-bond-exp-${studentId}`"
+                type="number"
+                :min="targetExpMin"
+                :max="targetBondExpMax"
+                :value="targetBondExp"
+                @change="
+                  emit(
+                    'update-target-exp',
+                    clampedNumberFromEvent($event, targetBondExp, targetExpMin, targetBondExpMax),
+                  )
+                "
+              />
+              <span>/ {{ targetExpRequired.toLocaleString() }} {{ $t('exp') }}</span>
+            </span>
+          </label>
         </div>
-        <label v-else class="bond-plan__exp-field" :for="`target-bond-exp-${studentId}`">
-          <span>{{ $t('levelProgress') }}</span>
-          <span class="bond-plan__exp-control">
-            <input
-              :id="`target-bond-exp-${studentId}`"
-              :name="`target-bond-exp-${studentId}`"
-              type="number"
-              :min="targetExpMin"
-              :max="targetBondExpMax"
-              :value="targetBondExp"
-              @change="
-                emit(
-                  'update-target-exp',
-                  clampedNumberFromEvent($event, targetBondExp, targetExpMin, targetBondExpMax),
-                )
-              "
-            />
-            <span>/ {{ targetExpRequired.toLocaleString() }} {{ $t('exp') }}</span>
-          </span>
-        </label>
       </div>
-    </div>
 
-    <div class="bond-plan__result" :class="{ 'bond-plan__result--complete': remainingExp === 0 }">
-      <div class="bond-plan__result-grid">
-        <div class="bond-plan__remaining">
-          <span class="bond-plan__eyebrow">{{ $t('remaining') }}</span>
+      <div
+        class="bond-plan__summary"
+        :class="{ 'bond-plan__summary--complete': remainingExp === 0 }"
+      >
+        <div class="bond-plan__summary-line">
           <strong v-if="remainingExp > 0">
-            {{ $t('expRemaining', { count: remainingExp.toLocaleString() }) }}
+            {{ $t('expNeeded', { count: remainingExp.toLocaleString() }) }}
           </strong>
           <strong v-else>{{ $t('goalCovered') }}</strong>
-          <span v-if="plannedExp > 0" class="bond-plan__planned">
-            {{ $t('plannedExp', { count: plannedExp.toLocaleString() }) }}
-          </span>
-        </div>
-
-        <div class="bond-plan__after-plan">
-          <span class="bond-plan__eyebrow">{{ $t('afterPlan') }}</span>
-          <strong>{{ $t('bond') }} {{ projectedBond }}</strong>
-          <span v-if="reachesMax" class="bond-plan__next-level bond-plan__next-level--complete">
-            {{ $t('bondMaxed') }}
-          </span>
-          <span v-else class="bond-plan__next-level">
+          <span class="bond-plan__separator" aria-hidden="true">·</span>
+          <span>{{ $t('planReachesBond', { level: projectedBond }) }}</span>
+          <span class="bond-plan__separator" aria-hidden="true">·</span>
+          <span v-if="reachesMax" class="bond-plan__max-result">{{ $t('bondMaxed') }}</span>
+          <span v-else>
             {{
               $t('expUntilBond', {
                 count: remainingXp.toLocaleString(),
@@ -168,9 +163,22 @@ function clampedNumberFromEvent(
           </span>
         </div>
 
-        <div v-if="remainingExp > 0" class="bond-plan__helpers">
-          <span class="bond-plan__eyebrow">{{ $t('helperEquivalents') }}</span>
-          <div class="bond-plan__helper-values">
+        <div v-if="plannedExp > 0 || remainingExp > 0" class="bond-plan__summary-details">
+          <span v-if="plannedExp > 0">
+            {{ $t('plannedExp', { count: plannedExp.toLocaleString() }) }}
+          </span>
+          <span
+            v-if="plannedExp > 0 && remainingExp > 0"
+            class="bond-plan__separator"
+            aria-hidden="true"
+          >
+            ·
+          </span>
+          <span
+            v-if="remainingExp > 0"
+            class="bond-plan__helpers"
+            :aria-label="$t('helperEquivalents')"
+          >
             <span>{{ $t('cafeTapCount', { count: cafeTapsNeeded.toLocaleString() }) }}</span>
             <span class="bond-plan__or">{{ $t('or') }}</span>
             <span>
@@ -181,7 +189,7 @@ function clampedNumberFromEvent(
                 })
               }}
             </span>
-          </div>
+          </span>
         </div>
       </div>
     </div>
@@ -215,43 +223,52 @@ function clampedNumberFromEvent(
 
 <style scoped>
 .bond-plan {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--background-primary);
   overflow: hidden;
 }
 
+.bond-plan__content {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+}
+
 .bond-plan__positions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(150px, 1fr));
-  align-items: center;
-  gap: 24px;
-  padding: 12px 14px;
+  align-content: center;
+  padding: 10px 14px;
   min-width: 0;
 }
 
 .bond-plan__position {
   display: grid;
-  grid-template-rows: auto 32px auto;
-  gap: 6px;
+  grid-template-columns: 58px minmax(100px, 0.8fr) minmax(170px, 1.2fr);
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+}
+
+.bond-plan__position + .bond-plan__position {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
 }
 
 .bond-plan__eyebrow {
   color: var(--text-secondary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.76rem;
+  font-weight: 600;
 }
 
 .bond-plan__level,
 .bond-plan__level-input {
   min-height: 32px;
   color: var(--text-primary);
-  font-size: 1.05rem;
+  font-size: 1rem;
   line-height: 1.2;
 }
 
@@ -329,89 +346,57 @@ function clampedNumberFromEvent(
   cursor: not-allowed;
 }
 
-.bond-plan__result {
-  display: flex;
-  align-items: center;
-  padding: 12px 14px;
-  border-left: 1px solid var(--border-color);
-  background: color-mix(in srgb, var(--accent-color) 6%, var(--card-background));
-  min-width: 0;
-}
-
-.bond-plan__result-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
-  width: 100%;
-  min-width: 0;
-}
-
-.bond-plan__next-level {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.bond-plan__next-level--complete {
-  color: var(--color-bond-100);
-}
-
-.bond-plan__result--complete {
-  background: color-mix(in srgb, var(--color-positive) 8%, var(--card-background));
-}
-
-.bond-plan__remaining,
-.bond-plan__after-plan,
-.bond-plan__helpers {
+.bond-plan__summary {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-}
-
-.bond-plan__remaining strong,
-.bond-plan__after-plan strong {
-  color: var(--accent-color);
-  font-size: 1rem;
-}
-
-.bond-plan__after-plan {
-  padding-left: 18px;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 16px;
   border-left: 1px solid var(--border-color);
+  min-width: 0;
 }
 
+.bond-plan__summary-line,
+.bond-plan__summary-details,
 .bond-plan__helpers {
-  grid-column: 1 / -1;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-color);
-}
-
-.bond-plan__result--complete .bond-plan__remaining strong {
-  color: var(--color-positive);
-}
-
-.bond-plan__planned {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-}
-
-.bond-plan__helper-values {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
+}
+
+.bond-plan__summary-line {
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   font-weight: 600;
 }
 
-.bond-plan__or {
-  color: var(--text-tertiary);
-  font-size: 0.72rem;
+.bond-plan__summary-line strong {
+  color: var(--accent-color);
+  font-size: inherit;
+}
+
+.bond-plan__summary--complete .bond-plan__summary-line strong {
+  color: var(--color-positive);
+}
+
+.bond-plan__summary-details {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
+.bond-plan__max-result {
+  color: var(--color-bond-100);
+}
+
+.bond-plan__separator,
+.bond-plan__or {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
 .bond-plan__sources-toggle {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -419,7 +404,7 @@ function clampedNumberFromEvent(
   padding: 9px 16px;
   border: none;
   border-top: 1px solid var(--border-color);
-  background: var(--card-background);
+  background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
@@ -446,7 +431,7 @@ function clampedNumberFromEvent(
 
 .bond-plan__sources-toggle:hover {
   color: var(--accent-color);
-  background: color-mix(in srgb, var(--accent-color) 6%, var(--card-background));
+  background: color-mix(in srgb, var(--accent-color) 6%, var(--background-primary));
 }
 
 .bond-plan__chevron {
@@ -459,43 +444,35 @@ function clampedNumberFromEvent(
 }
 
 .bond-plan__sources {
-  grid-column: 1 / -1;
   padding: 12px 16px 16px;
   border-top: 1px solid var(--border-color);
-  background: var(--card-background);
+  background: var(--background-primary);
   min-width: 0;
 }
 
 @media (max-width: 760px) {
-  .bond-plan {
+  .bond-plan__content {
     grid-template-columns: 1fr;
   }
 
-  .bond-plan__result {
+  .bond-plan__summary {
     border-top: 1px solid var(--border-color);
     border-left: none;
   }
 }
 
 @media (max-width: 480px) {
-  .bond-plan__positions {
-    grid-template-columns: 1fr;
+  .bond-plan__position {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .bond-plan__exp-field {
+    grid-column: 2;
   }
 
   .bond-plan__sources-toggle > span:first-child {
     flex-direction: column;
     gap: 2px;
-  }
-
-  .bond-plan__result-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .bond-plan__after-plan {
-    padding-top: 8px;
-    padding-left: 0;
-    border-top: 1px solid var(--border-color);
-    border-left: none;
   }
 }
 </style>
