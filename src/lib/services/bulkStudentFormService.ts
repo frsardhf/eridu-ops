@@ -2,6 +2,7 @@ import { FormRecord, db } from '@/lib/db/database';
 import { buildDefaultFormData } from '@/lib/services/studentFormService';
 import { StudentProps } from '@/types/student';
 import { DEFAULT_SKILL_LEVELS, DEFAULT_POTENTIAL_LEVELS } from '@/types/upgrade';
+import { DEFAULT_BOND_DETAIL } from '@/types/gift';
 import { recordPlanHistoryEvent } from './planHistoryService';
 
 export type AvailabilityFilter = 'fest' | 'unique' | 'regular' | 'event';
@@ -65,10 +66,15 @@ export function classifyStudentAvailability(student: StudentProps): Availability
 function isNonDefaultPersistedForm(student: StudentProps, form: FormRecord | undefined): boolean {
   if (!form) return false;
 
-  const defaultForm = buildDefaultFormData(student);
   const starGrade = student.StarGrade ?? 1;
 
-  if ((form.bondDetailData?.currentBond ?? 1) !== (defaultForm.bondDetailData?.currentBond ?? 1)) {
+  const bondDetail = { ...DEFAULT_BOND_DETAIL, ...form.bondDetailData };
+  if (
+    bondDetail.currentBond !== DEFAULT_BOND_DETAIL.currentBond ||
+    bondDetail.currentBondExp !== DEFAULT_BOND_DETAIL.currentBondExp ||
+    bondDetail.targetBond !== DEFAULT_BOND_DETAIL.targetBond ||
+    bondDetail.targetBondExp !== DEFAULT_BOND_DETAIL.targetBondExp
+  ) {
     return true;
   }
 
@@ -224,7 +230,14 @@ function applyPatchToForm(
 
   if (patch.bondLevel !== null) {
     next.bondDetailData = {
+      ...DEFAULT_BOND_DETAIL,
+      ...next.bondDetailData,
       currentBond: patch.bondLevel,
+      currentBondExp: 0,
+      targetBond:
+        next.bondDetailData?.targetBond != null && next.bondDetailData.targetBond >= patch.bondLevel
+          ? next.bondDetailData.targetBond
+          : null,
     };
   }
 
@@ -314,7 +327,16 @@ export async function applyBondUpdates(
     const merged: FormRecord = {
       ...existing,
       studentId,
-      bondDetailData: { currentBond: bond },
+      bondDetailData: {
+        ...DEFAULT_BOND_DETAIL,
+        ...existing.bondDetailData,
+        currentBond: bond,
+        currentBondExp: 0,
+        targetBond:
+          existing.bondDetailData?.targetBond != null && existing.bondDetailData.targetBond >= bond
+            ? existing.bondDetailData.targetBond
+            : null,
+      },
     };
     updatedRows.push(merged);
     updatedMap[studentId] = merged;

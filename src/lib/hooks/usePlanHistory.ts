@@ -20,7 +20,12 @@ import {
   type SkillLevels,
   type SkillType,
 } from '../../types/upgrade';
-import { DEFAULT_BOND_DETAIL, DEFAULT_OTHER_EXP, type OtherExpDataProps } from '../../types/gift';
+import {
+  DEFAULT_BOND_DETAIL,
+  DEFAULT_OTHER_EXP,
+  type BondDetailDataProps,
+  type OtherExpDataProps,
+} from '../../types/gift';
 import type {
   EquipmentLevels,
   EquipmentType,
@@ -87,6 +92,18 @@ function normalizedFieldValue(
   counterpart: unknown,
   student?: StudentProps,
 ): unknown {
+  if (key === 'bondDetailData') {
+    return {
+      ...DEFAULT_BOND_DETAIL,
+      ...(typeof value === 'object' && value !== null ? value : {}),
+    };
+  }
+  if (key === 'otherExpData') {
+    return {
+      ...DEFAULT_OTHER_EXP,
+      ...(typeof value === 'object' && value !== null ? value : {}),
+    };
+  }
   if (value !== undefined) return value;
   if (key === 'equipmentLevels') return equipmentDefaultsFrom(counterpart, student);
   if (key === 'gradeLevels') {
@@ -421,14 +438,42 @@ export function getPlanHistoryChangeDetails(
       student,
     )
   ) {
+    const before = normalizedFieldValue(
+      'bondDetailData',
+      change.before.bondDetailData,
+      change.after.bondDetailData,
+      student,
+    ) as BondDetailDataProps;
+    const after = normalizedFieldValue(
+      'bondDetailData',
+      change.after.bondDetailData,
+      change.before.bondDetailData,
+      student,
+    ) as BondDetailDataProps;
+    const changes: string[] = [];
+    if (before.currentBond !== after.currentBond) {
+      changes.push(formatTransition(before.currentBond, after.currentBond, $t('currentBond')));
+    }
+    if (before.currentBondExp !== after.currentBondExp) {
+      changes.push(
+        formatTransition(before.currentBondExp, after.currentBondExp, $t('levelProgress')),
+      );
+    }
+    if (before.targetBond !== after.targetBond) {
+      changes.push(
+        formatTransition(
+          before.targetBond ?? $t('automaticGoal'),
+          after.targetBond ?? $t('automaticGoal'),
+          $t('targetLevel'),
+        ),
+      );
+    }
+    if (before.targetBondExp !== after.targetBondExp) {
+      changes.push(formatTransition(before.targetBondExp, after.targetBondExp, $t('targetExp')));
+    }
     groups.push({
       field: 'bond',
-      changes: [
-        formatTransition(
-          change.before.bondDetailData?.currentBond ?? DEFAULT_BOND_DETAIL.currentBond,
-          change.after.bondDetailData?.currentBond ?? DEFAULT_BOND_DETAIL.currentBond,
-        ),
-      ],
+      changes,
     });
   }
 
@@ -492,6 +537,11 @@ export function getPlanHistoryChangeDetails(
     }
     if (before.bonusExp !== after.bonusExp) {
       changes.push(formatTransition(before.bonusExp, after.bonusExp, $t('bonusExp')));
+    }
+    if (before.lessonExpRate !== after.lessonExpRate) {
+      changes.push(
+        formatTransition(before.lessonExpRate, after.lessonExpRate, $t('lessonExpRate')),
+      );
     }
     groups.push({ field: 'otherExp', changes });
   }
