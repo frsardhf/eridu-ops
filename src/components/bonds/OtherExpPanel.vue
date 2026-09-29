@@ -9,7 +9,13 @@ import {
   LESSON_EXP_RATES,
   MAX_CAFE_TAPS_PER_DAY,
 } from '@/lib/constants/gameConstants';
-import { computeCafeDays, computeCafeExp, isoToDate, dateToIso } from '@/lib/utils/bondExpUtils';
+import {
+  computeCafeDays,
+  computeCafeExp,
+  isoToDate,
+  dateToIso,
+  isCafePlanExpired,
+} from '@/lib/utils/bondExpUtils';
 import type { OtherExpDataProps } from '@/types/gift';
 
 const props = defineProps<{
@@ -34,17 +40,27 @@ const todayDate = (() => {
 // treats it as today too) so users don't have to set it unless they're
 // planning a future-start campaign.
 const cafeStartDate = computed<Date | null>({
-  get: () => isoToDate(props.data.cafeStartDateIso) ?? todayDate,
+  get: () => {
+    const storedStart = isoToDate(props.data.cafeStartDateIso);
+    return storedStart && storedStart > todayDate ? storedStart : todayDate;
+  },
   set: (v) => emit('update', { cafeStartDateIso: dateToIso(v) }),
 });
 
+// End date can't precede the effective start date.
+const endMinDate = computed(() => cafeStartDate.value ?? todayDate);
+
 const cafeEndDate = computed<Date | null>({
-  get: () => isoToDate(props.data.cafeTargetDateIso),
+  get: () => {
+    const storedEnd = isoToDate(props.data.cafeTargetDateIso);
+    if (!storedEnd || storedEnd < endMinDate.value) return null;
+    if (isCafePlanExpired(props.data.cafeTargetDateIso, props.data.cafeDateInclusive, todayDate)) {
+      return null;
+    }
+    return storedEnd;
+  },
   set: (v) => emit('update', { cafeTargetDateIso: dateToIso(v) }),
 });
-
-// End date can't precede start; falls back to today when start is empty.
-const endMinDate = computed(() => isoToDate(props.data.cafeStartDateIso) ?? todayDate);
 
 /**
  * Format the picked date for display inside the picker input. We use a

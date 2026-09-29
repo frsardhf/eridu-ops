@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   calculateGiftStackExp,
   computeCafeDays,
@@ -7,6 +7,7 @@ import {
   computeStudentBondExpTotal,
   dateToIso,
   isoToDate,
+  isCafePlanExpired,
 } from '../bondExpUtils';
 import { CAFE_TAP_EXP } from '@/lib/constants/gameConstants';
 import type { GiftProps, OtherExpDataProps } from '@/types/gift';
@@ -67,6 +68,11 @@ describe('isoToDate / dateToIso', () => {
 });
 
 describe('computeCafeDays', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-10T15:30:00'));
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -88,10 +94,31 @@ describe('computeCafeDays', () => {
   });
 
   it('treats an empty start date as today', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-06-10T15:30:00'));
     expect(computeCafeDays('', '2026-06-12', false)).toBe(2);
     expect(computeCafeDays('', '2026-06-12', true)).toBe(3);
+  });
+
+  it('ignores elapsed days from an explicitly saved past start date', () => {
+    vi.setSystemTime(new Date('2026-06-11T15:30:00'));
+    expect(computeCafeDays('2026-06-10', '2026-06-13', false)).toBe(2);
+    expect(computeCafeDays('2026-06-10', '2026-06-13', true)).toBe(3);
+  });
+
+  it('returns 0 after a saved cafe plan has ended', () => {
+    vi.setSystemTime(new Date('2026-06-14T15:30:00'));
+    expect(computeCafeDays('2026-06-10', '2026-06-13', true)).toBe(0);
+  });
+});
+
+describe('isCafePlanExpired', () => {
+  it('expires exclusive plans on the end date and inclusive plans the next day', () => {
+    const endDate = '2026-06-10';
+    const endDay = new Date('2026-06-10T15:30:00');
+    const nextDay = new Date('2026-06-11T08:00:00');
+
+    expect(isCafePlanExpired(endDate, false, endDay)).toBe(true);
+    expect(isCafePlanExpired(endDate, true, endDay)).toBe(false);
+    expect(isCafePlanExpired(endDate, true, nextDay)).toBe(true);
   });
 });
 
@@ -107,7 +134,13 @@ describe('computeCafeExp', () => {
 });
 
 describe('computeOtherExpTotal', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('combines cafe EXP and bonus EXP', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-10T15:30:00'));
     const other = makeOtherExp({
       cafeTapsPerDay: 2,
       cafeStartDateIso: '2026-06-10',

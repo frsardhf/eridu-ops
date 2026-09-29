@@ -76,10 +76,28 @@ export function dateToIso(d: Date | null): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function localMidnight(date: Date = new Date()): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+/** Whether a cafe plan's final usable day has passed. */
+export function isCafePlanExpired(
+  endDateIso: string,
+  inclusive: boolean,
+  referenceDate: Date = new Date(),
+): boolean {
+  const end = isoToDate(endDateIso);
+  if (!end) return false;
+  const today = localMidnight(referenceDate);
+  return inclusive ? end < today : end <= today;
+}
+
 /**
  * Day delta from `startDateIso` to `endDateIso` (both YYYY-MM-DD).
- * Empty start => today. Past/invalid end => 0. If `inclusive`, the end
- * date counts as one of the days (so start=end inclusive = 1, exclusive = 0).
+ * Empty or past start => today. Past/invalid end => 0. If `inclusive`, the
+ * end date counts as one of the days (so start=end inclusive = 1, exclusive = 0).
  */
 export function computeCafeDays(
   startDateIso: string,
@@ -87,16 +105,12 @@ export function computeCafeDays(
   inclusive: boolean,
 ): number {
   if (!endDateIso) return 0;
-  const start = startDateIso
-    ? new Date(`${startDateIso}T00:00:00`)
-    : (() => {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
-        return d;
-      })();
-  if (Number.isNaN(start.getTime())) return 0;
-  const end = new Date(`${endDateIso}T00:00:00`);
-  if (Number.isNaN(end.getTime())) return 0;
+  const today = localMidnight();
+  const requestedStart = startDateIso ? isoToDate(startDateIso) : today;
+  if (!requestedStart) return 0;
+  const start = requestedStart < today ? today : requestedStart;
+  const end = isoToDate(endDateIso);
+  if (!end) return 0;
   const diffMs = end.getTime() - start.getTime();
   const days = Math.floor(diffMs / 86400000);
   if (days < 0) return 0;
