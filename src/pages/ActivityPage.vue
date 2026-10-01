@@ -183,6 +183,18 @@ onMounted(loadReport);
             :format-timestamp="formatTimestamp"
           />
           <ActivityTable
+            :title="$t('activity.failureBreakdown')"
+            :hint="$t('activity.failureBreakdownHint')"
+            :rows="report.failures"
+            mode="top"
+            :event-label="eventLabel"
+            :route-label="routeLabel"
+            :detail-label="detailLabel"
+            :format-number="formatNumber"
+            :format-timestamp="formatTimestamp"
+          />
+          <ActivityTable
+            class="activity-recent-panel"
             :title="$t('activity.recentActivity')"
             :hint="$t('activity.recentHint')"
             :rows="report.recent"
@@ -400,6 +412,10 @@ onMounted(loadReport);
   gap: 10px;
 }
 
+.activity-recent-panel {
+  grid-column: 1 / -1;
+}
+
 .activity-state {
   display: flex;
   align-items: center;
@@ -442,6 +458,10 @@ onMounted(loadReport);
 
   .activity-data-grid {
     grid-template-columns: 1fr;
+  }
+
+  .activity-recent-panel {
+    grid-column: auto;
   }
 }
 

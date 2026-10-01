@@ -112,5 +112,6 @@ export interface ActivityReport {
   summary: ActivitySummary;
   daily: ActivityDailyPoint[];
   top: ActivityEventRow[];
+  failures: ActivityEventRow[];
   recent: ActivityEventRow[];
 }

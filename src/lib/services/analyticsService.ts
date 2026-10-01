@@ -124,6 +124,7 @@ function parseActivityReport(value: unknown, days: number): ActivityReport {
   if (!isRecord(value) || !isRecord(value.summary)) throw new Error('Invalid activity report');
   const daily = Array.isArray(value.daily) ? value.daily : [];
   const top = Array.isArray(value.top) ? value.top : [];
+  const failures = Array.isArray(value.failures) ? value.failures : [];
   const recent = Array.isArray(value.recent) ? value.recent : [];
 
   return {
@@ -145,6 +146,7 @@ function parseActivityReport(value: unknown, days: number): ActivityReport {
       }))
       .filter((row) => row.day !== ''),
     top: top.map(parseEventRow).filter((row) => row !== null),
+    failures: failures.map(parseEventRow).filter((row) => row !== null),
     recent: recent.map(parseEventRow).filter((row) => row !== null),
   };
 }
@@ -218,6 +220,15 @@ function createMockActivityReport(days: number): ActivityReport {
         feature: 'bond_planner',
         action: 'opened',
         count: 63,
+      },
+    ],
+    failures: [
+      {
+        name: 'workflow_failed',
+        route: 'students',
+        feature: 'inventory_scanner',
+        action: 'scanned',
+        count: 6,
       },
     ],
     recent: [

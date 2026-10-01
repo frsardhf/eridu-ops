@@ -51,7 +51,13 @@ export async function onRequestGet(context) {
     SELECT
       SUM(_sample_interval * double1) AS events,
       COUNT(DISTINCT index1) AS sessions,
-      SUM(if(blob1 = 'workflow_completed', _sample_interval * double1, 0.0)) AS completed,
+      SUM(
+        if(
+          blob1 IN ('workflow_completed', 'export_completed'),
+          _sample_interval * double1,
+          0.0
+        )
+      ) AS completed,
       SUM(if(blob1 = 'workflow_failed', _sample_interval * double1, 0.0)) AS failed
     FROM ${dataset}
     WHERE ${period}
@@ -79,6 +85,19 @@ export async function onRequestGet(context) {
     ORDER BY count DESC
     LIMIT 12
   `;
+  const failuresSql = `
+    SELECT
+      blob1 AS name,
+      blob2 AS route,
+      blob3 AS feature,
+      blob4 AS action,
+      SUM(_sample_interval * double1) AS count
+    FROM ${dataset}
+    WHERE ${period} AND blob1 = 'workflow_failed'
+    GROUP BY name, route, feature, action
+    ORDER BY count DESC
+    LIMIT 12
+  `;
   const recentSql = `
     SELECT
       timestamp,
@@ -96,12 +115,15 @@ export async function onRequestGet(context) {
   `;
 
   try {
-    const [summaryResult, dailyResult, topResult, recentResult] = await Promise.all([
-      queryAnalytics(context.env, summarySql),
-      queryAnalytics(context.env, dailySql),
-      queryAnalytics(context.env, topSql),
-      queryAnalytics(context.env, recentSql),
-    ]);
+    const [summaryResult, dailyResult, topResult, failuresResult, recentResult] = await Promise.all(
+      [
+        queryAnalytics(context.env, summarySql),
+        queryAnalytics(context.env, dailySql),
+        queryAnalytics(context.env, topSql),
+        queryAnalytics(context.env, failuresSql),
+        queryAnalytics(context.env, recentSql),
+      ],
+    );
     const summary = rows(summaryResult)[0] ?? {};
 
     return json({
@@ -115,6 +137,7 @@ export async function onRequestGet(context) {
       },
       daily: rows(dailyResult),
       top: rows(topResult),
+      failures: rows(failuresResult),
       recent: rows(recentResult),
     });
   } catch (error) {
