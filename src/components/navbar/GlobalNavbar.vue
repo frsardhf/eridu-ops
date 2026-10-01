@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
+import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { $t } from '@/locales';
 import type { Language } from '@/lib/stores/localizationStore';
 import { CHANGELOG } from '@/lib/constants/changelog';
@@ -30,6 +32,7 @@ defineProps<{
 const { currentTheme, setTheme, reinitializeData } = useStudentData();
 const { exportData, currentLanguage, setLanguage, languageOptions } = useNavbarSettings();
 const { track } = useAnalytics();
+const route = useRoute();
 
 // Language picker is mirrored into the mobile menu (the top-bar one hides <=480).
 function onSelectLanguage(lang: Language) {
@@ -38,6 +41,7 @@ function onSelectLanguage(lang: Language) {
 }
 
 const mobileMenuOpen = ref(false);
+const plannerMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showScreenshotModal = ref(false);
 const showWhatsNewModal = ref(false);
@@ -45,6 +49,14 @@ const showContactModal = ref(false);
 const showCreditsModal = ref(false);
 const menuToggleEl = ref<HTMLButtonElement | null>(null);
 const menuEl = ref<HTMLElement | null>(null);
+const plannerMenuEl = ref<HTMLElement | null>(null);
+const plannerToggleEl = ref<HTMLButtonElement | null>(null);
+
+const plannerActive = computed(() =>
+  ['/students', '/bonds', '/crafting'].some(
+    (path) => route.path === path || route.path.startsWith(`${path}/`),
+  ),
+);
 
 // Auto-open the What's New modal once when the latest entry's id doesn't
 // match the user's lastSeen marker. Brand-new visitors hit this too (undefined
@@ -70,7 +82,28 @@ function closeWhatsNewModal() {
 }
 
 function toggleMobileMenu() {
+  closePlannerMenu();
   mobileMenuOpen.value = !mobileMenuOpen.value;
+}
+
+function openPlannerMenu() {
+  mobileMenuOpen.value = false;
+  plannerMenuOpen.value = true;
+}
+
+function closePlannerMenu() {
+  plannerMenuOpen.value = false;
+}
+
+function togglePlannerMenu() {
+  const nextOpen = !plannerMenuOpen.value;
+  if (nextOpen) mobileMenuOpen.value = false;
+  plannerMenuOpen.value = nextOpen;
+}
+
+function handlePlannerFocusOut(event: FocusEvent) {
+  const nextTarget = event.relatedTarget as Node | null;
+  if (!nextTarget || !plannerMenuEl.value?.contains(nextTarget)) closePlannerMenu();
 }
 
 async function handleExportData() {
@@ -106,8 +139,10 @@ function openCreditsModal() {
 }
 
 function handleClickOutside(event: MouseEvent) {
-  if (!mobileMenuOpen.value) return;
   const target = event.target as Node;
+  if (plannerMenuOpen.value && !plannerMenuEl.value?.contains(target)) closePlannerMenu();
+
+  if (!mobileMenuOpen.value) return;
   if (
     menuEl.value &&
     !menuEl.value.contains(target) &&
@@ -118,7 +153,14 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !plannerMenuOpen.value) return;
+  closePlannerMenu();
+  plannerToggleEl.value?.focus();
+}
+
 useClickOutside(handleClickOutside);
+useDocumentListener('keydown', handleKeydown);
 </script>
 
 <template>
@@ -143,15 +185,75 @@ useClickOutside(handleClickOutside);
           </svg>
         </RouterLink>
         <nav class="an-nav">
-          <RouterLink to="/students" class="app-navbar-link" active-class="active">
-            {{ $t('students') }}
-          </RouterLink>
-          <RouterLink to="/bonds" class="app-navbar-link" active-class="active">
-            {{ $t('bonds') }}
-          </RouterLink>
-          <RouterLink to="/crafting" class="app-navbar-link" active-class="active">
-            {{ $t('craftingFodder.nav') }}
-          </RouterLink>
+          <div
+            ref="plannerMenuEl"
+            class="planner-menu"
+            @mouseenter="openPlannerMenu"
+            @mouseleave="closePlannerMenu"
+            @focusout="handlePlannerFocusOut"
+          >
+            <button
+              ref="plannerToggleEl"
+              type="button"
+              class="app-navbar-link planner-menu-trigger"
+              :class="{ active: plannerActive, open: plannerMenuOpen }"
+              :aria-expanded="plannerMenuOpen"
+              aria-haspopup="menu"
+              aria-controls="planner-menu-options"
+              @click="togglePlannerMenu"
+            >
+              <span>{{ $t('planner') }}</span>
+              <svg
+                class="planner-menu-chevron"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div
+              v-if="plannerMenuOpen"
+              id="planner-menu-options"
+              class="planner-menu-options"
+              role="menu"
+            >
+              <RouterLink
+                to="/students"
+                class="planner-menu-option"
+                active-class="active"
+                role="menuitem"
+                @click="closePlannerMenu"
+              >
+                {{ $t('students') }}
+              </RouterLink>
+              <RouterLink
+                to="/bonds"
+                class="planner-menu-option"
+                active-class="active"
+                role="menuitem"
+                @click="closePlannerMenu"
+              >
+                {{ $t('bonds') }}
+              </RouterLink>
+              <RouterLink
+                to="/crafting"
+                class="planner-menu-option"
+                active-class="active"
+                role="menuitem"
+                @click="closePlannerMenu"
+              >
+                {{ $t('craftingFodder.nav') }}
+              </RouterLink>
+            </div>
+          </div>
           <RouterLink to="/hall" class="app-navbar-link" active-class="active">
             {{ $t('bond100.nav') }}
           </RouterLink>
@@ -391,6 +493,74 @@ useClickOutside(handleClickOutside);
 .an-nav {
   display: flex;
   gap: 4px;
+}
+
+.planner-menu {
+  position: relative;
+}
+
+.planner-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.planner-menu-chevron {
+  flex: 0 0 auto;
+  transition: transform 0.15s ease;
+}
+
+.planner-menu-trigger.open .planner-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.planner-menu-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1100;
+  display: grid;
+  min-width: 150px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--background-primary);
+  box-shadow: 0 8px 20px rgba(var(--background-hover-rgb), 0.22);
+}
+
+.planner-menu-options::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: 7px;
+  content: '';
+}
+
+.planner-menu-option {
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.planner-menu-option:hover,
+.planner-menu-option:focus-visible {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.planner-menu-option.active {
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  color: var(--accent-color);
 }
 
 /* Fills remaining space; slot content can use margin-left: auto internally. */

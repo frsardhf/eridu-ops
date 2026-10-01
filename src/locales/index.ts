@@ -29,6 +29,7 @@ const en = {
   bondsDesc: 'Gift planning and bond progress tracker for your students.',
   craftingDesc: 'Plan fodder crafts from surplus materials and track each session’s progress.',
   bond100Desc: 'See who across the player base has reached Bond 100 with each student.',
+  planner: 'Planner',
   navigation: 'Navigation',
   landingDisclaimerBefore:
     'Eridu Ops is an unofficial fan project, not affiliated with Nexon, Nexon Games, or Yostar. Game data and images are provided via ',
@@ -927,6 +928,7 @@ const jp: TranslationTree = {
   bondsDesc: 'ギフト計画と絆進捗の追跡。',
   craftingDesc: '余剰素材から素材クラフトを計画し、セッションごとの進捗を管理。',
   bond100Desc: 'プレイヤー間で誰がどの生徒と絆100に到達したかを確認。',
+  planner: 'プランナー',
   navigation: 'ナビゲーション',
   landingDisclaimerBefore:
     'Eridu Opsは非公式のファン制作物であり、Nexon、Nexon Games、Yostarとは一切関係ありません。ゲームデータおよび画像は',
@@ -1825,6 +1827,7 @@ const kr: TranslationTree = {
   bondsDesc: '학생을 위한 선물 계획과 인연 진행도 추적.',
   craftingDesc: '잉여 재료로 재료 제작을 계획하고 세션별 진행도를 관리하세요.',
   bond100Desc: '각 학생과 인연 100을 달성한 플레이어를 확인하세요.',
+  planner: '플래너',
   navigation: '탐색',
   landingDisclaimerBefore:
     'Eridu Ops는 비공식 팬 제작 프로젝트이며 Nexon, Nexon Games, Yostar와 관련이 없습니다. 게임 데이터와 이미지는 ',
