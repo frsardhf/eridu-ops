@@ -1,4 +1,5 @@
 import { getPrimaryStudentId } from '@/lib/constants/linkedStudents';
+import { buildApiUrl } from './apiService';
 import type {
   Bond100Player,
   Bond100PlayersResponse,
@@ -8,11 +9,6 @@ import type {
   Bond100SubmissionPayload,
   Bond100SummaryResponse,
 } from '@/types/bond100';
-
-const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  (import.meta.env.VITE_PARSER_URL as string | undefined) ||
-  '/api';
 
 const MOCK_SUMMARY: Bond100SummaryResponse = {
   snapshotDate: '2026-05-26',
@@ -101,10 +97,6 @@ class Bond100ApiError extends Error {
     super(message);
     this.name = 'Bond100ApiError';
   }
-}
-
-function buildApiUrl(path: string): string {
-  return `${API_BASE.replace(/\/$/, '')}${path}`;
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {

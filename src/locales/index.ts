@@ -349,7 +349,7 @@ const en = {
   exportData: 'Export Data',
   importData: 'Import Data',
   app: 'App',
-  contact: 'Contact',
+  feedback: 'Feedback',
   credits: 'Credits',
   whatsNew: "What's New",
   whatsNewLatest: 'Latest update',
@@ -627,9 +627,27 @@ const en = {
     },
   },
 
-  // Contact modal
-  contactModal: {
-    body: 'If you have any inquiries or want to report bugs, you can contact me on Discord or Twitter:',
+  // Feedback modal
+  feedbackModal: {
+    body: 'Send a suggestion, bug report, or data correction directly to Eridu Ops.',
+    category: 'Category',
+    selectCategory: 'Select a category',
+    categories: {
+      suggestion: 'Suggestion',
+      bug_report: 'Bug report',
+      incorrect_data: 'Incorrect data',
+      other: 'Other',
+    },
+    message: 'Message',
+    messagePlaceholder: 'Tell us what happened or what you would like to see.',
+    privacy:
+      'Your message is stored on the Eridu Ops server. No contact information is collected, and responses are not provided individually.',
+    cancel: 'Cancel',
+    send: 'Send feedback',
+    sending: 'Sending...',
+    successTitle: 'Feedback received',
+    successBody: 'Thanks. Your feedback has been recorded.',
+    error: "Couldn't send feedback right now. Please try again later.",
   },
 
   // Credits modal
@@ -1250,7 +1268,7 @@ const jp: TranslationTree = {
   exportData: 'データエクスポート',
   importData: 'データインポート',
   app: 'アプリ',
-  contact: 'お問い合わせ',
+  feedback: 'フィードバック',
   credits: 'クレジット',
   whatsNew: '新着情報',
   whatsNewLatest: '最新のアップデート',
@@ -1526,9 +1544,27 @@ const jp: TranslationTree = {
     },
   },
 
-  // Contact modal
-  contactModal: {
-    body: 'ご質問やバグの報告はDiscordまたはTwitterでお問い合わせください：',
+  // Feedback modal
+  feedbackModal: {
+    body: 'ご意見、不具合、データの誤りをEridu Opsへ直接送信できます。',
+    category: 'カテゴリー',
+    selectCategory: 'カテゴリーを選択',
+    categories: {
+      suggestion: '提案',
+      bug_report: '不具合報告',
+      incorrect_data: 'データの誤り',
+      other: 'その他',
+    },
+    message: 'メッセージ',
+    messagePlaceholder: '発生した問題やご希望の機能をお知らせください。',
+    privacy:
+      'メッセージはEridu Opsのサーバーに保存されます。連絡先情報は収集せず、個別の返信は行いません。',
+    cancel: 'キャンセル',
+    send: 'フィードバックを送信',
+    sending: '送信中...',
+    successTitle: 'フィードバックを受け付けました',
+    successBody: 'ありがとうございます。フィードバックを記録しました。',
+    error: '現在フィードバックを送信できません。しばらくしてからもう一度お試しください。',
   },
 
   // Credits modal
@@ -2148,7 +2184,7 @@ const kr: TranslationTree = {
   exportData: '데이터 내보내기',
   importData: '데이터 가져오기',
   app: '앱',
-  contact: '문의',
+  feedback: '피드백',
   credits: '크레딧',
   whatsNew: '새 소식',
   whatsNewLatest: '최신 업데이트',
@@ -2423,9 +2459,27 @@ const kr: TranslationTree = {
     },
   },
 
-  // Contact modal
-  contactModal: {
-    body: '문의 사항이나 버그 제보는 Discord 또는 Twitter로 연락해 주세요:',
+  // Feedback modal
+  feedbackModal: {
+    body: '제안, 버그 신고 또는 잘못된 데이터를 Eridu Ops에 직접 보내 주세요.',
+    category: '카테고리',
+    selectCategory: '카테고리 선택',
+    categories: {
+      suggestion: '제안',
+      bug_report: '버그 신고',
+      incorrect_data: '잘못된 데이터',
+      other: '기타',
+    },
+    message: '메시지',
+    messagePlaceholder: '발생한 문제나 원하는 기능을 알려 주세요.',
+    privacy:
+      '메시지는 Eridu Ops 서버에 저장됩니다. 연락처 정보는 수집하지 않으며 개별 답변은 제공하지 않습니다.',
+    cancel: '취소',
+    send: '피드백 보내기',
+    sending: '보내는 중...',
+    successTitle: '피드백 접수 완료',
+    successBody: '감사합니다. 피드백이 기록되었습니다.',
+    error: '지금은 피드백을 보낼 수 없습니다. 나중에 다시 시도해 주세요.',
   },
 
   // Credits modal

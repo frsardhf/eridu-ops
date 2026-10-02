@@ -12,12 +12,12 @@ import { getLastSeenChangelogId, setLastSeenChangelogId } from '@/lib/utils/sett
 import GlobalControls from './GlobalControls.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
-import ContactModal from './modals/ContactModal.vue';
+import FeedbackModal from './modals/FeedbackModal.vue';
 import CreditsModal from './modals/CreditsModal.vue';
 import '@/styles/navbar.css';
 
 // The navbar mounts on every page; its heavy, rarely-opened modals load as
-// their own chunks on first open. Contact/Credits stay eager: they're small
+// their own chunks on first open. Feedback/Credits stay eager: they're small
 // and the landing page also imports them statically.
 const ImportModal = defineAsyncComponent(() => import('./modals/ImportModal.vue'));
 const InventoryScreenshotModal = defineAsyncComponent(
@@ -45,7 +45,7 @@ const plannerMenuOpen = ref(false);
 const showImportModal = ref(false);
 const showScreenshotModal = ref(false);
 const showWhatsNewModal = ref(false);
-const showContactModal = ref(false);
+const showFeedbackModal = ref(false);
 const showCreditsModal = ref(false);
 const menuToggleEl = ref<HTMLButtonElement | null>(null);
 const menuEl = ref<HTMLElement | null>(null);
@@ -128,8 +128,8 @@ function openScreenshotModal() {
   mobileMenuOpen.value = false;
 }
 
-function openContactModal() {
-  showContactModal.value = true;
+function openFeedbackModal() {
+  showFeedbackModal.value = true;
   mobileMenuOpen.value = false;
 }
 
@@ -270,7 +270,7 @@ useDocumentListener('keydown', handleKeydown);
         <GlobalControls
           :current-theme="currentTheme"
           @set-theme="setTheme"
-          @open-contact="openContactModal"
+          @open-feedback="openFeedbackModal"
           @open-credits="openCreditsModal"
         />
         <button
@@ -390,8 +390,12 @@ useDocumentListener('keydown', handleKeydown);
               {{ $t('whatsNew') }}
             </button>
             <!-- compact-only: shown once the matching top-bar control collapses
-                 (Contact/Credits <=960, Language <=480) -->
-            <button class="mobile-menu-option compact-only" type="button" @click="openContactModal">
+                 (Feedback/Credits <=960, Language <=480) -->
+            <button
+              class="mobile-menu-option compact-only"
+              type="button"
+              @click.stop="openFeedbackModal"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -408,7 +412,7 @@ useDocumentListener('keydown', handleKeydown);
                   d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
                 />
               </svg>
-              {{ $t('contact') }}
+              {{ $t('feedback') }}
             </button>
             <button class="mobile-menu-option compact-only" type="button" @click="openCreditsModal">
               <svg
@@ -472,7 +476,7 @@ useDocumentListener('keydown', handleKeydown);
   <!-- No reinit on inventory updates: the modal syncs resourceCacheStore per id. -->
   <InventoryScreenshotModal v-if="showScreenshotModal" @close="showScreenshotModal = false" />
   <WhatsNewModal v-if="showWhatsNewModal" @close="closeWhatsNewModal" />
-  <ContactModal v-if="showContactModal" @close="showContactModal = false" />
+  <FeedbackModal v-if="showFeedbackModal" @close="showFeedbackModal = false" />
   <CreditsModal v-if="showCreditsModal" @close="showCreditsModal = false" />
 </template>
 
@@ -710,7 +714,7 @@ useDocumentListener('keydown', handleKeydown);
   flex: 1;
 }
 
-/* Menu entries shown only once the matching top-bar control collapses: Contact
+/* Menu entries shown only once the matching top-bar control collapses: Feedback
    and Credits at the tablet breakpoint, Language at the phone breakpoint. */
 .compact-only,
 .compact-only-sm,
@@ -732,7 +736,7 @@ useDocumentListener('keydown', handleKeydown);
 
 /* On compact navbars (search pages), hide nav links so search can expand;
    SearchNavbar's mobile home button takes over for navigation. Matches the
-   960px point where Contact/Credits collapse into the menu. */
+   960px point where Feedback/Credits collapse into the menu. */
 @media screen and (max-width: 960px) {
   .an-left--compact {
     display: none;

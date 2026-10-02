@@ -11,16 +11,16 @@ import { useAnalytics } from '@/lib/hooks/useAnalytics';
 const props = defineProps<{
   currentTheme: ThemeId;
   /** No hamburger sibling (e.g. the landing page): keep every control inline at
-   *  all widths instead of collapsing Contact/Credits/Language into a menu that
+   *  all widths instead of collapsing Feedback/Credits/Language into a menu that
    *  isn't there. */
   standalone?: boolean;
 }>();
 
-// Contact/Credits modals are hosted by GlobalNavbar so they can also be opened
+// Feedback/Credits modals are hosted by GlobalNavbar so they can also be opened
 // from the hamburger menu on phones (where these top-bar icons are hidden).
 const emit = defineEmits<{
   setTheme: [themeId: ThemeId];
-  openContact: [];
+  openFeedback: [];
   openCredits: [];
 }>();
 
@@ -122,13 +122,13 @@ useClickOutside(handleClickOutside);
       </div>
     </div>
 
-    <!-- Contact -->
+    <!-- Feedback -->
     <button
       type="button"
       class="gc-icon-btn"
-      :aria-label="$t('contact')"
-      :title="$t('contact')"
-      @click="emit('openContact')"
+      :aria-label="$t('feedback')"
+      :title="$t('feedback')"
+      @click.stop="emit('openFeedback')"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -335,7 +335,7 @@ useClickOutside(handleClickOutside);
   }
 }
 
-/* Contact + Credits are secondary, so they collapse into the hamburger menu
+/* Feedback + Credits are secondary, so they collapse into the hamburger menu
    early (tablet <=960) to keep the search box usable. */
 @media screen and (max-width: 960px) {
   .gc-icon-btn {
@@ -351,7 +351,7 @@ useClickOutside(handleClickOutside);
 }
 
 /* Standalone (no hamburger to host the collapsed controls, e.g. the landing
-   page): keep Contact/Credits/Language inline at every width. Higher specificity
+   page): keep Feedback/Credits/Language inline at every width. Higher specificity
    than the collapse rules above, so it wins regardless of viewport. */
 .global-controls--standalone .gc-icon-btn,
 .global-controls--standalone .gc-lang {

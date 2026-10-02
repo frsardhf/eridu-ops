@@ -45,15 +45,18 @@ npm run build     # production build → dist/
 npm run preview   # preview production build locally
 ```
 
-## Inventory Scanner API
+## Hosted API
 
-The screenshot scanner calls an external parser API. Configure it with:
+The screenshot scanner, Bond 100 Hall, and anonymous feedback form call the
+hosted API. Configure its base URL with:
 
 ```bash
 VITE_PARSER_URL=/api
 ```
 
-In production, `/api` routes to the hosted parser service. In local development, Vite proxies `/api/inventory/*` to the local parser service.
+In production, `/api` routes to the hosted API. In local development, Vite
+proxies `/api/inventory/*` to the parser service and `/api/bond100/*` plus
+`/api/feedback/*` to the lightweight Flask service.
 
 ## Private Activity Manager
 
@@ -97,7 +100,7 @@ src/
     crafting/           # /crafting surface: CraftingFodderCard
     inventory/          # GlobalInventoryModal, ResourceGrid (items/equipment variant), ResourceCard, ResourceSummary
     navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel, SortPanel
-      modals/           #   Navbar-triggered modals (Contact, Credits, Import, InventoryScreenshot, WhatsNew)
+      modals/           #   Navbar-triggered modals (Feedback, Credits, Import, InventoryScreenshot, WhatsNew)
     shared/             # Cross-page components (MetaHeader, StudentStrip)
   composables/          # Stateless display helpers (useStudentInfo, useResourceTooltip, useTooltip, …)
   lib/

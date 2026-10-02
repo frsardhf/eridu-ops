@@ -5,7 +5,7 @@ import { useStudentData } from '@/lib/hooks/useStudentData';
 import { getBondIconUrl, getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { $t } from '@/locales';
 import GlobalControls from '@/components/navbar/GlobalControls.vue';
-import ContactModal from '@/components/navbar/modals/ContactModal.vue';
+import FeedbackModal from '@/components/navbar/modals/FeedbackModal.vue';
 import CreditsModal from '@/components/navbar/modals/CreditsModal.vue';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
 import '@/styles/navbar.css';
@@ -17,7 +17,7 @@ const { currentTheme, setTheme, sortedStudentsArray } = useStudentData();
 
 // GlobalControls only emits open events; on /students these modals are hosted by
 // GlobalNavbar, but the landing page uses GlobalControls directly, so it hosts them.
-const showContact = ref(false);
+const showFeedback = ref(false);
 const showCredits = ref(false);
 
 const bondIconUrl = getBondIconUrl();
@@ -119,7 +119,7 @@ onUnmounted(() => {
           :current-theme="currentTheme"
           standalone
           @set-theme="setTheme"
-          @open-contact="showContact = true"
+          @open-feedback="showFeedback = true"
           @open-credits="showCredits = true"
         />
       </div>
@@ -270,7 +270,7 @@ onUnmounted(() => {
       </p>
     </footer>
 
-    <ContactModal v-if="showContact" @close="showContact = false" />
+    <FeedbackModal v-if="showFeedback" @close="showFeedback = false" />
     <CreditsModal v-if="showCredits" @close="showCredits = false" />
   </div>
 </template>
