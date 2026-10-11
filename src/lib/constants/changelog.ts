@@ -54,6 +54,76 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-planning-recovery-feedback',
+    date: '2026-10-11',
+    title: {
+      en: 'Better planning, recovery & feedback',
+      jp: '計画機能の改善、履歴の復元とフィードバック',
+      kr: '더 나은 계획, 복원과 피드백',
+    },
+    summary: {
+      en: 'Set precise bond goals, recover recent student edits, use general blueprints in equipment plans, and send feedback directly.',
+      jp: '絆の目標を細かく設定し、生徒の編集履歴を復元できるようになりました。装備計画では万能設計図を考慮し、フィードバックも直接送信できます。',
+      kr: '인연 목표를 세밀하게 설정하고 최근 학생 편집을 복원하며, 장비 계획에 범용 설계도를 반영하고 피드백을 직접 보낼 수 있습니다.',
+    },
+    sections: [
+      {
+        title: {
+          en: 'Planning & recovery',
+          jp: '計画と履歴の復元',
+          kr: '계획과 복원',
+        },
+        highlights: [
+          {
+            en: 'Set current and target in-level bond EXP, see projected bond progress and cafe/lesson equivalents, and restore recent student edits through Plan History without changing your inventory.',
+            jp: '現在と目標の絆レベル内経験値を設定し、予測される絆の進捗やカフェ・スケジュール換算を確認できます。計画履歴から、在庫を変更せずに最近の生徒編集を復元できます。',
+            kr: '현재와 목표 인연 레벨 내 경험치를 설정하고, 예상 인연 진행도와 카페·스케줄 환산량을 확인할 수 있습니다. 계획 기록에서 인벤토리를 변경하지 않고 최근 학생 편집을 복원할 수 있습니다.',
+          },
+          {
+            en: 'Equipment upgrades and farming plans now account for general blueprints, using normal blueprints first.',
+            jp: '装備の強化計画と周回計画で万能設計図を考慮するようになりました。通常の設計図を優先して使用します。',
+            kr: '장비 강화와 파밍 계획에 범용 설계도를 반영하며, 일반 설계도를 먼저 사용합니다.',
+          },
+        ],
+      },
+      {
+        title: {
+          en: 'Scanner & feedback',
+          jp: 'スキャナーとフィードバック',
+          kr: '스캐너와 피드백',
+        },
+        highlights: [
+          {
+            en: 'Send suggestions, bug reports, and incorrect-data reports directly through the new anonymous Feedback form.',
+            jp: '新しい匿名フィードバックフォームから、提案、不具合、データの誤りを直接報告できます。',
+            kr: '새로운 익명 피드백 양식으로 제안, 버그, 잘못된 데이터를 직접 신고할 수 있습니다.',
+          },
+          {
+            en: 'The inventory scanner now includes general equipment blueprint icons.',
+            jp: 'インベントリスキャナーが装備の万能設計図アイコンに対応しました。',
+            kr: '인벤토리 스캐너가 장비 범용 설계도 아이콘을 지원합니다.',
+          },
+        ],
+      },
+      {
+        title: {
+          en: 'Chibi 3D',
+          jp: 'Chibi 3D',
+          kr: 'Chibi 3D',
+        },
+        highlights: [
+          {
+            en: 'The Chibi 3D viewer now uses the full page, with all animations in one picker and playback controls to pause, resume, and scrub through them.',
+            jp: 'Chibi 3Dビューアがページ全体に広がり、すべてのアニメーションを1つの選択メニューにまとめました。再生コントロールで一時停止・再開や再生位置の調整ができます。',
+            kr: 'Chibi 3D 뷰어가 페이지 전체를 사용하며, 모든 애니메이션을 하나의 선택 메뉴에서 고를 수 있습니다. 재생 컨트롤로 일시 정지, 재개와 재생 위치 조절이 가능합니다.',
+          },
+        ],
+      },
+    ],
+    fromCommit: 'b49bc58',
+    toCommit: 'b4ee1d4',
+  },
+  {
     id: '2026-07-crafting-and-hall',
     date: '2026-07-31',
     title: {
