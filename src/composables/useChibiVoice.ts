@@ -115,6 +115,10 @@ export function useChibiVoice(charId: string, enabled = true) {
     if (avail.length) playLine(avail[Math.floor(Math.random() * avail.length)]);
   }
 
+  function stopVoice(): void {
+    for (const audio of Object.values(audios)) audio.pause();
+  }
+
   onUnmounted(() => {
     for (const audio of Object.values(audios)) {
       audio.pause();
@@ -122,5 +126,13 @@ export function useChibiVoice(charId: string, enabled = true) {
     }
   });
 
-  return { status, playPickup, playRecovery, playArmedMove, playIdleMonolog, loadBattleLines };
+  return {
+    status,
+    playPickup,
+    playRecovery,
+    playArmedMove,
+    playIdleMonolog,
+    loadBattleLines,
+    stopVoice,
+  };
 }

@@ -5,6 +5,7 @@ import { $t } from '@/locales';
 import Chibi3dPet from '@/components/chibi/Chibi3dPet.vue';
 import Chibi3dInteraction from '@/components/chibi/Chibi3dInteraction.vue';
 import Chibi3dOrbitHint from '@/components/chibi/Chibi3dOrbitHint.vue';
+import Chibi3dPlayer from '@/components/chibi/Chibi3dPlayer.vue';
 import { CHIBI_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
@@ -76,19 +77,17 @@ const charOptions = computed(() =>
 );
 
 // Shared apparent-size slider (camera dolly): higher = closer = bigger chibi. Drives both the
-// pet framing and Inspect (setZoom dollies the orbit camera too), so there's one Size control
+// pet framing and camera controls (setZoom dollies the orbit camera too), so there's one Size control
 // for every mode. Default sits a touch enlarged.
 const zoom = ref(1.25);
 
-// Inspect mode: the pet canvas fills the viewport (wide) and orbit turns on so furniture/event
-// clips that reach past the 540 pet frame show uncropped (Orbit is folded into Inspect: there's
-// no separate orbit toggle). The wide canvas + resize live in the pet.
+// Reference framing stays stable while the viewer renders into the full room.
 const PET_SIZE = 540;
-const inspect = ref(false);
+const cameraControls = ref(false);
 const wandering = ref(false);
 const preferredMotion = usePreferredReducedMotion();
 const effectiveWandering = computed(
-  () => wandering.value && !inspect.value && preferredMotion.value !== 'reduce',
+  () => wandering.value && !cameraControls.value && preferredMotion.value !== 'reduce',
 );
 
 // Stage mode: the roaming pet, or one of the interaction stages (furniture / victory), each a
@@ -147,23 +146,15 @@ function onItemDrop(event: DragEvent): void {
 // Quick-hold buttons: the common poses. Clips no-op on units that lack them (e.g.
 // Formation_* on the special). The full clip list lives in the dropdown beside these.
 const QUICK_CLIPS = [
-  { label: 'Walk', clip: 'Cafe_Walk' },
-  { label: 'Move', clip: 'Move_Ing' },
-  { label: 'Idle', clip: 'Cafe_Idle' },
-  { label: 'Random', clip: 'Formation_Idle_Random' },
+  { label: 'chibi.walk', clip: 'Cafe_Walk' },
+  { label: 'chibi.move', clip: 'Move_Ing' },
+  { label: 'chibi.idle', clip: 'Cafe_Idle' },
+  { label: 'chibi.random', clip: 'Formation_Idle_Random' },
 ] as const;
 
-// Full-viewport Inspect is reserved for the clips that reach past the pet frame: furniture
-// (my_event* on Rio, Cafe_my* on newer characters) and paired interaction clips (*_Interaction).
-// Everything else (Cafe_Idle/Walk/Reaction, Formation_*, Move_*, Exs*, Tactical_*, ...) still
-// frames fine in the 540 chibi canvas. The dropdown is scoped to the mode, so those wide clips
-// are only reachable with Inspect on.
-const INSPECT_CLIP_RE = /(^my_event|^cafe_my|interaction)/i;
 const clipNames = computed(() => pet.value?.clipNames ?? []);
-const inspectClips = computed(() => clipNames.value.filter((c) => INSPECT_CLIP_RE.test(c)));
-const canvasClips = computed(() => clipNames.value.filter((c) => !INSPECT_CLIP_RE.test(c)));
 const animOptions = computed(() =>
-  (inspect.value ? inspectClips.value : canvasClips.value).map((name) => ({
+  clipNames.value.map((name) => ({
     value: name,
     label: name,
   })),
@@ -178,30 +169,24 @@ function hasQuickClip(clip: string): boolean {
 // Single entry point for both the quick buttons and the dropdown: play the clip and
 // mirror it into the dropdown value, resolved to the GLB's canonical name so the
 // SelectMenu highlights the matching row (quick-button labels may differ in case).
-const selectedAnim = ref('');
+const selectedAnim = computed(() => pet.value?.playback.clip ?? '');
 function playAnim(clip: string): void {
   const canonical = clipNames.value.find((c) => c.toLowerCase() === clip.toLowerCase()) ?? clip;
-  selectedAnim.value = canonical;
   pet.value?.playClip(canonical);
   track({ name: 'plan_action', feature: 'chibi_room', action: 'played' });
 }
 
-// Quick buttons are pet clips: pressing one drops back to the 540 pet framing first.
 function onQuickClip(clip: string): void {
-  inspect.value = false;
   playAnim(clip);
 }
 
-// Manual Inspect toggle. Leaving Inspect resets to the pet idle so a wide clip that was
-// playing doesn't linger cropped in the shrunk 540 canvas.
-function toggleInspect(): void {
-  inspect.value = !inspect.value;
-  selectedAnim.value = '';
-  if (!inspect.value) playAnim('Cafe_Idle');
+function resetView(): void {
+  pet.value?.resetView();
+  zoom.value = 1.25;
 }
 
 function onStagePointerDown(e: PointerEvent): void {
-  if (inspect.value) return; // no walk-to-click while inspecting
+  if (cameraControls.value) return;
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   pet.value?.walkTo(e.clientX - rect.left, e.clientY - rect.top);
 }
@@ -324,7 +309,10 @@ function onStagePointerDown(e: PointerEvent): void {
     <div
       v-if="mode === 'pet'"
       class="chibi-stage"
-      :class="{ 'chibi-stage--orbit': inspect, 'chibi-stage--item-dragging': isItemDragging }"
+      :class="{
+        'chibi-stage--orbit': cameraControls,
+        'chibi-stage--item-dragging': isItemDragging,
+      }"
       @pointerdown="onStagePointerDown"
       @dragover="onItemDragOver"
       @drop="onItemDrop"
@@ -333,8 +321,8 @@ function onStagePointerDown(e: PointerEvent): void {
       <div class="chibi-orbit" @pointerdown.stop>
         <div class="chibi-toggle-row">
           <div class="chibi-toggle">
-            <input id="inspect-toggle" type="checkbox" :checked="inspect" @change="toggleInspect" />
-            <label for="inspect-toggle" title="Toggle full-viewport inspect">
+            <input id="camera-toggle" v-model="cameraControls" type="checkbox" />
+            <label for="camera-toggle" :title="$t('chibi.cameraControlsHint')">
               <span class="chibi-switch" aria-hidden="true"></span>
               <svg
                 class="chibi-ico"
@@ -351,7 +339,7 @@ function onStagePointerDown(e: PointerEvent): void {
                 <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
                 <path d="M16 21h3a2 2 0 0 1 2-2v-3" />
               </svg>
-              Inspect
+              {{ $t('chibi.cameraControls') }}
             </label>
           </div>
           <div class="chibi-toggle">
@@ -359,13 +347,13 @@ function onStagePointerDown(e: PointerEvent): void {
               id="wandering-toggle"
               v-model="wandering"
               type="checkbox"
-              :disabled="inspect || preferredMotion === 'reduce'"
+              :disabled="cameraControls || preferredMotion === 'reduce'"
             />
             <label
               for="wandering-toggle"
               :title="
-                inspect
-                  ? $t('chibi.wanderingPausedInspect')
+                cameraControls
+                  ? $t('chibi.wanderingPausedCamera')
                   : preferredMotion === 'reduce'
                     ? $t('chibi.wanderingPausedMotion')
                     : $t('chibi.wanderingHint')
@@ -400,7 +388,7 @@ function onStagePointerDown(e: PointerEvent): void {
             step="0.05"
           />
         </label>
-        <Chibi3dOrbitHint v-if="inspect" class="chibi-orbit__hint" />
+        <Chibi3dOrbitHint v-if="cameraControls" class="chibi-orbit__hint" />
         <span v-else class="chibi-orbit__hint">
           {{ effectiveWandering ? $t('chibi.wanderingActiveHint') : $t('chibi.hint') }}
         </span>
@@ -442,31 +430,44 @@ function onStagePointerDown(e: PointerEvent): void {
         :char-id="charId"
         :size="PET_SIZE"
         v-model:zoom="zoom"
-        :orbit="inspect"
-        :inspect="inspect"
-        :wander="effectiveWandering"
+        :orbit="cameraControls"
+        full-stage
+        :wander="wandering"
         :item-drop-target="isItemDropTarget"
       />
 
-      <div class="chibi-debug" @pointerdown.stop>
-        <SelectMenu
-          :model-value="selectedAnim"
-          :options="animOptions"
-          :placeholder="inspect ? 'Interaction' : 'Chibi'"
-          aria-label="Animation"
-          @update:model-value="playAnim"
-        />
-        <button
-          v-for="d in QUICK_CLIPS"
-          :key="d.clip"
-          type="button"
-          class="chibi-debug__btn"
-          :disabled="!hasQuickClip(d.clip)"
-          @click="onQuickClip(d.clip)"
-        >
-          {{ d.label }}
-        </button>
-      </div>
+      <Chibi3dPlayer
+        :key="charId"
+        :playback="pet?.playback"
+        @pause="pet?.setPaused($event)"
+        @seek-start="pet?.beginSeek()"
+        @seek="pet?.seek($event)"
+        @seek-end="pet?.endSeek()"
+        @reset-view="resetView"
+      >
+        <div class="chibi-debug">
+          <div class="chibi-debug__picker">
+            <SelectMenu
+              :model-value="selectedAnim"
+              :options="animOptions"
+              :placeholder="$t('chibi.animation')"
+              :aria-label="$t('chibi.animation')"
+              block
+              @update:model-value="playAnim"
+            />
+          </div>
+          <button
+            v-for="d in QUICK_CLIPS"
+            :key="d.clip"
+            type="button"
+            class="chibi-debug__btn"
+            :disabled="!hasQuickClip(d.clip)"
+            @click="onQuickClip(d.clip)"
+          >
+            {{ $t(d.label) }}
+          </button>
+        </div>
+      </Chibi3dPlayer>
 
       <div class="chibi-voice" @pointerdown.stop>
         <div class="chibi-voice__title">Voice ({{ charId }})</div>
@@ -577,7 +578,7 @@ function onStagePointerDown(e: PointerEvent): void {
 .chibi-stage {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  height: 100dvh;
   background: radial-gradient(
     circle at 50% 30%,
     var(--background-secondary),
@@ -603,7 +604,7 @@ function onStagePointerDown(e: PointerEvent): void {
 
 .chibi-voice {
   position: absolute;
-  z-index: 2; /* stay above the pet canvas, which swells over the corners in Inspect mode */
+  z-index: 2;
   bottom: 16px;
   left: 16px;
   padding: 10px 12px;
@@ -761,23 +762,23 @@ function onStagePointerDown(e: PointerEvent): void {
 }
 
 .chibi-debug {
-  position: absolute;
-  z-index: 2;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px;
-  background: var(--background-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.chibi-debug__picker {
+  width: 180px;
+  min-width: 0;
 }
 
 /* Quick-hold buttons sit in one row beside the anim dropdown, uniform width. */
 .chibi-debug .chibi-debug__btn {
-  min-width: 72px;
+  flex: 1;
+  min-width: 48px;
 }
 
 .chibi-debug__btn--active {
@@ -826,7 +827,7 @@ function onStagePointerDown(e: PointerEvent): void {
   cursor: not-allowed;
 }
 
-/* Pill toggle for Orbit / Inspect: same hidden-checkbox + highlighting-label pattern as the
+/* Pill toggles use the same hidden-checkbox + highlighting-label pattern as the
    modal's maxAll / target toggles (studentModal.css .modal-toggle-item), state shown by the
    accent fill instead of an ": On/Off" suffix. */
 .chibi-toggle {
@@ -909,7 +910,29 @@ function onStagePointerDown(e: PointerEvent): void {
   outline-offset: 1px;
 }
 
+@media (max-width: 1100px) {
+  .chibi-mode {
+    left: 16px;
+    transform: none;
+  }
+
+  .chibi-orbit {
+    top: 74px;
+  }
+}
+
 @media (max-width: 720px) {
+  .chibi-mode {
+    top: 74px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .chibi-chars {
+    max-width: calc(100% - 90px);
+    box-sizing: border-box;
+  }
+
   .chibi-orbit,
   .chibi-item-rail,
   .chibi-voice {
@@ -917,7 +940,25 @@ function onStagePointerDown(e: PointerEvent): void {
   }
 
   .chibi-orbit {
-    top: 58px;
+    top: 120px;
+    width: calc(100% - 16px);
+    max-width: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .chibi-toggle label {
+    gap: 6px;
+    height: 30px;
+    padding: 0 8px;
+    font-size: 0.75rem;
+  }
+
+  .chibi-voice {
+    bottom: 130px;
+    max-height: 100px;
+    overflow: auto;
+    font-size: 0.65rem;
   }
 
   .chibi-item-rail {
@@ -927,6 +968,12 @@ function onStagePointerDown(e: PointerEvent): void {
   .chibi-item img {
     width: 48px;
     height: 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  .chibi-debug__picker {
+    width: 100%;
   }
 }
 </style>

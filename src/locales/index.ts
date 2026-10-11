@@ -9,7 +9,7 @@ const en = {
   chibi: {
     home: 'Home',
     hint: 'Click anywhere to send the Chibi walking there.',
-    idle: 'Idle',
+    idle: 'idle',
     itemRail: 'Items',
     recoveryItem: 'Recovery item',
     dragItemHint: 'Drag onto the Chibi',
@@ -17,7 +17,17 @@ const en = {
     wandering: 'Wandering',
     wanderingHint: 'Let the Chibi choose where to walk.',
     wanderingActiveHint: 'Wandering automatically. Click anywhere to choose a destination.',
-    wanderingPausedInspect: 'Wandering is paused during Inspect.',
+    wanderingPausedCamera: 'Wandering is paused while camera controls are on.',
+    cameraControls: 'camera controls',
+    cameraControlsHint: 'Rotate and pan the camera. Turn off to walk or pick up the student.',
+    animation: 'animation',
+    animationPosition: 'animation position',
+    play: 'play',
+    pause: 'pause',
+    resetView: 'reset view',
+    walk: 'walk',
+    move: 'move',
+    random: 'random',
     wanderingPausedMotion: 'Wandering is unavailable while reduced motion is enabled.',
     orbitHintMouse: 'left-drag to rotate · right-drag to pan · wheel to zoom',
     orbitHintTouch: 'one finger to rotate · two fingers to pan or zoom',
@@ -753,6 +763,13 @@ const en = {
 
   // Inventory screenshot scanner: modal UX strings (validation errors, loading tips, banners)
   scanModal: {
+    shareDebug: 'Share this scan to help improve recognition (optional)',
+    shareDebugNotice:
+      'If checked, full uploaded screenshots and original scan results are stored privately on the Eridu Ops server for up to 30 days, and may be deleted earlier when storage is full. Screenshots may contain your player name and inventory. Higher-resolution images are downscaled before upload. Only the site owner can review them.',
+    debugSaved: 'Scanner report saved. Report ID:',
+    debugReference: 'Copy this ID into Feedback when reporting a scan problem.',
+    debugUnavailable:
+      'The diagnostic report could not be saved. You can still use the scan results.',
     errInvalidMime: 'Please select a PNG, JPG, or WebP image.',
     errDecodeFailed: 'Could not read image dimensions. Try a different file.',
     errNotLandscape:
@@ -934,7 +951,18 @@ const jp: TranslationTree = {
     wandering: 'お散歩',
     wanderingHint: 'ちびキャラが自動で歩き回ります。',
     wanderingActiveHint: '自動で歩き回ります。クリックすると行き先を指定できます。',
-    wanderingPausedInspect: 'インスペクト中はお散歩が一時停止します。',
+    wanderingPausedCamera: 'カメラ操作中はお散歩が一時停止します。',
+    cameraControls: 'カメラ操作',
+    cameraControlsHint:
+      'カメラを回転・移動します。オフにすると生徒を歩かせたり持ち上げたりできます。',
+    animation: 'アニメーション',
+    animationPosition: 'アニメーションの再生位置',
+    play: '再生',
+    pause: '一時停止',
+    resetView: '表示をリセット',
+    walk: '歩く',
+    move: '移動',
+    random: 'ランダム',
     wanderingPausedMotion: 'モーション軽減が有効なため、お散歩は利用できません。',
     orbitHintMouse: '左ドラッグで回転 · 右ドラッグで移動 · ホイールでズーム',
     orbitHintTouch: '1本指で回転 · 2本指で移動またはズーム',
@@ -1670,6 +1698,12 @@ const jp: TranslationTree = {
 
   // Inventory screenshot scanner: modal UX strings (validation errors, loading tips, banners)
   scanModal: {
+    shareDebug: '認識精度の改善のため、このスキャンを共有する（任意）',
+    shareDebugNotice:
+      'チェックすると、アップロードされた画像全体と元のスキャン結果がEridu Opsサーバーに非公開で最大30日間保存されます。容量が不足した場合は早期に削除されることがあります。画像にはプレイヤー名や所持アイテムが含まれる可能性があります。高解像度の画像はアップロード前に縮小されます。確認できるのはサイト管理者のみです。',
+    debugSaved: 'スキャンレポートを保存しました。レポートID：',
+    debugReference: 'スキャンの問題を報告する際は、このIDをフィードバックに貼り付けてください。',
+    debugUnavailable: '診断レポートを保存できませんでした。スキャン結果は引き続き使用できます。',
     errInvalidMime: 'PNG、JPG、WebP のいずれかの画像を選択してください。',
     errDecodeFailed: '画像のサイズを読み取れませんでした。別のファイルをお試しください。',
     errNotLandscape:
@@ -1851,7 +1885,18 @@ const kr: TranslationTree = {
     wandering: '자동 산책',
     wanderingHint: '치비가 스스로 걸어 다니게 합니다.',
     wanderingActiveHint: '자동으로 돌아다닙니다. 클릭하여 목적지를 정할 수 있습니다.',
-    wanderingPausedInspect: 'Inspect 중에는 자동 산책이 일시 중지됩니다.',
+    wanderingPausedCamera: '카메라 조작 중에는 자동 산책이 일시 중지됩니다.',
+    cameraControls: '카메라 조작',
+    cameraControlsHint:
+      '카메라를 회전하거나 이동합니다. 끄면 학생을 걷게 하거나 들어 올릴 수 있습니다.',
+    animation: '애니메이션',
+    animationPosition: '애니메이션 재생 위치',
+    play: '재생',
+    pause: '일시 정지',
+    resetView: '화면 초기화',
+    walk: '걷기',
+    move: '이동',
+    random: '무작위',
     wanderingPausedMotion: '동작 줄이기가 활성화되어 자동 산책을 사용할 수 없습니다.',
     orbitHintMouse: '왼쪽 드래그로 회전 · 오른쪽 드래그로 이동 · 휠로 확대/축소',
     orbitHintTouch: '한 손가락으로 회전 · 두 손가락으로 이동 또는 확대/축소',
@@ -2584,6 +2629,12 @@ const kr: TranslationTree = {
 
   // Inventory screenshot scanner: modal UX strings (validation errors, loading tips, banners)
   scanModal: {
+    shareDebug: '인식 정확도 개선을 위해 이 스캔 공유하기 (선택)',
+    shareDebugNotice:
+      '선택하면 업로드한 전체 스크린샷과 원본 스캔 결과가 Eridu Ops 서버에 비공개로 최대 30일 동안 저장됩니다. 저장 공간이 부족하면 더 일찍 삭제될 수 있습니다. 이미지에 플레이어 이름과 보유 아이템이 포함될 수 있습니다. 고해상도 이미지는 업로드 전에 축소됩니다. 사이트 관리자만 확인할 수 있습니다.',
+    debugSaved: '스캔 보고서가 저장되었습니다. 보고서 ID:',
+    debugReference: '스캔 문제를 신고할 때 이 ID를 피드백에 붙여넣으세요.',
+    debugUnavailable: '진단 보고서를 저장하지 못했습니다. 스캔 결과는 계속 사용할 수 있습니다.',
     errInvalidMime: 'PNG, JPG, WebP 이미지를 선택하세요.',
     errDecodeFailed: '이미지 크기를 읽을 수 없습니다. 다른 파일을 시도하세요.',
     errNotLandscape:

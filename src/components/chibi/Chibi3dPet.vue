@@ -12,7 +12,7 @@ import { useChibiVoice } from '@/composables/useChibiVoice';
 const props = withDefaults(
   defineProps<{
     charId: string;
-    /** Rendered canvas size in px (square). */
+    /** Square canvas size in pixels, or reference framing size for a full room. */
     size?: number;
     /** Unarmed (Cafe_Walk) ground speed in px/sec. */
     speed?: number;
@@ -25,9 +25,8 @@ const props = withDefaults(
     zoom?: number;
     /** Inspection orbit mode: pointer gestures control the camera and suspend pet gestures. */
     orbit?: boolean;
-    /** Inspect mode: the canvas fills the positioned stage (wide, not square) so wide clips
-     *  aren't cropped; the wrapper pins to the stage origin and gestures suspend. */
-    inspect?: boolean;
+    /** Render into the entire room while retaining reference-sized pet framing. */
+    fullStage?: boolean;
     /** Highlights the rendered silhouette as a valid item drop target. */
     itemDropTarget?: boolean;
     /** Whether pointer movement can pick up and reposition the pet. */
@@ -51,7 +50,7 @@ const props = withDefaults(
     idleClip: 'Cafe_Idle',
     zoom: 1,
     orbit: false,
-    inspect: false,
+    fullStage: false,
     itemDropTarget: false,
     draggable: true,
     voice: true,
@@ -98,6 +97,7 @@ const {
   playArmedMove,
   playIdleMonolog,
   loadBattleLines,
+  stopVoice,
 } = useChibiVoice(props.charId, props.voice);
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
@@ -114,9 +114,17 @@ const {
   setOrbitEnabled,
   setZoom,
   resize,
+  playback,
+  setPaused,
+  beginSeek,
+  seek,
+  endSeek,
+  resetView: resetCamera,
+  setScreenPosition,
 } = useChibi3dScene(canvasEl, {
   charId: props.charId,
   size: props.size,
+  fullStage: props.fullStage,
   onZoomChange: (z) => emit('update:zoom', z),
 });
 
@@ -126,7 +134,7 @@ const y = ref(props.startY);
 const targetX = ref<number | null>(null);
 const targetY = ref<number | null>(null);
 
-// Rendered canvas dimensions. Square (= props.size) as a pet; Inspect fills the stage (wide).
+// The room canvas stays pinned; x/y retain virtual pet coordinates for movement and bounds.
 const canvasW = ref(props.size);
 const canvasH = ref(props.size);
 
@@ -145,6 +153,7 @@ const WANDER_EDGE_PADDING = 12;
 const preferredMotion = usePreferredReducedMotion();
 let walkSource: WalkSource | null = null;
 let wanderTimer: ReturnType<typeof setTimeout> | undefined;
+let manualPreview = false;
 
 function normalizeAxisBounds(min: number, max: number): [number, number] {
   if (min <= max) return [min, max];
@@ -161,13 +170,15 @@ function getPetPositionBounds(stage: HTMLElement, padding = 0): PetPositionBound
     minY: 0,
     maxY: props.size,
   };
+  const offsetX = props.fullStage && modelBounds ? x.value : 0;
+  const offsetY = props.fullStage && modelBounds ? y.value : 0;
   const [minX, maxX] = normalizeAxisBounds(
-    padding - visibleBounds.minX,
-    stage.clientWidth - padding - visibleBounds.maxX,
+    padding - visibleBounds.minX + offsetX,
+    stage.clientWidth - padding - visibleBounds.maxX + offsetX,
   );
   const [minY, maxY] = normalizeAxisBounds(
-    padding - visibleBounds.minY,
-    stage.clientHeight - padding - visibleBounds.maxY,
+    padding - visibleBounds.minY + offsetY,
+    stage.clientHeight - padding - visibleBounds.maxY + offsetY,
   );
   return { minX, maxX, minY, maxY };
 }
@@ -266,6 +277,8 @@ function onHover(e: PointerEvent): void {
 }
 
 function setWalkTarget(nx: number, ny: number, source: WalkSource): void {
+  if (playback.paused || props.orbit) return;
+  manualPreview = false;
   clearTimeout(wanderTimer);
   targetX.value = nx;
   targetY.value = ny;
@@ -281,7 +294,7 @@ function cancelWanderMovement(): void {
   walkSource = null;
   walking = false;
   jumping = false;
-  if (!ready.value || props.inspect) return;
+  if (!ready.value || props.orbit) return;
   faceCamera();
   play(armedWalk ? pickArmedIdle() : props.idleClip);
 }
@@ -293,6 +306,8 @@ function walkTo(px: number, py: number): void {
 
 /** Debug helper: stop moving and hold a specific clip facing the camera. */
 function playClip(clip: string): void {
+  if (!hasClip(clip)) return;
+  manualPreview = true;
   clearTimeout(wanderTimer);
   targetX.value = null;
   targetY.value = null;
@@ -300,8 +315,25 @@ function playClip(clip: string): void {
   walking = false;
   jumping = false;
   faceCamera();
+  setPaused(false);
   play(clip);
-  scheduleWander();
+}
+
+function startSeeking(): void {
+  manualPreview = true;
+  clearTimeout(wanderTimer);
+  targetX.value = null;
+  targetY.value = null;
+  walkSource = null;
+  walking = false;
+  jumping = false;
+  beginSeek();
+  stopVoice();
+}
+
+function resetView(): void {
+  resetCamera();
+  applyLayout();
 }
 
 function modelPointAtClientPoint(
@@ -323,6 +355,7 @@ function canReceiveItemAt(clientX: number, clientY: number): boolean {
 
 /** Give an item at a viewport point, stopping movement and playing the recovery response. */
 function giveItemAt(clientX: number, clientY: number): boolean {
+  if (playback.paused) return false;
   const point = modelPointAtClientPoint(clientX, clientY);
   if (!point) return false;
 
@@ -339,7 +372,20 @@ function giveItemAt(clientX: number, clientY: number): boolean {
   return true;
 }
 
-defineExpose({ walkTo, playClip, canReceiveItemAt, giveItemAt, voiceStatus, clipNames });
+defineExpose({
+  walkTo,
+  playClip,
+  canReceiveItemAt,
+  giveItemAt,
+  voiceStatus,
+  clipNames,
+  playback,
+  setPaused,
+  beginSeek: startSeeking,
+  seek,
+  endSeek,
+  resetView,
+});
 
 // Tap vs drag: a press on her is `pending` until the pointer either travels past
 // DRAG_THRESHOLD (-> commit to a pickup/drag) or releases in place (-> a tap plays the
@@ -364,12 +410,13 @@ let dragMinY = 0;
 let dragMaxY = 0;
 
 function onGrab(e: PointerEvent): void {
-  if (!ready.value || props.orbit) return; // orbit mode reserves pointer drags for the camera
+  if (!ready.value || props.orbit || playback.paused) return;
   // Only react when the pointer is actually over Rio; misses bubble to the stage
   // (walk-there). The canvas is a big square, so a plain hit would grab the corners.
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   if (!isPointerOnModel(e.clientX - rect.left, e.clientY - rect.top)) return;
   e.stopPropagation();
+  manualPreview = false;
   scheduleIdleVoice(); // touching her pushes the next monolog out
   clearTimeout(wanderTimer);
   // Arm a press: don't commit to pickup yet; a tap (no travel) becomes a reaction.
@@ -408,6 +455,7 @@ function commitDrag(): void {
 }
 
 function onDrag(e: PointerEvent): void {
+  if (playback.paused) return;
   if (e.pointerId !== activePointerId) return;
   if (!props.draggable) {
     if (
@@ -457,6 +505,7 @@ function onRelease(e: PointerEvent): void {
   activePointerId = -1;
   const p = canvasLocal(e);
   petCursor.value = cursorAtPoint(p);
+  if (playback.paused) return;
   if (wasHeld) {
     // Dropped after a drag -> set her down into a gacha'd armed Formation idle.
     faceCamera();
@@ -497,7 +546,7 @@ function step(ts: number): void {
   const dt = (ts - lastTs) / 1000;
   lastTs = ts;
 
-  if (targetX.value !== null && targetY.value !== null) {
+  if (!playback.paused && targetX.value !== null && targetY.value !== null) {
     const dx = targetX.value - x.value;
     const dy = targetY.value - y.value;
     const dist = Math.hypot(dx, dy);
@@ -523,6 +572,7 @@ function step(ts: number): void {
       }
     }
   }
+  if (props.fullStage) setScreenPosition(x.value + props.size / 2, y.value + props.size / 2);
   rafId = requestAnimationFrame(step);
 }
 
@@ -536,7 +586,8 @@ function canWanderNow(): boolean {
     !held &&
     !pending &&
     !props.orbit &&
-    !props.inspect &&
+    !playback.paused &&
+    !manualPreview &&
     targetX.value === null &&
     (hasClip(CAFE_WALK) || hasClip(MOVE_ING))
   );
@@ -578,8 +629,10 @@ watch(ready, (isReady) => {
 watch(
   () => props.wander,
   (enabled) => {
-    if (enabled) scheduleWander(1_200);
-    else cancelWanderMovement();
+    if (enabled) {
+      manualPreview = false;
+      scheduleWander(1_200);
+    } else cancelWanderMovement();
   },
 );
 
@@ -598,9 +651,7 @@ watch(
   },
 );
 
-// Canvas layout. Inspect fills the positioned stage (wide aspect) pinned to its origin, so
-// wide clips render uncropped; otherwise it's the square `size` centred in the stage. Any
-// in-flight walk is cancelled; Inspect suspends pet gestures anyway.
+// Full-room rendering uses the same virtual pet position as the small landing canvas.
 function applyLayout(): void {
   clearTimeout(wanderTimer);
   targetX.value = null;
@@ -609,14 +660,15 @@ function applyLayout(): void {
   walking = false;
   jumping = false;
   const parent = rootEl.value?.offsetParent as HTMLElement | null;
-  if (props.inspect) {
+  if (props.fullStage) {
     const w = parent?.clientWidth ?? window.innerWidth;
     const h = parent?.clientHeight ?? window.innerHeight;
     canvasW.value = w;
     canvasH.value = h;
-    x.value = 0;
-    y.value = 0;
+    x.value = Math.round((w - props.size) / 2);
+    y.value = Math.round((h - props.size) / 2);
     resize(w, h);
+    setScreenPosition(x.value + props.size / 2, y.value + props.size / 2);
   } else {
     canvasW.value = props.size;
     canvasH.value = props.size;
@@ -628,16 +680,16 @@ function applyLayout(): void {
   }
   scheduleWander(1_200);
 }
-watch(() => props.inspect, applyLayout);
+watch(() => props.fullStage, applyLayout);
 watch(
   () => props.size,
   () => {
-    if (!props.inspect) applyLayout();
+    applyLayout();
   },
 );
-// Keep the Inspect canvas matched to the viewport as it resizes (no-op in pet mode).
+// Match the room canvas to its stage when the viewport changes.
 useWindowResize(() => {
-  if (props.inspect) {
+  if (props.fullStage) {
     applyLayout();
     return;
   }
@@ -651,12 +703,7 @@ useWindowResize(() => {
   scheduleWander(1_200);
 });
 
-// Orbit mode: enable inspection controls and switch the cursor; off restores the pet.
-// Controls listen on the full-viewport stage (rootEl's positioned offsetParent) so
-// drag/wheel works anywhere on the page, not just over the small canvas. Registered AFTER
-// the zoom/size watchers so that when several props flip together (Inspect toggling orbit +
-// zoom + size in one tick) the pulled-back framing is applied before OrbitControls latch onto
-// the camera; otherwise orbit would start from the tight pet distance.
+// Camera gestures own the stage while enabled; they never change the selected clip.
 watch(
   () => props.orbit,
   (on) => {
@@ -666,6 +713,11 @@ watch(
     walkSource = null;
     walking = false;
     jumping = false;
+    if (props.fullStage) {
+      const parent = rootEl.value?.offsetParent as HTMLElement | null;
+      x.value = ((parent?.clientWidth ?? canvasW.value) - props.size) / 2;
+      y.value = ((parent?.clientHeight ?? canvasH.value) - props.size) / 2;
+    }
     const stage = (rootEl.value?.offsetParent as HTMLElement | null) ?? undefined;
     setOrbitEnabled(on, stage);
     petCursor.value = on ? 'grab' : 'crosshair';
@@ -690,18 +742,24 @@ function scheduleIdleVoice(): void {
 }
 
 function onIdleVoiceTick(): void {
-  const idle = !walking && !held && !pending && targetX.value === null;
+  const idle =
+    !playback.paused && !manualPreview && !walking && !held && !pending && targetX.value === null;
   if (props.voice && idle && !document.hidden) playIdleMonolog();
   if (props.voice) scheduleIdleVoice();
 }
 
+watch(
+  () => playback.paused,
+  (paused) => {
+    if (paused) {
+      clearTimeout(wanderTimer);
+      stopVoice();
+    } else scheduleWander();
+  },
+);
+
 onMounted(() => {
-  // Apply the current inspect/zoom/orbit state directly: the watchers are change-only, so a
-  // mount that already starts in Inspect (e.g. switching character while Inspect is on, which
-  // remounts via :key) would otherwise never fill the canvas or enable orbit. Order mirrors the
-  // watchers: layout/aspect, then zoom pull-back, then orbit latches onto the framed camera.
-  // In pet mode, applyLayout centres normal viewer pets while landing-link pets preserve their
-  // explicit startX/startY position.
+  // Initialize layout before framing and camera controls, including character remounts.
   applyLayout();
   setZoom(props.zoom);
   if (props.orbit) {
@@ -729,7 +787,7 @@ onUnmounted(() => {
       'chibi-pet--action': actionLabel,
     }"
     :data-action-label="actionLabel || undefined"
-    :style="{ transform: `translate(${x}px, ${y}px)` }"
+    :style="{ transform: fullStage ? undefined : `translate(${x}px, ${y}px)` }"
   >
     <canvas
       ref="canvasEl"

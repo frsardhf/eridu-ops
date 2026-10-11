@@ -41,6 +41,8 @@ export interface HaloFollower {
   root: THREE.Object3D;
   head: THREE.Object3D;
   halo: THREE.Object3D;
+  visual: THREE.Object3D;
+  visualPos0: THREE.Vector3;
   relPos: THREE.Vector3;
   relRot: THREE.Quaternion;
   clampMin: THREE.Vector3;
@@ -259,6 +261,7 @@ export function applyManifestMaterials(
       const material = new THREE.MeshBasicMaterial({
         map: baseMap,
         color: baseColor,
+        side: mat.side,
         transparent: true,
         blending: def?.blend === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
         depthWrite: false,
@@ -557,6 +560,8 @@ export function makeHaloFollower(root: THREE.Object3D, scene: THREE.Scene): Halo
     root,
     head: headObj,
     halo: followerRoot,
+    visual: haloObj,
+    visualPos0: haloObj.position.clone(),
     relPos,
     relRot,
     clampMin,
@@ -593,9 +598,11 @@ export function updateHaloFollower(f: HaloFollower | null): void {
   f.init = true;
 }
 
-/** Apply or clear a scene-specific head-local halo target and orientation correction. */
+/** Apply or clear the spring target, orientation, and visible halo's local-position correction. */
 export function setHaloOverride(follower: HaloFollower | null, override: ChibiHaloOverride | null) {
   if (!follower) return;
+  follower.visual.position.copy(follower.visualPos0);
+  if (override?.visualPos) follower.visual.position.fromArray(override.visualPos);
   if (!override) {
     follower.relPos.copy(follower.relPos0);
     follower.clampMin.copy(follower.clampMin0);
@@ -604,10 +611,16 @@ export function setHaloOverride(follower: HaloFollower | null, override: ChibiHa
     follower.init = false;
     return;
   }
-  const position = override.pos ?? [follower.relPos.x, follower.relPos.y, follower.relPos.z];
-  follower.relPos.set(position[0], position[1], position[2]);
-  follower.clampMin.set(position[0] - 10, position[1] - 10, position[2] - 10);
-  follower.clampMax.set(position[0] + 10, position[1] + 10, position[2] + 10);
+  follower.relPos.copy(follower.relPos0);
+  if (override.pos) follower.relPos.fromArray(override.pos);
+  if (override.pos || override.rot) {
+    const { x, y, z } = follower.relPos;
+    follower.clampMin.set(x - 10, y - 10, z - 10);
+    follower.clampMax.set(x + 10, y + 10, z + 10);
+  } else {
+    follower.clampMin.copy(follower.clampMin0);
+    follower.clampMax.copy(follower.clampMax0);
+  }
   const rotation = override.rot;
   if (rotation?.some(Boolean)) {
     const D = Math.PI / 180;

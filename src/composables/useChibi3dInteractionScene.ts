@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, type Ref } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type {
@@ -9,6 +9,7 @@ import type {
   ChibiFurnitureConfig,
   ChibiVictoryConfig,
   ChibiScenesConfig,
+  ChibiPlayback,
 } from '@/types/chibi';
 import {
   getChibi3dManifestUrl,
@@ -41,6 +42,7 @@ import {
   setHaloOverride,
 } from '@/composables/chibi3dCore';
 import { CHIBI_FURNITURE_IDS, orderChibiVictoryCharacters } from '@/composables/chibi3dCatalog';
+import { chibiPixelRatio } from './chibi3dViewport';
 
 /**
  * Live-3D chibi interaction scene (the Vue port of the deliverable POC's `poc/furniture.html`):
@@ -138,6 +140,9 @@ export function useChibi3dInteractionScene(
   const sceneOptions = ref<SceneOption[]>([]); // furniture + victory scenes with matching characters
   const clipOptions = ref<Option[]>([]); // interaction-clip variants for the current scene
   const currentClip = ref(''); // the playing variant (mirrors the clip picker's value)
+  const playback = reactive<ChibiPlayback>({ clip: '', time: 0, duration: 0, paused: false });
+  let resumeAfterSeek = false;
+  let seekDirty = false;
 
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
@@ -186,7 +191,7 @@ export function useChibi3dInteractionScene(
 
   function setupRenderer(canvas: HTMLCanvasElement): void {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * 2);
+    renderer.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio));
     renderer.setSize(curW, curH, false);
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -430,6 +435,10 @@ export function useChibi3dInteractionScene(
   }
 
   function clearScene(): void {
+    playback.clip = '';
+    playback.time = 0;
+    playback.duration = 0;
+    playback.paused = false;
     for (const ch of chars) {
       if (scene) scene.remove(ch.root);
       disposeSubtree(ch.root);
@@ -501,7 +510,12 @@ export function useChibi3dInteractionScene(
     const secondOffset = cfg?.secondOffset ?? cfg?.lastOffset;
     victorySecondOffset.set(secondOffset?.x ?? 0, secondOffset?.y ?? 0, secondOffset?.z ?? 0);
     for (const ch of chars) {
-      setHaloOverride(ch.halo, cfg?.halo?.[ch.cid] ?? charCfgAll[ch.cid]?.halo ?? null);
+      const characterHalo = charCfgAll[ch.cid]?.halo;
+      const sceneHalo = cfg?.halo?.[ch.cid];
+      setHaloOverride(
+        ch.halo,
+        sceneHalo ? { ...characterHalo, ...sceneHalo } : (characterHalo ?? null),
+      );
     }
     clipOptions.value = buildVictoryClipOptions();
     const first =
@@ -602,6 +616,48 @@ export function useChibi3dInteractionScene(
     currentClip.value = sel;
     if (sceneType === 'victory') playVictory(sel);
     else playFurniture(sel);
+    playback.clip = sel;
+    playback.duration = masterAction()?.action.getClip().duration ?? 0;
+    playback.time = 0;
+    playback.paused = false;
+    seekDirty = true;
+  }
+
+  function masterAction(): { action: THREE.AnimationAction; mixer: THREE.AnimationMixer } | null {
+    let master: { action: THREE.AnimationAction; mixer: THREE.AnimationMixer } | null = null;
+    for (const ch of chars) {
+      if (ch.action && (!master || ch.action.getClip().duration > master.action.getClip().duration))
+        master = { action: ch.action, mixer: ch.mixer };
+    }
+    if (
+      furniture?.action &&
+      furniture.mixer &&
+      (!master || furniture.action.getClip().duration > master.action.getClip().duration)
+    )
+      master = { action: furniture.action, mixer: furniture.mixer };
+    return master;
+  }
+
+  function setPaused(paused: boolean): void {
+    playback.paused = paused;
+  }
+
+  function beginSeek(): void {
+    resumeAfterSeek = !playback.paused;
+    playback.paused = true;
+  }
+
+  function seek(time: number): void {
+    const master = masterAction();
+    if (!master) return;
+    const clamped = Math.max(0, Math.min(playback.duration, time));
+    master.action.time = clamped;
+    playback.time = clamped;
+    seekDirty = true;
+  }
+
+  function endSeek(): void {
+    playback.paused = !resumeAfterSeek;
   }
 
   /**
@@ -695,11 +751,19 @@ export function useChibi3dInteractionScene(
 
   /** Reframe for the current scene type: apply its default zoom + framing, sync the size slider. */
   function reframe(): void {
-    currentZoom = SCENE_FRAMING[sceneType].zoom;
-    applyBaseCamera();
+    const zoom = SCENE_FRAMING[sceneType].zoom;
     if (controls) {
+      const damping = controls.enableDamping;
+      controls.enableDamping = false;
+      controls.update();
+      currentZoom = zoom;
+      applyBaseCamera();
       controls.target.set(0, SCENE_FRAMING[sceneType].targetY, 0);
       controls.update();
+      controls.enableDamping = damping;
+    } else {
+      currentZoom = zoom;
+      applyBaseCamera();
     }
     opts.onZoomChange?.(currentZoom);
   }
@@ -728,6 +792,7 @@ export function useChibi3dInteractionScene(
   function resize(w: number, h: number): void {
     curW = Math.max(1, Math.round(w));
     curH = Math.max(1, Math.round(h));
+    renderer?.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio));
     renderer?.setSize(curW, curH, false);
     if (camera) {
       camera.aspect = curW / curH;
@@ -757,24 +822,18 @@ export function useChibi3dInteractionScene(
     if (disposed) return;
     rafId = requestAnimationFrame(tick);
     if (controls?.enabled) controls.update();
-    const dt = clock.getDelta();
+    const elapsed = clock.getDelta();
+    const dt = playback.paused ? 0 : Math.min(elapsed, 0.1);
 
     // Master clock = the longest active clip; shorter clips loop within it (avantgardekun's
     // furniture clip out-runs the character's, so freezing on the shorter one would stutter).
-    const active: { action: THREE.AnimationAction; mixer: THREE.AnimationMixer }[] = [];
-    for (const ch of chars) if (ch.action) active.push({ action: ch.action, mixer: ch.mixer });
-    if (furniture?.action && furniture.mixer)
-      active.push({ action: furniture.action, mixer: furniture.mixer });
-
-    let master = active[0] ?? null;
-    for (const a of active) {
-      if (a.action.getClip().duration > master!.action.getClip().duration) master = a;
-    }
+    const master = masterAction();
     master?.mixer.update(dt);
     const t = master ? master.action.time : 0;
 
     for (const ch of chars) {
-      ch.haloMixer?.update(dt);
+      if (seekDirty) ch.haloMixer?.setTime(t);
+      else ch.haloMixer?.update(dt);
       if (ch.action && ch.action !== master?.action) {
         const d = ch.action.getClip().duration;
         ch.action.time = d ? t % d : t;
@@ -796,7 +855,14 @@ export function useChibi3dInteractionScene(
       chars[1]?.root.position.add(victorySecondOffset);
     }
 
-    for (const ch of chars) updateHaloFollower(ch.halo); // after facing -> follow the final head
+    if (!playback.paused || seekDirty) {
+      for (const ch of chars) {
+        if (seekDirty && ch.halo) ch.halo.init = false;
+        updateHaloFollower(ch.halo);
+      }
+      seekDirty = false;
+    }
+    if (Math.abs(playback.time - t) >= 1 / 30) playback.time = t;
 
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
@@ -834,6 +900,12 @@ export function useChibi3dInteractionScene(
     sceneOptions,
     clipOptions,
     currentClip,
+    playback,
+    setPaused,
+    beginSeek,
+    seek,
+    endSeek,
+    resetView: reframe,
     loadScene,
     playScene,
     setOrbitEnabled,

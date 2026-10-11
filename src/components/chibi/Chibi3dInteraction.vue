@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
 import Chibi3dOrbitHint from '@/components/chibi/Chibi3dOrbitHint.vue';
+import Chibi3dPlayer from '@/components/chibi/Chibi3dPlayer.vue';
 import { useChibi3dInteractionScene } from '@/composables/useChibi3dInteractionScene';
 import { useWindowResize } from '@/composables/dom/useWindowResize';
 import { CHIBI_INT_ZOOM_MIN, CHIBI_ZOOM_MAX } from '@/composables/chibi3dCore';
@@ -31,6 +32,12 @@ const {
   setOrbitEnabled,
   setZoom,
   resize,
+  playback,
+  setPaused,
+  beginSeek,
+  seek,
+  endSeek,
+  resetView,
 } = useChibi3dInteractionScene(canvasEl, {
   charIds: props.charIds,
   charName: props.charName,
@@ -107,6 +114,16 @@ onMounted(() => {
       <Chibi3dOrbitHint class="chibi-int__hint" />
     </div>
 
+    <Chibi3dPlayer
+      :key="`${sceneId}:${currentClip}`"
+      :playback="playback"
+      @pause="setPaused"
+      @seek-start="beginSeek"
+      @seek="seek"
+      @seek-end="endSeek"
+      @reset-view="resetView"
+    />
+
     <div v-if="!ready || error" class="chibi-int__status">
       <span v-if="error">No scenes available.</span>
       <span v-else class="chibi-int__spinner"></span>
@@ -118,7 +135,7 @@ onMounted(() => {
 .chibi-int {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: radial-gradient(
     circle at 50% 30%,
@@ -207,6 +224,29 @@ onMounted(() => {
 @keyframes chibi-int-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1100px) {
+  .chibi-int__panel {
+    top: 74px;
+  }
+}
+
+@media (max-width: 720px) {
+  .chibi-int__panel {
+    top: 120px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    box-sizing: border-box;
+  }
+
+  .chibi-int__row {
+    flex-wrap: wrap;
+  }
+
+  .chibi-int__hint {
+    white-space: normal;
   }
 }
 </style>

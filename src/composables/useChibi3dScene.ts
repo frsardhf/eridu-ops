@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, type Ref } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type {
@@ -6,7 +6,9 @@ import type {
   ChibiMouthEvent,
   ChibiRendererEvent,
   ChibiScenesConfig,
+  ChibiPlayback,
 } from '@/types/chibi';
+import { chibiPixelRatio, roomFieldOfView, roomPosition } from './chibi3dViewport';
 import {
   getChibi3dManifestUrl,
   getChibi3dModelUrl,
@@ -57,8 +59,10 @@ interface PlayOptions {
 interface Chibi3dSceneOptions {
   /** Character folder id, e.g. `ch0158`. */
   charId: string;
-  /** Rendered canvas size in px (square). */
+  /** Square canvas size in pixels, or reference framing size for a full room. */
   size: number;
+  /** Keep reference framing while rendering and moving within the full room. */
+  fullStage?: boolean;
   /** Reports the effective zoom back out when the orbit wheel dollies the camera, so a
    *  bound size slider stays in sync. Fires only on real distance changes (not rotation). */
   onZoomChange?: (zoom: number) => void;
@@ -71,12 +75,15 @@ export function useChibi3dScene(
   const ready = ref(false);
   const error = ref(false);
   const clipNames = ref<string[]>([]); // bare clip names in the loaded GLB (debug dropdown)
+  const playback = reactive<ChibiPlayback>({ clip: '', time: 0, duration: 0, paused: false });
 
   // three objects, kept out of Vue reactivity (no `ref`: these never render as data).
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
   let camera: THREE.PerspectiveCamera | null = null;
   let root: THREE.Object3D | null = null;
+  let placement: THREE.Group | null = null;
+  const movementTarget = new THREE.Vector3(0, CAM_TARGET_Y, 0);
   let mixer: THREE.AnimationMixer | null = null;
   let currentAction: THREE.AnimationAction | null = null;
   let haloMixer: THREE.AnimationMixer | null = null;
@@ -86,7 +93,7 @@ export function useChibi3dScene(
   let grad: THREE.DataTexture | null = null;
   let controls: OrbitControls | null = null; // inspection-only orbit; off = fixed pet camera
   let currentZoom = 1; // dolly factor: >1 = closer/bigger; the framing orbit restores to
-  // Live canvas pixel dimensions. Square for the pet; the page's Inspect mode fills the
+  // Live canvas pixel dimensions. Square for landing Rio; the viewer fills the
   // viewport (wide), so width/height diverge and the camera aspect tracks them.
   let curW = opts.size;
   let curH = opts.size;
@@ -97,6 +104,8 @@ export function useChibi3dScene(
   let rendererByClip: Record<string, ChibiRendererEvent[]> = {};
   let currentRenderers: ChibiRendererEvent[] = [];
   let pendingOnEnd: (() => void) | null = null;
+  let resumeAfterSeek = false;
+  let seekDirty = false;
 
   const clock = new THREE.Clock();
   let rafId = 0;
@@ -111,17 +120,15 @@ export function useChibi3dScene(
       alpha: true,
       preserveDrawingBuffer: true,
     });
-    // Supersample: render at SSx the canvas resolution and let the browser downscale,
-    // so the model stays crisp in a small canvas (the POC looks sharper only because it
-    // renders into the whole window: far more pixels on the same model). 2x is plenty
-    // for one chibi; raise toward 3 for more, lower if it ever costs frames.
-    const SUPERSAMPLE = 2;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * SUPERSAMPLE);
+    // Retain landing supersampling, but bound the larger room's render cost.
+    renderer.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio, !!opts.fullStage));
     renderer.setSize(curW, curH, false);
     renderer.setClearColor(0x000000, 0); // transparent: the pet floats over the page
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     scene = new THREE.Scene();
+    placement = new THREE.Group();
+    scene.add(placement);
     camera = new THREE.PerspectiveCamera(FOV_DEG, curW / curH, 0.01, 100);
     applyBaseCamera();
     addSceneLights(scene);
@@ -163,7 +170,7 @@ export function useChibi3dScene(
 
     root = gltf.scene;
     root.rotation.y = Math.PI; // model's default forward points away -> face the camera
-    scene.add(root);
+    placement?.add(root);
 
     // External mouth textures (the only maps glTF can't carry; base maps are embedded).
     const em = manifest.materials.EyeMouth?.textures ?? {};
@@ -242,6 +249,10 @@ export function useChibi3dScene(
     }
     action.play();
     currentAction = action;
+    playback.clip = clipNames.value.find((key) => clipsByName.get(key) === clip) ?? name;
+    playback.time = 0;
+    playback.duration = clip.duration;
+    seekDirty = true;
     pendingOnEnd = loop ? null : (options.onEnd ?? null);
     const key = bareClipName(name);
     currentMouth = timelineFor(mouthByClip, key);
@@ -324,6 +335,59 @@ export function useChibi3dScene(
     if (camera) positionBaseCamera(camera, currentZoom);
   }
 
+  function setScreenPosition(x: number, y: number): void {
+    if (!opts.fullStage || !placement || !camera || controls?.enabled) return;
+    const position = roomPosition(camera, curW, curH, x, y, movementTarget);
+    if (!placement.position.equals(position)) {
+      placement.position.copy(position);
+      if (playback.paused) seekDirty = true;
+    }
+  }
+
+  function setPaused(paused: boolean): void {
+    playback.paused = paused;
+  }
+
+  function beginSeek(): void {
+    resumeAfterSeek = !playback.paused;
+    playback.paused = true;
+  }
+
+  function seek(time: number): void {
+    if (!currentAction || !mixer) return;
+    const clamped = Math.max(0, Math.min(playback.duration, time));
+    // Scrubbing holds the chosen clip instead of firing pet reaction callbacks.
+    pendingOnEnd = null;
+    currentAction.paused = false;
+    currentAction.enabled = true;
+    currentAction.setLoop(THREE.LoopRepeat, Infinity);
+    currentAction.time = clamped;
+    mixer.update(0);
+    haloMixer?.setTime(clamped);
+    playback.time = clamped;
+    seekDirty = true;
+  }
+
+  function endSeek(): void {
+    playback.paused = !resumeAfterSeek;
+  }
+
+  function resetView(): void {
+    if (!camera) return;
+    if (controls) {
+      const enabled = controls.enabled;
+      const damping = controls.enableDamping;
+      controls.enableDamping = false;
+      controls.update();
+      controls.target.set(0, CAM_TARGET_Y, 0);
+      controls.enabled = false;
+      applyBaseCamera();
+      controls.update();
+      controls.enabled = enabled;
+      controls.enableDamping = damping;
+    } else applyBaseCamera();
+  }
+
   /**
    * Zoom = apparent size: >1 dollies the camera closer so she fills more of the canvas
    * (no canvas resize, no extra render cost). When not orbiting it re-frames the fixed pet
@@ -356,16 +420,16 @@ export function useChibi3dScene(
   }
 
   /**
-   * Resize the canvas + render target to `w` x `h` px and match the camera aspect. The pet
-   * passes a square (w == h); the page's Inspect mode passes the full viewport (wide), which
-   * widens the horizontal field of view so furniture/event clips aren't cropped sideways.
+   * Match the render target to its surface, preserving the reference pet scale in a full room.
    */
   function resize(w: number, h: number): void {
     curW = Math.max(1, Math.round(w));
     curH = Math.max(1, Math.round(h));
+    renderer?.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio, !!opts.fullStage));
     renderer?.setSize(curW, curH, false);
     if (camera) {
       camera.aspect = curW / curH;
+      camera.fov = opts.fullStage ? roomFieldOfView(FOV_DEG, curH, opts.size) : FOV_DEG;
       camera.updateProjectionMatrix();
     }
   }
@@ -378,6 +442,8 @@ export function useChibi3dScene(
   function setOrbitEnabled(on: boolean, domElement?: HTMLElement): void {
     if (!renderer || !camera) return;
     if (on) {
+      placement?.position.set(0, 0, 0);
+      seekDirty = true;
       if (!controls) {
         controls = new OrbitControls(camera, domElement ?? renderer.domElement);
         controls.enableDamping = true;
@@ -398,12 +464,19 @@ export function useChibi3dScene(
     if (disposed) return;
     rafId = requestAnimationFrame(tick);
     if (controls?.enabled) controls.update();
-    const dt = clock.getDelta();
+    const elapsed = clock.getDelta();
+    const dt = playback.paused ? 0 : Math.min(elapsed, 0.1);
     if (mixer) mixer.update(dt);
     if (haloMixer) haloMixer.update(dt);
     if (currentAction) driveMouth(mouthUniforms, currentMouth, currentAction.time);
     if (currentAction) driveRenderers(rendererTimeline, currentRenderers, currentAction.time);
-    updateHaloFollower(haloFollower); // after mixer.update so the head bone is current
+    if (!playback.paused || seekDirty) {
+      if (seekDirty && haloFollower) haloFollower.init = false;
+      updateHaloFollower(haloFollower);
+      seekDirty = false;
+    }
+    if (currentAction && Math.abs(playback.time - currentAction.time) >= 1 / 30)
+      playback.time = currentAction.time;
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
 
@@ -455,6 +528,13 @@ export function useChibi3dScene(
     ready,
     error,
     clipNames,
+    playback,
+    setPaused,
+    beginSeek,
+    seek,
+    endSeek,
+    resetView,
+    setScreenPosition,
     play,
     hasClip,
     setFacing,

@@ -29,11 +29,21 @@ export interface ChibiRendererEvent {
   on: boolean;
 }
 
+/** Live transport state derived from the active animation action. */
+export interface ChibiPlayback {
+  clip: string;
+  time: number;
+  duration: number;
+  paused: boolean;
+}
+
 export interface ChibiHaloOverride {
   /** Head-local halo target position. */
   pos?: [number, number, number];
   /** Extra halo rotation in degrees. */
   rot?: [number, number, number];
+  /** Visible halo node's local position under the spring follower. */
+  visualPos?: [number, number, number];
 }
 
 /** Curated per-character fixes for asset details that glTF cannot describe. */
