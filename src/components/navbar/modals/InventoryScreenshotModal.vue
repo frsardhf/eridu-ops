@@ -67,6 +67,10 @@ const isDragging = ref(false);
 const isLoading = ref(false);
 const isApplying = ref(false);
 const errorMessage = ref('');
+// Consent is intentionally session-only and unchecked each time the modal opens.
+const shareDebug = ref(false);
+const debugReportId = ref('');
+const debugCaptureUnavailable = ref(false);
 const parsedResults = ref<ParsedItem[]>([]);
 const hasLowConfidence = ref(false);
 const { track } = useAnalytics();
@@ -288,6 +292,7 @@ async function downscaleToFHD(file: File): Promise<Blob> {
 }
 
 async function processFiles(fileList: File[]) {
+  if (isLoading.value) return;
   if (fileList.length === 0) return;
   if (fileList.length > MAX_SCREENSHOTS) {
     errorMessage.value = $t('scanModal.errTooMany', { max: MAX_SCREENSHOTS });
@@ -305,6 +310,9 @@ async function processFiles(fileList: File[]) {
 
   isLoading.value = true;
   errorMessage.value = '';
+  debugReportId.value = '';
+  debugCaptureUnavailable.value = false;
+  const shareThisScan = shareDebug.value;
 
   elapsedSeconds.value = 0;
   const startedAt = Date.now();
@@ -317,15 +325,27 @@ async function processFiles(fileList: File[]) {
     const formData = new FormData();
     blobs.forEach((b, i) => formData.append('images', b, `screenshot-${i}.png`));
     formData.append('inventoryType', inventoryType.value);
+    if (shareThisScan) formData.append('shareDebug', 'true');
     const res = await fetch(`${PARSER_BASE}/inventory/parse`, {
       method: 'POST',
       body: formData,
     });
-    if (!res.ok) {
-      const err = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(err.error || `HTTP ${res.status}`);
+    const data = (await res.json().catch(() => ({}))) as {
+      results?: ParsedItem[];
+      error?: string;
+      debugReportId?: string;
+      debugCaptureUnavailable?: boolean;
+    };
+    if (shareThisScan) {
+      debugReportId.value =
+        typeof data.debugReportId === 'string' && /^[a-f0-9]{32}$/.test(data.debugReportId)
+          ? data.debugReportId
+          : '';
+      // Older backends do not capture reports, so never imply that sharing succeeded.
+      debugCaptureUnavailable.value = !debugReportId.value;
     }
-    const data = (await res.json()) as { results: ParsedItem[] };
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!Array.isArray(data.results)) throw new Error('Invalid scan response');
 
     parsedResults.value = data.results;
     hasLowConfidence.value = data.results.some((r) => r.confidence < 0.8);
@@ -741,6 +761,19 @@ useDocumentListener('paste', onPaste);
             ></span>
           </div>
 
+          <div class="debug-consent">
+            <label>
+              <input
+                v-model="shareDebug"
+                type="checkbox"
+                :disabled="isLoading"
+                aria-describedby="scan-debug-notice"
+              />
+              {{ $t('scanModal.shareDebug') }}
+            </label>
+            <p id="scan-debug-notice">{{ $t('scanModal.shareDebugNotice') }}</p>
+          </div>
+
           <div
             class="dropzone"
             :class="{ dragging: isDragging, 'has-status': isLoading || !!errorMessage }"
@@ -997,6 +1030,14 @@ useDocumentListener('paste', onPaste);
             </button>
           </div>
         </template>
+        <div v-if="!isLoading && debugReportId" class="debug-report" role="status">
+          <p>{{ $t('scanModal.debugSaved') }}</p>
+          <code>{{ debugReportId }}</code>
+          <p>{{ $t('scanModal.debugReference') }}</p>
+        </div>
+        <p v-else-if="!isLoading && debugCaptureUnavailable" class="debug-report" role="status">
+          {{ $t('scanModal.debugUnavailable') }}
+        </p>
       </div>
     </div>
   </div>
@@ -1028,6 +1069,44 @@ useDocumentListener('paste', onPaste);
 </template>
 
 <style scoped>
+.debug-consent,
+.debug-report {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.debug-consent label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.debug-consent input {
+  flex-shrink: 0;
+  accent-color: var(--accent-color);
+}
+
+.debug-consent p,
+.debug-report p {
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.debug-report code {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-primary);
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

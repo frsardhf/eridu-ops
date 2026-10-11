@@ -22,6 +22,11 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) â€
 
 Planner data is stored locally in IndexedDB â€” no account and no tracking. The optional Inventory Scanner sends uploaded screenshots to the EriduOps parser API and receives detected inventory quantities as JSON.
 
+Scanner image retention is off by default. Users can opt in to share full
+uploaded frames and original scan results for private debugging. Higher-resolution
+images are downscaled before upload. Captures are retained for up to 30 days,
+possibly less at the storage cap, and return a report ID to include in Feedback.
+
 ---
 
 ## Tech Stack
