@@ -10,10 +10,11 @@ A free, client-side planner for [Blue Archive](https://bluearchive.nexon.com) �
 
 - **Student grid** (`/students`) — Search, sort, pin, filter (school, equipment slot, attack/defense type, rarity, availability), and bulk-edit students
 - **Student planner** — Per-student modal for skill levels, character levels, potentials, equipment tiers, and exclusive weapon (EX Weapon) levels with material cost breakdowns
-- **Bond planner** (`/bonds`) — Tracked-students view with gift allocation, cafe-tap projection (start/end dates), bonus EXP from lessons, and per-gift EXP breakdowns
+- **Bond planner** (`/bonds`) — Tracked-students view with gift allocation, cafe-tap projection (start/end dates), bonus EXP from lessons, per-gift EXP breakdowns, and progress toward the next major milestone (level 50, then 100)
 - **Bond 100 Hall** (`/hall`) — Community wall of senseis who've reached bond level 100 with each student; search, server filters, sorting, friend-code submission, and a per-student entries view (data via arona.icu)
 - **Inventory** — Manage owned materials, equipment, and gifts across all students; bulk-update from a single screenshot via OCR scan
 - **Crafting Fodder** (`/crafting`): Two-stage crafting tracker with frozen inventory snapshots, standalone stage capacities, paired full-craft counts, filters, and stage-specific progress
+- **Chibi3D** (`/chibi3d`): Lazy-loaded three.js viewer with character animations, expressions, furniture scenes, item interactions, and multi-character victory scenes
 - **Tools** (ToolsRail on `/students`): Bulk bond update (paste `name bond` pairs), bulk modify students, equipment farming suggestions, deck builder
 - **Themes** — 7 built-in colour themes (dark, light, ocean, forest, sunset, rose, violet)
 - **Import / Export** — Back up and share your planner data as JSON
@@ -31,6 +32,7 @@ Planner data is stored locally in IndexedDB — no account and no tracking. The 
 | Language | TypeScript |
 | Build | Vite |
 | Styling | Tailwind CSS v4 |
+| 3D rendering | three.js |
 | Storage | Dexie (IndexedDB) |
 | Data source | [SchaleDB](https://schaledb.com) API |
 
@@ -55,8 +57,8 @@ VITE_PARSER_URL=/api
 ```
 
 In production, `/api` routes to the hosted API. In local development, Vite
-proxies `/api/inventory/*` to the parser service and `/api/bond100/*` plus
-`/api/feedback/*` to the lightweight Flask service.
+proxies `/api/inventory/*` to the parser on port 5001, `/api/bond100/*` to the
+Hall service on port 5002, and `/api/feedback/*` to the feedback service on port 5003.
 
 ## Private Activity Manager
 
@@ -88,7 +90,7 @@ Folders under `components/` map to a **route surface** (`students/`, `bonds/`, `
 
 ```
 src/
-  pages/                # Route components: LandingPage, StudentsPage, BondsPage, Bond100Page, CraftingPage
+  pages/                # Route components: LandingPage, StudentsPage, BondsPage, Bond100Page, CraftingPage, Chibi3dPage
   router/               # vue-router config
   components/
     students/           # /students surface
@@ -98,6 +100,7 @@ src/
       gift/             #   Gift allocation building blocks (GiftCard, GiftGrid, GiftOption, …)
     bond100/            # /hall surface — Bond100Wall, Bond100EntriesModal, Bond100SubmitModal, Bond100StatsPopover
     crafting/           # /crafting surface: CraftingFodderCard
+    chibi/              # /chibi3d viewer, interaction scenes, and orbit controls
     inventory/          # GlobalInventoryModal, ResourceGrid (items/equipment variant), ResourceCard, ResourceSummary
     navbar/             # GlobalNavbar, SearchNavbar, GlobalControls, FilterPanel, SortPanel
       modals/           #   Navbar-triggered modals (Feedback, Credits, Import, InventoryScreenshot, WhatsNew)
