@@ -36,7 +36,7 @@ export default defineConfig({
         rewrite: (path: string) => path.replace(/^\/api/, ''),
       },
       '/api/feedback': {
-        target: 'http://localhost:5002',
+        target: 'http://localhost:5003',
         rewrite: (path: string) => path.replace(/^\/api/, ''),
       },
     },
