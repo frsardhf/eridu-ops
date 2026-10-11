@@ -121,7 +121,15 @@ export function useChibi3dScene(
       preserveDrawingBuffer: true,
     });
     // Retain landing supersampling, but bound the larger room's render cost.
-    renderer.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio, !!opts.fullStage));
+    renderer.setPixelRatio(
+      chibiPixelRatio(
+        curW,
+        curH,
+        window.devicePixelRatio,
+        !!opts.fullStage,
+        window.matchMedia('(pointer: coarse)').matches,
+      ),
+    );
     renderer.setSize(curW, curH, false);
     renderer.setClearColor(0x000000, 0); // transparent: the pet floats over the page
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -425,7 +433,15 @@ export function useChibi3dScene(
   function resize(w: number, h: number): void {
     curW = Math.max(1, Math.round(w));
     curH = Math.max(1, Math.round(h));
-    renderer?.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio, !!opts.fullStage));
+    renderer?.setPixelRatio(
+      chibiPixelRatio(
+        curW,
+        curH,
+        window.devicePixelRatio,
+        !!opts.fullStage,
+        window.matchMedia('(pointer: coarse)').matches,
+      ),
+    );
     renderer?.setSize(curW, curH, false);
     if (camera) {
       camera.aspect = curW / curH;

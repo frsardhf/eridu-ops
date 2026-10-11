@@ -49,16 +49,44 @@ describe('full-room chibi viewport', () => {
     expect(pixels(1000)).toBeCloseTo(pixels(540));
   });
 
-  it('caps room render pixels while preserving existing landing supersampling', () => {
+  it('preserves existing landing supersampling on desktop and touch devices', () => {
     expect(chibiPixelRatio(540, 540, 3, false)).toBe(4);
     expect(chibiPixelRatio(540, 540, 1, false)).toBe(2);
+    expect(chibiPixelRatio(540, 540, 3, false, true)).toBe(4);
+  });
+
+  it('uses an eight-million-pixel desktop budget', () => {
     for (const [w, h] of [
       [1280, 800],
-      [3840, 2160],
-      [375, 812],
+      [1920, 1080],
+      [2560, 1440],
     ]) {
       const ratio = chibiPixelRatio(w, h, 3);
-      expect(w * h * ratio * ratio).toBeLessThanOrEqual(2_000_001);
+      expect(w * h * ratio * ratio).toBeCloseTo(8_000_000);
     }
+    expect(chibiPixelRatio(1280, 720, 2)).toBeCloseTo(2.946);
+    expect(chibiPixelRatio(1920, 1080, 2)).toBeCloseTo(1.964);
+  });
+
+  it.each([
+    [375, 812],
+    [812, 375],
+    [1024, 1366],
+    [1366, 1024],
+  ])('keeps touch devices at two million pixels at %s x %s', (w, h) => {
+    const ratio = chibiPixelRatio(w, h, 3, true, true);
+    expect(w * h * ratio * ratio).toBeCloseTo(2_000_000);
+  });
+
+  it('never renders rooms below CSS resolution, even above the pixel budget', () => {
+    expect(chibiPixelRatio(3840, 2160, 2)).toBe(1);
+    expect(chibiPixelRatio(5120, 2880, 2)).toBe(1);
+    expect(chibiPixelRatio(2560, 1440, 2, true, true)).toBe(1);
+    expect(chibiPixelRatio(1280, 720, 0.4)).toBe(1);
+  });
+
+  it('retains the existing supersampling ceiling when the room is small', () => {
+    expect(chibiPixelRatio(540, 540, 3)).toBe(4);
+    expect(chibiPixelRatio(540, 540, 1)).toBe(2);
   });
 });

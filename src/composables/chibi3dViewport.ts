@@ -7,15 +7,18 @@ export function roomFieldOfView(baseFov: number, height: number, referenceSize: 
   );
 }
 
-/** Bound full-room rendering resolution while retaining sharp small landing pets. */
+/** Bound room supersampling without dropping below CSS resolution; keep landing pets unchanged. */
 export function chibiPixelRatio(
   width: number,
   height: number,
   deviceRatio: number,
   fullRoom = true,
+  coarsePointer = false,
 ): number {
   const supersampled = Math.min(deviceRatio, 2) * 2;
-  return fullRoom ? Math.min(supersampled, Math.sqrt(2_000_000 / (width * height))) : supersampled;
+  if (!fullRoom) return supersampled;
+  const pixelBudget = coarsePointer ? 2_000_000 : 8_000_000;
+  return Math.max(1, Math.min(supersampled, Math.sqrt(pixelBudget / (width * height))));
 }
 
 /** Convert a room pixel to an offset on the camera-facing movement plane. */

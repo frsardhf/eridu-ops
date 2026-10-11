@@ -5,10 +5,12 @@ import * as THREE from 'three';
 import { useChibi3dScene } from '../useChibi3dScene';
 import { driveMouth, driveRenderers } from '../chibi3dCore';
 
+const rendererSpies = vi.hoisted(() => ({ pixelRatio: vi.fn() }));
+
 vi.mock('three', async (original) => ({
   ...(await original<typeof import('three')>()),
   WebGLRenderer: class {
-    setPixelRatio() {}
+    setPixelRatio = rendererSpies.pixelRatio;
     setSize() {}
     setClearColor() {}
     render() {}
@@ -44,6 +46,7 @@ vi.mock('../chibi3dCore', async (original) => {
 let app: App;
 let transport: ReturnType<typeof useChibi3dScene>;
 let frames: FrameRequestCallback[];
+let coarsePointer = false;
 function frame() {
   const batch = frames.splice(0);
   for (const callback of batch) callback(0);
@@ -51,6 +54,17 @@ function frame() {
 
 beforeEach(async () => {
   frames = [];
+  coarsePointer = false;
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: coarsePointer,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     frames.push(callback);
     return 1;
@@ -91,6 +105,17 @@ afterEach(() => {
 });
 
 describe('chibi animation transport', () => {
+  it('applies desktop and touch render budgets on setup and resize', () => {
+    expect(rendererSpies.pixelRatio.mock.lastCall?.[0]).toBe(2);
+    transport.resize(1920, 1080);
+    expect(rendererSpies.pixelRatio.mock.lastCall?.[0]).toBeCloseTo(1.964);
+    coarsePointer = true;
+    transport.resize(1920, 1080);
+    expect(rendererSpies.pixelRatio.mock.lastCall?.[0]).toBe(1);
+    transport.resize(812, 375);
+    expect(rendererSpies.pixelRatio.mock.lastCall?.[0]).toBe(2);
+  });
+
   it('uses canonical legacy names and freezes the real clip time while paused', () => {
     transport.play('Cafe_Idle');
     frame();

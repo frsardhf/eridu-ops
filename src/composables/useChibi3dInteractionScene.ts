@@ -191,7 +191,15 @@ export function useChibi3dInteractionScene(
 
   function setupRenderer(canvas: HTMLCanvasElement): void {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio));
+    renderer.setPixelRatio(
+      chibiPixelRatio(
+        curW,
+        curH,
+        window.devicePixelRatio,
+        true,
+        window.matchMedia('(pointer: coarse)').matches,
+      ),
+    );
     renderer.setSize(curW, curH, false);
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -792,7 +800,15 @@ export function useChibi3dInteractionScene(
   function resize(w: number, h: number): void {
     curW = Math.max(1, Math.round(w));
     curH = Math.max(1, Math.round(h));
-    renderer?.setPixelRatio(chibiPixelRatio(curW, curH, window.devicePixelRatio));
+    renderer?.setPixelRatio(
+      chibiPixelRatio(
+        curW,
+        curH,
+        window.devicePixelRatio,
+        true,
+        window.matchMedia('(pointer: coarse)').matches,
+      ),
+    );
     renderer?.setSize(curW, curH, false);
     if (camera) {
       camera.aspect = curW / curH;
