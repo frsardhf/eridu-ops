@@ -179,7 +179,7 @@ const en = {
       empty: 'No Bond 100 data yet.',
     },
     sortModes: {
-      default: 'Default',
+      default: 'Release',
       name: 'Name',
       bond100: 'Count',
       recent: 'Recent',
@@ -327,7 +327,7 @@ const en = {
   sort: {
     id: 'ID',
     name: 'Name',
-    default: 'Default',
+    default: 'Release',
     bond: 'Bond',
     level: 'Level',
     grade: 'Grade',
@@ -340,6 +340,7 @@ const en = {
     pinnedHint: 'Sorting is paused while Pinned view is on.',
     method: 'Sorting Method',
     sectionInfo: 'Student Info',
+    toggleDirection: 'Switch to {direction}',
     sectionProgress: 'Progression',
   },
   direction: {
@@ -1114,7 +1115,7 @@ const jp: TranslationTree = {
       empty: '絆100のデータはまだありません。',
     },
     sortModes: {
-      default: 'デフォルト',
+      default: '実装',
       name: '名前',
       bond100: '件数',
       recent: '最近',
@@ -1264,7 +1265,7 @@ const jp: TranslationTree = {
   sort: {
     id: 'ID',
     name: '名前',
-    default: 'デフォルト',
+    default: '実装',
     bond: '絆',
     level: 'レベル',
     grade: '星級',
@@ -1277,6 +1278,7 @@ const jp: TranslationTree = {
     pinnedHint: 'ピン留め表示中は並び替えが一時停止します。',
     method: 'ソート方法',
     sectionInfo: '生徒情報',
+    toggleDirection: '{direction}に切り替え',
     sectionProgress: '育成状況',
   },
   direction: {
@@ -2048,7 +2050,7 @@ const kr: TranslationTree = {
       empty: '아직 인연 100 데이터가 없습니다.',
     },
     sortModes: {
-      default: '기본',
+      default: '출시',
       name: '이름',
       bond100: '집계',
       recent: '최근',
@@ -2197,7 +2199,7 @@ const kr: TranslationTree = {
   sort: {
     id: 'ID',
     name: '이름',
-    default: '기본',
+    default: '출시',
     bond: '인연',
     level: '레벨',
     grade: '성급',
@@ -2210,6 +2212,7 @@ const kr: TranslationTree = {
     pinnedHint: '고정 보기 중에는 정렬이 일시 중지됩니다.',
     method: '정렬 방식',
     sectionInfo: '학생 정보',
+    toggleDirection: '{direction}으로 전환',
     sectionProgress: '육성 현황',
   },
   direction: {

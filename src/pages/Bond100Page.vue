@@ -13,6 +13,7 @@ import { useImageExport } from '@/composables/useImageExport';
 import { BOND100_SERVER_OPTIONS, BOND100_SORT_MODES } from '@/lib/constants/bond100';
 import { filterSecondaryStudents } from '@/lib/constants/linkedStudents';
 import { useStudentData } from '@/lib/hooks/useStudentData';
+import { useBond100Sort } from '@/lib/hooks/useBond100Sort';
 import {
   getBond100Players,
   getBond100StudentEntries,
@@ -48,9 +49,8 @@ watch(selectedServer, () =>
 );
 const showSubmit = ref(false);
 
-const sortMode = ref<Bond100SortMode>(getSettings().bond100Sort ?? 'default');
-watch(sortMode, (v) => {
-  updateSetting('bond100Sort', v);
+const { sortMode, sortDirection, selectSort, toggleDirection, compareCards } = useBond100Sort();
+watch([sortMode, sortDirection], () => {
   track({ name: 'setting_changed', feature: 'hall_entries', action: 'changed' });
 });
 
@@ -219,28 +219,7 @@ const visibleCards = computed(() => {
       const matchesEmpty = !hideEmpty.value || card.count > 0;
       return matchesQuery && matchesSchool && matchesEmpty;
     })
-    .sort((a, b) => {
-      const byOrder =
-        (a.student.DefaultOrder ?? a.student.Id) - (b.student.DefaultOrder ?? b.student.Id);
-
-      if (sortMode.value === 'name') {
-        return a.student.Name.localeCompare(b.student.Name) || byOrder;
-      }
-
-      if (sortMode.value === 'bond100') {
-        const diff = b.count - a.count;
-        return diff !== 0 ? diff : byOrder;
-      }
-
-      if (sortMode.value === 'recent') {
-        // Freshest first; un-swept (no fetchedAt) sort last since any date > ''.
-        const fa = a.summary?.fetchedAt ?? '';
-        const fb = b.summary?.fetchedAt ?? '';
-        return fa !== fb ? fb.localeCompare(fa) : byOrder;
-      }
-
-      return byOrder;
-    });
+    .sort(compareCards);
 });
 
 function getVisibleCount(item: Bond100StudentSummary | null): number {
@@ -462,9 +441,17 @@ onMounted(loadSummary);
 
         <SelectMenu
           v-if="view === 'wall'"
-          v-model="sortMode"
+          :model-value="sortMode"
           :options="sortOptions"
           :aria-label="$t('bond100.sort')"
+          :sort-direction="sortDirection"
+          :direction-label="
+            $t('sort.toggleDirection', {
+              direction: $t(`direction.${sortDirection === 'asc' ? 'descending' : 'ascending'}`),
+            })
+          "
+          @update:model-value="selectSort"
+          @toggle-direction="toggleDirection"
         />
 
         <button

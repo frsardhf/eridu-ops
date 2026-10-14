@@ -35,6 +35,7 @@ export interface AppSettings {
   bondsLayout: 'cards' | 'tabs';
   bondsGiftPlanningEnabled?: number[];
   bond100Sort?: 'default' | 'name' | 'bond100' | 'recent';
+  bond100SortDirection?: SortDirection;
   /** /hall school filter: a raw SchaleDB School value, or 'all'. */
   bond100School?: string;
   /** /hall toggle to hide students with a 0 bond-100 count. */
@@ -78,6 +79,7 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'bondsLayout',
   'bondsGiftPlanningEnabled',
   'bond100Sort',
+  'bond100SortDirection',
   'bond100School',
   'bond100HideEmpty',
   'bond100View',

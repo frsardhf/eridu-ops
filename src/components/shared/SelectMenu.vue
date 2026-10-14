@@ -16,9 +16,12 @@ const props = defineProps<{
   block?: boolean;
   /** Horizontal anchor of the teleported popover relative to the trigger (default 'left'). */
   align?: 'left' | 'right';
+  /** Optional split trigger: the label opens the menu, the arrow changes sorting. */
+  sortDirection?: 'asc' | 'desc';
+  directionLabel?: string;
 }>();
 
-const emit = defineEmits<{ 'update:modelValue': [T] }>();
+const emit = defineEmits<{ 'update:modelValue': [T]; toggleDirection: [] }>();
 
 const open = ref(false);
 const wrapEl = ref<HTMLElement | null>(null);
@@ -116,7 +119,46 @@ onUnmounted(() => {
   <div ref="wrapEl" class="select-menu" :class="{ block }">
     <!-- Custom trigger via #trigger slot (gets { open, toggle }); default = label pill -->
     <slot name="trigger" :open="open" :toggle="toggle">
+      <div
+        v-if="sortDirection"
+        ref="triggerEl"
+        class="select-trigger select-trigger--split"
+        :class="{ open }"
+      >
+        <button
+          type="button"
+          class="select-label"
+          :aria-label="ariaLabel || undefined"
+          :aria-expanded="open"
+          aria-haspopup="listbox"
+          @click="toggle"
+        >
+          {{ triggerLabel }}
+        </button>
+        <button
+          type="button"
+          class="select-direction"
+          :aria-label="directionLabel"
+          :title="directionLabel"
+          @click.stop="emit('toggleDirection')"
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <polyline :points="sortDirection === 'asc' ? '6 15 12 9 18 15' : '6 9 12 15 18 9'" />
+          </svg>
+        </button>
+      </div>
       <button
+        v-else
         ref="triggerEl"
         type="button"
         class="select-trigger"
@@ -233,6 +275,45 @@ onUnmounted(() => {
 
 .select-trigger.placeholder {
   color: var(--input-placeholder);
+}
+
+.select-trigger--split {
+  gap: 0;
+  padding: 0;
+}
+
+.select-label,
+.select-direction {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.select-label {
+  padding: 0 6px 0 10px;
+  border-radius: 7px 0 0 7px;
+}
+
+.select-direction {
+  min-width: 28px;
+  padding: 0 8px;
+  border-radius: 0 7px 7px 0;
+}
+
+.select-direction:hover {
+  background: var(--background-secondary);
+}
+
+.select-label:focus-visible,
+.select-direction:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .select-chev {
