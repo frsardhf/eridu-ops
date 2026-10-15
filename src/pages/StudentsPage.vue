@@ -7,6 +7,7 @@ import ToolsRail from '@/components/students/ToolsRail.vue';
 import SearchNavbar from '@/components/navbar/SearchNavbar.vue';
 import StudentGrid from '@/components/students/StudentGrid.vue';
 import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import StudentModal from '@/components/students/modal/StudentModal.vue';
 
 // Tool modals are user-triggered and behind v-if, so each loads as its own
@@ -56,7 +57,11 @@ const {
   setStudentFilters,
   clearStudentFilters,
   isReady,
+  isLoading,
 } = useStudentData();
+const isInitialLoading = computed(
+  () => isLoading.value && Object.keys(studentData.value).length === 0,
+);
 const { track } = useAnalytics();
 
 const selectedStudent = ref<StudentProps | null>(null);
@@ -232,7 +237,9 @@ function handlePlanRestored(): void {
 
     <!-- No grid-level :key here: both v-for sections key by student.Id, so sort/
          search/filter changes diff in place instead of remounting every card. -->
+    <LoadingSpinner v-if="isInitialLoading" block />
     <StudentGrid
+      v-else
       :students-array="ownedStudentsArray"
       :unowned-students-array="unownedStudentsArray"
       @open-modal="openModal"

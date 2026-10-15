@@ -7,6 +7,7 @@ import Bond100SubmitModal from '@/components/bond100/Bond100SubmitModal.vue';
 import Bond100StatsPopover from '@/components/bond100/Bond100StatsPopover.vue';
 import Bond100Wall from '@/components/bond100/Bond100Wall.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { useOwnerMode } from '@/composables/useOwnerMode';
 import { useImageExport } from '@/composables/useImageExport';
@@ -459,10 +460,13 @@ onMounted(loadSummary);
           type="button"
           class="bond100-export-btn"
           :disabled="exporting"
-          title="Generate high-res image"
+          :aria-busy="exporting"
+          :title="$t('bond100.exportHint')"
           @click="exportWall"
         >
+          <LoadingSpinner v-if="exporting" small decorative />
           <svg
+            v-else
             width="14"
             height="14"
             viewBox="0 0 24 24"
@@ -477,7 +481,7 @@ onMounted(loadSummary);
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>{{ exporting ? 'Generating…' : 'Export' }}</span>
+          <span>{{ exporting ? $t('bond100.exporting') : $t('bond100.export') }}</span>
         </button>
       </div>
 

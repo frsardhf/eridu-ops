@@ -18,6 +18,7 @@ import type { CachedResource } from '@/types/resource';
 import { MATERIAL, EQUIPMENT, isGeneralEquipmentBlueprint } from '@/types/resource';
 import { applyFilters } from '@/lib/utils/filterUtils';
 import ResourceCard from '@/components/inventory/ResourceCard.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { getItemIconUrl } from '@/lib/utils/iconUtils';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
 
@@ -1024,8 +1025,10 @@ useDocumentListener('paste', onPaste);
             <button
               class="apply-btn"
               :disabled="parsedResults.length === 0 || isApplying"
+              :aria-busy="isApplying"
               @click="applyResults"
             >
+              <LoadingSpinner v-if="isApplying" small decorative />
               {{ $t('applyInventory') }}
             </button>
           </div>

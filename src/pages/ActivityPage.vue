@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import ActivityTable from '@/components/activity/ActivityTable.vue';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
@@ -111,7 +112,14 @@ onMounted(loadReport);
             :aria-label="$t('activity.range')"
             align="right"
           />
-          <button type="button" class="activity-button" :disabled="loading" @click="loadReport">
+          <button
+            type="button"
+            class="activity-button"
+            :disabled="loading"
+            :aria-busy="loading"
+            @click="loadReport"
+          >
+            <LoadingSpinner v-if="loading" small decorative />
             {{ loading ? $t('activity.loading') : $t('activity.refresh') }}
           </button>
         </div>
@@ -208,7 +216,7 @@ onMounted(loadReport);
         </div>
       </template>
 
-      <div v-else class="activity-state">{{ $t('activity.loading') }}</div>
+      <div v-else class="activity-state"><LoadingSpinner /></div>
     </main>
   </div>
 </template>

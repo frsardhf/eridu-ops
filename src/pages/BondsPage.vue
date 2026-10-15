@@ -10,6 +10,7 @@ import StudentStrip from '@/components/shared/StudentStrip.vue';
 import BondsStudentEditor from '@/components/bonds/BondsStudentEditor.vue';
 import BondsStudentPicker from '@/components/bonds/BondsStudentPicker.vue';
 import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { computeStudentBondExpTotal } from '@/lib/utils/bondExpUtils';
 import { enrichStudentWithGifts } from '@/lib/utils/studentDataHydrationUtils';
 import { $t } from '@/locales';
@@ -24,7 +25,10 @@ const GlobalInventoryModal = defineAsyncComponent(
 
 const route = useRoute();
 const router = useRouter();
-const { studentData, favoredGift, giftBoxData, isReady } = useStudentData();
+const { studentData, favoredGift, giftBoxData, isReady, isLoading } = useStudentData();
+const isInitialLoading = computed(
+  () => isLoading.value && Object.keys(studentData.value).length === 0,
+);
 const { trackedIds, removeStudent, seedIfNeeded } = useBondsTracked();
 const { track } = useAnalytics();
 
@@ -243,7 +247,8 @@ function openInventory(): void {
         </div>
       </div>
 
-      <div v-if="isReady && !trackedStudents.length" class="bonds-empty">
+      <LoadingSpinner v-if="isInitialLoading" block />
+      <div v-else-if="isReady && !trackedStudents.length" class="bonds-empty">
         <p>{{ $t('noTrackedStudents') }}</p>
         <button type="button" class="bonds-btn primary" @click="openStudentPicker">
           + {{ $t('addStudent') }}

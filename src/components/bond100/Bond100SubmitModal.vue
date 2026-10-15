@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import { submitBond100Submission } from '@/lib/services/bond100Service';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { $t } from '@/locales';
 import type { Bond100ServerOption, Bond100ServerRegion } from '@/types/bond100';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
@@ -152,7 +153,9 @@ useDocumentListener('keydown', onKeydown);
             form="bsm-form"
             class="bsm-btn"
             :disabled="submitting || !subServer || !subFriendCode.trim()"
+            :aria-busy="submitting"
           >
+            <LoadingSpinner v-if="submitting" small decorative />
             {{ submitting ? $t('bond100.form.sending') : $t('bond100.form.send') }}
           </button>
         </template>

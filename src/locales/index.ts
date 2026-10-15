@@ -187,6 +187,9 @@ const en = {
     viewToggleAria: 'Hall view',
     viewWall: 'Wall',
     viewPlayers: 'Players',
+    export: 'Export',
+    exporting: 'Exporting…',
+    exportHint: 'Generate a high-resolution image',
     players: {
       searchPlaceholder: 'Search players...',
       allCounts: 'All',
@@ -1123,6 +1126,9 @@ const jp: TranslationTree = {
     viewToggleAria: '殿堂の表示',
     viewWall: 'ウォール',
     viewPlayers: 'プレイヤー',
+    export: 'エクスポート',
+    exporting: 'エクスポート中…',
+    exportHint: '高解像度の画像を生成',
     players: {
       searchPlaceholder: 'プレイヤーを検索...',
       allCounts: 'すべて',
@@ -2058,6 +2064,9 @@ const kr: TranslationTree = {
     viewToggleAria: '전당 보기',
     viewWall: '월',
     viewPlayers: '플레이어',
+    export: '내보내기',
+    exporting: '내보내는 중…',
+    exportHint: '고해상도 이미지 생성',
     players: {
       searchPlaceholder: '플레이어 검색...',
       allCounts: '전체',

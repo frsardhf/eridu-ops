@@ -4,6 +4,7 @@ import { useDeckBuilder } from '@/lib/hooks/useDeckBuilder';
 import { useDragReorder } from '@/composables/useDragReorder';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
 import StudentCard from '@/components/students/StudentCard.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import type { StudentProps } from '@/types/student';
 import { useImageExport } from '@/composables/useImageExport';
 import { $t } from '@/locales';
@@ -490,7 +491,14 @@ function handleCopyTeam(tIdx: number, targetDeckId: number) {
         <button class="add-team-btn" type="button" @click="handleAddTeam">
           {{ $t('deckBuilder.addTeam') }}
         </button>
-        <button class="export-btn" type="button" @click="exportDeckImage" :disabled="isExporting">
+        <button
+          class="export-btn"
+          type="button"
+          @click="exportDeckImage"
+          :disabled="isExporting"
+          :aria-busy="isExporting"
+        >
+          <LoadingSpinner v-if="isExporting" small decorative />
           {{ isExporting ? $t('deckBuilder.exporting') : $t('deckBuilder.exportImage') }}
         </button>
         <span v-if="copyToastMsg" class="copy-toast">{{ copyToastMsg }}</span>

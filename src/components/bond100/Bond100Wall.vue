@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { $t } from '@/locales';
 import type { Bond100StudentSummary } from '@/types/bond100';
@@ -27,7 +28,7 @@ const stripStyle = {
 
 <template>
   <section class="bond100-wall-wrap">
-    <div v-if="loading" class="bond100-wall-state">{{ $t('loading') }}...</div>
+    <div v-if="loading" class="bond100-wall-state"><LoadingSpinner /></div>
 
     <div v-else-if="!cards.length" class="bond100-wall-state">
       {{ $t('bond100.noStudents') }}

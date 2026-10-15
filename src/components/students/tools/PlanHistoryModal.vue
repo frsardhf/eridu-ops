@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import {
@@ -202,8 +203,10 @@ onMounted(loadHistory);
               type="button"
               class="history-btn history-btn-primary"
               :disabled="restoringStudentId !== null"
+              :aria-busy="restoringStudentId !== null"
               @click="confirmRestore"
             >
+              <LoadingSpinner v-if="restoringStudentId !== null" small decorative />
               {{
                 restoringStudentId !== null
                   ? $t('planHistory.restoring')
@@ -224,8 +227,10 @@ onMounted(loadHistory);
               type="button"
               class="history-btn history-btn-danger"
               :disabled="isClearingHistory"
+              :aria-busy="isClearingHistory"
               @click="confirmClearHistory"
             >
+              <LoadingSpinner v-if="isClearingHistory" small decorative />
               {{ isClearingHistory ? $t('planHistory.clearing') : $t('planHistory.clearHistory') }}
             </button>
           </template>
@@ -252,7 +257,7 @@ onMounted(loadHistory);
           <button type="button" @click="loadHistory">{{ $t('planHistory.retry') }}</button>
         </div>
 
-        <div v-if="isLoading" class="history-empty">{{ $t('loading') }}</div>
+        <div v-if="isLoading" class="history-empty"><LoadingSpinner /></div>
         <div v-else-if="events.length === 0" class="history-empty">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path

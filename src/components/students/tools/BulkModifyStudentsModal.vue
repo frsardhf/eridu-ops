@@ -14,6 +14,7 @@ import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { studentMatchesQuery } from '@/lib/utils/sortUtils';
 import { isQuotaExceededError, clearImageCacheStorage } from '@/lib/utils/storageQuota';
 import StarIcon from '@/components/shared/StarIcon.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import {
   MAX_LEVEL,
   MAX_BOND_LEVEL,
@@ -843,8 +844,10 @@ async function submitBulkModify() {
             class="footer-btn primary"
             type="button"
             :disabled="isSubmitDisabled"
+            :aria-busy="isSubmitting"
             @click="submitBulkModify"
           >
+            <LoadingSpinner v-if="isSubmitting" small decorative />
             {{ isSubmitting ? $t('bulkModify.applying') : $t('bulkModify.apply') }}
           </button>
         </div>

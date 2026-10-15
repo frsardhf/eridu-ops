@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useClickOutside } from '@/composables/dom/useClickOutside';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
 import SelectMenu from '@/components/shared/SelectMenu.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import {
   FEEDBACK_CATEGORIES,
   MAX_FEEDBACK_MESSAGE_LENGTH,
@@ -151,7 +152,14 @@ useDocumentListener('keydown', onKeydown);
           <button type="button" class="feedback-button ghost" @click="emit('close')">
             {{ $t('feedbackModal.cancel') }}
           </button>
-          <button type="submit" form="feedback-form" class="feedback-button" :disabled="!canSubmit">
+          <button
+            type="submit"
+            form="feedback-form"
+            class="feedback-button"
+            :disabled="!canSubmit"
+            :aria-busy="submitting"
+          >
+            <LoadingSpinner v-if="submitting" small decorative />
             {{ submitting ? $t('feedbackModal.sending') : $t('feedbackModal.send') }}
           </button>
         </template>

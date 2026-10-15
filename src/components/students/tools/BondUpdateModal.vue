@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { $t } from '@/locales';
 import { StudentProps } from '@/types/student';
 import { useBondBulkUpdate } from '@/lib/hooks/useBondBulkUpdate';
@@ -355,8 +356,15 @@ async function handleApply() {
           <button class="btn-secondary" type="button" @click="step = 'input'">
             {{ $t('previous') }}
           </button>
-          <button class="btn-primary" type="button" :disabled="!canApply" @click="handleApply">
-            {{ isApplying ? '…' : `${$t('apply')} (${matchedEntries.length})` }}
+          <button
+            class="btn-primary"
+            type="button"
+            :disabled="!canApply"
+            :aria-busy="isApplying"
+            @click="handleApply"
+          >
+            <LoadingSpinner v-if="isApplying" small decorative />
+            {{ $t('apply') }} ({{ matchedEntries.length }})
           </button>
         </div>
       </template>

@@ -3,6 +3,7 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import GlobalNavbar from '@/components/navbar/GlobalNavbar.vue';
 import CraftingFodderCard from '@/components/crafting/CraftingFodderCard.vue';
 import DataLoadErrorBanner from '@/components/shared/DataLoadErrorBanner.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { useCraftingFodder } from '@/lib/hooks/useCraftingFodder';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { $t } from '@/locales';
@@ -379,7 +380,7 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
         </template>
       </div>
 
-      <div v-if="!isReady" class="page-state">{{ $t('loading') }}...</div>
+      <div v-if="!isReady" class="page-state"><LoadingSpinner /></div>
 
       <section v-else class="stages-workspace">
         <div class="stages-grid">

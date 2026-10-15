@@ -25,6 +25,7 @@ vi.mock('@/lib/hooks/useStudentData', async () => {
       favoredGift: ref({}),
       giftBoxData: ref({}),
       isReady: ref(true),
+      isLoading: ref(false),
     }),
   };
 });

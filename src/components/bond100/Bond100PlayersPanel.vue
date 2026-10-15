@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { getStudentIconUrl } from '@/lib/utils/iconUtils';
 import { colorWithOpacity, getBond100ServerColor } from '@/lib/utils/colorUtils';
 import { $t } from '@/locales';
@@ -173,7 +174,7 @@ function pillStyle(server: string): Record<string, string> {
       }}</span>
     </div>
 
-    <div v-if="loading" class="b100p-state">{{ $t('loading') }}...</div>
+    <div v-if="loading" class="b100p-state"><LoadingSpinner /></div>
 
     <div v-else-if="!filteredPlayers.length" class="b100p-state">
       {{ $t('bond100.players.noPlayers') }}
