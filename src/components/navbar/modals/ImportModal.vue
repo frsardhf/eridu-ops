@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue';
 import { importLocalStorageData, importFromOtherSite } from '@/lib/services/importExportService';
 import { $t } from '@/locales';
 import { useAnalytics } from '@/lib/hooks/useAnalytics';
@@ -116,8 +117,10 @@ async function handleTextImport() {
 }
 
 function toggleImportMethod() {
+  if (isLoading.value) return;
   showTextInput.value = !showTextInput.value;
   importText.value = '';
+  showStatus.value = false;
 }
 
 function showImportError(message: string) {
@@ -161,6 +164,7 @@ function closeModal(event: MouseEvent) {
           <button
             class="method-button"
             :class="{ active: !showTextInput }"
+            :disabled="isLoading"
             @click="toggleImportMethod"
           >
             {{ $t('importFromFile') }}
@@ -168,6 +172,7 @@ function closeModal(event: MouseEvent) {
           <button
             class="method-button"
             :class="{ active: showTextInput }"
+            :disabled="isLoading"
             @click="toggleImportMethod"
           >
             {{ $t('importFromText') }}
@@ -179,12 +184,14 @@ function closeModal(event: MouseEvent) {
             v-model="importText"
             class="import-textarea"
             :placeholder="$t('pasteImportData')"
+            :disabled="isLoading"
             rows="6"
           ></textarea>
           <button
             class="import-button"
             @click="handleTextImport"
             :disabled="isLoading || !importText.trim()"
+            :aria-busy="isLoading"
           >
             {{ $t('import') }}
           </button>
@@ -206,8 +213,8 @@ function closeModal(event: MouseEvent) {
             @change="handleFileSelect"
           />
 
-          <div v-if="showStatus" class="status-message">
-            <span class="loader" v-if="isLoading"></span>
+          <div v-if="showStatus" class="status-message" role="status">
+            <LoadingSpinner v-if="isLoading" decorative />
             <p>{{ importStatus }}</p>
           </div>
 
@@ -229,6 +236,11 @@ function closeModal(event: MouseEvent) {
             <p class="dropzone-subtext">{{ $t('or') }}</p>
             <label for="file-input" class="browse-button">{{ $t('browseFiles') }}</label>
           </div>
+        </div>
+
+        <div v-if="showTextInput && showStatus" class="status-message" role="status">
+          <LoadingSpinner v-if="isLoading" decorative />
+          <p>{{ importStatus }}</p>
         </div>
 
         <div class="info-text">
@@ -468,25 +480,6 @@ function closeModal(event: MouseEvent) {
   gap: 10px;
   width: 100%;
   color: var(--text-primary);
-}
-
-.loader {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-color);
-  border-bottom-color: var(--accent-color);
-  border-radius: 50%;
-  display: inline-block;
-  animation: rotation 1s linear infinite;
-}
-
-@keyframes rotation {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 @media (max-width: 480px) {
