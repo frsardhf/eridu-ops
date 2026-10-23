@@ -21,19 +21,26 @@ export function chibiPixelRatio(
   return Math.max(1, Math.min(supersampled, Math.sqrt(pixelBudget / (width * height))));
 }
 
-/** Convert a room pixel to an offset on the camera-facing movement plane. */
-export function roomPosition(
+/** Move the pet's image without changing its camera-relative angle or depth. */
+export function setRoomViewOffset(
   camera: THREE.PerspectiveCamera,
   width: number,
   height: number,
   x: number,
   y: number,
-  target: THREE.Vector3,
-): THREE.Vector3 {
-  camera.updateMatrixWorld();
-  const direction = camera.getWorldDirection(new THREE.Vector3());
-  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(direction, target);
-  const ray = new THREE.Raycaster();
-  ray.setFromCamera(new THREE.Vector2((x / width) * 2 - 1, 1 - (y / height) * 2), camera);
-  return ray.ray.intersectPlane(plane, new THREE.Vector3())?.sub(target) ?? new THREE.Vector3();
+): void {
+  const offsetX = width / 2 - x;
+  const offsetY = height / 2 - y;
+  const view = camera.view;
+  if (
+    view?.enabled &&
+    view.fullWidth === width &&
+    view.fullHeight === height &&
+    view.width === width &&
+    view.height === height &&
+    view.offsetX === offsetX &&
+    view.offsetY === offsetY
+  )
+    return;
+  camera.setViewOffset(width, height, offsetX, offsetY, width, height);
 }

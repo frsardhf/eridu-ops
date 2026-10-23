@@ -8,7 +8,7 @@ import type {
   ChibiScenesConfig,
   ChibiPlayback,
 } from '@/types/chibi';
-import { chibiPixelRatio, roomFieldOfView, roomPosition } from './chibi3dViewport';
+import { chibiPixelRatio, roomFieldOfView, setRoomViewOffset } from './chibi3dViewport';
 import {
   getChibi3dManifestUrl,
   getChibi3dModelUrl,
@@ -82,8 +82,7 @@ export function useChibi3dScene(
   let scene: THREE.Scene | null = null;
   let camera: THREE.PerspectiveCamera | null = null;
   let root: THREE.Object3D | null = null;
-  let placement: THREE.Group | null = null;
-  const movementTarget = new THREE.Vector3(0, CAM_TARGET_Y, 0);
+  const screenPosition = new THREE.Vector2(opts.size / 2, opts.size / 2);
   let mixer: THREE.AnimationMixer | null = null;
   let currentAction: THREE.AnimationAction | null = null;
   let haloMixer: THREE.AnimationMixer | null = null;
@@ -135,8 +134,6 @@ export function useChibi3dScene(
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     scene = new THREE.Scene();
-    placement = new THREE.Group();
-    scene.add(placement);
     camera = new THREE.PerspectiveCamera(FOV_DEG, curW / curH, 0.01, 100);
     applyBaseCamera();
     addSceneLights(scene);
@@ -178,7 +175,7 @@ export function useChibi3dScene(
 
     root = gltf.scene;
     root.rotation.y = Math.PI; // model's default forward points away -> face the camera
-    placement?.add(root);
+    scene.add(root);
 
     // External mouth textures (the only maps glTF can't carry; base maps are embedded).
     const em = manifest.materials.EyeMouth?.textures ?? {};
@@ -344,12 +341,9 @@ export function useChibi3dScene(
   }
 
   function setScreenPosition(x: number, y: number): void {
-    if (!opts.fullStage || !placement || !camera || controls?.enabled) return;
-    const position = roomPosition(camera, curW, curH, x, y, movementTarget);
-    if (!placement.position.equals(position)) {
-      placement.position.copy(position);
-      if (playback.paused) seekDirty = true;
-    }
+    if (!opts.fullStage || !camera || controls?.enabled) return;
+    screenPosition.set(x, y);
+    setRoomViewOffset(camera, curW, curH, x, y);
   }
 
   function setPaused(paused: boolean): void {
@@ -446,6 +440,8 @@ export function useChibi3dScene(
     if (camera) {
       camera.aspect = curW / curH;
       camera.fov = opts.fullStage ? roomFieldOfView(FOV_DEG, curH, opts.size) : FOV_DEG;
+      if (opts.fullStage && !controls?.enabled)
+        setRoomViewOffset(camera, curW, curH, screenPosition.x, screenPosition.y);
       camera.updateProjectionMatrix();
     }
   }
@@ -458,7 +454,7 @@ export function useChibi3dScene(
   function setOrbitEnabled(on: boolean, domElement?: HTMLElement): void {
     if (!renderer || !camera) return;
     if (on) {
-      placement?.position.set(0, 0, 0);
+      camera.clearViewOffset();
       seekDirty = true;
       if (!controls) {
         controls = new OrbitControls(camera, domElement ?? renderer.domElement);

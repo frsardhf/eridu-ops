@@ -5,7 +5,10 @@ import * as THREE from 'three';
 import { useChibi3dScene } from '../useChibi3dScene';
 import { driveMouth, driveRenderers } from '../chibi3dCore';
 
-const rendererSpies = vi.hoisted(() => ({ pixelRatio: vi.fn() }));
+const rendererSpies = vi.hoisted(() => ({
+  pixelRatio: vi.fn(),
+  render: vi.fn<(scene: THREE.Scene, camera: THREE.PerspectiveCamera) => void>(),
+}));
 
 vi.mock('three', async (original) => ({
   ...(await original<typeof import('three')>()),
@@ -13,7 +16,7 @@ vi.mock('three', async (original) => ({
     setPixelRatio = rendererSpies.pixelRatio;
     setSize() {}
     setClearColor() {}
-    render() {}
+    render = rendererSpies.render;
     dispose() {}
     forceContextLoss() {}
   },
@@ -105,6 +108,60 @@ afterEach(() => {
 });
 
 describe('chibi animation transport', () => {
+  it('moves the pet image in both axes without moving or rotating its model or camera', () => {
+    transport.resize(1280, 720);
+    frame();
+    const [scene, camera] = rendererSpies.render.mock.lastCall!;
+    const root = scene.children.find((child) => child.type === 'Group')!;
+    const position = root.position.clone();
+    const rotation = root.quaternion.clone();
+    const cameraPosition = camera.position.clone();
+    for (const [x, y] of [
+      [150, 160],
+      [1050, 550],
+    ]) {
+      transport.setScreenPosition(x, y);
+      frame();
+      camera.updateMatrixWorld();
+      const projected = new THREE.Vector3(0, 0.6, 0).project(camera);
+      expect(((projected.x + 1) * 1280) / 2).toBeCloseTo(x);
+      expect(((1 - projected.y) * 720) / 2).toBeCloseTo(y);
+      expect(root.position.equals(position)).toBe(true);
+      expect(root.quaternion.equals(rotation)).toBe(true);
+      expect(camera.position.equals(cameraPosition)).toBe(true);
+    }
+    transport.setZoom(1.25);
+    transport.resize(1920, 1080);
+    frame();
+    camera.updateMatrixWorld();
+    const projected = new THREE.Vector3(0, 0.6, 0).project(camera);
+    expect(((projected.x + 1) * 1920) / 2).toBeCloseTo(1050);
+    expect(((1 - projected.y) * 1080) / 2).toBeCloseTo(550);
+  });
+
+  it('clears pet framing for orbit controls and restores it after leaving orbit', () => {
+    transport.resize(1280, 720);
+    transport.setScreenPosition(200, 180);
+    frame();
+    const [, camera] = rendererSpies.render.mock.lastCall!;
+    expect(camera.view?.enabled).toBe(true);
+    transport.setOrbitEnabled(true, document.createElement('div'));
+    frame();
+    expect(camera.view?.enabled).toBe(false);
+    transport.setScreenPosition(1000, 500);
+    expect(camera.view?.enabled).toBe(false);
+    transport.setOrbitEnabled(false);
+    transport.setScreenPosition(640, 360);
+    frame();
+    expect(camera.view?.enabled).toBe(true);
+    expect(camera.view?.offsetX).toBe(0);
+    expect(camera.view?.offsetY).toBe(0);
+    camera.updateMatrixWorld();
+    const projected = new THREE.Vector3(0, 0.6, 0).project(camera);
+    expect(projected.x).toBeCloseTo(0);
+    expect(projected.y).toBeCloseTo(0);
+  });
+
   it('applies desktop and touch render budgets on setup and resize', () => {
     expect(rendererSpies.pixelRatio.mock.lastCall?.[0]).toBe(2);
     transport.resize(1920, 1080);
