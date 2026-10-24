@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { $t } from '@/locales';
 import { CAFE_TAP_EXP, MAX_BOND_LEVEL } from '@/lib/constants/gameConstants';
+import { positionAtElement, useTooltip } from '@/composables/useTooltip';
+import '@/styles/tooltip.css';
 
 const props = defineProps<{
   studentId: number;
@@ -27,6 +29,8 @@ const emit = defineEmits<{
 }>();
 
 const sourcesOpen = ref(false);
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<'projection'>();
 const cafeTapsNeeded = computed(() => Math.ceil(props.remainingExp / CAFE_TAP_EXP));
 const lessonsNeeded = computed(() =>
   props.lessonExpRate > 0 ? Math.ceil(props.remainingExp / props.lessonExpRate) : 0,
@@ -42,6 +46,14 @@ const targetExpRequired = computed(() =>
 const targetExpMin = computed(() =>
   props.targetBond === props.currentBond ? props.currentBondExp : 0,
 );
+
+async function showProjectionTooltip(event: FocusEvent) {
+  const trigger = event.currentTarget as HTMLElement;
+  activeTooltip.value = 'projection';
+  tooltipStyle.value = positionAtElement(trigger);
+  await nextTick();
+  tooltipStyle.value = positionAtElement(trigger, tooltipRef.value);
+}
 
 function numberFromEvent(event: Event, fallback: number): number {
   const value = Number.parseInt((event.target as HTMLInputElement).value, 10);
@@ -140,55 +152,43 @@ function clampedNumberFromEvent(
         </div>
       </div>
 
-      <div
-        class="bond-plan__summary"
-        :class="{ 'bond-plan__summary--complete': remainingExp === 0 }"
-      >
+      <div class="bond-plan__summary">
         <div class="bond-plan__summary-line">
+          <button
+            type="button"
+            class="bond-plan__projection"
+            :class="{ 'bond-plan__projection--maxed': reachesMax }"
+            :aria-describedby="activeTooltip ? `bond-plan-projection-${studentId}` : undefined"
+            @mouseenter="showTooltip($event, 'projection')"
+            @mouseleave="hideTooltip"
+            @focus="showProjectionTooltip"
+            @blur="hideTooltip"
+            @click="showTooltip($event, 'projection')"
+            @keydown.esc.stop="hideTooltip"
+          >
+            {{ $t('planReachesBond', { level: projectedBond }) }}
+          </button>
+          <span v-if="remainingExp > 0" class="bond-plan__separator" aria-hidden="true">·</span>
           <strong v-if="remainingExp > 0">
             {{ $t('expNeeded', { count: remainingExp.toLocaleString() }) }}
           </strong>
-          <strong v-else>{{ $t('goalCovered') }}</strong>
-          <span class="bond-plan__separator" aria-hidden="true">·</span>
-          <span>{{ $t('planReachesBond', { level: projectedBond }) }}</span>
-          <span class="bond-plan__separator" aria-hidden="true">·</span>
-          <span v-if="reachesMax" class="bond-plan__max-result">{{ $t('bondMaxed') }}</span>
-          <span v-else>
-            {{
-              $t('expUntilBond', {
-                count: remainingXp.toLocaleString(),
-                level: nextProjectedBond,
-              })
-            }}
-          </span>
+          <span v-else class="bond-plan__goal-covered">{{ $t('goalCovered') }}</span>
         </div>
 
-        <div v-if="plannedExp > 0 || remainingExp > 0" class="bond-plan__summary-details">
-          <span v-if="plannedExp > 0">
-            {{ $t('plannedExp', { count: plannedExp.toLocaleString() }) }}
-          </span>
-          <span
-            v-if="plannedExp > 0 && remainingExp > 0"
-            class="bond-plan__separator"
-            aria-hidden="true"
-          >
-            ·
-          </span>
-          <span
-            v-if="remainingExp > 0"
-            class="bond-plan__helpers"
-            :aria-label="$t('helperEquivalents')"
-          >
-            <span>{{ $t('cafeTapCount', { count: cafeTapsNeeded.toLocaleString() }) }}</span>
-            <span class="bond-plan__or">{{ $t('or') }}</span>
-            <span>
-              {{
-                $t('lessonRunCount', {
-                  count: lessonsNeeded.toLocaleString(),
-                  exp: lessonExpRate,
-                })
-              }}
-            </span>
+        <div
+          v-if="remainingExp > 0"
+          class="bond-plan__helpers"
+          :aria-label="$t('helperEquivalents')"
+        >
+          <span>{{ $t('cafeTapCount', { count: cafeTapsNeeded.toLocaleString() }) }}</span>
+          <span class="bond-plan__or">{{ $t('or') }}</span>
+          <span>
+            {{
+              $t('lessonRunCount', {
+                count: lessonsNeeded.toLocaleString(),
+                exp: lessonExpRate,
+              })
+            }}
           </span>
         </div>
       </div>
@@ -216,8 +216,31 @@ function clampedNumberFromEvent(
     </button>
 
     <div v-if="sourcesOpen" :id="`bond-plan-sources-${studentId}`" class="bond-plan__sources">
+      <p v-if="plannedExp > 0" class="bond-plan__sources-total">
+        {{ $t('plannedExp', { count: plannedExp.toLocaleString() }) }}
+      </p>
       <slot name="sources" />
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="activeTooltip"
+        :id="`bond-plan-projection-${studentId}`"
+        ref="tooltipRef"
+        class="modal-tooltip"
+        role="tooltip"
+        :style="tooltipStyle"
+      >
+        {{
+          reachesMax
+            ? $t('bondMaxed')
+            : $t('expUntilBond', {
+                count: remainingXp.toLocaleString(),
+                level: nextProjectedBond,
+              })
+        }}
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -232,33 +255,34 @@ function clampedNumberFromEvent(
 }
 
 .bond-plan__content {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
 .bond-plan__positions {
   display: grid;
-  align-content: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
   padding: 10px 14px;
   min-width: 0;
 }
 
 .bond-plan__position {
-  display: grid;
-  grid-template-columns: 58px minmax(100px, 0.8fr) minmax(170px, 1.2fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
 .bond-plan__position + .bond-plan__position {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-color);
+  padding-left: 14px;
+  border-left: 1px solid var(--border-color);
 }
 
 .bond-plan__eyebrow {
+  flex: 0 0 58px;
   color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 600;
@@ -266,6 +290,7 @@ function clampedNumberFromEvent(
 
 .bond-plan__level,
 .bond-plan__level-input {
+  flex-shrink: 0;
   min-height: 32px;
   color: var(--text-primary);
   font-size: 1rem;
@@ -302,9 +327,11 @@ function clampedNumberFromEvent(
 }
 
 .bond-plan__exp-field {
-  display: grid;
-  grid-template-rows: auto minmax(30px, auto);
-  gap: 3px;
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 600;
@@ -349,15 +376,13 @@ function clampedNumberFromEvent(
 .bond-plan__summary {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 4px;
-  padding: 12px 16px;
-  border-left: 1px solid var(--border-color);
+  padding: 8px 14px;
+  border-top: 1px solid var(--border-color);
   min-width: 0;
 }
 
 .bond-plan__summary-line,
-.bond-plan__summary-details,
 .bond-plan__helpers {
   display: flex;
   flex-wrap: wrap;
@@ -376,17 +401,41 @@ function clampedNumberFromEvent(
   font-size: inherit;
 }
 
-.bond-plan__summary--complete .bond-plan__summary-line strong {
+.bond-plan__goal-covered {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-positive) 10%, transparent);
   color: var(--color-positive);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
-.bond-plan__summary-details {
+.bond-plan__helpers {
   color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 500;
 }
 
-.bond-plan__max-result {
+.bond-plan__projection {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline dotted var(--text-tertiary);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+.bond-plan__projection:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.bond-plan__projection--maxed {
   color: var(--color-bond-100);
 }
 
@@ -450,24 +499,29 @@ function clampedNumberFromEvent(
   min-width: 0;
 }
 
+.bond-plan__sources-total {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
 @media (max-width: 760px) {
-  .bond-plan__content {
+  .bond-plan__positions {
     grid-template-columns: 1fr;
   }
 
-  .bond-plan__summary {
+  .bond-plan__position + .bond-plan__position {
+    padding-top: 10px;
+    padding-left: 0;
     border-top: 1px solid var(--border-color);
     border-left: none;
   }
 }
 
 @media (max-width: 480px) {
-  .bond-plan__position {
-    grid-template-columns: 58px minmax(0, 1fr);
-  }
-
   .bond-plan__exp-field {
-    grid-column: 2;
+    flex-basis: 100%;
+    margin-left: 0;
   }
 
   .bond-plan__sources-toggle > span:first-child {
