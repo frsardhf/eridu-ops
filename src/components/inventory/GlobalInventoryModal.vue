@@ -570,9 +570,10 @@ useDocumentListener('keydown', handleKeyDown);
 }
 
 .inventory-content {
+  --inventory-top-inset: 15px;
   flex: 1;
   overflow-y: auto;
-  padding: 15px;
+  padding: 0 15px 15px;
 }
 
 .inventory-tabs::-webkit-scrollbar {
@@ -590,6 +591,7 @@ useDocumentListener('keydown', handleKeyDown);
 
 .inventory-tab-content {
   width: 100%;
+  padding-top: var(--inventory-top-inset);
 }
 
 .inventory-pane-state {

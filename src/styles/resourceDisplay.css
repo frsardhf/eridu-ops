@@ -127,7 +127,8 @@
   display: flex;
   justify-content: center;
   gap: 6px;
-  padding: 6px 4px;
+  margin-top: calc(0px - var(--inventory-top-inset, 0px));
+  padding: calc(6px + var(--inventory-top-inset, 0px)) 4px 6px;
   background: var(--background-primary);
   overflow-x: auto;
   flex: 0 0 auto;
