@@ -341,9 +341,8 @@ export function useMaterialCalculation() {
         }
       });
 
-      // Check gear data for students who only have gear upgrades
+      // Add gear requirements even when the student also needs upgrade materials.
       Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
-        // Collect eligmas needed
         const student = studentsCollection[studentId];
         if (!student) return;
         if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
@@ -357,7 +356,7 @@ export function useMaterialCalculation() {
         });
 
         if (quantity > 0) {
-          materialNeeds.set(studentId, quantity);
+          materialNeeds.set(studentId, (materialNeeds.get(studentId) ?? 0) + quantity);
         }
       });
 
