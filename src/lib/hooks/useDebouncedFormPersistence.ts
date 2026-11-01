@@ -15,7 +15,7 @@ type Defaults<R extends RefMap> = { [K in keyof R]: R[K] extends Ref<infer V> ? 
 export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts: {
   isVisible: () => boolean | undefined;
   refs: R;
-  defaults: Defaults<R>;
+  defaults: Defaults<R> | (() => Defaults<R>);
   loadFn: (staged: R) => Promise<unknown>;
   saveFn: () => Promise<T | null>;
   onSaved?: (saved: T) => void;
@@ -91,13 +91,11 @@ export function useDebouncedFormPersistence<R extends RefMap, T = unknown>(opts:
     const token = ++loadToken;
     isLoading.value = true;
     try {
+      const defaults = typeof opts.defaults === 'function' ? opts.defaults() : opts.defaults;
       // Build staged copies from structuredClone of defaults so the live refs
       // are never mutated by an in-flight load that gets superseded.
       const staged = Object.fromEntries(
-        Object.entries(opts.refs).map(([k]) => [
-          k,
-          ref(structuredClone(opts.defaults[k as keyof R])),
-        ]),
+        Object.entries(opts.refs).map(([k]) => [k, ref(structuredClone(defaults[k as keyof R]))]),
       ) as unknown as R;
 
       await opts.loadFn(staged);

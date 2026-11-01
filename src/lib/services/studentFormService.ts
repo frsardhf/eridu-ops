@@ -9,7 +9,7 @@ import {
   DEFAULT_SKILL_LEVELS,
   DEFAULT_POTENTIAL_LEVELS,
 } from '../../types/upgrade';
-import { DEFAULT_BOND_DETAIL } from '../../types/gift';
+import { DEFAULT_BOND_DETAIL, DEFAULT_OTHER_EXP } from '../../types/gift';
 import { getPrimaryStudentId } from '../constants/linkedStudents';
 
 // Track which students have been initialized this session to avoid redundant checks
@@ -19,7 +19,7 @@ const initializedStudents = new Set<number>();
  * Build the complete default form data for a student
  * This consolidates all default values from all composables into one place
  */
-export function buildDefaultFormData(student: StudentProps): FormRecord {
+export function buildDefaultFormData(student: StudentProps) {
   // Build equipment levels based on student's equipment types
   const equipmentLevels: EquipmentLevels = {};
   if (student.Equipment) {
@@ -37,6 +37,8 @@ export function buildDefaultFormData(student: StudentProps): FormRecord {
     bondDetailData: { ...DEFAULT_BOND_DETAIL },
     giftFormData: {},
     boxFormData: {},
+    nonFavorGiftsMap: {},
+    otherExpData: { ...DEFAULT_OTHER_EXP },
     // Upgrade slice
     characterLevels: { ...DEFAULT_CHARACTER_LEVELS },
     skillLevels: { ...DEFAULT_SKILL_LEVELS },
@@ -45,7 +47,8 @@ export function buildDefaultFormData(student: StudentProps): FormRecord {
     equipmentLevels,
     gradeLevels: { current: starGrade, target: starGrade },
     gradeInfos: { owned: 0, price: 1, purchasable: 20 },
-  };
+    exclusiveGearLevel: { current: 0, target: 0 },
+  } satisfies FormRecord;
 }
 
 /**

@@ -25,6 +25,7 @@ import {
   DEFAULT_OTHER_EXP,
 } from '../../types/gift';
 import { loadFormDataToRefs, saveFormData } from '../services/studentPersistenceService';
+import { buildDefaultFormData } from '../services/studentFormService';
 import { setStudentDataDirect, studentDataStore } from '../stores/studentStore';
 import { updateMaterialsData } from '../stores/materialsStore';
 import { updateGearsData, getAllGearsData } from '../stores/gearsStore';
@@ -154,32 +155,6 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   const undoStack = ref<GiftSnapshot[]>([]);
   const redoStack = ref<GiftSnapshot[]>([]);
 
-  // --- Defaults (built once per mount; student switching expects remount) ---
-  // Equipment defaults follow the student's Equipment slot list. Built lazily
-  // here at hook construction time; if the studentRef swaps mid-mount the
-  // defaults stay tied to the original student. Both StudentModal and
-  // BondsStudentEditor key their hook calls per student so this is fine.
-  const defaultEquipmentLevels: EquipmentLevels = {};
-  (student()?.Equipment ?? []).forEach((type) => {
-    defaultEquipmentLevels[type as EquipmentType] = { current: 1, target: 1 };
-  });
-  const starGrade = student()?.StarGrade ?? 1;
-
-  const FORM_DEFAULTS = {
-    characterLevels: { ...DEFAULT_CHARACTER_LEVELS } as CharacterLevels,
-    skillLevels: { ...DEFAULT_SKILL_LEVELS } as SkillLevels,
-    potentialLevels: { ...DEFAULT_POTENTIAL_LEVELS } as PotentialLevels,
-    equipmentLevels: defaultEquipmentLevels,
-    gradeLevels: { current: starGrade, target: starGrade } as GradeLevels,
-    gradeInfos: { owned: 0, price: 1, purchasable: 20 } as GradeInfos,
-    exclusiveGearLevel: { current: 0, target: 0 } as ExclusiveGearLevel,
-    giftFormData: {} as Record<string, number>,
-    boxFormData: {} as Record<string, number>,
-    nonFavorGiftsMap: {} as Record<number, number>,
-    bondDetailData: { ...DEFAULT_BOND_DETAIL } as BondDetailDataProps,
-    otherExpData: { ...DEFAULT_OTHER_EXP } as OtherExpDataProps,
-  };
-
   // --- Persistence (single debounced flush, single load, single token guard) ---
   const {
     loadNow: loadFromIndexedDB,
@@ -201,8 +176,8 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
       bondDetailData,
       otherExpData,
     },
-    defaults: FORM_DEFAULTS,
-    loadFn: (staged) => loadFormDataToRefs(student().Id, staged, FORM_DEFAULTS),
+    defaults: () => buildDefaultFormData(student()),
+    loadFn: (staged) => loadFormDataToRefs(student().Id, staged, buildDefaultFormData(student())),
     saveFn: async () => {
       const saved = await saveFormData(
         student().Id,
