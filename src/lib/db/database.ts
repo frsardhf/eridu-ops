@@ -56,6 +56,7 @@ export interface FormRecord {
   };
   exclusiveGearLevel?: ExclusiveGearLevel;
   isOwned?: boolean;
+  planEnabled?: boolean;
 }
 
 export interface ItemsInventoryRecord {

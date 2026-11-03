@@ -29,6 +29,7 @@ import {
 import { isSecondaryStudent } from '@/lib/constants/linkedStudents';
 import { $t } from '@/locales';
 import { allocateEquipmentBlueprints } from '@/lib/utils/equipmentBlueprintUtils';
+import { isUpgradePlanActive } from '@/lib/utils/studentPlanningUtils';
 
 export interface StudentMaterialRow {
   student: StudentProps;
@@ -192,7 +193,7 @@ export function useResourceSummary(activeMode: Ref<ViewMode>) {
       const studentId = Number(id);
       if (isSecondaryStudent(studentId)) return;
       const form = studentDataStore.value[studentId];
-      if (!form || form.isOwned === false) return;
+      if (!form || !isUpgradePlanActive(form)) return;
       const student = studentData.value[id];
       if (!student) return;
       const combined: Material[] = [

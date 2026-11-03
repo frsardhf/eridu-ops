@@ -10,6 +10,7 @@ import { SkillType, SkillTypeName, PotentialType } from '@/types/upgrade';
 import { EquipmentType } from '@/types/gear';
 import { ModalOriginRect } from '@/types/modal';
 import StarIcon from '@/components/shared/StarIcon.vue';
+import { $t } from '@/locales';
 import {
   WEAPON_STAR_THRESHOLD,
   MAX_LEVEL,
@@ -31,7 +32,7 @@ const emit = defineEmits<{
 
 // --- State ---
 const isMobile = ref(false);
-const { studentData, isPinned, togglePin, currentLanguage } = useStudentCard(
+const { studentData, isPinned, isPlanned, togglePin, currentLanguage } = useStudentCard(
   computed(() => props.student.Id),
 );
 
@@ -314,7 +315,11 @@ function handleCardClick(event: MouseEvent) {
       />
     </div>
 
-    <a class="selection-grid-card" @click="handleCardClick">
+    <a
+      class="selection-grid-card"
+      :class="{ 'selection-grid-card--planned': isPlanned }"
+      @click="handleCardClick"
+    >
       <div class="card-img">
         <!-- lazy: only viewport-near portraits load, instead of all ~260 at once -->
         <img
@@ -324,6 +329,7 @@ function handleCardClick(event: MouseEvent) {
           loading="lazy"
           decoding="async"
         />
+        <span v-if="isPlanned" class="planned-badge">{{ $t('ownership.planned') }}</span>
         <!-- Stats overlay -->
         <div class="stats-overlay">
           <!-- Bond Level -->
@@ -498,6 +504,26 @@ function handleCardClick(event: MouseEvent) {
     0 0 0 3px #4fc3f7,
     0 2px 8px var(--box-shadow);
   z-index: 2;
+}
+
+.selection-grid-card--planned {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+}
+
+.planned-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 1;
+  padding: 3px 7px;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--accent-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .selection-grid-card:hover {

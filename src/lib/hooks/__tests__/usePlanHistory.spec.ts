@@ -5,6 +5,25 @@ import { getPlanHistoryChangeDetails, type PlanHistoryChange } from '../usePlanH
 import { DEFAULT_OTHER_EXP } from '../../../types/gift';
 
 describe('getPlanHistoryChangeDetails', () => {
+  it('describes future-planning changes separately from recruitment', () => {
+    expect(
+      getPlanHistoryChangeDetails({
+        studentId: 1,
+        before: { studentId: 1, isOwned: false },
+        after: { studentId: 1, isOwned: false, planEnabled: true },
+      }),
+    ).toEqual([{ field: 'planning', changes: ['Not planned → Planned'] }]);
+  });
+
+  it('treats an absent future-planning flag as disabled', () => {
+    expect(
+      getPlanHistoryChangeDetails({
+        studentId: 1,
+        before: { studentId: 1, isOwned: false },
+        after: { studentId: 1, isOwned: false, planEnabled: false },
+      }),
+    ).toEqual([]);
+  });
   it('ignores hydrated defaults when equipment changes', () => {
     const change: PlanHistoryChange = {
       studentId: 1,

@@ -51,6 +51,7 @@ import { getAllocatedGifts } from './useGiftCalculation';
 import { useDebouncedFormPersistence } from './useDebouncedFormPersistence';
 import bondData from '../../data/data.json';
 import type { PlanHistorySource } from '../db/database';
+import { isUpgradePlanActive } from '../utils/studentPlanningUtils';
 
 /**
  * Consolidated per-student form hook.
@@ -792,14 +793,14 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
 
   // --- Sync-from-inventory ---
   // Returns gear material needs (Category === 'Favor') across all OTHER
-  // recruited students. Used by `syncGifts('aware')` to reserve gifts before
+  // active upgrade plans. Used by `syncGifts('aware')` to reserve gifts before
   // greedy-filling the current student's inputs.
   function getGearGiftNeedsExcluding(excludeStudentId: number): Record<number, number> {
     const needs: Record<number, number> = {};
     const allGearsData = getAllGearsData();
     Object.entries(allGearsData).forEach(([studentId, materials]) => {
       if (Number(studentId) === excludeStudentId) return;
-      if (studentDataStore.value[Number(studentId)]?.isOwned === false) return;
+      if (!isUpgradePlanActive(studentDataStore.value[Number(studentId)])) return;
       (materials as Material[]).forEach((material) => {
         if (material.material?.Category !== 'Favor') return;
         const id = material.material?.Id;

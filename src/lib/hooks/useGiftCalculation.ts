@@ -7,6 +7,7 @@ import { CachedResource } from '../../types/resource';
 import { getAllGearsData } from '../stores/gearsStore';
 import { Material } from '../../types/upgrade';
 import { toNumericId } from '../utils/idCoercion';
+import { isUpgradePlanActive } from '../utils/studentPlanningUtils';
 
 // Student gift usage for Student -> Gifts display
 interface StudentGiftUsage {
@@ -47,7 +48,7 @@ function buildGiftNeededMap() {
   });
 
   Object.entries(allGearsData).forEach(([studentId, materials]) => {
-    if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+    if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
     (materials as Material[]).forEach((material) => {
       const materialId = material.material?.Id;
       const category = material.material?.Category;
@@ -205,7 +206,7 @@ export function useGiftCalculation() {
     Object.entries(allGearsData).forEach(([studentId, materials]) => {
       const student = studentsCollection[studentId];
       if (!student) return;
-      if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+      if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
 
       (materials as Material[]).forEach((material) => {
         const materialId = material.material?.Id;
@@ -251,13 +252,13 @@ export function useGiftCalculation() {
     if (viewMode === 'leftover') return [];
 
     const form = studentDataStore.value[studentId];
-    if (!form) return [];
+    if (!form || !isUpgradePlanActive(form)) return [];
 
     const resources = getAllItemsFromCache();
     const gifts: { gift: CachedResource; quantity: number }[] = [];
 
     // Process giftFormData (favored gifts)
-    const giftFormData = form.giftFormData ?? {};
+    const giftFormData = form.isOwned === false ? {} : (form.giftFormData ?? {});
     Object.entries(giftFormData).forEach(([giftId, qty]) => {
       const quantity = qty as number;
       if (quantity <= 0) return;
@@ -277,7 +278,7 @@ export function useGiftCalculation() {
     });
 
     // Process nonFavorGiftsMap (non-favor gifts)
-    const nonFavorGiftsMap = form.nonFavorGiftsMap ?? {};
+    const nonFavorGiftsMap = form.isOwned === false ? {} : (form.nonFavorGiftsMap ?? {});
     Object.entries(nonFavorGiftsMap).forEach(([giftId, qty]) => {
       const quantity = qty as number;
       if (quantity <= 0) return;

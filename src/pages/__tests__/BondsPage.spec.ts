@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, h, nextTick, type App } from 'vue';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
 import BondsPage from '../BondsPage.vue';
+import { studentDataStore } from '@/lib/stores/studentStore';
 
 const state = vi.hoisted(() => ({
   layout: 'tabs' as 'tabs' | 'cards',
@@ -134,6 +135,7 @@ async function mountPage() {
 }
 beforeEach(() => {
   vi.useFakeTimers();
+  studentDataStore.value = {};
   state.layout = 'tabs';
   state.saved.clear();
   state.fail = false;
@@ -147,6 +149,13 @@ afterEach(() => {
 });
 
 describe('Bonds save-before-leave', () => {
+  it('does not admit unowned students with future upgrade plans to bond editing', async () => {
+    studentDataStore.value = { 1: { studentId: 1, isOwned: false, planEnabled: true } };
+    const { root } = await mountPage();
+    expect(root.querySelector('.editor-1')).toBeNull();
+    expect(root.querySelector('.editor-2')).not.toBeNull();
+  });
+
   it('flushes a pending edit before switching students', async () => {
     const { root } = await mountPage();
     edit(root, 1, 5);

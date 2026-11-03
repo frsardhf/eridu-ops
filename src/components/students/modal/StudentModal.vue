@@ -2,6 +2,7 @@
 import { ref, computed, defineAsyncComponent, watch, toRef, CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDocumentListener } from '@/composables/dom/useDocumentListener';
+import { useTooltip } from '@/composables/useTooltip';
 import { computeUpgradePreview } from '@/composables/useApplyUpgrade';
 import { $t } from '@/locales';
 import { studentDataStore } from '@/lib/stores/studentStore';
@@ -52,6 +53,7 @@ import { allocateEquipmentBlueprints } from '@/lib/utils/equipmentBlueprintUtils
 import { getStudentPortraitUrl, getBackgroundUrl } from '@/lib/utils/iconUtils';
 import { getAllEquipmentFromCache } from '@/lib/stores/resourceCacheStore';
 import '@/styles/studentModal.css';
+import '@/styles/tooltip.css';
 
 // Lazy in every importer (here, StudentsPage, BondsPage) so the inventory
 // modal + ResourceGrid subtree split into one shared on-demand chunk.
@@ -79,8 +81,11 @@ const emit = defineEmits<{
   (e: 'navigate', student: StudentProps): void;
 }>();
 
-const { setOwned } = useStudentOwnership();
+const { setOwned, setPlanEnabled, isStudentOwned, isStudentPlanActive, isStudentPlanned } =
+  useStudentOwnership();
 const { track } = useAnalytics();
+const { activeTooltip, tooltipStyle, tooltipRef, showTooltip, hideTooltip } =
+  useTooltip<'planning'>();
 
 // --- State ---
 const activeTab = ref<ModalTab>('info');
@@ -93,6 +98,7 @@ const activeTabTransitionKey = computed(() => activeTab.value);
 const isInventoryOpen = ref(false);
 const showApplyModal = ref(false);
 const isPersistingNavigation = ref(false);
+const isSavingStatus = ref(false);
 
 const displayedStudent = ref<StudentProps | null>(null);
 
@@ -107,8 +113,14 @@ const hasStyleSwitch = computed(() => hasLinkedPartner(props.student?.Id));
 // Ownership: undefined / true treated as owned (backward-compat)
 const isOwned = computed(() => {
   if (!displayedStudent.value) return true;
-  return studentDataStore.value[displayedStudent.value.Id]?.isOwned !== false;
+  return isStudentOwned(displayedStudent.value.Id);
 });
+const canPlanUpgrades = computed(() =>
+  displayedStudent.value ? isStudentPlanActive(displayedStudent.value.Id) : false,
+);
+const isPlanned = computed(() =>
+  displayedStudent.value ? isStudentPlanned(displayedStudent.value.Id) : false,
+);
 
 // --- Modal origin morph ---
 const hasOriginMorph = computed(() => {
@@ -260,7 +272,7 @@ async function handleClose() {
 // Skip adding if bond is already maxed (mirrors BondsStudentPicker disabled state).
 async function handleNavigateToBonds() {
   const id = displayedStudent.value?.Id;
-  if (!id) return;
+  if (!id || !isOwned.value) return;
   if (!(await flushPendingStudentChanges())) return;
   if (currentBond.value < MAX_BOND_LEVEL) addBondsTracked(id);
   emit('close');
@@ -341,7 +353,12 @@ function applyMaterialDelta(snapshot: Material[], afterMap: Map<number, number>)
 }
 
 function doApplyUpgrade(selectedIds: SectionId[]) {
-  if (!selectedIds.length || computePreview(selectedIds).insufficientList.length > 0) return;
+  if (
+    !isOwned.value ||
+    !selectedIds.length ||
+    computePreview(selectedIds).insufficientList.length > 0
+  )
+    return;
 
   // 0. Snapshot XP costs BEFORE levels change (step 2 sets current = target)
   const charXpCost = selectedIds.includes('level')
@@ -429,9 +446,32 @@ function setActiveTab(nextTab: ModalTab) {
 }
 
 async function toggleOwnership() {
-  if (!displayedStudent.value) return;
-  await setOwned(displayedStudent.value.Id, !isOwned.value);
-  track({ name: 'plan_action', feature: 'student_modal', action: 'changed' });
+  await updateStudentStatus(false);
+}
+
+async function togglePlanning() {
+  await updateStudentStatus(true);
+}
+
+async function updateStudentStatus(planning: boolean) {
+  if (!displayedStudent.value || isSavingStatus.value) return;
+  const studentId = displayedStudent.value.Id;
+  const next = planning ? !isPlanned.value : !isOwned.value;
+  hideTooltip();
+  isSavingStatus.value = true;
+  try {
+    if (!(await flushPendingStudentChanges())) return;
+    const saved = planning
+      ? await setPlanEnabled(studentId, next)
+      : await setOwned(studentId, next);
+    if (!saved) {
+      window.alert($t('saveChangesFailed'));
+      return;
+    }
+    track({ name: 'plan_action', feature: 'student_modal', action: 'changed' });
+  } finally {
+    isSavingStatus.value = false;
+  }
 }
 
 function openInventory(): void {
@@ -449,11 +489,14 @@ async function handleInventoryClose(): Promise<void> {
   }
 }
 
-// Auto-reset to Info tab when a student becomes unowned or when unowned student is opened
-watch(isOwned, (owned) => {
-  if (!owned && activeTab.value !== 'info') {
+// Future plans keep upgrade tabs available without allowing inventory consumption.
+watch(canPlanUpgrades, (allowed) => {
+  if (!allowed && activeTab.value !== 'info') {
     activeTab.value = 'info';
   }
+});
+watch(isOwned, (owned) => {
+  if (!owned) showApplyModal.value = false;
 });
 
 // --- Keyboard ---
@@ -586,7 +629,7 @@ watch(
               :has-style-switch="hasStyleSwitch"
               :active-style-id="activeStyleId ?? displayedStudent?.Id"
               :primary-student-id="displayedStudent?.Id"
-              enable-bond-navigate
+              :enable-bond-navigate="isOwned"
               @toggle-style="handleStyleToggle"
               @navigate-bond="handleNavigateToBonds"
             />
@@ -598,7 +641,12 @@ watch(
                 <span class="recruitment-status">
                   {{ isOwned ? $t('ownership.recruited') : $t('ownership.notRecruited') }}
                 </span>
-                <button class="recruitment-toggle-btn" type="button" @click="toggleOwnership">
+                <button
+                  class="recruitment-toggle-btn"
+                  type="button"
+                  :disabled="isSavingStatus"
+                  @click="toggleOwnership"
+                >
                   {{ isOwned ? $t('ownership.markNotRecruited') : $t('ownership.markRecruited') }}
                 </button>
               </div>
@@ -615,6 +663,26 @@ watch(
                   {{ $t('applyUpgrade') }}
                 </button>
               </div>
+              <div v-else class="upgrade-bar">
+                <span class="upgrade-bar-label">{{ $t('ownership.upgradePlan') }}</span>
+                <button
+                  class="recruitment-toggle-btn"
+                  :class="{ 'recruitment-toggle-btn--active': isPlanned }"
+                  type="button"
+                  :disabled="isSavingStatus"
+                  :aria-pressed="isPlanned"
+                  aria-describedby="upgrade-planning-hint"
+                  @click="togglePlanning"
+                  @mouseenter="showTooltip($event, 'planning')"
+                  @mouseleave="hideTooltip"
+                  @blur="hideTooltip"
+                >
+                  {{ isPlanned ? $t('ownership.stopPlanning') : $t('ownership.planUpgrades') }}
+                </button>
+                <span id="upgrade-planning-hint" class="sr-only">{{
+                  $t('ownership.planningHint')
+                }}</span>
+              </div>
             </div>
 
             <div class="modal-tabs">
@@ -627,20 +695,20 @@ watch(
               <button
                 :class="[
                   'tab-button',
-                  { active: activeTab === 'upgrade', 'tab-button--disabled': !isOwned },
+                  { active: activeTab === 'upgrade', 'tab-button--disabled': !canPlanUpgrades },
                 ]"
-                :disabled="!isOwned"
-                @click="isOwned ? setActiveTab('upgrade') : undefined"
+                :disabled="!canPlanUpgrades"
+                @click="canPlanUpgrades ? setActiveTab('upgrade') : undefined"
               >
                 {{ $t('upgrade') }}
               </button>
               <button
                 :class="[
                   'tab-button',
-                  { active: activeTab === 'gear', 'tab-button--disabled': !isOwned },
+                  { active: activeTab === 'gear', 'tab-button--disabled': !canPlanUpgrades },
                 ]"
-                :disabled="!isOwned"
-                @click="isOwned ? setActiveTab('gear') : undefined"
+                :disabled="!canPlanUpgrades"
+                @click="canPlanUpgrades ? setActiveTab('gear') : undefined"
               >
                 {{ $t('gear') }}
               </button>
@@ -770,7 +838,7 @@ watch(
 
     <!-- Apply Upgrade modal: combined section selection + material preview -->
     <ApplyUpgradeModal
-      v-if="showApplyModal && displayedStudent"
+      v-if="showApplyModal && displayedStudent && isOwned"
       :student="displayedStudent"
       :character-levels="characterLevels"
       :skill-levels="skillLevels"
@@ -782,6 +850,17 @@ watch(
       @apply="doApplyUpgrade"
       @close="showApplyModal = false"
     />
+    <Teleport to="body">
+      <div
+        v-if="activeTooltip"
+        ref="tooltipRef"
+        class="modal-tooltip"
+        :style="tooltipStyle"
+        aria-hidden="true"
+      >
+        {{ $t('ownership.planningHint') }}
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -970,6 +1049,17 @@ watch(
   color: var(--accent-color);
 }
 
+.recruitment-toggle-btn--active {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--background-primary));
+}
+
+.recruitment-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: wait;
+}
+
 /* Disabled tab styling for unowned students */
 .tab-button--disabled {
   opacity: 0.38;
@@ -1001,7 +1091,7 @@ watch(
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   /* Stack Recruitment + Apply Upgrade: side-by-side, each half is too narrow
      for its label + button (and JP labels are longer), so they clip. */
   .status-bars-row {
@@ -1012,7 +1102,7 @@ watch(
     border-right: none; /* full width now, not a left half */
   }
 
-  /* Divider only when the upgrade bar follows (unowned students have just this one). */
+  /* Separate the stacked recruitment and upgrade controls. */
   .recruitment-bar:not(:last-child) {
     border-bottom: 1px solid var(--border-color);
   }

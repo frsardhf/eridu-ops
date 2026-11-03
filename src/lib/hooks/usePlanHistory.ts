@@ -38,6 +38,7 @@ import { $t } from '../../locales';
 
 export type PlanHistoryField =
   | 'ownership'
+  | 'planning'
   | 'level'
   | 'skills'
   | 'potential'
@@ -59,6 +60,7 @@ const PLAN_HISTORY_GIFT_DETAIL_LIMIT = 6;
 
 const FIELD_DEFAULTS: Partial<Record<keyof PlanHistoryChange['before'], unknown>> = {
   isOwned: true,
+  planEnabled: false,
   characterLevels: DEFAULT_CHARACTER_LEVELS,
   skillLevels: DEFAULT_SKILL_LEVELS,
   potentialLevels: DEFAULT_POTENTIAL_LEVELS,
@@ -230,6 +232,20 @@ export function getPlanHistoryChangeDetails(
   student?: StudentProps,
 ): PlanHistoryDetailGroup[] {
   const groups: PlanHistoryDetailGroup[] = [];
+
+  if (
+    !isSameFieldValue('planEnabled', change.before.planEnabled, change.after.planEnabled, student)
+  ) {
+    groups.push({
+      field: 'planning',
+      changes: [
+        formatTransition(
+          change.before.planEnabled === true ? $t('ownership.planned') : $t('ownership.notPlanned'),
+          change.after.planEnabled === true ? $t('ownership.planned') : $t('ownership.notPlanned'),
+        ),
+      ],
+    });
+  }
 
   if (!isSameFieldValue('isOwned', change.before.isOwned, change.after.isOwned, student)) {
     groups.push({

@@ -9,6 +9,7 @@ import { getAllGearsData } from '../stores/gearsStore';
 import { isExpReport } from '../utils/materialUtils';
 import { computeCharacterXpCost, getCharXpItems } from '../utils/upgradeMaterialUtils';
 import { toNumericId } from '../utils/idCoercion';
+import { isUpgradePlanActive } from '../utils/studentPlanningUtils';
 
 // Singleton state
 let _totalMaterialsNeeded: ComputedRef<Material[]>;
@@ -53,7 +54,7 @@ export function useMaterialCalculation() {
     allStudentIds.forEach((studentId) => {
       const form = studentDataStore.value[toNumericId(studentId)];
       if (!form || !form.characterLevels) return;
-      if (form.isOwned === false) return; // skip unowned
+      if (!isUpgradePlanActive(form)) return;
 
       const currentLevel = form.characterLevels.current ?? 1;
       const targetLevel = form.characterLevels.target ?? currentLevel;
@@ -111,7 +112,7 @@ export function useMaterialCalculation() {
       let eligmasQuantity = 0;
 
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
-        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
         (materials as Material[]).forEach((material) => {
           const materialId = material.material?.Id;
           if (!materialId) return;
@@ -133,7 +134,7 @@ export function useMaterialCalculation() {
       // Combine credits and eligma from gears to materials
       // Also include exclusive gear's normal materials (non-gift items)
       Object.entries(allGearsData.value).forEach(([studentId, materials]) => {
-        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
         (materials as Material[]).forEach((material) => {
           const materialId = material.material?.Id;
           const subcategory = material.material?.SubCategory;
@@ -234,7 +235,7 @@ export function useMaterialCalculation() {
       studentXpDetails.forEach((detail) => {
         const student = studentsCollection[detail.studentId];
         if (!student) return;
-        if (studentDataStore.value[parseInt(detail.studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(detail.studentId)])) return;
 
         const form = studentDataStore.value[parseInt(detail.studentId)];
         if (!form || !form.characterLevels) return;
@@ -257,7 +258,7 @@ export function useMaterialCalculation() {
 
       // First pass: collect all needed credits
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
-        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
         const quantity = getStudentCredits(
           studentId,
           materials as Material[],
@@ -272,7 +273,7 @@ export function useMaterialCalculation() {
       Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
         // Skip if we already processed this student's credits from materials
         if (studentCredits.has(studentId)) return;
-        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
 
         const quantity = getStudentCredits(studentId, [], gears as Material[]);
         if (quantity > 0) {
@@ -327,7 +328,7 @@ export function useMaterialCalculation() {
       Object.entries(allMaterialsData.value).forEach(([studentId, materials]) => {
         const student = studentsCollection[studentId];
         if (!student) return;
-        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
 
         let quantity = 0;
         (materials as Material[]).forEach((material) => {
@@ -345,7 +346,7 @@ export function useMaterialCalculation() {
       Object.entries(allGearsData.value).forEach(([studentId, gears]) => {
         const student = studentsCollection[studentId];
         if (!student) return;
-        if (studentDataStore.value[toNumericId(studentId)]?.isOwned === false) return; // skip unowned
+        if (!isUpgradePlanActive(studentDataStore.value[toNumericId(studentId)])) return;
 
         let quantity = 0;
         (gears as Material[]).forEach((gear) => {
