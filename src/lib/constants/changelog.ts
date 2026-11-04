@@ -19,6 +19,7 @@
  */
 
 import { currentLanguage } from '@/lib/stores/localizationStore';
+import { getStudentCollectionUrl } from '@/lib/utils/iconUtils';
 
 export interface LocalizedText {
   en: string;
@@ -44,6 +45,10 @@ export interface ChangelogEntry {
   date: string; // YYYY-MM-DD, display only
   title: LocalizedText;
   summary: LocalizedText;
+  plannedStudent?: {
+    portraitUrl: string;
+    name: LocalizedText;
+  };
   /** Multi-feature release. Mutually exclusive with `highlights` at the modal. */
   sections?: ChangelogSection[];
   /** Flat list for single-feature releases. Ignored when `sections` is set. */
@@ -53,6 +58,30 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    id: '2026-11-future-student-plans',
+    date: '2026-11-03',
+    title: {
+      en: 'Future student plans',
+      jp: '未加入の生徒の育成計画',
+      kr: '미영입 학생 육성 계획',
+    },
+    summary: {
+      en: 'Enable upgrade planning for unrecruited students. Planned cards stand out, and their requirements count toward inventory totals without spending materials.',
+      jp: '未加入の生徒でも育成計画を有効にできるようになりました。計画中のカードは見分けやすく表示され、素材を消費せずに必要数が在庫の集計に含まれます。',
+      kr: '미영입 학생의 육성 계획을 활성화할 수 있습니다. 계획 중인 카드는 눈에 띄게 표시되며, 재료를 소모하지 않고 필요량이 인벤토리 집계에 반영됩니다.',
+    },
+    plannedStudent: {
+      portraitUrl: getStudentCollectionUrl(10153),
+      name: {
+        en: 'Hifumi (Racing)',
+        jp: 'ヒフミ（レーシング）',
+        kr: '히후미(레이싱)',
+      },
+    },
+    fromCommit: 'b4ee1d4',
+    toCommit: 'c6fc03a',
+  },
   {
     id: '2026-10-planning-recovery-feedback',
     date: '2026-10-11',

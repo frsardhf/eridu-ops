@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { CHANGELOG, localizeChangelogText, type ChangelogEntry } from '@/lib/constants/changelog';
+import PlannedStudentPreview from './PlannedStudentPreview.vue';
 
 const emit = defineEmits<{
   close: [];
@@ -65,6 +66,11 @@ function closeModal(event: MouseEvent) {
           </div>
           <h3 class="entry-title">{{ localized(latest.title) }}</h3>
           <p class="entry-summary">{{ localized(latest.summary) }}</p>
+          <PlannedStudentPreview
+            v-if="latest.plannedStudent"
+            :portrait-url="latest.plannedStudent.portraitUrl"
+            :name="localized(latest.plannedStudent.name)"
+          />
 
           <!-- Multi-feature release: each section gets its own header -->
           <div v-if="latest.sections?.length" class="entry-sections">
@@ -106,6 +112,11 @@ function closeModal(event: MouseEvent) {
                 <span class="entry-date">{{ formatDate(entry.date) }}</span>
               </div>
               <p class="entry-summary">{{ localized(entry.summary) }}</p>
+              <PlannedStudentPreview
+                v-if="entry.plannedStudent"
+                :portrait-url="entry.plannedStudent.portraitUrl"
+                :name="localized(entry.plannedStudent.name)"
+              />
 
               <div v-if="entry.sections?.length" class="entry-sections">
                 <div v-for="(section, i) in entry.sections" :key="i" class="entry-section">
