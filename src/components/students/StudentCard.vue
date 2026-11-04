@@ -11,6 +11,7 @@ import { EquipmentType } from '@/types/gear';
 import { ModalOriginRect } from '@/types/modal';
 import StarIcon from '@/components/shared/StarIcon.vue';
 import { $t } from '@/locales';
+import '@/styles/studentCard.css';
 import {
   WEAPON_STAR_THRESHOLD,
   MAX_LEVEL,
@@ -485,14 +486,6 @@ function handleCardClick(event: MouseEvent) {
 }
 
 .selection-grid-card {
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  color: inherit;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--card-background);
-  box-shadow: 0 2px 4px var(--box-shadow);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
@@ -506,26 +499,6 @@ function handleCardClick(event: MouseEvent) {
   z-index: 2;
 }
 
-.selection-grid-card--planned {
-  outline: 2px solid var(--accent-color);
-  outline-offset: -2px;
-}
-
-.planned-badge {
-  position: absolute;
-  left: 6px;
-  bottom: 6px;
-  z-index: 1;
-  padding: 3px 7px;
-  border: 1px solid var(--accent-color);
-  border-radius: 6px;
-  background: var(--background-primary);
-  color: var(--accent-color);
-  font-size: 0.75rem;
-  font-weight: 600;
-  pointer-events: none;
-}
-
 .selection-grid-card:hover {
   transform: scale(1.04);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
@@ -534,19 +507,6 @@ function handleCardClick(event: MouseEvent) {
 .selection-grid-card:active {
   transform: scale(0.98);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
-
-.card-img {
-  width: 150px;
-  height: 170px;
-  overflow: hidden;
-  position: relative;
-}
-
-.card-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .stats-overlay {
@@ -772,11 +732,6 @@ function handleCardClick(event: MouseEvent) {
   background: rgba(80, 180, 255, 0.5);
 }
 
-/* Unowned (not recruited) state */
-.img--unowned {
-  filter: brightness(0.35) grayscale(0.25);
-}
-
 .investment-bar {
   height: 3px;
   width: 100%;
@@ -789,24 +744,6 @@ function handleCardClick(event: MouseEvent) {
   background: var(--accent-color);
   border-radius: 0 2px 2px 0;
   transition: width 0.3s ease;
-}
-
-.card-label {
-  margin-top: 0;
-  padding: 4px;
-  text-align: center;
-  background-color: var(--card-label-background);
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.label-text {
-  line-height: 1;
-  width: 100%;
-  padding: 0 2px;
-  color: var(--text-primary);
 }
 
 .label-text:hover {
