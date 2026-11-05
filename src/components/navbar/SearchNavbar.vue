@@ -247,6 +247,8 @@ useClickOutside(handleClickOutside);
           class="app-navbar-icon-btn"
           :class="{ active: showFilterPanel || activeFilterCount > 0 }"
           type="button"
+          :aria-label="$t('filter.title')"
+          :aria-expanded="showFilterPanel"
           :title="$t('filter.title')"
           @click="toggleFilterPanel"
         >

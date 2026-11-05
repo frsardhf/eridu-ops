@@ -6,6 +6,7 @@ import type { StudentFilters } from '@/types/filter';
 import type { CardOverlayId } from '@/types/card';
 import type { InventoryLayout } from '@/types/resource';
 import type { Language } from '../stores/localizationStore';
+import type { GameServer } from '@/types/server';
 import type { CraftingFodderSession } from '../../types/crafting';
 import { DEFAULT_THEME } from './themeUtils';
 
@@ -18,6 +19,7 @@ let _cachedSettings: AppSettings | null = null;
 export interface AppSettings {
   theme: ThemeId;
   language: Language;
+  gameServer?: GameServer;
   sort: {
     option: SortOption;
     direction: SortDirection;
@@ -54,6 +56,7 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: DEFAULT_THEME,
   language: 'en',
+  gameServer: 'global',
   sort: {
     option: 'id',
     direction: 'asc',
@@ -70,6 +73,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'theme',
   'language',
+  'gameServer',
   'sort',
   'pinnedStudents',
   'isPinnedMode',

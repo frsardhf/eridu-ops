@@ -14,10 +14,12 @@ import { normalizeTheme } from '../utils/themeUtils';
 import { ThemeId } from '@/types/theme';
 import { SortOption, SortDirection } from '@/types/header';
 import { StudentFilters, StudentFilterValue, EMPTY_FILTERS, isFiltersEmpty } from '@/types/filter';
+import type { GameServer } from '@/types/server';
 
 export const searchQuery = ref<string>('');
 export const pinnedStudentIds = ref<string[]>([]);
 export const currentTheme = ref<ThemeId>('dark');
+export const currentGameServer = ref<GameServer>('global');
 export const currentSort = ref<SortOption>('id');
 export const sortDirection = ref<SortDirection>('asc');
 export const isPinnedMode = ref<boolean>(false);
@@ -55,6 +57,8 @@ export function togglePinned(studentId: string | number): boolean {
 /** Hydrate all prefs from the persisted settings blob (called once during init). */
 export function loadUiPrefs() {
   const settings = getSettings();
+  currentGameServer.value =
+    settings.gameServer === 'jp' || settings.gameServer === 'cn' ? settings.gameServer : 'global';
 
   const theme = normalizeTheme(settings.theme);
   currentTheme.value = theme;
@@ -92,6 +96,11 @@ export function setTheme(theme: ThemeId) {
   currentTheme.value = theme;
   document.documentElement.setAttribute('data-theme', theme);
   updateSetting('theme', theme);
+}
+
+export function setGameServer(server: GameServer) {
+  currentGameServer.value = server;
+  updateSetting('gameServer', server);
 }
 
 export function updateSearchQuery(query: string) {

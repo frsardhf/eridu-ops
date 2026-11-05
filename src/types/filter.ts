@@ -8,6 +8,7 @@ export interface StudentFilters {
   school: string[]; // raw school keys from SchaleDB
   equipment: EquipmentType[]; // equipment slot types
   availability: number[]; // IsLimited[0]: 0=Regular, 1=Limited, 2=Unique, 3=Fest, 4=Perm 3★
+  planning: string[];
 }
 
 /** Value type accepted for any single filter key (string[] | number[] | ...). */
@@ -21,6 +22,7 @@ export const EMPTY_FILTERS: StudentFilters = {
   school: [],
   equipment: [],
   availability: [],
+  planning: [],
 };
 
 export function isFiltersEmpty(f: StudentFilters): boolean {

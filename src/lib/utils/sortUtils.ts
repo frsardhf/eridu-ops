@@ -3,6 +3,7 @@ import { StudentProps } from '@/types/student';
 import { StudentFilters, isFiltersEmpty } from '@/types/filter';
 import type { FormRecord } from '@/lib/db/database';
 import type { SkillLevels, PotentialLevels } from '@/types/upgrade';
+import { isFutureStudentPlan } from './studentPlanningUtils';
 
 export interface StudentSplit {
   owned: StudentProps[];
@@ -190,6 +191,12 @@ export function splitAndSortStudents(params: SortStudentsParams): StudentSplit {
   const allOwned: StudentProps[] = [];
   const allUnowned: StudentProps[] = [];
   for (const s of students) {
+    if (
+      params.filters?.planning?.includes('future') &&
+      !isFutureStudentPlan(params.studentStore[s.Id])
+    ) {
+      continue;
+    }
     if (params.studentStore[s.Id]?.isOwned === false) {
       allUnowned.push(s);
     } else {

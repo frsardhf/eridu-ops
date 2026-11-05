@@ -1,7 +1,7 @@
 import { studentDataStore } from '@/lib/stores/studentStore';
 import { saveFormData } from '@/lib/services/studentPersistenceService';
 import { getPrimaryStudentId } from '../constants/linkedStudents';
-import { isUpgradePlanActive } from '../utils/studentPlanningUtils';
+import { isUpgradePlanActive, isFutureStudentPlan } from '../utils/studentPlanningUtils';
 import type { FormRecord } from '../db/database';
 
 /**
@@ -41,7 +41,7 @@ export function useStudentOwnership() {
 
   function isStudentPlanned(studentId: number): boolean {
     const form = studentDataStore.value[getPrimaryStudentId(studentId)];
-    return form?.isOwned === false && form.planEnabled === true;
+    return isFutureStudentPlan(form);
   }
 
   /**

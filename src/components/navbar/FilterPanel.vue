@@ -78,6 +78,20 @@ function toggleOtherSchools() {
     </div>
 
     <div class="filter-panel-body">
+      <div class="filter-section">
+        <div class="filter-section-label">{{ $t('filter.planning') }}</div>
+        <div class="filter-chips">
+          <button
+            class="filter-chip"
+            :class="{ active: isActive('planning', 'future') }"
+            :aria-pressed="isActive('planning', 'future')"
+            type="button"
+            @click="toggle('planning', 'future')"
+          >
+            {{ $t('filter.futurePlans') }}
+          </button>
+        </div>
+      </div>
       <!-- Type -->
       <div class="filter-section">
         <div class="filter-section-label">{{ $t('filter.type') }}</div>
@@ -263,13 +277,6 @@ function toggleOtherSchools() {
   overflow: hidden;
 }
 
-@media (min-width: 769px) {
-  .filter-panel {
-    width: 420px;
-    left: auto;
-  }
-}
-
 .filter-panel-header {
   display: flex;
   align-items: center;
@@ -306,6 +313,27 @@ function toggleOtherSchools() {
   gap: 8px;
   max-height: 65vh;
   overflow-y: auto;
+}
+
+@media (min-width: 769px) {
+  .filter-panel {
+    width: 520px;
+    left: auto;
+  }
+
+  .filter-panel-body {
+    max-height: calc(100dvh - 140px);
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-panel.vc-popover {
+    position: fixed;
+    top: 68px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
 }
 
 .filter-section {

@@ -178,6 +178,42 @@ describe('splitAndSortStudents', () => {
     expect(split.unowned.map((s) => s.Name)).toEqual(['Eimi']);
   });
 
+  it('filters future plans using explicit unowned planning, preserving the selected sort', () => {
+    const split = splitAndSortStudents({
+      ...baseParams,
+      sortOption: 'name',
+      sortDirection: 'desc',
+      studentStore: {
+        1: { studentId: 1, isOwned: false, planEnabled: true },
+        2: { studentId: 2, isOwned: false, planEnabled: true },
+        3: { studentId: 3, isOwned: true, planEnabled: true },
+      },
+      filters: { ...EMPTY_FILTERS, planning: ['future'] },
+    });
+    expect(split.owned).toEqual([]);
+    expect(split.unowned.map((s) => s.Name)).toEqual(['Eimi', 'Aru']);
+  });
+
+  it('combines future plans with search and rarity without requiring pending costs', () => {
+    const split = splitAndSortStudents({
+      ...baseParams,
+      searchQuery: 'aru',
+      studentStore: {
+        1: {
+          studentId: 1,
+          isOwned: false,
+          planEnabled: true,
+          characterLevels: { current: 1, target: 1 },
+        },
+        2: { studentId: 2, isOwned: false, planEnabled: true },
+        3: { studentId: 3, isOwned: false, planEnabled: false },
+      },
+      filters: { ...EMPTY_FILTERS, planning: ['future'], starGrade: [3] },
+    });
+    expect(split.unowned.map((s) => s.Name)).toEqual(['Aru']);
+    expect(split.owned).toEqual([]);
+  });
+
   it('applies star-grade filters before splitting', () => {
     const split = splitAndSortStudents({
       ...baseParams,

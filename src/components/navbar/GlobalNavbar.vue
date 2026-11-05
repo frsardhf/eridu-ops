@@ -30,7 +30,15 @@ defineProps<{
 }>();
 
 const { currentTheme, setTheme, reinitializeData } = useStudentData();
-const { exportData, currentLanguage, setLanguage, languageOptions } = useNavbarSettings();
+const {
+  exportData,
+  currentLanguage,
+  setLanguage,
+  languageOptions,
+  currentGameServer,
+  setGameServer,
+  serverOptions,
+} = useNavbarSettings();
 const { track } = useAnalytics();
 const route = useRoute();
 
@@ -370,6 +378,16 @@ useDocumentListener('keydown', handleKeydown);
         <div class="mobile-menu-section">
           <h3 class="mobile-menu-heading">{{ $t('app') }}</h3>
           <div class="mobile-menu-options">
+            <div class="mobile-menu-option game-server-setting">
+              <span>{{ $t('server.label') }}</span>
+              <SelectMenu
+                :model-value="currentGameServer"
+                :options="serverOptions"
+                :aria-label="$t('server.label')"
+                @update:model-value="setGameServer"
+              />
+            </div>
+            <p class="game-server-hint">{{ $t('server.hint') }}</p>
             <button class="mobile-menu-option" type="button" @click="openWhatsNewModal">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -481,6 +499,20 @@ useDocumentListener('keydown', handleKeydown);
 </template>
 
 <style scoped>
+.game-server-setting {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  cursor: default;
+}
+
+.game-server-hint {
+  margin: 0 12px 8px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-width: 300px;
+}
+
 .an-layout {
   display: flex;
   align-items: center;
@@ -640,11 +672,14 @@ useDocumentListener('keydown', handleKeydown);
   right: 0;
   width: 100%;
   max-width: 300px;
+  max-height: calc(100vh - 100%);
+  max-height: calc(100dvh - 100%);
   background-color: var(--background-primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   border-radius: 0 0 0 10px;
   z-index: 1000;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .mobile-menu-container {

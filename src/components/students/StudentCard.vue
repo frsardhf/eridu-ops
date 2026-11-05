@@ -33,8 +33,8 @@ const emit = defineEmits<{
 
 // --- State ---
 const isMobile = ref(false);
-const { studentData, isPinned, isPlanned, togglePin, currentLanguage } = useStudentCard(
-  computed(() => props.student.Id),
+const { studentData, isPinned, isPlanned, isUpcoming, togglePin, currentLanguage } = useStudentCard(
+  computed(() => props.student),
 );
 
 // Which overlays the user pinned to always-display (eye menu); the rest stay
@@ -475,6 +475,7 @@ function handleCardClick(event: MouseEvent) {
           {{ student.Name }}
         </span>
       </div>
+      <div v-if="isUpcoming" class="upcoming-label">{{ $t('server.upcoming') }}</div>
     </a>
   </div>
 </template>
@@ -483,6 +484,15 @@ function handleCardClick(event: MouseEvent) {
 .student-card {
   width: 150px;
   position: relative;
+}
+
+.upcoming-label {
+  padding: 3px 5px 5px;
+  background: var(--card-label-background);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  text-align: center;
 }
 
 .selection-grid-card {

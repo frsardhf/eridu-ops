@@ -683,6 +683,14 @@ const en = {
   },
 
   // Ownership (recruited / not recruited)
+  server: {
+    label: 'Game server',
+    global: 'Global',
+    jp: 'Japan',
+    cn: 'China',
+    hint: 'Used for regional student availability. Does not change language or ownership.',
+    upcoming: 'Upcoming on your server',
+  },
   ownership: {
     recruited: 'Recruited',
     notRecruited: 'Not Recruited',
@@ -931,6 +939,8 @@ const en = {
   // Student filter panel
   filter: {
     title: 'Filter',
+    planning: 'Planning',
+    futurePlans: 'Future plans',
     clearAll: 'Clear All',
     type: 'Type',
     rarity: 'Rarity',
@@ -1630,6 +1640,14 @@ const jp: TranslationTree = {
   },
 
   // Ownership (recruited / not recruited)
+  server: {
+    label: 'ゲームサーバー',
+    global: 'グローバル',
+    jp: '日本',
+    cn: '中国',
+    hint: '生徒の実装状況の表示に使用します。言語や加入状態は変更しません。',
+    upcoming: '選択中のサーバーでは未実装',
+  },
   ownership: {
     recruited: '加入済み',
     notRecruited: '未加入',
@@ -1878,6 +1896,8 @@ const jp: TranslationTree = {
   // Student filter panel
   filter: {
     title: 'フィルター',
+    planning: '育成計画',
+    futurePlans: '未加入の育成計画',
     clearAll: '全クリア',
     type: 'タイプ',
     rarity: 'レアリティ',
@@ -2573,6 +2593,14 @@ const kr: TranslationTree = {
   },
 
   // Ownership (recruited / not recruited)
+  server: {
+    label: '게임 서버',
+    global: '글로벌',
+    jp: '일본',
+    cn: '중국',
+    hint: '서버별 학생 출시 여부 표시에 사용됩니다. 언어나 영입 상태는 변경하지 않습니다.',
+    upcoming: '선택한 서버에 미출시',
+  },
   ownership: {
     recruited: '영입됨',
     notRecruited: '미영입',
@@ -2818,6 +2846,8 @@ const kr: TranslationTree = {
   // Student filter panel
   filter: {
     title: '필터',
+    planning: '육성 계획',
+    futurePlans: '미영입 학생 계획',
     clearAll: '전체 지우기',
     type: '유형',
     rarity: '희귀도',
