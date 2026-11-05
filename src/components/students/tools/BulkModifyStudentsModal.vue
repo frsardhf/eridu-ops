@@ -136,7 +136,7 @@ const filteredStudents = computed<StudentProps[]>(() => {
       }
 
       if (showUnfilledOnly.value) {
-        if (allFormData.value[student.Id]) return false;
+        if (nonDefaultPersistedIds.value.has(student.Id)) return false;
       }
 
       if (hasCharFilter) {

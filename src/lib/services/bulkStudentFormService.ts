@@ -168,6 +168,15 @@ function isNonDefaultPersistedForm(student: StudentProps, form: FormRecord | und
     return true;
   }
 
+  const otherExp = form.otherExpData;
+  if (
+    (otherExp?.bonusExp ?? 0) > 0 ||
+    !!otherExp?.cafeStartDateIso ||
+    !!otherExp?.cafeTargetDateIso
+  ) {
+    return true;
+  }
+
   const exclusiveGear = form.exclusiveGearLevel;
   if ((exclusiveGear?.current ?? 0) > 0 || (exclusiveGear?.target ?? 0) > 0) {
     return true;

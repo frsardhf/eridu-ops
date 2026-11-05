@@ -127,8 +127,8 @@ export function useStudentForm(studentRef: Ref<StudentProps>, opts: UseStudentFo
   // --- Form refs (everything that persists to `forms[studentId]`) ---
   // Upgrade slice
   const characterLevels = ref<CharacterLevels>({ ...DEFAULT_CHARACTER_LEVELS });
-  const skillLevels = ref<SkillLevels>({ ...DEFAULT_SKILL_LEVELS });
-  const potentialLevels = ref<PotentialLevels>({ ...DEFAULT_POTENTIAL_LEVELS });
+  const skillLevels = ref<SkillLevels>(structuredClone(DEFAULT_SKILL_LEVELS));
+  const potentialLevels = ref<PotentialLevels>(structuredClone(DEFAULT_POTENTIAL_LEVELS));
 
   // Gear slice
   const equipmentLevels = ref<EquipmentLevels>({});

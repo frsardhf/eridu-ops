@@ -5,6 +5,8 @@ import type { StudentProps } from '@/types/student';
 import type { FormRecord } from '@/lib/db/database';
 import { updateEquipmentInCache } from '@/lib/stores/resourceCacheStore';
 import { useStudentForm } from '../useStudentForm';
+import { buildDefaultFormData } from '@/lib/services/studentFormService';
+import { DEFAULT_SKILL_LEVELS, DEFAULT_POTENTIAL_LEVELS } from '@/types/upgrade';
 
 const storage = vi.hoisted(() => ({
   get: vi.fn<(id: number) => Promise<FormRecord | undefined>>(),
@@ -98,6 +100,43 @@ afterEach(() => {
 });
 
 describe('student form hydration when navigating students', () => {
+  it('creates independent nested defaults without adding upgrade requirements', async () => {
+    const first = buildDefaultFormData(firstStudent);
+    const second = buildDefaultFormData(secondStudent);
+    first.skillLevels.Ex.target = 5;
+    first.potentialLevels.attack.target = 10;
+    expect(second.skillLevels.Ex).toEqual({ current: 1, target: 1 });
+    expect(second.potentialLevels.attack).toEqual({ current: 0, target: 0 });
+    expect(DEFAULT_SKILL_LEVELS.Ex).toEqual({ current: 1, target: 1 });
+    expect(DEFAULT_POTENTIAL_LEVELS.attack).toEqual({ current: 0, target: 0 });
+    const { form } = mountForm();
+    await form.loadFromIndexedDB();
+    expect(form.allMaterialsNeeded.value).toEqual([]);
+    expect(form.equipmentMaterialsNeeded.value).toEqual([]);
+  });
+
+  it('isolates fallback pairs when hydrating partially populated skill and potential slices', async () => {
+    storage.get.mockImplementation(async (id) =>
+      id === firstStudent.Id
+        ? {
+            studentId: id,
+            skillLevels: { Ex: { current: 2, target: 3 } } as FormRecord['skillLevels'],
+            potentialLevels: { attack: { current: 1, target: 2 } } as FormRecord['potentialLevels'],
+          }
+        : undefined,
+    );
+    const { selected, form } = mountForm();
+    await form.loadFromIndexedDB();
+    form.handleSkillUpdate('Public', 2, 4);
+    form.handlePotentialUpdate('maxhp', 2, 5);
+    selected.value = secondStudent;
+    await form.loadFromIndexedDB();
+    expect(form.skillLevels.value.Public).toEqual({ current: 1, target: 1 });
+    expect(form.potentialLevels.value.maxhp).toEqual({ current: 0, target: 0 });
+    expect(DEFAULT_SKILL_LEVELS.Public).toEqual({ current: 1, target: 1 });
+    expect(DEFAULT_POTENTIAL_LEVELS.maxhp).toEqual({ current: 0, target: 0 });
+  });
+
   it('uses the active student defaults for ownership-only records', async () => {
     const { selected, form } = mountForm();
     await form.loadFromIndexedDB();

@@ -41,8 +41,8 @@ export function buildDefaultFormData(student: StudentProps) {
     otherExpData: { ...DEFAULT_OTHER_EXP },
     // Upgrade slice
     characterLevels: { ...DEFAULT_CHARACTER_LEVELS },
-    skillLevels: { ...DEFAULT_SKILL_LEVELS },
-    potentialLevels: { ...DEFAULT_POTENTIAL_LEVELS },
+    skillLevels: structuredClone(DEFAULT_SKILL_LEVELS),
+    potentialLevels: structuredClone(DEFAULT_POTENTIAL_LEVELS),
     // Gear slice
     equipmentLevels,
     gradeLevels: { current: starGrade, target: starGrade },

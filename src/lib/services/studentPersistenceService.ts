@@ -148,7 +148,7 @@ export async function loadFormDataToRefs(
           storedValue !== null
         ) {
           // Deep merge objects
-          const base = { ...(defaultValue as Record<string, unknown>) };
+          const base = structuredClone(defaultValue) as Record<string, unknown>;
 
           for (const nestedKey of Object.keys(base)) {
             if (nestedKey in (storedValue as Record<string, unknown>)) {
