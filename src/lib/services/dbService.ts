@@ -2,6 +2,7 @@
 
 import { db, arrayToRecord } from '../db/database';
 import { isQuotaExceededError, clearImageCacheStorage } from '../utils/storageQuota';
+import { isSecondaryStudent } from '../constants/linkedStudents';
 import type {
   StudentRecord,
   ItemRecord,
@@ -138,7 +139,16 @@ export async function getAllStudentsAsRecord(): Promise<Record<number, StudentRe
  */
 export async function saveStudents(students: StudentRecord[]): Promise<boolean> {
   try {
-    await db.students.bulkPut(students);
+    await db.transaction('rw', db.students, db.forms, async () => {
+      const knownIds = new Set(await db.students.toCollection().primaryKeys());
+      const discovered = students.filter((s) => !knownIds.has(s.Id) && !isSecondaryStudent(s.Id));
+      const existingForms = await db.forms.bulkGet(discovered.map((s) => s.Id));
+      const ownershipDefaults: FormRecord[] = discovered
+        .filter((_, index) => !existingForms[index])
+        .map((s) => ({ studentId: s.Id, isOwned: false }));
+      if (ownershipDefaults.length) await db.forms.bulkPut(ownershipDefaults);
+      await db.students.bulkPut(students);
+    });
     return true;
   } catch (error) {
     console.error('Error saving students:', error);

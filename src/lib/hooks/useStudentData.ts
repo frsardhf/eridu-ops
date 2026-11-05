@@ -106,11 +106,12 @@ async function refreshSchaleDBData() {
       return;
     }
 
-    await Promise.all([
+    const saved = await Promise.all([
       saveStudents(Object.values(students)),
       saveItems(Object.values(items)),
       saveEquipment(Object.values(equipment)),
     ]);
+    if (saved.some((success) => !success)) throw new Error('Failed to persist refreshed data.');
 
     await updateCacheMetadata();
     await processAndPopulateData(students, items, localization ?? undefined);
@@ -140,6 +141,7 @@ async function processAndPopulateData(
   // with inventory quantities here, and per-id updates keep it current after
   // inventory edits. Nothing else holds a copy.
   await initializeAllCaches();
+  await preloadStudentStore();
 
   // On a language switch, swap localization in the same synchronous block as the
   // student/gift data so the grid and its school/club labels never render a mix
@@ -160,7 +162,6 @@ async function processAndPopulateData(
     favoredGiftByStudent: favoredGift.value,
   });
 
-  await preloadStudentStore();
   syncPinnedStudents();
 
   // Recompute the per-student materials/gears aggregates from the freshly
@@ -254,11 +255,12 @@ async function applyLanguage() {
     if (seq !== _langReqSeq) return;
     if (!data.students || Object.keys(data.students).length === 0) return;
 
-    await Promise.all([
+    const saved = await Promise.all([
       saveStudents(Object.values(data.students)),
       saveItems(Object.values(data.items)),
       saveEquipment(Object.values(data.equipment)),
     ]);
+    if (saved.some((success) => !success)) throw new Error('Failed to persist localized data.');
     await updateCacheMetadata();
 
     if (seq !== _langReqSeq) return;
