@@ -23,7 +23,7 @@ function updateRemaining(event: Event) {
 
 <template>
   <article class="crafting-card" :class="{ 'is-complete': isComplete }">
-    <div class="crafting-portrait">
+    <div class="crafting-portrait" :data-rarity="item.material.Rarity">
       <img :src="item.iconUrl" :alt="item.material.Name" loading="lazy" />
       <button
         v-if="item.canReset"
@@ -129,7 +129,23 @@ function updateRemaining(event: Event) {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  background: var(--background-primary);
+  background: var(--crafting-portrait-background, var(--background-primary));
+}
+
+.crafting-portrait[data-rarity='N'] {
+  --crafting-portrait-background: var(--item-rarity-n-background);
+}
+
+.crafting-portrait[data-rarity='R'] {
+  --crafting-portrait-background: var(--item-rarity-r-background);
+}
+
+.crafting-portrait[data-rarity='SR'] {
+  --crafting-portrait-background: var(--item-rarity-sr-background);
+}
+
+.crafting-portrait[data-rarity='SSR'] {
+  --crafting-portrait-background: var(--item-rarity-ssr-background);
 }
 
 .crafting-portrait img {

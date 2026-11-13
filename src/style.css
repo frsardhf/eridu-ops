@@ -73,6 +73,27 @@
   --motion-modal-fallback-scale: 0.985;
 }
 
+/* SchaleDB item artwork backgrounds. */
+:root,
+[data-theme='dark'] {
+  --item-rarity-n-background: #8c939e;
+  --item-rarity-r-background: #658dbf;
+  --item-rarity-sr-background: #a87d51;
+  --item-rarity-ssr-background: #7a5bbe;
+}
+
+[data-theme='light'],
+[data-theme='ocean'],
+[data-theme='forest'],
+[data-theme='sunset'],
+[data-theme='rose'],
+[data-theme='violet'] {
+  --item-rarity-n-background: #bdc5d0;
+  --item-rarity-r-background: #90baec;
+  --item-rarity-sr-background: #d6ad81;
+  --item-rarity-ssr-background: #a88aec;
+}
+
 /* Base styles */
 body {
   margin: 0;
