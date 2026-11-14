@@ -41,6 +41,7 @@ export interface CraftingFodderDisplayMaterial {
   iconUrl: string;
   plannedCrafts: number;
   remainingCrafts: number;
+  maxRemainingCrafts: number;
   recyclableQty: number;
   excessItems: number;
   canUndo: boolean;
@@ -58,6 +59,10 @@ function computeCraftStats(recyclableQty: number, craftQuality: number): CraftSt
   return { craftCount, excessItems, itemsPerCraft };
 }
 
+function normalizeThreshold(value: unknown): number {
+  return isNonNegativeFiniteNumber(value) ? Math.max(0, Math.trunc(value)) : 0;
+}
+
 function cloneThresholds(
   thresholds?: Record<string, Record<string, number>>,
 ): Record<string, Record<string, number>> {
@@ -66,7 +71,7 @@ function cloneThresholds(
 
   for (const subcategory of CRAFTING_SUBCATEGORIES) {
     for (const rarity of ALL_RARITIES) {
-      next[subcategory][rarity] = Math.max(0, thresholds[subcategory]?.[rarity] ?? 0);
+      next[subcategory][rarity] = normalizeThreshold(thresholds[subcategory]?.[rarity]);
     }
   }
   return next;
@@ -270,8 +275,9 @@ export function useCraftingFodder() {
     return items
       .filter((item) => filter.includes(item.material.Rarity ?? ''))
       .map((item) => {
-        const threshold =
-          thresholds.value[item.material.SubCategory ?? '']?.[item.material.Rarity ?? ''] ?? 0;
+        const threshold = normalizeThreshold(
+          thresholds.value[item.material.SubCategory ?? '']?.[item.material.Rarity ?? ''],
+        );
         const recyclableQty = Math.max(0, item.remaining - threshold);
         return {
           ...item,
@@ -327,9 +333,12 @@ export function useCraftingFodder() {
     ]),
   );
 
-  function refreshSession() {
+  function refreshSession(): boolean {
+    const sourceSignature = currentSourceSignature.value;
+    if (session.value?.sourceSignature === sourceSignature) return false;
+
     session.value = createCraftingFodderSession(
-      currentSourceSignature.value,
+      sourceSignature,
       currentSource.value.map(({ item, stage1, stage2 }) => ({
         materialId: item.material.Id,
         craftCapacity: item.craftCount,
@@ -342,22 +351,26 @@ export function useCraftingFodder() {
     );
 
     legacyMarkedIds.clear();
+    return true;
   }
 
   function setRemainingCrafts(materialId: number, stage: CraftingFodderStage, value: number) {
     const currentSession = session.value;
     const entry = currentSession?.entries[materialId];
-    if (!currentSession || !entry) return;
+    if (!currentSession || !entry || !Number.isInteger(value) || value < 0) return;
+    if (stage === 'stage1' ? !entry.stage1Eligible : !entry.stage2Eligible) return;
 
     const stageKey = stage === 'stage1' ? 'stage1Crafts' : 'stage2Crafts';
     const currentRemaining = entry.craftCapacity - entry.stage1Crafts - entry.stage2Crafts;
-    const desiredRemaining = clampCrafts(value || 0, entry.craftCapacity);
+    const desiredRemaining = Math.min(value, entry.craftCapacity);
     const difference = desiredRemaining - currentRemaining;
     const currentStageCrafts = entry[stageKey];
     const nextStageCrafts =
       difference < 0
         ? currentStageCrafts + Math.min(-difference, currentRemaining)
         : currentStageCrafts - Math.min(difference, currentStageCrafts);
+    if (nextStageCrafts === currentStageCrafts) return;
+
     session.value = {
       ...currentSession,
       entries: {
@@ -418,6 +431,7 @@ export function useCraftingFodder() {
           iconUrl: getItemIconUrl(material.Icon, 'item', material.Tier),
           plannedCrafts: entry.craftCapacity,
           remainingCrafts,
+          maxRemainingCrafts: remainingCrafts + stageCrafts,
           recyclableQty: entry.excessItems + remainingCrafts * entry.itemsPerCraft,
           excessItems: entry.excessItems,
           canUndo: stageCrafts > 0,
@@ -471,6 +485,14 @@ export function useCraftingFodder() {
     else rarityFilter.value = rarityFilter.value.filter((value) => value !== rarity);
   }
 
+  function setThreshold(
+    subcategory: (typeof CRAFTING_SUBCATEGORIES)[number],
+    rarity: (typeof ALL_RARITIES)[number],
+    value: number,
+  ): void {
+    thresholds.value[subcategory][rarity] = normalizeThreshold(value);
+  }
+
   function resetThresholds(subcategory: string) {
     thresholds.value = {
       ...thresholds.value,
@@ -493,6 +515,7 @@ export function useCraftingFodder() {
     stage2Materials,
     summary,
     toggleRarity,
+    setThreshold,
     resetThresholds,
     refreshSession,
     resetProgress,

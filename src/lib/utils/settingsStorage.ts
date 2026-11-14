@@ -12,9 +12,7 @@ import { DEFAULT_THEME } from './themeUtils';
 
 const SETTINGS_KEY = 'eridu-ops-settings';
 
-// Module-level cache so repeated getSettings() calls never re-parse localStorage.
-// Invalidated on every saveSettings() call.
-let _cachedSettings: AppSettings | null = null;
+let cachedSettings: { raw: string | null; value: AppSettings } | undefined;
 
 export interface AppSettings {
   theme: ThemeId;
@@ -92,75 +90,71 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'inventoryLayout',
 ];
 
-/**
- * Get consolidated settings from localStorage (defaults if unset). Cached in
- * memory; re-parses only on first call or after saveSettings() updates the cache.
- */
-export function getSettings(): AppSettings {
-  if (_cachedSettings) return _cachedSettings;
-
+function parseStoredSettings(raw: string | null) {
   try {
-    const data = localStorage.getItem(SETTINGS_KEY);
-    if (!data) {
-      const fresh: AppSettings = { ...DEFAULT_SETTINGS };
-      _cachedSettings = fresh;
-      return fresh;
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new TypeError('Expected a settings object.');
     }
 
-    const parsed = JSON.parse(data) as Record<string, unknown>;
+    const entries = Object.entries(parsed);
+    const allowed = entries.filter(([key]) => ALLOWED_KEYS.includes(key as keyof AppSettings));
+    return {
+      settings: Object.fromEntries(allowed) as Partial<AppSettings>,
+      hadStale: allowed.length !== entries.length,
+    };
+  } catch (error) {
+    console.error('Error parsing settings from localStorage:', error);
+    return { settings: {}, hadStale: false };
+  }
+}
 
-    // Merge with defaults to ensure all properties exist
-    const merged: AppSettings = {
+function writeStoredSettings(settings: Partial<AppSettings>): string | null {
+  try {
+    const raw = JSON.stringify(settings);
+    localStorage.setItem(SETTINGS_KEY, raw);
+    return raw;
+  } catch (error) {
+    console.error('Error saving settings to localStorage:', error);
+    return null;
+  }
+}
+
+/** Get settings with defaults, reusing the parsed value only while storage is unchanged. */
+export function getSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (cachedSettings?.raw === raw) return cachedSettings.value;
+
+    const { settings, hadStale } = parseStoredSettings(raw);
+    const value = {
       ...DEFAULT_SETTINGS,
-      ...parsed,
-      sort: {
-        ...DEFAULT_SETTINGS.sort,
-        ...(parsed.sort as object),
-      },
-    } as AppSettings;
+      ...settings,
+      sort: { ...DEFAULT_SETTINGS.sort, ...settings.sort },
+    };
 
-    // Drop stale fields left by older versions (the spread above keeps unknown
-    // keys alive): retain only the current allowlist.
-    const clean = {} as AppSettings;
-    const src = merged as unknown as Record<string, unknown>;
-    const dst = clean as unknown as Record<string, unknown>;
-    for (const key of ALLOWED_KEYS) {
-      if (key in src) dst[key] = src[key];
-    }
-    _cachedSettings = clean;
+    // Prune legacy keys without writing defaults or replacing a newer snapshot.
+    const prunedRaw =
+      hadStale && localStorage.getItem(SETTINGS_KEY) === raw ? writeStoredSettings(settings) : null;
+    cachedSettings = { raw: prunedRaw ?? raw, value };
 
-    // If the stored blob actually had stale keys, rewrite it once so they're
-    // gone from localStorage, not just ignored in memory.
-    const hadStale = Object.keys(parsed).some(
-      (k) => !ALLOWED_KEYS.includes(k as keyof AppSettings),
-    );
-    if (hadStale) saveSettings(clean);
-
-    return clean;
+    return value;
   } catch (error) {
     console.error('Error reading settings from localStorage:', error);
     return { ...DEFAULT_SETTINGS };
   }
 }
 
-/** Save consolidated settings to localStorage and update the in-memory cache. */
+/** Replace the consolidated settings snapshot. */
 export function saveSettings(settings: AppSettings): boolean {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    _cachedSettings = settings; // keep cache in sync
-    return true;
-  } catch (error) {
-    console.error('Error saving settings to localStorage:', error);
-    return false;
-  }
+  return writeStoredSettings(settings) !== null;
 }
 
-/** Update a single setting field. */
+/** Update one key on the latest stored snapshot without replacing other tabs' changes. */
 export function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]): boolean {
   try {
-    const currentSettings = getSettings();
-    currentSettings[key] = value;
-    return saveSettings(currentSettings);
+    const { settings } = parseStoredSettings(localStorage.getItem(SETTINGS_KEY));
+    return writeStoredSettings({ ...settings, [key]: value }) !== null;
   } catch (error) {
     console.error('Error updating setting:', error);
     return false;
@@ -169,14 +163,7 @@ export function updateSetting<K extends keyof AppSettings>(key: K, value: AppSet
 
 /** Update the sort option + direction. */
 export function updateSortSettings(option: SortOption, direction: SortDirection): boolean {
-  try {
-    const currentSettings = getSettings();
-    currentSettings.sort = { option, direction };
-    return saveSettings(currentSettings);
-  } catch (error) {
-    console.error('Error updating sort settings:', error);
-    return false;
-  }
+  return updateSetting('sort', { option, direction });
 }
 
 /** Get the pinned student IDs. */

@@ -15,9 +15,15 @@ const emit = defineEmits<{
 
 const isComplete = computed(() => props.item.plannedCrafts > 0 && props.item.remainingCrafts === 0);
 
-function updateRemaining(event: Event) {
-  const value = Number((event.target as HTMLInputElement).value);
-  emit('update:remaining', Number.isFinite(value) ? value : props.item.remainingCrafts);
+function commitRemaining(event: FocusEvent) {
+  const input = event.currentTarget as HTMLInputElement;
+  const value = input.valueAsNumber;
+  if (!Number.isSafeInteger(value) || !input.validity.valid) {
+    input.value = String(props.item.remainingCrafts);
+    return;
+  }
+  if (value !== props.item.remainingCrafts) emit('update:remaining', value);
+  input.value = String(value);
 }
 </script>
 
@@ -71,10 +77,11 @@ function updateRemaining(event: Event) {
             :name="`crafting-remaining-${fieldId}`"
             type="number"
             min="0"
-            :max="item.plannedCrafts"
+            :max="item.maxRemainingCrafts"
             :value="item.remainingCrafts"
             :aria-label="$t('craftingFodder.craftsLeft')"
-            @input="updateRemaining"
+            @blur="commitRemaining"
+            @keydown.enter.prevent="($event.currentTarget as HTMLInputElement).blur()"
           />
           <span class="craft-separator">/</span>
           <span class="craft-total">{{ item.plannedCrafts }}</span>

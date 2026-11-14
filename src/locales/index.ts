@@ -908,6 +908,10 @@ const en = {
     craftsRecorded: 'full crafts recorded',
     hideComplete: 'Hide complete',
     resetProgress: 'Reset progress',
+    resetProgressConfirm: 'Reset recorded progress? This does not change inventory.',
+    startNewPlan: 'Start new plan',
+    startNewPlanConfirm:
+      'Start a new plan? This clears recorded progress but does not change inventory.',
     refreshNotice:
       'Inventory or fodder rules changed. Your active session is unchanged until you refresh it.',
     planSettings: 'Plan settings',
@@ -1865,6 +1869,10 @@ const jp: TranslationTree = {
     craftsRecorded: '回フルクラフト記録済み',
     hideComplete: '完了を隠す',
     resetProgress: '進捗をリセット',
+    resetProgressConfirm: '記録した進捗をリセットしますか？所持数は変わりません。',
+    startNewPlan: '新しいプランを開始',
+    startNewPlanConfirm:
+      '新しいプランを開始しますか？記録した進捗は消去されますが、所持数は変わりません。',
     refreshNotice:
       '在庫または素材ルールが変更されました。更新するまで現在のセッションは変わりません。',
     planSettings: 'プラン設定',
@@ -2815,6 +2823,10 @@ const kr: TranslationTree = {
     craftsRecorded: '회 전체 제작 기록됨',
     hideComplete: '완료 숨기기',
     resetProgress: '진행도 초기화',
+    resetProgressConfirm: '기록된 진행도를 초기화할까요? 보유 수량은 변경되지 않습니다.',
+    startNewPlan: '새 계획 시작',
+    startNewPlanConfirm:
+      '새 계획을 시작할까요? 기록된 진행도는 지워지지만 보유 수량은 변경되지 않습니다.',
     refreshNotice:
       '인벤토리 또는 재료 규칙이 변경되었습니다. 새로고침하기 전까지 현재 세션은 유지됩니다.',
     planSettings: '계획 설정',

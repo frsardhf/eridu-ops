@@ -16,7 +16,7 @@ const GlobalInventoryModal = defineAsyncComponent(
   () => import('@/components/inventory/GlobalInventoryModal.vue'),
 );
 
-const { isReady } = useStudentData();
+const { isReady, isLoading, loadError } = useStudentData();
 const {
   thresholds,
   rarityFilter,
@@ -28,6 +28,7 @@ const {
   stage2Materials,
   summary,
   toggleRarity,
+  setThreshold,
   resetThresholds,
   refreshSession,
   resetProgress,
@@ -44,11 +45,17 @@ const hideCompleted = ref(false);
 const showInventory = ref(false);
 const searchQuery = ref('');
 const selectedTypes = ref<string[]>([]);
+const pendingAction = ref<'refresh' | 'reset' | null>(null);
+const canBuildPlan = computed(() => isReady.value && !isLoading.value && !loadError.value);
+const canRefreshPlan = computed(
+  () => canBuildPlan.value && (!hasSession.value || needsRefresh.value),
+);
 
 watch(
-  isReady,
-  (ready) => {
-    if (ready && !hasSession.value) refreshSession();
+  canBuildPlan,
+  (canBuild) => {
+    if (!canBuild) pendingAction.value = null;
+    else if (!hasSession.value) refreshSession();
   },
   { immediate: true },
 );
@@ -142,13 +149,36 @@ function openInventory(): void {
 }
 
 function refreshPlan(): void {
-  refreshSession();
-  track({ name: 'workflow_completed', feature: 'crafting_plan', action: 'refreshed' });
+  if (!canRefreshPlan.value) return;
+  if (summary.value.hasProgress) pendingAction.value = 'refresh';
+  else applyRefresh();
 }
 
-function resetAllProgress(): void {
-  resetProgress();
-  track({ name: 'plan_action', feature: 'crafting_plan', action: 'reset' });
+function applyRefresh(): void {
+  if (canRefreshPlan.value && refreshSession()) {
+    track({ name: 'workflow_completed', feature: 'crafting_plan', action: 'refreshed' });
+  }
+}
+
+function confirmPlanAction(): void {
+  const action = pendingAction.value;
+  pendingAction.value = null;
+  if (action === 'refresh') applyRefresh();
+  else if (action === 'reset' && canBuildPlan.value && summary.value.hasProgress) {
+    resetProgress();
+    track({ name: 'plan_action', feature: 'crafting_plan', action: 'reset' });
+  }
+}
+
+function updateThreshold(
+  subcategory: Parameters<typeof setThreshold>[0],
+  rarity: Parameters<typeof setThreshold>[1],
+  event: Event,
+): void {
+  const input = event.currentTarget as HTMLInputElement;
+  const value = input.valueAsNumber;
+  if (Number.isSafeInteger(value) && input.validity.valid) setThreshold(subcategory, rarity, value);
+  if (event.type === 'blur') input.value = String(thresholds.value[subcategory][rarity]);
 }
 
 function resetRuleRow(subcategory: string): void {
@@ -248,7 +278,7 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
           <button
             type="button"
             class="crafting-btn primary"
-            :disabled="!isReady"
+            :disabled="!canRefreshPlan"
             @click="refreshPlan"
           >
             {{ $t('craftingFodder.refreshPlan') }}
@@ -256,7 +286,7 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
         </div>
       </div>
 
-      <div class="crafting-metrics">
+      <div v-if="hasSession" class="crafting-metrics">
         <span>
           <strong>{{ summary.remaining.toLocaleString() }}</strong>
           {{ $t('craftingFodder.craftsRemaining') }}
@@ -279,7 +309,7 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
         <span class="crafting-subtitle">{{ $t('craftingFodder.subtitle') }}</span>
       </div>
 
-      <div v-if="needsRefresh" class="refresh-notice" role="status">
+      <div v-if="canBuildPlan && needsRefresh" class="refresh-notice" role="status">
         <span>{{ $t('craftingFodder.refreshNotice') }}</span>
         <button type="button" @click="refreshPlan">
           {{ $t('craftingFodder.refreshPlan') }}
@@ -318,8 +348,8 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
               <button
                 type="button"
                 class="crafting-btn"
-                :disabled="!summary.hasProgress"
-                @click="resetAllProgress"
+                :disabled="!canBuildPlan || !summary.hasProgress"
+                @click="pendingAction = 'reset'"
               >
                 {{ $t('craftingFodder.resetProgress') }}
               </button>
@@ -351,11 +381,14 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
                   :key="`${subcategory}-${rarity}`"
                   :id="`crafting-threshold-${subcategory}-${rarity}`"
                   :name="`crafting-threshold-${subcategory}-${rarity}`"
-                  v-model.number="thresholds[subcategory][rarity]"
+                  :value="thresholds[subcategory][rarity]"
                   class="threshold-input"
                   type="number"
                   min="0"
                   :aria-label="`${subcategoryLabel(subcategory)} ${rarity}`"
+                  @input="updateThreshold(subcategory, rarity, $event)"
+                  @blur="updateThreshold(subcategory, rarity, $event)"
+                  @keydown.enter.prevent="($event.currentTarget as HTMLInputElement).blur()"
                 />
                 <button
                   type="button"
@@ -371,6 +404,41 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
           </div>
         </div>
       </section>
+      <div
+        v-if="pendingAction"
+        class="refresh-notice plan-confirmation"
+        role="group"
+        aria-labelledby="crafting-plan-confirmation"
+      >
+        <span id="crafting-plan-confirmation" role="status">
+          {{
+            $t(
+              pendingAction === 'refresh'
+                ? 'craftingFodder.startNewPlanConfirm'
+                : 'craftingFodder.resetProgressConfirm',
+            )
+          }}
+        </span>
+        <div class="plan-confirmation-actions">
+          <button type="button" class="crafting-btn" @click="pendingAction = null">
+            {{ $t('cancel') }}
+          </button>
+          <button
+            type="button"
+            class="crafting-btn primary"
+            :disabled="pendingAction === 'refresh' ? !canRefreshPlan : !summary.hasProgress"
+            @click="confirmPlanAction"
+          >
+            {{
+              $t(
+                pendingAction === 'refresh'
+                  ? 'craftingFodder.startNewPlan'
+                  : 'craftingFodder.resetProgress',
+              )
+            }}
+          </button>
+        </div>
+      </div>
       <div v-if="activeTooltip" ref="tooltipRef" class="modal-tooltip" :style="tooltipStyle">
         <template v-if="activeTooltip === 'rulesHint'">
           {{ $t('craftingFodder.rulesHint') }}
@@ -380,9 +448,9 @@ function resetMaterialProgress(materialId: number, stage: CraftingFodderStage): 
         </template>
       </div>
 
-      <div v-if="!isReady" class="page-state"><LoadingSpinner /></div>
+      <div v-if="!hasSession && isLoading" class="page-state"><LoadingSpinner /></div>
 
-      <section v-else class="stages-workspace">
+      <section v-else-if="hasSession" class="stages-workspace">
         <div class="stages-grid">
           <section v-for="stage in stages" :key="stage.key" class="stage-panel">
             <div class="stage-heading">
@@ -606,7 +674,7 @@ button:disabled {
   font-size: 0.8rem;
 }
 
-.refresh-notice button {
+.refresh-notice > button {
   padding: 4px 8px;
   border: 0;
   border-radius: 5px;
@@ -616,6 +684,16 @@ button:disabled {
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.plan-confirmation {
+  flex-wrap: wrap;
+}
+
+.plan-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .plan-settings {
