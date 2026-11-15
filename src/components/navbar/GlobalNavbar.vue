@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { defineAsyncComponent, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStudentData } from '@/lib/hooks/useStudentData';
 import { useNavbarSettings } from '@/lib/hooks/useNavbarSettings';
@@ -49,7 +49,20 @@ function onSelectLanguage(lang: Language) {
 }
 
 const mobileMenuOpen = ref(false);
-const plannerMenuOpen = ref(false);
+const navGroups = [
+  {
+    label: 'planner',
+    links: [
+      { to: '/students', label: 'students' },
+      { to: '/bonds', label: 'bonds' },
+      { to: '/crafting', label: 'craftingFodder.nav' },
+    ],
+  },
+  { label: 'tools', links: [{ to: '/pull-recap', label: 'pullRecap.title' }] },
+] as const;
+type NavGroup = (typeof navGroups)[number]['label'];
+const openNavGroup = ref<{ label: NavGroup; pinned: boolean } | null>(null);
+const desktopNav = ref<HTMLElement | null>(null);
 const showImportModal = ref(false);
 const showScreenshotModal = ref(false);
 const showWhatsNewModal = ref(false);
@@ -57,14 +70,6 @@ const showFeedbackModal = ref(false);
 const showCreditsModal = ref(false);
 const menuToggleEl = ref<HTMLButtonElement | null>(null);
 const menuEl = ref<HTMLElement | null>(null);
-const plannerMenuEl = ref<HTMLElement | null>(null);
-const plannerToggleEl = ref<HTMLButtonElement | null>(null);
-
-const plannerActive = computed(() =>
-  ['/students', '/bonds', '/crafting'].some(
-    (path) => route.path === path || route.path.startsWith(`${path}/`),
-  ),
-);
 
 // Auto-open the What's New modal once when the latest entry's id doesn't
 // match the user's lastSeen marker. Brand-new visitors hit this too (undefined
@@ -90,28 +95,41 @@ function closeWhatsNewModal() {
 }
 
 function toggleMobileMenu() {
-  closePlannerMenu();
+  openNavGroup.value = null;
   mobileMenuOpen.value = !mobileMenuOpen.value;
 }
 
-function openPlannerMenu() {
+function hoverNavGroup(label: NavGroup, event: PointerEvent) {
+  if (event.pointerType !== 'mouse' || openNavGroup.value?.label === label) return;
   mobileMenuOpen.value = false;
-  plannerMenuOpen.value = true;
+  openNavGroup.value = { label, pinned: false };
 }
 
-function closePlannerMenu() {
-  plannerMenuOpen.value = false;
+function closeHoveredNavGroup(label: NavGroup) {
+  if (openNavGroup.value?.label === label && !openNavGroup.value.pinned) {
+    openNavGroup.value = null;
+  }
 }
 
-function togglePlannerMenu() {
-  const nextOpen = !plannerMenuOpen.value;
-  if (nextOpen) mobileMenuOpen.value = false;
-  plannerMenuOpen.value = nextOpen;
+function toggleNavGroup(label: NavGroup) {
+  if (openNavGroup.value?.label === label && openNavGroup.value.pinned) {
+    openNavGroup.value = null;
+  } else {
+    mobileMenuOpen.value = false;
+    openNavGroup.value = { label, pinned: true };
+  }
 }
 
-function handlePlannerFocusOut(event: FocusEvent) {
-  const nextTarget = event.relatedTarget as Node | null;
-  if (!nextTarget || !plannerMenuEl.value?.contains(nextTarget)) closePlannerMenu();
+function handleNavFocusOut(label: NavGroup, event: FocusEvent) {
+  const group = event.currentTarget as HTMLElement;
+  if (openNavGroup.value?.label === label && !group.contains(event.relatedTarget as Node | null)) {
+    openNavGroup.value = null;
+  }
+}
+
+function activeNavGroupElement() {
+  const label = openNavGroup.value?.label;
+  return label ? desktopNav.value?.querySelector(`[data-nav-group="${label}"]`) : undefined;
 }
 
 async function handleExportData() {
@@ -148,7 +166,7 @@ function openCreditsModal() {
 
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as Node;
-  if (plannerMenuOpen.value && !plannerMenuEl.value?.contains(target)) closePlannerMenu();
+  if (openNavGroup.value && !activeNavGroupElement()?.contains(target)) openNavGroup.value = null;
 
   if (!mobileMenuOpen.value) return;
   if (
@@ -162,9 +180,10 @@ function handleClickOutside(event: MouseEvent) {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Escape' || !plannerMenuOpen.value) return;
-  closePlannerMenu();
-  plannerToggleEl.value?.focus();
+  if (event.key !== 'Escape' || !openNavGroup.value) return;
+  const trigger = activeNavGroupElement()?.querySelector('button');
+  openNavGroup.value = null;
+  trigger?.focus();
 }
 
 useClickOutside(handleClickOutside);
@@ -192,27 +211,32 @@ useDocumentListener('keydown', handleKeydown);
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
         </RouterLink>
-        <nav class="an-nav">
+        <nav ref="desktopNav" class="an-nav">
           <div
-            ref="plannerMenuEl"
-            class="planner-menu"
-            @mouseenter="openPlannerMenu"
-            @mouseleave="closePlannerMenu"
-            @focusout="handlePlannerFocusOut"
+            v-for="group in navGroups"
+            :key="group.label"
+            class="nav-group"
+            :data-nav-group="group.label"
+            @pointerenter="hoverNavGroup(group.label, $event)"
+            @pointerleave="closeHoveredNavGroup(group.label)"
+            @focusout="handleNavFocusOut(group.label, $event)"
           >
             <button
-              ref="plannerToggleEl"
               type="button"
-              class="app-navbar-link planner-menu-trigger"
-              :class="{ active: plannerActive, open: plannerMenuOpen }"
-              :aria-expanded="plannerMenuOpen"
-              aria-haspopup="menu"
-              aria-controls="planner-menu-options"
-              @click="togglePlannerMenu"
+              class="app-navbar-link nav-group-trigger"
+              :class="{
+                active: group.links.some(
+                  ({ to }) => route.path === to || route.path.startsWith(`${to}/`),
+                ),
+                open: openNavGroup?.label === group.label,
+              }"
+              :aria-expanded="openNavGroup?.label === group.label"
+              :aria-controls="`${group.label}-nav-options`"
+              @click="toggleNavGroup(group.label)"
             >
-              <span>{{ $t('planner') }}</span>
+              <span>{{ $t(group.label) }}</span>
               <svg
-                class="planner-menu-chevron"
+                class="nav-group-chevron"
                 width="12"
                 height="12"
                 viewBox="0 0 24 24"
@@ -228,37 +252,19 @@ useDocumentListener('keydown', handleKeydown);
             </button>
 
             <div
-              v-if="plannerMenuOpen"
-              id="planner-menu-options"
-              class="planner-menu-options"
-              role="menu"
+              v-show="openNavGroup?.label === group.label"
+              :id="`${group.label}-nav-options`"
+              class="nav-group-options"
             >
               <RouterLink
-                to="/students"
-                class="planner-menu-option"
+                v-for="link in group.links"
+                :key="link.to"
+                :to="link.to"
+                class="nav-group-option"
                 active-class="active"
-                role="menuitem"
-                @click="closePlannerMenu"
+                @click="openNavGroup = null"
               >
-                {{ $t('students') }}
-              </RouterLink>
-              <RouterLink
-                to="/bonds"
-                class="planner-menu-option"
-                active-class="active"
-                role="menuitem"
-                @click="closePlannerMenu"
-              >
-                {{ $t('bonds') }}
-              </RouterLink>
-              <RouterLink
-                to="/crafting"
-                class="planner-menu-option"
-                active-class="active"
-                role="menuitem"
-                @click="closePlannerMenu"
-              >
-                {{ $t('craftingFodder.nav') }}
+                {{ $t(link.label) }}
               </RouterLink>
             </div>
           </div>
@@ -300,18 +306,20 @@ useDocumentListener('keydown', handleKeydown);
 
     <div v-if="mobileMenuOpen" ref="menuEl" class="an-mobile-menu">
       <div class="mobile-menu-container">
-        <div class="mobile-menu-section mobile-nav-only">
+        <div class="mobile-menu-section mobile-nav-only" :class="{ 'mobile-nav-compact': compact }">
           <h3 class="mobile-menu-heading">{{ $t('navigation') }}</h3>
           <div class="mobile-menu-options">
-            <RouterLink to="/students" class="mobile-menu-option" @click="mobileMenuOpen = false">
-              {{ $t('students') }}
-            </RouterLink>
-            <RouterLink to="/bonds" class="mobile-menu-option" @click="mobileMenuOpen = false">
-              {{ $t('bonds') }}
-            </RouterLink>
-            <RouterLink to="/crafting" class="mobile-menu-option" @click="mobileMenuOpen = false">
-              {{ $t('craftingFodder.nav') }}
-            </RouterLink>
+            <template v-for="group in navGroups" :key="group.label">
+              <RouterLink
+                v-for="link in group.links"
+                :key="link.to"
+                :to="link.to"
+                class="mobile-menu-option"
+                @click="mobileMenuOpen = false"
+              >
+                {{ $t(link.label) }}
+              </RouterLink>
+            </template>
             <RouterLink to="/hall" class="mobile-menu-option" @click="mobileMenuOpen = false">
               {{ $t('bond100.nav') }}
             </RouterLink>
@@ -531,11 +539,11 @@ useDocumentListener('keydown', handleKeydown);
   gap: 4px;
 }
 
-.planner-menu {
+.nav-group {
   position: relative;
 }
 
-.planner-menu-trigger {
+.nav-group-trigger {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -545,16 +553,16 @@ useDocumentListener('keydown', handleKeydown);
   font-family: inherit;
 }
 
-.planner-menu-chevron {
+.nav-group-chevron {
   flex: 0 0 auto;
   transition: transform 0.15s ease;
 }
 
-.planner-menu-trigger.open .planner-menu-chevron {
+.nav-group-trigger.open .nav-group-chevron {
   transform: rotate(180deg);
 }
 
-.planner-menu-options {
+.nav-group-options {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
@@ -568,7 +576,7 @@ useDocumentListener('keydown', handleKeydown);
   box-shadow: 0 8px 20px rgba(var(--background-hover-rgb), 0.22);
 }
 
-.planner-menu-options::before {
+.nav-group-options::before {
   position: absolute;
   right: 0;
   bottom: 100%;
@@ -577,7 +585,7 @@ useDocumentListener('keydown', handleKeydown);
   content: '';
 }
 
-.planner-menu-option {
+.nav-group-option {
   padding: 7px 10px;
   border-radius: 7px;
   color: var(--text-secondary);
@@ -587,14 +595,14 @@ useDocumentListener('keydown', handleKeydown);
   white-space: nowrap;
 }
 
-.planner-menu-option:hover,
-.planner-menu-option:focus-visible {
+.nav-group-option:hover,
+.nav-group-option:focus-visible {
   background: var(--background-secondary);
   color: var(--text-primary);
   outline: none;
 }
 
-.planner-menu-option.active {
+.nav-group-option.active {
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   color: var(--accent-color);
 }
@@ -775,6 +783,10 @@ useDocumentListener('keydown', handleKeydown);
 @media screen and (max-width: 960px) {
   .an-left--compact {
     display: none;
+  }
+
+  .mobile-nav-compact {
+    display: block;
   }
 }
 

@@ -30,6 +30,15 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/CraftingPage.vue'),
   },
   {
+    path: '/pull-recap',
+    name: 'PullRecap',
+    component: () => import('@/pages/PullRecapPage.vue'),
+  },
+  {
+    path: '/spark',
+    redirect: '/pull-recap',
+  },
+  {
     path: '/bond100',
     redirect: '/hall',
   },

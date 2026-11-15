@@ -7,6 +7,7 @@ import type { CardOverlayId } from '@/types/card';
 import type { InventoryLayout } from '@/types/resource';
 import type { Language } from '../stores/localizationStore';
 import type { GameServer } from '@/types/server';
+import type { PullRecapDraft } from '@/types/pullRecap';
 import type { CraftingFodderSession } from '../../types/crafting';
 import { DEFAULT_THEME } from './themeUtils';
 
@@ -31,6 +32,8 @@ export interface AppSettings {
     markedIds?: number[];
   };
   studentFilters?: StudentFilters;
+  /** Keep the existing storage key so renaming the tool does not discard drafts. */
+  sparkDraft?: PullRecapDraft;
   bondsTrackedStudents?: number[];
   bondsLayout: 'cards' | 'tabs';
   bondsGiftPlanningEnabled?: number[];
@@ -77,6 +80,7 @@ const ALLOWED_KEYS: (keyof AppSettings)[] = [
   'isPinnedMode',
   'craftingFodder',
   'studentFilters',
+  'sparkDraft',
   'bondsTrackedStudents',
   'bondsLayout',
   'bondsGiftPlanningEnabled',

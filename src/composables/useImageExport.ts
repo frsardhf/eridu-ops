@@ -44,9 +44,12 @@ async function inlineImages(
   return restore;
 }
 
-interface CaptureOptions {
+interface RenderOptions {
   scale?: number;
   backgroundColor?: string;
+}
+
+interface CaptureOptions extends RenderOptions {
   fileName?: string;
   /** 'download' (default) saves via an `<a download>`; 'open' opens the PNG in a new tab. */
   output?: 'download' | 'open';
@@ -55,7 +58,7 @@ interface CaptureOptions {
 export function useImageExport() {
   const exporting = ref(false);
 
-  async function captureToPng(el: HTMLElement, opts: CaptureOptions = {}): Promise<void> {
+  async function renderPng(el: HTMLElement, opts: RenderOptions = {}): Promise<string | undefined> {
     if (exporting.value) return;
     exporting.value = true;
     const imgs = Array.from(el.querySelectorAll<HTMLImageElement>('img'));
@@ -64,27 +67,37 @@ export function useImageExport() {
       restore = await inlineImages(imgs);
       await new Promise((r) => requestAnimationFrame(r));
 
-      const dataUrl = await domToPng(el, {
+      return await domToPng(el, {
         scale: opts.scale ?? 2,
         backgroundColor: opts.backgroundColor,
       });
-
-      if (opts.output === 'open') {
-        const blob = await fetch(dataUrl).then((r) => r.blob());
-        const blobUrl = URL.createObjectURL(blob);
-        window.open(blobUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-      } else {
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = opts.fileName ?? 'export.png';
-        a.click();
-      }
     } finally {
       for (const [img, src] of restore) img.src = src;
       exporting.value = false;
     }
   }
 
-  return { exporting, captureToPng };
+  async function capturePngBlob(el: HTMLElement): Promise<Blob | undefined> {
+    const dataUrl = await renderPng(el);
+    return dataUrl ? await fetch(dataUrl).then((res) => res.blob()) : undefined;
+  }
+
+  async function captureToPng(el: HTMLElement, opts: CaptureOptions = {}): Promise<void> {
+    const dataUrl = await renderPng(el, opts);
+    if (!dataUrl) return;
+
+    if (opts.output === 'open') {
+      const blob = await fetch(dataUrl).then((res) => res.blob());
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } else {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = opts.fileName ?? 'export.png';
+      a.click();
+    }
+  }
+
+  return { exporting, captureToPng, capturePngBlob };
 }
